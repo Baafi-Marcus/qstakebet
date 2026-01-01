@@ -149,7 +149,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             <div className="flex flex-col">
                                 {Object.entries(match.extendedOdds?.totalPoints || {})
                                     .sort((a, b) => parseFloat(a[0].split(" ")[1]) - parseFloat(b[0].split(" ")[1]))
-                                    .reduce((acc: { line: string, over: [string, number | null], under: [string, number | null] }[], [key, odd], _index, array) => {
+                                    .reduce((acc: { line: string, over: [string, number | null], under: [string, number | null] }[], [key], _index, array) => {
                                         const line = key.split(" ")[1];
                                         if (!acc.find(g => g.line === line)) {
                                             const over = array.find(k => k[0] === `Over ${line}`);

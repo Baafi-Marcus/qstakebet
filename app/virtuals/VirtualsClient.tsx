@@ -127,10 +127,8 @@ const getSchoolAcronym = (name: string, allParticipants: string[] = []) => {
 
     // Check for collisions and identical names
     const acronyms: string[] = [];
-    const usedIndices = new Set<number>();
-
     allParticipants.forEach((pName, pIdx) => {
-        let ac = pName.split(/[\s/-]+/).map(w => w[0]?.toUpperCase()).join('');
+        const ac = pName.split(/[\s/-]+/).map(w => w[0]?.toUpperCase()).join('');
 
         // Handle identical name collisions or acronym collisions
         let suffix = 0;
@@ -220,7 +218,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
-    const [userBalance, setUserBalance] = useState(1000.00) // Default simulated balance
+    const [userBalance, setUserBalance] = useState(1000.00)
     const isSimulatingRef = useRef(false)
 
 
@@ -708,7 +706,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
     }
 
     // Helper to check if a market would be correlated (for visual disabled state)
-    const checkIsCorrelated = (_matchId: string, _marketName: string): boolean => {
+    const checkIsCorrelated = (): boolean => {
         // User requested to remove strict visual blocking to allow Single bets on same-match markets.
         // We still enforce Single-mode via hasConflicts logic.
         return false;
@@ -892,7 +890,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                         activeMarket={activeMarket}
                                         onOddsClick={toggleSelection}
                                         checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
-                                        checkIsCorrelated={checkIsCorrelated}
+                                        checkIsCorrelated={() => false}
                                         onMoreClick={(m) => setSelectedMatchForDetails(m)}
                                         isSimulating={isSimulating}
                                         currentRoundIdx={Math.min(4, Math.floor((simulationProgress / 60) * 5))}

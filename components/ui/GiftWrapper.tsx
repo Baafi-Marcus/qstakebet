@@ -3,27 +3,35 @@
 import { useEffect, useState } from "react";
 
 export function GiftWrapper() {
-    const [isVisible, setIsVisible] = useState(false);
-    const [hasLoaded, setHasLoaded] = useState(false);
+    const [state, setState] = useState({ isVisible: false, hasLoaded: false });
 
     useEffect(() => {
         // Check localStorage on mount
-        const giftSeen = localStorage.getItem("qstake_gift_seen");
-        if (!giftSeen) {
-            setIsVisible(true);
-        }
-        setHasLoaded(true);
+        const giftSeen = typeof window !== 'undefined' ? localStorage.getItem("qstake_gift_seen") : null;
+
+        // Wrap in setTimeout to avoid "Calling setState synchronously within an effect" warning
+        const timer = setTimeout(() => {
+            setState({
+                isVisible: !giftSeen,
+                hasLoaded: true
+            });
+        }, 0);
 
         const handleMessage = (event: MessageEvent) => {
             if (event.data === "GIFT_COMPLETE") {
-                setIsVisible(false);
+                setState(prev => ({ ...prev, isVisible: false }));
                 localStorage.setItem("qstake_gift_seen", "true");
             }
         };
 
         window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
+        return () => {
+            window.removeEventListener("message", handleMessage);
+            clearTimeout(timer);
+        };
     }, []);
+
+    const { isVisible, hasLoaded } = state;
 
     if (!hasLoaded || !isVisible) return null;
 
