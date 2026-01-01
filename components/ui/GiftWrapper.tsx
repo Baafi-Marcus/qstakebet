@@ -3,12 +3,21 @@
 import { useEffect, useState } from "react";
 
 export function GiftWrapper() {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
 
     useEffect(() => {
+        // Check localStorage on mount
+        const giftSeen = localStorage.getItem("qstake_gift_seen");
+        if (!giftSeen) {
+            setIsVisible(true);
+        }
+        setHasLoaded(true);
+
         const handleMessage = (event: MessageEvent) => {
             if (event.data === "GIFT_COMPLETE") {
                 setIsVisible(false);
+                localStorage.setItem("qstake_gift_seen", "true");
             }
         };
 
@@ -16,7 +25,7 @@ export function GiftWrapper() {
         return () => window.removeEventListener("message", handleMessage);
     }, []);
 
-    if (!isVisible) return null;
+    if (!hasLoaded || !isVisible) return null;
 
     return (
         <iframe

@@ -114,30 +114,54 @@ interface ResolvedSlip extends VirtualBet {
     totalReturns: number;
 }
 
-const getSchoolAcronym = (name: string, otherNames?: string[]) => {
+const getSchoolAcronym = (name: string, allParticipants: string[] = []) => {
     if (!name || typeof name !== 'string') return "";
 
+    // Generate basic acronym
     const base = name
         .split(/[\s/-]+/)
         .map(word => word[0]?.toUpperCase())
         .join('');
 
-    if (!otherNames || otherNames.length === 0) return base;
+    if (allParticipants.length <= 1) return base;
 
-    // Check for collisions with other acronyms in the match
-    let acronym = base;
-    let index = 1;
-    const existingAcronyms = otherNames
-        .filter(n => typeof n === 'string' && n !== name)
-        .map(n => n.split(/[\s/-]+/).map((w: string) => w[0]?.toUpperCase()).join(''));
+    // Check for collisions and identical names
+    const acronyms: string[] = [];
+    const usedIndices = new Set<number>();
 
-    while (existingAcronyms.includes(acronym)) {
-        // Simple strategy: add a number if there's a collision
-        acronym = `${base}${index}`;
-        index++;
-    }
+    allParticipants.forEach((pName, pIdx) => {
+        let ac = pName.split(/[\s/-]+/).map(w => w[0]?.toUpperCase()).join('');
 
-    return acronym;
+        // Handle identical name collisions or acronym collisions
+        let suffix = 0;
+        let finalAc = ac;
+
+        // Check if this specific name has appeared before in this list
+        const occurrences = allParticipants.slice(0, pIdx).filter(n => n === pName).length;
+        if (occurrences > 0) {
+            suffix = occurrences;
+            finalAc = `${ac}${suffix}`;
+        }
+
+        // Also check if this acronym conflicts with a DIFFERENT school's acronym
+        while (acronyms.includes(finalAc)) {
+            suffix++;
+            finalAc = `${ac}${suffix}`;
+        }
+
+        acronyms.push(finalAc);
+    });
+
+    const myIndex = allParticipants.indexOf(name);
+    // If multiple identical names, find the right one by checking unique indices
+    // This is simple: just return the acronym at the First occurrence or consistent index
+    // For the purpose of "ASH1 vs ASH2", we search for the specific instance index if possible.
+    // However, the caller usually just passes the name. Let's return based on the first occurrence's pre-calculated acronym
+    // for simplicity, or just return the acronyms[myIndex].
+
+    // Better: let the UI pass the index if it wants strictly unique suffixes for same names.
+    // If not, we'll just return the first occurrence's acronym.
+    return acronyms[myIndex] || base;
 }
 
 const normalizeSchoolName = (name: string) => {
@@ -441,8 +465,12 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                 const resolvedCombinations = (slip.combinations || []).map((combo: { selections: VirtualSelection[], odds: number }) => {
                     const comboResults: ResolvedSelection[] = combo.selections.map((sel: VirtualSelection) => {
                         const parts = sel.matchId.split("-")
-                        const index = parseInt(parts[2])
-                        const outcome = allRoundResults[index]
+                        const rId = parseInt(parts[1])
+                        const mIdx = parseInt(parts[2])
+                        const cat = parts[3] as 'regional' | 'national'
+
+                        // Regenerate outcome specifically for this match to ensure correctness across rounds
+                        const outcome = simulateMatch(rId, mIdx, schools, cat);
 
                         const won = checkSelectionWin(sel, outcome);
 
@@ -479,8 +507,12 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
 
             const results: ResolvedSelection[] = slip.selections.map((sel: VirtualSelection) => {
                 const parts = sel.matchId.split("-")
-                const index = parseInt(parts[2])
-                const outcome = allRoundResults[index]
+                const rId = parseInt(parts[1])
+                const mIdx = parseInt(parts[2])
+                const cat = parts[3] as 'regional' | 'national'
+
+                // Regenerate outcome specifically for this match to ensure correctness across rounds
+                const outcome = simulateMatch(rId, mIdx, schools, cat);
 
                 const won = checkSelectionWin(sel, outcome);
 
@@ -770,7 +802,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                 <div className="flex items-center gap-4">
                                     {/* Back Button */}
                                     <button
-                                        onClick={() => router.back()}
+                                        onClick={() => router.push('/')}
                                         className="p-2 mr-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
                                     >
                                         <ArrowLeft className="h-4 w-4" />
@@ -782,7 +814,8 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                         onClick={() => setActiveTab('all')}
                                         className={cn("text-xs font-black uppercase tracking-widest transition-all px-2 py-1", activeTab === 'all' ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-500 hover:text-slate-300")}
                                     >
-                                        All Matches
+                                        <span className="hidden md:inline">All Matches</span>
+                                        <span className="md:hidden">ALL</span>
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('regional')}
@@ -1395,7 +1428,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-[10px] text-slate-500 font-bold mb-1">23/10 16:45</div>
                                                 <div className="text-sm font-bold text-white mb-2 truncate">
-                                                    {r.matchLabel.split(' vs ').map((name: string) => getSchoolAcronym(name, [r.schoolA || "", r.schoolB || "", r.schoolC || ""])).join(' vs ')}
+                                                    {[r.schoolA, r.schoolB, r.schoolC].map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC])).join(' vs ')}
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mb-3">
@@ -1660,7 +1693,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-[10px] text-slate-500 font-bold mb-1">Match Detail</div>
                                                 <div className="text-sm font-bold text-white mb-2 truncate">
-                                                    {r.matchLabel.split(' vs ').map((name: string) => getSchoolAcronym(name, [r.schoolA || "", r.schoolB || "", r.schoolC || ""])).join(' vs ')}
+                                                    {[r.schoolA, r.schoolB, r.schoolC].map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC])).join(' vs ')}
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mb-3">
@@ -1783,9 +1816,9 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
             {/* Live Match Progress View - Scoreboard Redesign */}
             {
                 activeLiveMatch && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 md:p-4">
                         <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setActiveLiveMatch(null)} />
-                        <div className="relative bg-slate-900 w-full max-w-3xl max-h-[85vh] rounded-[2rem] md:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col">
+                        <div className="relative bg-slate-900 w-full max-w-3xl h-full md:h-auto max-h-[92dvh] md:max-h-[85vh] rounded-[2rem] md:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col">
                             {(() => {
                                 const match = matches.find(m => m.id === activeLiveMatch);
                                 if (!match) return null;
@@ -1806,22 +1839,22 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
                                             </div>
 
-                                            <div className="relative z-10 flex flex-col h-full items-center justify-center p-8">
-                                                <div className="flex items-center gap-6 w-full justify-center">
+                                            <div className="relative z-10 flex flex-col h-full items-center justify-center p-3 pt-6 md:p-8">
+                                                <div className="flex items-center gap-2 md:gap-6 w-full justify-center">
                                                     {outcome.schools.map((school: string, sIdx: number) => (
                                                         <React.Fragment key={sIdx}>
-                                                            <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
-                                                                <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-xl font-black text-white border border-white/10 shadow-xl shrink-0">
+                                                            <div className="flex flex-col items-center gap-2 md:gap-3 flex-1 min-w-0">
+                                                                <div className="w-10 h-10 md:w-14 md:h-14 bg-slate-900 rounded-xl md:rounded-2xl flex items-center justify-center text-sm md:text-xl font-black text-white border border-white/10 shadow-xl shrink-0">
                                                                     {school[0]}
                                                                 </div>
-                                                                <span className="text-[9px] font-black uppercase text-white tracking-widest text-center h-8 flex items-center line-clamp-2">{school}</span>
-                                                                <div className="text-3xl font-black font-mono text-white bg-black/40 px-4 py-2 rounded-2xl border border-white/10 shadow-2xl mt-2 w-full text-center">
+                                                                <span className="text-[7px] md:text-[9px] font-black uppercase text-white tracking-widest text-center h-8 flex items-center line-clamp-2 leading-tight px-1">{school}</span>
+                                                                <div className="text-xl md:text-3xl font-black font-mono text-white bg-black/40 px-2 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl border border-white/10 shadow-2xl mt-1 md:mt-2 w-full text-center">
                                                                     {roundsToShow.reduce((acc: number, r: { scores: number[] }) => acc + r.scores[sIdx], 0)}
                                                                 </div>
                                                             </div>
                                                             {sIdx < 2 && (
-                                                                <div className="flex flex-col items-center gap-2 self-start mt-4">
-                                                                    <span className="text-[10px] font-black text-white/20">VS</span>
+                                                                <div className="flex flex-col items-center gap-2 self-start mt-2 md:mt-4">
+                                                                    <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-tighter">VS</span>
                                                                 </div>
                                                             )}
                                                         </React.Fragment>
@@ -1840,14 +1873,11 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                                 </div>
                                             </div>
 
-                                            <button onClick={() => setActiveLiveMatch(null)} className="absolute top-6 right-6 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors z-[60]">
-                                                <X className="h-4 w-4" />
-                                            </button>
                                         </div>
 
-                                        <div className="p-4 md:p-8 bg-slate-900 flex-1 overflow-y-auto custom-scrollbar">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Match Progress</h3>
+                                        <div className="p-3 md:p-8 bg-slate-900 flex-1 overflow-y-auto custom-scrollbar">
+                                            <div className="flex items-center justify-between mb-4 md:mb-6">
+                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Match Progress</h3>
                                                 <div className="flex items-center gap-4">
                                                     <span className="text-[10px] font-black font-mono text-slate-400">Total: {roundsToShow.reduce((acc, r) => acc + r.scores.reduce((a, b) => a + b, 0), 0)} pts</span>
                                                 </div>
@@ -1856,7 +1886,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {outcome.rounds.slice(0, 5).map((r, rIdx) => (
                                                     <div key={rIdx} className={cn(
-                                                        "p-4 rounded-2xl border transition-all duration-500 flex justify-between items-center",
+                                                        "p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-500 flex justify-between items-center",
                                                         rIdx === currentRoundIdx ? "bg-red-600/10 border-red-600/20 shadow-lg shadow-red-600/5 translate-x-1" :
                                                             rIdx < currentRoundIdx ? "bg-slate-800/20 border-white/5 opacity-50" :
                                                                 "bg-transparent border-white/5 opacity-10"
@@ -1875,11 +1905,11 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                                             </div>
                                         </div>
 
-                                        <div className="p-4 md:p-6 bg-slate-900 border-t border-white/5 shrink-0 flex items-center justify-center">
+                                        <div className="p-4 md:p-6 pb-12 md:pb-6 bg-slate-900 border-t border-white/5 shrink-0 flex items-center justify-center">
                                             {!isFullTime && (
                                                 <button
                                                     onClick={skipToResult}
-                                                    className="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-red-600/10"
+                                                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-red-600/10"
                                                 >
                                                     Skip to Result
                                                 </button>

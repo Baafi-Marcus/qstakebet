@@ -95,8 +95,12 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             <span className="px-2 py-0.5 bg-red-600 rounded text-[9px] font-black text-white uppercase tracking-widest">{match.stage}</span>
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• LIVE UPDATES</span>
                         </div>
-                        <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-3">
-                            {match.schoolA.split(/[\s/-]+/).map((w: string) => w[0]?.toUpperCase()).join('')} <span className="text-slate-600 text-sm font-medium">v</span> {match.schoolB.split(/[\s/-]+/).map((w: string) => w[0]?.toUpperCase()).join('')} <span className="text-slate-600 text-sm font-medium">v</span> {match.schoolC.split(/[\s/-]+/).map((w: string) => w[0]?.toUpperCase()).join('')}
+                        <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="flex-shrink-0">{match.schoolA}</span>
+                            <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
+                            <span className="flex-shrink-0">{match.schoolB}</span>
+                            <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
+                            <span className="flex-shrink-0">{match.schoolC}</span>
                         </h2>
                     </div>
                     <button
