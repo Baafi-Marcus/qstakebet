@@ -10,7 +10,7 @@ const NETWORKS = [
     { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400', textColor: 'text-black' },
     { id: 'telecel', name: 'Telecel Cash', color: 'bg-red-600', textColor: 'text-white' },
     { id: 'at', name: 'AT Money', color: 'bg-blue-600', textColor: 'text-white' },
-]
+] as const
 
 const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500]
 
@@ -113,7 +113,7 @@ export default function DepositPage() {
                             <button
                                 key={net.id}
                                 type="button"
-                                onClick={() => setNetwork(net.id as any)}
+                                onClick={() => setNetwork(net.id)}
                                 className={cn(
                                     "relative p-4 rounded-2xl border-2 transition-all group overflow-hidden",
                                     network === net.id

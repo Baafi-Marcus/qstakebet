@@ -1,13 +1,14 @@
 "use client"
 
-import { Smartphone, Wallet as WalletIcon, Banknote, ArrowUpRight, ArrowDownLeft, History, Clock, CheckCircle2, XCircle } from "lucide-react"
+import { Smartphone, Wallet as WalletIcon, Banknote, ArrowUpRight, ArrowDownLeft, History, Clock } from "lucide-react"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
+
 import { useEffect, useState } from "react"
 import { getUserWalletBalance } from "@/lib/wallet-actions"
 
 export default function WalletPage() {
-    const { data: session } = useSession()
+
+    // const { data: session } = useSession()
     const [balances, setBalances] = useState({ balance: 0, bonusBalance: 0 })
     const [loading, setLoading] = useState(true)
 

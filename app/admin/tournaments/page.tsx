@@ -3,7 +3,6 @@ import { db } from "@/lib/db"
 import { tournaments } from "@/lib/db/schema"
 import { TournamentsClient } from "./TournamentsClient"
 import { desc } from "drizzle-orm"
-import { desc } from "drizzle-orm"
 
 export const dynamic = 'force-dynamic'
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Activity, Search, Trophy, MapPin, X, Loader2, Calendar } from "lucide-react"
+import { Plus, Activity, Search, X, Loader2, Calendar } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
 import { createMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
@@ -146,9 +146,9 @@ export function MatchesClient({
                                         <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-widest">{match.stage}</span>
                                         {match.status && (
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${match.status === 'live' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                                    match.status === 'finished' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                                        match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
-                                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                match.status === 'finished' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                                                    match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                                                        'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                                 }`}>
                                                 {match.status}
                                             </span>

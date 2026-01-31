@@ -3,16 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-    User,
-    History,
-    Wallet,
-    Gift,
-    Settings,
-    LogOut,
-    ChevronRight,
-    Search
-} from "lucide-react"
+import { User, History, Wallet, Gift, Settings, LogOut, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

@@ -12,7 +12,7 @@ const NETWORKS = [
     { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400', textColor: 'text-black' },
     { id: 'telecel', name: 'Telecel Cash', color: 'bg-red-600', textColor: 'text-white' },
     { id: 'at', name: 'AT Money', color: 'bg-blue-600', textColor: 'text-white' },
-]
+] as const
 
 export default function WithdrawPage() {
     const [amount, setAmount] = useState("")
@@ -48,9 +48,9 @@ export default function WithdrawPage() {
             if (result.success) {
                 setSuccess(true)
             } else {
-                setError((result as any).error || "Failed to process withdrawal")
+                setError((result as { error: string }).error || "Failed to process withdrawal")
             }
-        } catch (err) {
+        } catch {
             setError("A network error occurred")
         } finally {
             setLoading(false)
@@ -106,7 +106,7 @@ export default function WithdrawPage() {
                             <button
                                 key={net.id}
                                 type="button"
-                                onClick={() => setNetwork(net.id as any)}
+                                onClick={() => setNetwork(net.id as 'mtn' | 'telecel' | 'at')}
                                 className={cn(
                                     "relative p-4 rounded-2xl border-2 transition-all group overflow-hidden",
                                     network === net.id
