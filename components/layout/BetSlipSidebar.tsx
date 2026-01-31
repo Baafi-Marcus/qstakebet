@@ -123,10 +123,10 @@ export function BetSlipSidebar() {
                                         if (result.success) {
                                             clearSlip()
                                             toggleSlip()
-                                            // Real-time balance refresh (handled by Next.js revalidatePath if added to action, or just standard router refresh)
-                                            window.location.reload() // Quickest way to refresh all balances including Header
+                                            // Real-time balance refresh
+                                            window.location.reload()
                                         } else {
-                                            setError(result.error || "Failed to place bet")
+                                            setError((result as any).error || "Failed to place bet")
                                         }
                                     } catch (err) {
                                         setError("A network error occurred")
