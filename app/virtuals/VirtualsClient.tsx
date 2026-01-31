@@ -662,9 +662,9 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
 
         const virtualSelection: VirtualSelection = {
             ...selection,
-            schoolA: match.schoolA,
-            schoolB: match.schoolB,
-            schoolC: match.schoolC
+            schoolA: match.participants[0]?.name || "",
+            schoolB: match.participants[1]?.name || "",
+            schoolC: match.participants[2]?.name || ""
         }
 
         setSelections(prev => {

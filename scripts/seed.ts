@@ -284,13 +284,15 @@ const SEED_SCHOOL_DATA: Record<string, SeedSchool[]> = {
 const SEED_MATCHES = [
     {
         id: "final-2025",
-        schoolA: "Mfantsipim School",
-        schoolB: "St. Augustine's College",
-        schoolC: "Opoku Ware School",
+        participants: [
+            { schoolId: "mfantsipim-school", name: "Mfantsipim School", odd: 1.85 },
+            { schoolId: "st-augustines-college", name: "St. Augustine's College", odd: 2.15 },
+            { schoolId: "opoku-ware-school", name: "Opoku Ware School", odd: 4.50 }
+        ],
         startTime: "Ended",
         isLive: false,
         stage: "National Grand Finale",
-        odds: { schoolA: 1.85, schoolB: 2.15, schoolC: 4.50 },
+        odds: { schoolA: 1.85, schoolB: 2.15, schoolC: 4.50 }, // Keeping for backwards compat if needed, or just metadata
         extendedOdds: {
             winningMargin: { "1-10": 2.10, "11-25": 3.40, "26+": 6.00 },
             highestScoringRound: { "Round 1": 4.00, "Round 2": 3.50, "Round 3": 5.00, "Round 4": 6.50, "Round 5": 2.80 },
@@ -300,9 +302,11 @@ const SEED_MATCHES = [
     },
     {
         id: "semi-1",
-        schoolA: "Mfantsipim School",
-        schoolB: "GSTS",
-        schoolC: "Mankranso SHS",
+        participants: [
+            { schoolId: "mfantsipim-school", name: "Mfantsipim School", odd: 1.45 },
+            { schoolId: "gsts", name: "GSTS", odd: 3.50 },
+            { schoolId: "mankranso-shs", name: "Mankranso SHS", odd: 6.00 }
+        ],
         startTime: "Ended",
         isLive: false,
         stage: "Semi-Final Contest 1",
@@ -315,9 +319,11 @@ const SEED_MATCHES = [
     },
     {
         id: "semi-2",
-        schoolA: "St. Augustine's College",
-        schoolB: "Pope John SHS",
-        schoolC: "Amaniampong SHS",
+        participants: [
+            { schoolId: "st-augustines-college", name: "St. Augustine's College", odd: 1.65 },
+            { schoolId: "pope-john-shs", name: "Pope John SHS", odd: 2.40 },
+            { schoolId: "amaniampong-shs", name: "Amaniampong SHS", odd: 5.50 }
+        ],
         startTime: "Ended",
         isLive: false,
         stage: "Semi-Final Contest 2",
@@ -330,9 +336,11 @@ const SEED_MATCHES = [
     },
     {
         id: "semi-3",
-        schoolA: "Opoku Ware School",
-        schoolB: "Achimota School",
-        schoolC: "St. Peter's SHS",
+        participants: [
+            { schoolId: "opoku-ware-school", name: "Opoku Ware School", odd: 1.50 },
+            { schoolId: "achimota-school", name: "Achimota School", odd: 2.80 },
+            { schoolId: "st-peters-shs", name: "St. Peter's SHS", odd: 5.20 }
+        ],
         startTime: "Ended",
         isLive: false,
         stage: "Semi-Final Contest 3",
@@ -344,9 +352,11 @@ const SEED_MATCHES = [
     },
     {
         id: "reg-live-1",
-        schoolA: "Prempeh College",
-        schoolB: "Kumasi High School",
-        schoolC: "K.S.T.S.",
+        participants: [
+            { schoolId: "prempeh-college", name: "Prempeh College", odd: 1.25 },
+            { schoolId: "kumasi-high-school", name: "Kumasi High School", odd: 4.10 },
+            { schoolId: "ksts", name: "K.S.T.S.", odd: 8.00 }
+        ],
         startTime: "Live Now",
         isLive: true,
         stage: "Regional Qualifiers",
@@ -358,9 +368,11 @@ const SEED_MATCHES = [
     },
     {
         id: "reg-live-2",
-        schoolA: "PRESEC Legon",
-        schoolB: "Accra Academy",
-        schoolC: "Chemu SHS",
+        participants: [
+            { schoolId: "presec-legon", name: "PRESEC Legon", odd: 1.35 },
+            { schoolId: "accra-academy", name: "Accra Academy", odd: 3.20 },
+            { schoolId: "chemu-shs", name: "Chemu SHS", odd: 6.50 }
+        ],
         startTime: "Live Now",
         isLive: true,
         stage: "Regional Qualifiers",
@@ -377,6 +389,9 @@ async function main() {
 
     try {
         console.log("🏫 Seeding schools...");
+        // Ensure connection verify
+        await db.select().from(schools).limit(1);
+
         for (const [region, schoolList] of Object.entries(SEED_SCHOOL_DATA)) {
             for (const school of schoolList) {
                 const schoolId = school.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -400,23 +415,23 @@ async function main() {
 
         console.log("🎮 Seeding matches...");
         for (const match of SEED_MATCHES) {
-            console.log(`Inserting match: ${match.schoolA} vs ${match.schoolB} vs ${match.schoolC}`);
+            console.log(`Inserting match: ${match.id}`);
             await db.insert(matches).values({
                 id: match.id,
-                schoolA: match.schoolA,
-                schoolB: match.schoolB,
-                schoolC: match.schoolC,
+                participants: match.participants, // Using new structure
                 startTime: match.startTime,
                 isLive: match.isLive,
                 stage: match.stage,
                 odds: match.odds,
                 extendedOdds: match.extendedOdds,
+                isVirtual: false,
+                sportType: "quiz",
+                gender: "mixed",
+                margin: { profit: 0.1 }
             }).onConflictDoUpdate({
                 target: matches.id,
                 set: {
-                    schoolA: match.schoolA,
-                    schoolB: match.schoolB,
-                    schoolC: match.schoolC,
+                    participants: match.participants,
                     startTime: match.startTime,
                     isLive: match.isLive,
                     stage: match.stage,

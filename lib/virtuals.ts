@@ -314,9 +314,8 @@ function calculateOddsFromProbability(
 
 export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: number): Match {
     const totalStrength = outcome.strengths.reduce((a, b) => a + b, 0);
-    // Flatten probabilities slightly to reduce favoritism
 
-    // Sharpen probabilities using a power function to create smaller odds for favorites
+    // Sharpen probabilities
     const sharpenedStrengths = outcome.strengths.map(s => Math.pow(s, 1.8));
     const totalSharpened = sharpenedStrengths.reduce((a, b) => a + b, 0);
 
@@ -324,15 +323,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const probB = sharpenedStrengths[1] / totalSharpened;
     const probC = sharpenedStrengths[2] / totalSharpened;
 
-    // ROUND WEIGHTS (Max Points per Round)
-    const R1_MAX = 45;
-    const R2_MAX = 24;
-    const R3_MAX = 10;
-    const R4_MAX = 20;
-    const R5_MAX = 12;
-    const TOTAL_MAX = R1_MAX + R2_MAX + R3_MAX + R4_MAX + R5_MAX; // 111
-
-    // Helper for prop odds based on team strength AND Chaos
+    // Helper for prop odds
     const getPropOdds = (
         baseProb: number,
         volatility: number = 0.25,
@@ -340,78 +331,40 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         min: number = 1.20,
         max: number = 6.00
     ) => {
-        // Apply chaos factor: Randomize probability within volatility range
         const chaos = (seededRandom(startTimeMs + baseProb * 1000) - 0.5) * volatility;
         const finalProb = Math.max(0.01, Math.min(0.99, baseProb * (1 + chaos)));
         return calculateOddsFromProbability(finalProb, customMargin, startTimeMs + baseProb * 777, min, max);
     };
 
-    // Tier 1: Match Winner (FIX 1: Variable Margins 12.5%, Range 1.10 - 6.00)
+    // Tier 1: Match Winner
     const winnerMargin = 0.125;
-    const oddsA = calculateOddsFromProbability(probA, winnerMargin, startTimeMs + 1, 1.10, 6.00, 0.12);
-    const oddsB = calculateOddsFromProbability(probB, winnerMargin, startTimeMs + 2, 1.10, 6.00, 0.12);
-    const oddsC = calculateOddsFromProbability(probC, winnerMargin, startTimeMs + 3, 1.10, 6.00, 0.12);
+    const oddsA = calculateOddsFromProbability(probA, winnerMargin, startTimeMs + 1, 1.10, 6.00, 0.12)!;
+    const oddsB = calculateOddsFromProbability(probB, winnerMargin, startTimeMs + 2, 1.10, 6.00, 0.12)!;
+    const oddsC = calculateOddsFromProbability(probC, winnerMargin, startTimeMs + 3, 1.10, 6.00, 0.12)!;
 
-    // FIX 4: Non-Linear Scoring Bands
-    let projectedTotal = 0;
-    outcome.strengths.forEach(s => {
-        // High strength (2.0+) -> 38-45 pts
-        // Mid (1.0) -> 30-38 pts
-        // Low (<0.8) -> 25-30 pts
-        let baseBand = 30;
-        if (s >= 1.5) baseBand = 38 + (s - 1.5) * 10;
-        else if (s < 0.8) baseBand = 25 + (s / 0.8) * 5;
-        else baseBand = 30 + (s - 0.8) * 10;
-
-        projectedTotal += baseBand;
-    });
-
-    // Better logic: Base efficiency of the league (e.g. 50% of available points are scored)
-    // Adjusted by Total Match Strength.
-    const matchStrengthAvg = totalStrength / 3; // Approx 1.0
-    const globalEfficiency = 0.45 + (matchStrengthAvg - 1.0) * 0.15; // 1.5 strength => 52% efficiency
-    projectedTotal = TOTAL_MAX * globalEfficiency * 3; // 3 Teams participating? No, rounds are individual usually or head-to-head? 
-    // Virtuals logic: 3 schools compete. Total points usually means "Winning Score" or "Sum of all scores"?
-    // In this game, usually "Total Points" refers to the SUM of scores of ALL 3 teams combined? Or the winner?
-    // Let's assume Sum of All 3 Teams for "Over/Under".
-    // If each round delivers points to ONE winner (mostly) or multiple?
-    // R1: ~15 Qs * 3pts. Shared? No, usually specific questions. 
-    // Let's use the simpler approximation:
-    // Avg Score per team per match ~ 45-60. Total ~ 135-180?
-    // Let's stick to the previous tuned value but weighted:
-    projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 45; // Old logic was decent.
-    // Let's refine based on Round Caps:
-    // Total Capacity = 111 pts * 3 teams = 333 (Theoretical max if everyone got everything right? No, usually questions are shared).
-    // Let's say Total Available Points in the match is ~150.
-    // Projected = 150 * (TotalStrength / 3); 
-
-    // Generate 5 lines centered on projectedTotal, rounded to nearest 10, then add .5
+    // Projected Total
+    const projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 45;
     const centerLine = Math.round(projectedTotal / 10) * 10 + 0.5;
     const lines = [centerLine - 20, centerLine - 10, centerLine, centerLine + 10, centerLine + 20];
 
     const totalPointsOdds: Record<string, number | null> = {};
-    const totalMargin = 0.165; // FIX 1: Variable Margins 16.5% for Totals
+    const totalMargin = 0.165;
     lines.forEach(line => {
         const diff = projectedTotal - line;
         const probOver = 1 / (1 + Math.exp(-diff / 35));
-
         totalPointsOdds[`Over ${line}`] = getPropOdds(probOver, 0.15, totalMargin, 1.20, 3.00);
         totalPointsOdds[`Under ${line}`] = getPropOdds(1 - probOver, 0.15, totalMargin, 1.20, 3.00);
     });
 
-    // Winning Margin (Dynamic Distribution based on Strength Gaps)
-    // We look at the gap between the strongest and weakest teams to determine how "spread out" the scores will be
+    // Winning Margin
     const strengths = outcome.strengths;
     const maxStrength = Math.max(...strengths);
-    const strengthSpread = maxStrength - Math.min(...strengths); // 0.0 to 1.5+
+    const strengthSpread = maxStrength - Math.min(...strengths);
+    const shiftFactor = Math.min(1, strengthSpread / 1.5);
 
-    // Balanced Base Probabilities (Start with ~40% for 1-10 in a perfect parity game)
-    // As spread increases, probability shifts toward higher margins
-    const shiftFactor = Math.min(1, strengthSpread / 1.5); // Normalize to 0-1
-
-    const prob1_10 = 0.50 - (shiftFactor * 0.30); // 50% -> 20%
-    const prob11_25 = 0.35 + (shiftFactor * 0.10); // 35% -> 45%
-    const prob26_Plus = 0.15 + (shiftFactor * 0.20); // 15% -> 35%
+    const prob1_10 = 0.50 - (shiftFactor * 0.30);
+    const prob11_25 = 0.35 + (shiftFactor * 0.10);
+    const prob26_Plus = 0.15 + (shiftFactor * 0.20);
 
     const winningMarginOdds = {
         "1-10": getPropOdds(prob1_10, 0.20, 0.18, 1.20, 5.00),
@@ -419,26 +372,17 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         "26+": getPropOdds(prob26_Plus, 0.20, 0.18, 1.20, 5.00)
     };
 
-
-    // Helpers for simple Yes/No props with base probability
     const getYesNoOdds = (yesProb: number) => ({
-        // Use a HIGHER margin (25%) for high-volatility props like Perfect/Shutout to protect the house
         "Yes": getPropOdds(yesProb, 0.25, 0.25, 1.10, 15.00),
         "No": getPropOdds(1 - yesProb, 0.25, 0.25, 1.10, 15.00)
     });
 
-    // PER-ROUND PERFECT MARKETS
-    // Difficulty Factors: (Higher = Harder)
-
-    // PER-MATCH NOISE for these markets
-    const matchNoise = (seededRandom(startTimeMs) * 0.06) - 0.03; // +/- 3% (Standardized)
+    const matchNoise = (seededRandom(startTimeMs) * 0.06) - 0.03;
 
     const getPerfectProb = (difficulty: number, rIdx: number = 0) => {
-        // BALANCED MARKET: Increase base (15%) and strength correlation (10%)
-        // Goal: "Yes" odds should be smaller and closer to "No"
         const rNoise = (seededRandom(startTimeMs + rIdx * 555) * 0.08) - 0.04;
         let p = 0.15 + (maxStrength * 0.10) + matchNoise + rNoise;
-        p = p * (1 - difficulty * 0.4); // Slightly reduced difficulty penalty
+        p = p * (1 - difficulty * 0.4);
         return Math.max(0.01, p);
     };
 
@@ -448,24 +392,16 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const perfectRound4Odds = getYesNoOdds(getPerfectProb(0.5, 4));
     const perfectRound5Odds = getYesNoOdds(getPerfectProb(0.7, 5));
 
-    // Aggregate Perfect Round (Any Round) - rough sum of probs
     const anyPerfectProb = Math.min(0.40, getPerfectProb(0.3, 0) + getPerfectProb(0.6, 1) + getPerfectProb(0.5, 2));
     const perfectRoundOdds = getYesNoOdds(anyPerfectProb);
 
-    // Shutout Round (Any)
     const minStrength = Math.min(...outcome.strengths);
     const shutoutRoundProb = 0.12 + (minStrength < 0.8 ? 0.15 : 0) + matchNoise;
     const shutoutRoundOdds = getYesNoOdds(shutoutRoundProb);
 
-    // Round Winners (Use Match Winner probs + Round-specific noise)
     const getRoundWinnerOdds = (roundIndex: number) => {
-        // PER-ROUND VARIANCE: Add unique noise per round to distinguish them
-        // Seeded by round index + match start time
         const rSeed = startTimeMs + (roundIndex * 777);
-        const rNoise = (seededRandom(rSeed) * 0.16) - 0.08; // +/- 8% shift in favor/against favorite
-
-        // Apply a multiplier to probability based on round index to simulate different match phases
-        // Rounds 4 & 5 might be slightly more volatile
+        const rNoise = (seededRandom(rSeed) * 0.16) - 0.08;
         const phaseMult = roundIndex >= 3 ? 1.05 : 0.95;
 
         return {
@@ -476,50 +412,44 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     };
 
     const firstBonusOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.4 + 0.2), // Part strength, part luck
+        [outcome.schools[0]]: getPropOdds(probA * 0.4 + 0.2),
         [outcome.schools[1]]: getPropOdds(probB * 0.4 + 0.2),
         [outcome.schools[2]]: getPropOdds(probC * 0.4 + 0.2)
     };
 
     const fastestBuzzOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.5 + 0.16), // Speed often correlates with strength
+        [outcome.schools[0]]: getPropOdds(probA * 0.5 + 0.16),
         [outcome.schools[1]]: getPropOdds(probB * 0.5 + 0.16),
         [outcome.schools[2]]: getPropOdds(probC * 0.5 + 0.16)
     };
 
-    // Smart Props: Comeback Win
-    // More likely in tight games (low shiftFactor) and with high volatility
-    const comebackWinProb = 0.18 - (shiftFactor * 0.13); // 18% (Tight) -> 5% (Spread)
+    const comebackWinProb = 0.18 - (shiftFactor * 0.13);
     const comebackWinOdds = getYesNoOdds(comebackWinProb);
-
-    // Smart Props: Lead Changes
-    // Highly correlated with "Tightness" (low shiftFactor)
-    const leadChangesHighProb = 0.65 - (shiftFactor * 0.40); // 65% (Tight) -> 25% (Spread)
+    const leadChangesHighProb = 0.65 - (shiftFactor * 0.40);
     const leadChangesOdds = {
         "Over 2.5": getPropOdds(leadChangesHighProb),
         "Under 2.5": getPropOdds(1 - leadChangesHighProb)
     };
 
-    // Comeback Team (Favored to team strengths slightly)
     const comebackTeamOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.3), // Lower prob than winning
+        [outcome.schools[0]]: getPropOdds(probA * 0.3),
         [outcome.schools[1]]: getPropOdds(probB * 0.3),
         [outcome.schools[2]]: getPropOdds(probC * 0.3),
     }
 
     const lateSurgeOdds = {
-        [outcome.schools[0]]: getPropOdds(probA, 0.4), // Higher volatility for late game
+        [outcome.schools[0]]: getPropOdds(probA, 0.4),
         [outcome.schools[1]]: getPropOdds(probB, 0.4),
         [outcome.schools[2]]: getPropOdds(probC, 0.4),
     };
 
     const strongStartOdds = {
-        [outcome.schools[0]]: getPropOdds(probA, 0.1), // Lower volatility
+        [outcome.schools[0]]: getPropOdds(probA, 0.1),
         [outcome.schools[1]]: getPropOdds(probB, 0.1),
         [outcome.schools[2]]: getPropOdds(probC, 0.1),
     };
 
-    const highestPointsOdds = { // Highest individual school score
+    const highestPointsOdds = {
         [outcome.schools[0]]: getPropOdds(probA),
         [outcome.schools[1]]: getPropOdds(probB),
         [outcome.schools[2]]: getPropOdds(probC),
@@ -537,19 +467,15 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const round4WinnerOdds = getRoundWinnerOdds(3);
     const round5WinnerOdds = getRoundWinnerOdds(4);
 
-
-    // Tier 2 & 3: Extended Markets
     const extendedOdds: Match['extendedOdds'] = {
         winningMargin: winningMarginOdds,
         totalPoints: totalPointsOdds,
         perfectRound: perfectRoundOdds,
-        // PER-ROUND PERFECT MARKETS
         perfectRound1: perfectRound1Odds,
         perfectRound2: perfectRound2Odds,
         perfectRound3: perfectRound3Odds,
         perfectRound4: perfectRound4Odds,
         perfectRound5: perfectRound5Odds,
-
         shutoutRound: shutoutRoundOdds,
         leaderAfterRound1: leaderAfterRound1Odds,
         firstBonus: firstBonusOdds,
@@ -569,9 +495,11 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
 
     return {
         id: outcome.id,
-        schoolA: outcome.schools[0],
-        schoolB: outcome.schools[1],
-        schoolC: outcome.schools[2],
+        participants: [
+            { schoolId: `v-${outcome.schools[0]}`, name: outcome.schools[0], odd: oddsA },
+            { schoolId: `v-${outcome.schools[1]}`, name: outcome.schools[1], odd: oddsB },
+            { schoolId: `v-${outcome.schools[2]}`, name: outcome.schools[2], odd: oddsC },
+        ],
         startTime: `Round ${Math.floor(startTimeMs / 60000)}`,
         isLive: false,
         isVirtual: true,
@@ -581,7 +509,10 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
             schoolB: oddsB,
             schoolC: oddsC
         },
-        extendedOdds
+        extendedOdds,
+        sportType: "quiz",
+        gender: "mixed",
+        margin: winnerMargin
     };
 }
 

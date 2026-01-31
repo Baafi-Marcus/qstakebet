@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import Link from "next/link"
 import { Zap } from "lucide-react"
 import { OddsButton } from "./OddsButton"
@@ -22,73 +23,44 @@ export function MatchCard({
             ? <span className="text-purple-400 font-bold flex items-center gap-1"><Zap className="h-3 w-3" /> VIRTUAL</span>
             : <span className="text-muted-foreground">{match.startTime}</span>
 
-    const matchLabel = `${match.schoolA} vs ${match.schoolB} vs ${match.schoolC}`
+    const matchLabel = match.participants.map(p => p.name).join(' vs ')
 
     return (
-        <div className="bg-card border border-border rounded-lg shadow-sm hover:border-slate-600 transition-colors p-4">
-            <div className="flex justify-between items-center mb-3 text-xs text-muted-foreground uppercase tracking-wider">
-                <span>{match.stage}</span>
+        <div className="bg-slate-900 border border-white/5 rounded-[2rem] shadow-xl hover:border-purple-500/30 transition-all duration-300 p-6 group">
+            <div className="flex justify-between items-center mb-4 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
+                <span className="bg-white/5 px-2.5 py-1 rounded-full">{match.stage}</span>
                 {timeDisplay}
             </div>
 
-            <div className="flex items-center justify-between mb-6 text-center">
-                {/* School A */}
-                <div className="flex-1">
-                    <div className="text-sm md:text-md font-bold font-display text-foreground leading-tight line-clamp-2 h-10 flex items-center justify-center">
-                        {match.schoolA}
-                    </div>
-                </div>
-
-                <div className="px-1 text-[10px] text-muted-foreground font-mono">VS</div>
-
-                {/* School B */}
-                <div className="flex-1">
-                    <div className="text-sm md:text-md font-bold font-display text-foreground leading-tight line-clamp-2 h-10 flex items-center justify-center">
-                        {match.schoolB}
-                    </div>
-                </div>
-
-                <div className="px-1 text-[10px] text-muted-foreground font-mono">VS</div>
-
-                {/* School C */}
-                <div className="flex-1">
-                    <div className="text-sm md:text-md font-bold font-display text-foreground leading-tight line-clamp-2 h-10 flex items-center justify-center">
-                        {match.schoolC}
-                    </div>
-                </div>
+            <div className="flex items-center justify-center gap-4 mb-8 text-center flex-wrap">
+                {match.participants.map((p, idx) => (
+                    <React.Fragment key={p.schoolId}>
+                        <div className="flex-1 min-w-[80px]">
+                            <div className="text-sm font-black text-white uppercase tracking-tighter leading-tight line-clamp-2 h-8 flex items-center justify-center">
+                                {p.name}
+                            </div>
+                        </div>
+                        {idx < match.participants.length - 1 && (
+                            <div className="text-slate-700 font-bold text-[9px] uppercase tracking-widest">VS</div>
+                        )}
+                    </React.Fragment>
+                ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-                <OddsButton
-                    label={match.isVirtual ? "1" : match.schoolA}
-                    odds={match.odds.schoolA}
-                    matchId={match.id}
-                    matchLabel={matchLabel}
-                    marketName="Match Winner"
-                    showLabel={match.isVirtual}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected?.(`${match.id}-Match Winner-${match.isVirtual ? "1" : match.schoolA}`)}
-                />
-                <OddsButton
-                    label={match.isVirtual ? "2" : match.schoolB}
-                    odds={match.odds.schoolB}
-                    matchId={match.id}
-                    matchLabel={matchLabel}
-                    marketName="Match Winner"
-                    showLabel={match.isVirtual}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected?.(`${match.id}-Match Winner-${match.isVirtual ? "2" : match.schoolB}`)}
-                />
-                <OddsButton
-                    label={match.isVirtual ? "3" : match.schoolC}
-                    odds={match.odds.schoolC}
-                    matchId={match.id}
-                    matchLabel={matchLabel}
-                    marketName="Match Winner"
-                    showLabel={match.isVirtual}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected?.(`${match.id}-Match Winner-${match.isVirtual ? "3" : match.schoolC}`)}
-                />
+            <div className={`grid gap-2.5 ${match.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {match.participants.map((p, idx) => (
+                    <OddsButton
+                        key={p.schoolId}
+                        label={match.isVirtual ? (idx + 1).toString() : p.name}
+                        odds={p.odd}
+                        matchId={match.id}
+                        matchLabel={matchLabel}
+                        marketName="Match Winner"
+                        showLabel={match.isVirtual}
+                        onClick={onOddsClick}
+                        isSelected={checkSelected?.(`${match.id}-Match Winner-${match.isVirtual ? (idx + 1).toString() : p.name}`)}
+                    />
+                ))}
             </div>
 
             <div className="mt-3 text-center">

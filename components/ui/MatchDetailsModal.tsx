@@ -29,7 +29,8 @@ const MARKET_DESCRIPTIONS: Record<string, string> = {
 
 export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, checkIsCorrelated }: MatchDetailsModalProps) {
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
-    const matchLabel = `${match.schoolA} vs ${match.schoolB} vs ${match.schoolC}`
+    const participants = match.participants || []
+    const matchLabel = participants.map(p => p.name).join(' vs ')
 
     const toggleInfo = (market: string) => {
         if (expandedInfo === market) setExpandedInfo(null);
@@ -96,11 +97,14 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• LIVE UPDATES</span>
                         </div>
                         <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className="flex-shrink-0">{match.schoolA}</span>
-                            <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
-                            <span className="flex-shrink-0">{match.schoolB}</span>
-                            <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
-                            <span className="flex-shrink-0">{match.schoolC}</span>
+                            {participants.map((p, idx) => (
+                                <React.Fragment key={p.schoolId}>
+                                    <span className="flex-shrink-0">{p.name}</span>
+                                    {idx < participants.length - 1 && (
+                                        <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </h2>
                     </div>
                     <button
@@ -119,23 +123,21 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                         {/* 1X2 Market */}
                         {renderMarketSection("Match Winner", <Target className="h-3.5 w-3.5" />, (
-                            <div className="flex divide-x divide-white/5 h-20">
-                                {[
-                                    { label: "1 (Sch A)", acronym: match.schoolA.split(' ').map(w => w[0]).join(''), odds: match.odds.schoolA, id: '1' },
-                                    { label: "2 (Sch B)", acronym: match.schoolB.split(' ').map(w => w[0]).join(''), odds: match.odds.schoolB, id: '2' },
-                                    { label: "3 (Sch C)", acronym: match.schoolC.split(' ').map(w => w[0]).join(''), odds: match.odds.schoolC, id: '3' }
-                                ].map((opt) => (
-                                    <div key={opt.id} className="flex-1 h-full relative group">
-                                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[9px] font-black text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase">{opt.acronym}</div>
+                            <div className="flex divide-x divide-white/5 h-20 overflow-x-auto custom-scrollbar">
+                                {participants.map((p, idx) => (
+                                    <div key={p.schoolId} className="flex-1 min-w-[80px] h-full relative group">
+                                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[9px] font-black text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase truncate w-full text-center px-1">
+                                            {p.name.split(' ').map(w => w[0]).join('')}
+                                        </div>
                                         <OddsButton
-                                            label={opt.label.split(' ')[0]}
-                                            odds={opt.odds}
+                                            label={(idx + 1).toString()}
+                                            odds={p.odd || match.odds[p.schoolId] || null}
                                             matchId={match.id}
                                             matchLabel={matchLabel}
                                             marketName="Match Winner"
                                             showLabel={true}
                                             onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-Match Winner-${opt.label.split(' ')[0]}`)}
+                                            isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
                                         />
@@ -200,32 +202,34 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                         ), "Total Points")}
 
                         {/* Round Winners - Categorized View */}
-                        <div className="grid grid-cols-1 gap-1">
-                            {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map((round, idx) => {
-                                const odds = getRoundWinnerOdds(idx + 1);
-                                if (!odds) return null;
-                                return renderMarketSection(`${round} Winner`, <Zap className="h-3.5 w-3.5" />, (
-                                    <div className="flex divide-x divide-white/5 h-16">
-                                        {Object.entries(odds).map(([key, odd], sIdx) => (
-                                            <div key={key} className="flex-1 h-full">
-                                                <OddsButton
-                                                    label={key === match.schoolA ? "1" : key === match.schoolB ? "2" : "3"}
-                                                    odds={odd as number}
-                                                    matchId={match.id}
-                                                    marketName={`${round} Winner`}
-                                                    matchLabel={matchLabel}
-                                                    showLabel={true}
-                                                    onClick={onOddsClick}
-                                                    isSelected={checkSelected(`${match.id}-${round} Winner-${sIdx + 1}`)}
-                                                    isCorrelated={checkIsCorrelated?.(match.id, `${round} Winner`)}
-                                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ), "Round Winner", round)
-                            })}
-                        </div>
+                        {match.sportType === 'quiz' && (
+                            <div className="grid grid-cols-1 gap-1">
+                                {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map((round, idx) => {
+                                    const odds = getRoundWinnerOdds(idx + 1);
+                                    if (!odds) return null;
+                                    return renderMarketSection(`${round} Winner`, <Zap className="h-3.5 w-3.5" />, (
+                                        <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
+                                            {participants.map((p, sIdx) => (
+                                                <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
+                                                    <OddsButton
+                                                        label={(sIdx + 1).toString()}
+                                                        odds={odds[p.name] as number}
+                                                        matchId={match.id}
+                                                        marketName={`${round} Winner`}
+                                                        matchLabel={matchLabel}
+                                                        showLabel={true}
+                                                        onClick={onOddsClick}
+                                                        isSelected={checkSelected(`${match.id}-${round} Winner-${sIdx + 1}`)}
+                                                        isCorrelated={checkIsCorrelated?.(match.id, `${round} Winner`)}
+                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ), "Round Winner", round)
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Props & Exotic Markets */}
@@ -280,13 +284,13 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                 </div>
                             ), "Comeback Win")}
 
-                            {renderMarketSection("Comeback Team", <Trophy className="h-3.5 w-3.5" />, (
-                                <div className="flex divide-x divide-white/5 h-16">
-                                    {[match.schoolA, match.schoolB, match.schoolC].map((school, sIdx) => (
-                                        <div key={school} className="flex-1 h-full">
+                            {match.sportType === 'quiz' && renderMarketSection("Comeback Team", <Trophy className="h-3.5 w-3.5" />, (
+                                <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
+                                    {participants.map((p, sIdx) => (
+                                        <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
                                             <OddsButton
                                                 label={(sIdx + 1).toString()}
-                                                odds={match.extendedOdds?.comebackTeam?.[school] ?? 0}
+                                                odds={match.extendedOdds?.comebackTeam?.[p.name] ?? 0}
                                                 matchId={match.id}
                                                 marketName="Comeback Team"
                                                 matchLabel={matchLabel}
@@ -337,15 +341,15 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                         {/* School Performance Specials */}
                         <div className="space-y-4">
-                            {['firstBonus', 'lateSurge'].map(propKey => {
+                            {match.sportType === 'quiz' && ['firstBonus', 'lateSurge'].map(propKey => {
                                 const propName = propKey === 'firstBonus' ? 'First Bonus' : 'Late Surge';
                                 return renderMarketSection(propName, <Zap className="h-3.5 w-3.5" />, (
-                                    <div className="flex divide-x divide-white/5 h-16">
-                                        {[match.schoolA, match.schoolB, match.schoolC].map((key, sIdx) => (
-                                            <div key={key} className="flex-1 h-full">
+                                    <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
+                                        {participants.map((p, sIdx) => (
+                                            <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
                                                 <OddsButton
                                                     label={(sIdx + 1).toString()}
-                                                    odds={match.extendedOdds?.[propKey]?.[key] ?? 0}
+                                                    odds={match.extendedOdds?.[propKey]?.[p.name] ?? 0}
                                                     matchId={match.id}
                                                     marketName={propName}
                                                     matchLabel={matchLabel}

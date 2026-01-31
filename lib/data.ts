@@ -1,16 +1,29 @@
+"use server"
+
 import { db } from "@/lib/db"
-import { matches, schools } from "@/lib/db/schema"
+import { matches, schools, tournaments } from "@/lib/db/schema"
 import { Match } from "@/lib/types"
 import { eq, like, desc } from "drizzle-orm"
 import { getVirtualMatchById } from "./virtuals"
 
 // Helper to cast DB result to Match type (handles JSON fields validation if needed)
-function mapDbMatchToMatch(dbMatch: typeof matches.$inferSelect): Match {
+// Helper to cast DB result to Match type
+function mapDbMatchToMatch(dbMatch: unknown): Match {
+    const m = dbMatch as Record<string, unknown>;
     return {
-        ...dbMatch,
-        odds: dbMatch.odds as Match['odds'],
-        extendedOdds: dbMatch.extendedOdds as Match['extendedOdds'],
-        isVirtual: dbMatch.isVirtual
+        ...m,
+        id: m.id as string,
+        tournamentId: m.tournamentId as string | null,
+        startTime: m.startTime as string,
+        isLive: m.isLive as boolean,
+        isVirtual: m.isVirtual as boolean,
+        stage: m.stage as string,
+        sportType: m.sportType as string,
+        gender: m.gender as string,
+        participants: m.participants as Match['participants'],
+        odds: m.odds as Match['odds'],
+        extendedOdds: m.extendedOdds as Match['extendedOdds'],
+        margin: typeof m.margin === 'number' ? m.margin : 0.1,
     }
 }
 
@@ -25,19 +38,48 @@ export async function getVirtualMatches(): Promise<Match[]> {
 }
 
 export async function getFeaturedMatches(): Promise<Match[]> {
-    // For now, return Live matches or the top 4 recent ones, excluding virtuals
-    const results = await db.select().from(matches)
+    const results = await db.select({
+        match: matches,
+        tournamentName: tournaments.name
+    })
+        .from(matches)
+        .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
         .where(eq(matches.isVirtual, false))
         .orderBy(desc(matches.isLive), desc(matches.startTime))
-        .limit(4)
-    return results.map(mapDbMatchToMatch)
+        .limit(10)
+
+    return results.map(r => ({
+        ...mapDbMatchToMatch(r.match),
+        tournamentName: r.tournamentName || null
+    }))
 }
 
 export async function getMatchById(id: string): Promise<Match | undefined> {
     if (id.startsWith("vmt-")) {
         const schoolsData = await getAllSchools();
         const schools = schoolsData.map(s => ({ name: s.name, region: s.region }));
-        return getVirtualMatchById(id, schools);
+        const vMatch = getVirtualMatchById(id, schools);
+        if (!vMatch) return undefined;
+
+        // Map virtual match to the new generalized Match interface
+        return {
+            id: vMatch.id,
+            tournamentId: null,
+            participants: (vMatch.participants as Record<string, unknown>[]) || vMatch.odds ? Object.entries(vMatch.odds as Record<string, number>).map(([name, odd]) => ({
+                schoolId: name,
+                name: name,
+                odd: odd as number
+            })) : [],
+            startTime: "Virtual",
+            isLive: true,
+            isVirtual: true,
+            stage: vMatch.stage,
+            odds: vMatch.odds as Match['odds'],
+            extendedOdds: vMatch.extendedOdds,
+            sportType: "quiz",
+            gender: "male",
+            margin: 0.1
+        };
     }
 
     const results = await db.select().from(matches).where(eq(matches.id, id))
@@ -46,14 +88,7 @@ export async function getMatchById(id: string): Promise<Match | undefined> {
 }
 
 export async function getMatchesByStage(stageSlug: string): Promise<Match[]> {
-    const term = stageSlug === 'regional' ? 'Regional'
-        : stageSlug === 'semi-final' ? 'Semi-Final'
-            : stageSlug === 'national' ? 'National'
-                : ''
-
-    if (!term) return []
-
-    const results = await db.select().from(matches).where(like(matches.stage, `%${term}%`))
+    const results = await db.select().from(matches).where(like(matches.stage, `%${stageSlug}%`))
     return results.map(mapDbMatchToMatch)
 }
 

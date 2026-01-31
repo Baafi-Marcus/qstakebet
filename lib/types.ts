@@ -1,20 +1,62 @@
 export interface Match {
     id: string
-    schoolA: string
-    schoolB: string
-    schoolC: string
+    tournamentId?: string | null
+    tournamentName?: string | null
+    participants: {
+        schoolId: string
+        name: string
+        odd: number
+        result?: number | string | null
+    }[]
     startTime: string
+    scheduledAt?: Date | string | null
+    status?: string
+    result?: {
+        winner?: string
+        scores?: { [schoolId: string]: number }
+    } | null
     isLive: boolean
     isVirtual: boolean
-    stage: string // e.g. "Quarter Final"
+    stage: string
     odds: {
-        schoolA: number | null
-        schoolB: number | null
-        schoolC: number | null
+        [key: string]: number | null
     }
     extendedOdds?: {
         [marketName: string]: {
             [optionLabel: string]: number | null
         }
     }
+    sportType: string
+    gender: string
+    margin: number
+}
+
+export interface Tournament {
+    id: string
+    name: string
+    region: string
+    sportType: string
+    gender: string
+    year: string
+    status: string
+    createdAt?: Date | null
+}
+
+export interface School {
+    id: string
+    name: string
+    region: string
+    district?: string | null
+    category?: string | null
+    location?: string | null
+    createdAt?: Date | null
+}
+
+export interface SchoolStrength {
+    id: string
+    schoolId: string
+    sportType: string
+    gender: string
+    rating: number
+    updatedAt?: Date | null
 }

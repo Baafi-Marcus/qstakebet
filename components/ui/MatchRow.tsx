@@ -43,7 +43,8 @@ export function MatchRow({
     currentScores,
     currentRoundIdx
 }: MatchRowProps) {
-    const matchLabel = `${match.schoolA} vs ${match.schoolB} vs ${match.schoolC}`
+    const participants = match.participants || []
+    const matchLabel = participants.map(p => p.name).join(' vs ')
 
     // Helper to format market name to Title Case
     const formatMarketName = (market: string) => {
@@ -77,48 +78,22 @@ export function MatchRow({
 
     const renderSchoolOdds = (marketKey: string, marketLabel: string) => (
         <>
-            <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                <OddsButton
-                    label="1"
-                    odds={match.extendedOdds?.[marketKey]?.[match.schoolA] ?? null}
-                    matchId={match.id}
-                    marketName={marketLabel}
-                    matchLabel={matchLabel}
-                    showLabel={true}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected(`${match.id}-${marketLabel}-1`)}
-                    isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
-                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                />
-            </div>
-            <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                <OddsButton
-                    label="2"
-                    odds={match.extendedOdds?.[marketKey]?.[match.schoolB] ?? null}
-                    matchId={match.id}
-                    marketName={marketLabel}
-                    matchLabel={matchLabel}
-                    showLabel={true}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected(`${match.id}-${marketLabel}-2`)}
-                    isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
-                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                />
-            </div>
-            <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                <OddsButton
-                    label="3"
-                    odds={match.extendedOdds?.[marketKey]?.[match.schoolC] ?? null}
-                    matchId={match.id}
-                    marketName={marketLabel}
-                    matchLabel={matchLabel}
-                    showLabel={true}
-                    onClick={onOddsClick}
-                    isSelected={checkSelected(`${match.id}-${marketLabel}-3`)}
-                    isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
-                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                />
-            </div>
+            {participants.map((p, idx) => (
+                <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
+                    <OddsButton
+                        label={(idx + 1).toString()}
+                        odds={match.extendedOdds?.[marketKey]?.[p.name] ?? null}
+                        matchId={match.id}
+                        marketName={marketLabel}
+                        matchLabel={matchLabel}
+                        showLabel={true}
+                        onClick={onOddsClick}
+                        isSelected={checkSelected(`${match.id}-${marketLabel}-${idx + 1}`)}
+                        isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
+                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                    />
+                </div>
+            ))}
         </>
     );
 
@@ -134,7 +109,12 @@ export function MatchRow({
                         </div>
                     ) : (
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                            {match.stage}
+                            {match.isVirtual
+                                ? `VIRTUAL • ${match.stage}`
+                                : match.tournamentName
+                                    ? `${match.tournamentName} • ${match.stage}`
+                                    : match.stage
+                            }
                         </span>
                     )}
                     {match.isVirtual && !isSimulating && (
@@ -142,24 +122,14 @@ export function MatchRow({
                     )}
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center justify-between group-hover:translate-x-1 transition-transform">
-                        <span className="text-xs font-bold text-white truncate max-w-[150px]">{match.schoolA}</span>
-                        {isSimulating && currentScores && (
-                            <span className="text-sm font-black font-mono text-red-500 ml-2">{currentScores[0]}</span>
-                        )}
-                    </div>
-                    <div className="flex items-center justify-between group-hover:translate-x-1 transition-transform delay-75">
-                        <span className="text-xs font-bold text-white truncate max-w-[150px]">{match.schoolB}</span>
-                        {isSimulating && currentScores && (
-                            <span className="text-sm font-black font-mono text-red-500 ml-2">{currentScores[1]}</span>
-                        )}
-                    </div>
-                    <div className="flex items-center justify-between group-hover:translate-x-1 transition-transform delay-150">
-                        <span className="text-xs font-bold text-white truncate max-w-[150px]">{match.schoolC}</span>
-                        {isSimulating && currentScores && (
-                            <span className="text-sm font-black font-mono text-red-500 ml-2">{currentScores[2]}</span>
-                        )}
-                    </div>
+                    {participants.map((p, idx) => (
+                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-1 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
+                            <span className="text-xs font-bold text-white truncate max-w-[150px]">{p.name}</span>
+                            {isSimulating && currentScores && (
+                                <span className="text-sm font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -167,48 +137,22 @@ export function MatchRow({
             <div className="flex items-stretch divide-x divide-white/5 bg-slate-950/20">
                 {activeMarket === 'winner' && (
                     <>
-                        <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                            <OddsButton
-                                label="1"
-                                odds={match.odds.schoolA}
-                                matchId={match.id}
-                                matchLabel={matchLabel}
-                                marketName="Match Winner"
-                                showLabel={true}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Match Winner-1`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
-                        <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                            <OddsButton
-                                label="2"
-                                odds={match.odds.schoolB}
-                                matchId={match.id}
-                                matchLabel={matchLabel}
-                                marketName="Match Winner"
-                                showLabel={true}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Match Winner-2`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
-                        <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
-                            <OddsButton
-                                label="3"
-                                odds={match.odds.schoolC}
-                                matchId={match.id}
-                                matchLabel={matchLabel}
-                                marketName="Match Winner"
-                                showLabel={true}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Match Winner-3`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
+                        {participants.map((p, idx) => (
+                            <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
+                                <OddsButton
+                                    label={(idx + 1).toString()}
+                                    odds={p.odd || match.odds[p.schoolId] || null}
+                                    matchId={match.id}
+                                    matchLabel={matchLabel}
+                                    marketName="Match Winner"
+                                    showLabel={true}
+                                    onClick={onOddsClick}
+                                    isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
+                                    isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                />
+                            </div>
+                        ))}
                     </>
                 )}
 

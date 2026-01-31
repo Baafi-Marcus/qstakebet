@@ -1,3 +1,4 @@
+import React from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OddsButton } from "@/components/ui/OddsButton";
@@ -21,7 +22,7 @@ export default async function MatchDetailPage({ params }: Props) {
         notFound()
     }
 
-    const matchLabel = `${match.schoolA} vs ${match.schoolB} vs ${match.schoolC}`
+    const matchLabel = match.participants.map(p => p.name).join(' vs ')
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -49,18 +50,17 @@ export default async function MatchDetailPage({ params }: Props) {
                                 <span>{match.stage}</span>
                             </div>
 
-                            <div className="flex items-center justify-between max-w-2xl mx-auto mb-6">
-                                <div className="flex-1 text-center">
-                                    <h2 className="text-xl md:text-3xl font-bold font-display text-foreground mb-1">{match.schoolA}</h2>
-                                </div>
-                                <div className="px-4 text-muted-foreground font-mono text-xs">VS</div>
-                                <div className="flex-1 text-center">
-                                    <h2 className="text-xl md:text-3xl font-bold font-display text-foreground mb-1">{match.schoolB}</h2>
-                                </div>
-                                <div className="px-4 text-muted-foreground font-mono text-xs">VS</div>
-                                <div className="flex-1 text-center">
-                                    <h2 className="text-xl md:text-3xl font-bold font-display text-foreground mb-1">{match.schoolC}</h2>
-                                </div>
+                            <div className="flex items-center justify-center flex-wrap gap-4 max-w-3xl mx-auto mb-6">
+                                {match.participants.map((p, idx) => (
+                                    <React.Fragment key={p.schoolId}>
+                                        <div className="flex-1 min-w-[120px] text-center">
+                                            <h2 className="text-xl md:text-2xl font-bold font-display text-white mb-1 uppercase tracking-tight">{p.name}</h2>
+                                        </div>
+                                        {idx < match.participants.length - 1 && (
+                                            <div className="text-slate-500 font-mono text-[10px] uppercase font-bold px-2">VS</div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
                             </div>
 
                             <div className="inline-flex items-center bg-black/30 rounded-full px-4 py-1.5 text-xs text-muted-foreground backdrop-blur-sm border border-white/5">
@@ -82,36 +82,23 @@ export default async function MatchDetailPage({ params }: Props) {
                         {/* Markets Content */}
                         <div className="p-4 md:p-6 space-y-6">
                             {/* Main Market */}
-                            <div className="bg-secondary/10 rounded-lg p-4 border border-border">
-                                <h3 className="text-sm font-bold text-foreground mb-4 flex items-center">
-                                    <div className="w-1 h-4 bg-accent mr-2 rounded-full"></div>
+                            <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-md">
+                                <h3 className="text-sm font-bold text-white mb-5 flex items-center gap-2 uppercase tracking-wide">
+                                    <div className="w-1.5 h-4 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.5)]"></div>
                                     Match Winner
                                 </h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <OddsButton
-                                        label={match.schoolA}
-                                        odds={match.odds.schoolA}
-                                        matchId={match.id}
-                                        matchLabel={matchLabel}
-                                        marketName="Match Winner"
-                                        showLabel={false}
-                                    />
-                                    <OddsButton
-                                        label={match.schoolB}
-                                        odds={match.odds.schoolB}
-                                        matchId={match.id}
-                                        matchLabel={matchLabel}
-                                        marketName="Match Winner"
-                                        showLabel={false}
-                                    />
-                                    <OddsButton
-                                        label={match.schoolC}
-                                        odds={match.odds.schoolC}
-                                        matchId={match.id}
-                                        matchLabel={matchLabel}
-                                        marketName="Match Winner"
-                                        showLabel={false}
-                                    />
+                                <div className={`grid gap-3 ${match.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                    {match.participants.map((p) => (
+                                        <OddsButton
+                                            key={p.schoolId}
+                                            label={p.name}
+                                            odds={p.odd}
+                                            matchId={match.id}
+                                            matchLabel={matchLabel}
+                                            marketName="Match Winner"
+                                            showLabel={true}
+                                        />
+                                    ))}
                                 </div>
                             </div>
 
