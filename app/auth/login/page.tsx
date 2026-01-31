@@ -35,8 +35,9 @@ export default function LoginPage() {
 
             // Redirect to home page
             router.push("/")
+            router.push("/")
             router.refresh()
-        } catch (err) {
+        } catch {
             setError("An error occurred. Please try again.")
             setLoading(false)
         }
@@ -131,7 +132,7 @@ export default function LoginPage() {
                         </div>
                         <div className="relative flex justify-center text-sm">
                             <span className="px-4 bg-slate-900/50 text-slate-400">
-                                Don't have an account?
+                                Don&apos;t have an account?
                             </span>
                         </div>
                     </div>

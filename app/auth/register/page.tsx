@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { UserPlus, Mail, Lock, User, Phone, AlertCircle, CheckCircle, Gift } from "lucide-react"
+import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift } from "lucide-react"
 import { registerUser } from "@/lib/auth-actions"
 
 export default function RegisterPage() {
@@ -53,8 +53,10 @@ export default function RegisterPage() {
 
             // Redirect to home page
             router.push("/")
+            // Redirect to home page
+            router.push("/")
             router.refresh()
-        } catch (err) {
+        } catch {
             setError("An error occurred. Please try again.")
             setLoading(false)
         }
