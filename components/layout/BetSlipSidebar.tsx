@@ -126,9 +126,10 @@ export function BetSlipSidebar() {
                                             // Real-time balance refresh
                                             window.location.reload()
                                         } else {
-                                            setError((result as any).error || "Failed to place bet")
+                                            const res = result as { success: false; error: string }
+                                            setError(res.error || "Failed to place bet")
                                         }
-                                    } catch (err) {
+                                    } catch {
                                         setError("A network error occurred")
                                     } finally {
                                         setIsProcessing(false)

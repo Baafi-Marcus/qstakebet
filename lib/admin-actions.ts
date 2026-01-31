@@ -5,7 +5,7 @@ import { db } from "./db"
 import { schools, tournaments, schoolStrengths, matches } from "./db/schema"
 import { eq, and, sql } from "drizzle-orm"
 
-import { School, Tournament } from "./types"
+// import { School, Tournament } from "./types" 
 
 /**
  * Smartly adds or updates schools in a bulk operation.

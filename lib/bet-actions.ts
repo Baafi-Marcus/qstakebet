@@ -4,7 +4,6 @@ import { db } from "@/lib/db"
 import { bets, transactions, wallets } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
-import { revalidatePath } from "next/cache"
 
 export type SelectionInput = {
     matchId: string
@@ -87,8 +86,9 @@ export async function placeBet(stake: number, selections: SelectionInput[]) {
 
             return { success: true, betId }
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Bet placement error:", error)
-        return { success: false, error: error.message || "Failed to place bet. Please try again." }
+        const errorMessage = error instanceof Error ? error.message : "Failed to place bet. Please try again."
+        return { success: false, error: errorMessage }
     }
 }
