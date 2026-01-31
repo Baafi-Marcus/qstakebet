@@ -7,7 +7,7 @@ const MOOLRE_PUBLIC_KEY = process.env.MOOLRE_PUBLIC_KEY;
 /**
  * Utility to make requests to Moolre API
  */
-export async function moolreRequest(endpoint: string, method: string, body?: any) {
+export async function moolreRequest(endpoint: string, method: string, body?: unknown) {
     if (!MOOLRE_PRIVATE_KEY || !MOOLRE_PUBLIC_KEY) {
         throw new Error("Moolre API keys are not configured in environment variables.");
     }

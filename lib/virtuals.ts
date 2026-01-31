@@ -313,8 +313,6 @@ function calculateOddsFromProbability(
 }
 
 export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: number): Match {
-    const totalStrength = outcome.strengths.reduce((a, b) => a + b, 0);
-
     // Sharpen probabilities
     const sharpenedStrengths = outcome.strengths.map(s => Math.pow(s, 1.8));
     const totalSharpened = sharpenedStrengths.reduce((a, b) => a + b, 0);

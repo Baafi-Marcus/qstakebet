@@ -5,7 +5,6 @@ import { transactions, wallets } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { initiateMomoDeposit } from "./payment/moolre"
 import { auth } from "@/lib/auth"
-import { revalidatePath } from "next/cache"
 
 export async function createDeposit(data: {
     amount: number
@@ -130,8 +129,9 @@ export async function initiateWithdrawal(data: {
 
             return { success: true, reference }
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Withdrawal error:", error)
-        return { success: false, error: error.message || "Failed to process withdrawal" }
+        const errorMessage = error instanceof Error ? error.message : "Failed to process withdrawal"
+        return { success: false, error: errorMessage }
     }
 }
