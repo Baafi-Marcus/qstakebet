@@ -9,6 +9,7 @@ export type Selection = {
     odds: number
     marketName: string
     matchLabel: string
+    stake?: number // Individual stake for Single mode
 }
 
 export interface BetSlipContextType {
@@ -19,6 +20,7 @@ export interface BetSlipContextType {
     addSelection: (selection: Selection) => void
     removeSelection: (selectionId: string) => void
     setStake: (amount: number) => void
+    updateSelectionStake: (selectionId: string, amount: number) => void // New
     clearSlip: () => void
     useBonus: boolean
     setUseBonus: (use: boolean) => void
@@ -56,6 +58,11 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     }
 
     const setStake = (amount: number) => setStakeState(amount)
+    const updateSelectionStake = (selectionId: string, amount: number) => {
+        setSelections(prev => prev.map(s =>
+            s.selectionId === selectionId ? { ...s, stake: amount } : s
+        ))
+    }
     const clearSlip = () => setSelections([])
 
     const value = {
@@ -66,6 +73,7 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
         addSelection,
         removeSelection,
         setStake,
+        updateSelectionStake,
         clearSlip,
         useBonus,
         setUseBonus,
