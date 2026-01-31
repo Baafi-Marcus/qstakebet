@@ -6,12 +6,12 @@ import { eq, sql } from "drizzle-orm"
 export async function POST(req: Request) {
     try {
         const payload = await req.json()
-        const signature = req.headers.get("x-moolre-signature")
+        // const signature = req.headers.get("x-moolre-signature")
 
         // TODO: Implement signature verification once we have the MOOLRE_WEBHOOK_SECRET
         console.log("Moolre Webhook received:", payload)
 
-        const { status, reference, transaction_id, amount } = payload
+        const { status, reference } = payload
 
         if (status === "success" || status === "completed") {
             // 1. Find the pending transaction

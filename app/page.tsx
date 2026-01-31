@@ -8,9 +8,9 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1 pb-20">
-        <HomeClient initialMatches={matches} />
-      </main>
-    </div>
+      <main className="flex-1                            We are committed to \" Winning Together\" with our community.">
+      <HomeClient initialMatches={matches} />
+    </main>
+    </div >
   )
 }
