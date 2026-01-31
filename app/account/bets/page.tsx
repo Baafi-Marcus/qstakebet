@@ -1,11 +1,11 @@
 "use client"
 
-import { useSession } from "next-auth/react"
-import { Trophy, History, ArrowRight, AlertCircle } from "lucide-react"
+// import { useSession } from "next-auth/react"
+import { Trophy, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
 export default function BetsPage() {
-    const { data: session } = useSession()
+    // const { data: session } = useSession()
 
     return (
         <div className="space-y-12">
@@ -29,7 +29,7 @@ export default function BetsPage() {
                     </div>
                     <h3 className="text-2xl font-black text-white mb-2">No Bets Found</h3>
                     <p className="text-slate-500 font-medium max-w-sm mx-auto mb-8">
-                        It looks like you haven't placed any bets yet. Browse our top matches and start betting!
+                        It looks like you have not placed any bets yet. Browse our top matches and start betting!
                     </p>
                     <Link href="/" className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-xl shadow-purple-500/20 group">
                         EXPLORE MATCHES

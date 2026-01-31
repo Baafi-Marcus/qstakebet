@@ -54,7 +54,7 @@ export default function DepositPage() {
             } else {
                 setError(result.error || "Failed to initiate deposit")
             }
-        } catch (err) {
+        } catch {
             setError("A network error occurred")
         } finally {
             setLoading(false)

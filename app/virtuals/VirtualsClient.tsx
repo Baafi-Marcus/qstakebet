@@ -621,8 +621,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
             return;
         }
 
-        // 1. Refund Stake
-        setUserBalance(prev => prev + slip.totalStake);
+        // 1. Refund Stake - (Handled by server/reload)
 
         // 2. Mark as Cashed Out in Pending (Do NOT move to history yet)
         setPendingSlips(prev => prev.map(s =>

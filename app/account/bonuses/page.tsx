@@ -1,10 +1,10 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+// import { useSession } from "next-auth/react"
 import { Gift, Zap, Users, Trophy, Star, ArrowRight } from "lucide-react"
 
 export default function BonusesPage() {
-    const { data: session } = useSession()
+    // const { data: session } = useSession()
 
     const activeBonuses = [
         {
