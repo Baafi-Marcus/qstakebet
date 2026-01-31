@@ -99,6 +99,7 @@ export const bets = pgTable("bets", {
     bonusUsed: text("bonus_id"), // If bonus was used
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const transactions = pgTable("transactions", {
