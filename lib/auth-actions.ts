@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, wallets } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { users, wallets, bonuses } from "@/lib/db/schema"
+import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
 
@@ -10,15 +10,17 @@ export async function registerUser(data: {
     email: string
     password: string
     name: string
-    phone?: string
+    phone: string
     referredBy?: string
 }) {
     try {
-        // Check if user already exists
-        const existingUser = await db.select().from(users).where(eq(users.email, data.email)).limit(1)
+        // Check if user already exists (email or phone)
+        const existingUser = await db.select().from(users)
+            .where(or(eq(users.email, data.email), eq(users.phone, data.phone)))
+            .limit(1)
 
         if (existingUser.length > 0) {
-            return { success: false, error: "Email already registered" }
+            return { success: false, error: "Email or Phone already registered" }
         }
 
         // Hash password
@@ -34,7 +36,7 @@ export async function registerUser(data: {
             email: data.email,
             passwordHash,
             name: data.name,
-            phone: data.phone || null,
+            phone: data.phone,
             referralCode,
             referredBy: data.referredBy || null,
             role: "user",
@@ -46,18 +48,29 @@ export async function registerUser(data: {
         }
 
         // Create wallet for user
-        const walletId = `wlt-${Math.random().toString(36).substr(2, 9)}`
+        const walletId = `wlt-${Math.random().toString(36).substring(2, 11)}`
         await db.insert(wallets).values({
             id: walletId,
             userId: userId,
             balance: 0,
-            bonusBalance: 0,
+            bonusBalance: 5, // Start with Welcome Bonus
             currency: "GHS"
+        })
+
+        // Create welcome bonus record
+        const bonusId = `bns-${Math.random().toString(36).substring(2, 11)}`
+        await db.insert(bonuses).values({
+            id: bonusId,
+            userId: userId,
+            type: "welcome",
+            amount: 5.00,
+            status: "active",
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
         })
 
         // Auto sign in
         await signIn("credentials", {
-            email: data.email,
+            phone: data.phone,
             password: data.password,
             redirect: false
         })

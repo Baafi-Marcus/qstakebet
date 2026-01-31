@@ -59,7 +59,7 @@ export const users = pgTable("users", {
     emailVerified: timestamp("email_verified"),
     passwordHash: text("password_hash").notNull(),
     name: text("name"),
-    phone: text("phone"),
+    phone: text("phone").notNull().unique(),
     role: text("role").default("user").notNull(), // "user", "admin"
     status: text("status").default("active").notNull(), // "active", "suspended", "banned"
     referralCode: text("referral_code").unique(), // User's unique referral code
@@ -97,6 +97,8 @@ export const bets = pgTable("bets", {
     potentialPayout: real("potential_payout").notNull(),
     status: text("status").default("pending").notNull(), // "pending", "won", "lost", "void"
     bonusUsed: text("bonus_id"), // If bonus was used
+    isBonusBet: boolean("is_bonus_bet").default(false).notNull(),
+    bonusAmountUsed: real("bonus_amount_used").default(0),
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),

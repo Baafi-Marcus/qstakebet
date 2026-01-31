@@ -14,7 +14,7 @@ export type SelectionInput = {
     matchLabel: string
 }
 
-export async function placeBet(stake: number, selections: SelectionInput[]) {
+export async function placeBet(stake: number, selections: SelectionInput[], isBonus: boolean = false) {
     const session = await auth()
     if (!session?.user?.id) {
         return { success: false, error: "Please log in to place a bet" }
@@ -40,8 +40,16 @@ export async function placeBet(stake: number, selections: SelectionInput[]) {
             }
 
             const wallet = userWallets[0]
-            if (wallet.balance < stake) {
-                throw new Error("Insufficient balance")
+
+            // Check balance based on type
+            if (isBonus) {
+                if (wallet.bonusBalance < stake) {
+                    throw new Error("Insufficient bonus balance")
+                }
+            } else {
+                if (wallet.balance < stake) {
+                    throw new Error("Insufficient balance")
+                }
             }
 
             // 2. Calculate total odds
@@ -56,31 +64,42 @@ export async function placeBet(stake: number, selections: SelectionInput[]) {
                 stake,
                 totalOdds,
                 potentialPayout,
-                status: "open",
+                status: "pending",
                 selections: selections, // JSONB column
+                isBonusBet: isBonus,
+                bonusAmountUsed: isBonus ? stake : 0,
                 createdAt: new Date(),
                 updatedAt: new Date()
             })
 
-            // 4. Deduct stake from wallet
-            await tx.update(wallets)
-                .set({
-                    balance: sql`${wallets.balance} - ${stake}`,
-                    updatedAt: new Date()
-                })
-                .where(eq(wallets.id, wallet.id))
+            // 4. Deduct stake from correct balance
+            if (isBonus) {
+                await tx.update(wallets)
+                    .set({
+                        bonusBalance: sql`${wallets.bonusBalance} - ${stake}`,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(wallets.id, wallet.id))
+            } else {
+                await tx.update(wallets)
+                    .set({
+                        balance: sql`${wallets.balance} - ${stake}`,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(wallets.id, wallet.id))
+            }
 
             // 5. Record the transaction
             await tx.insert(transactions).values({
-                id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                id: `txn-${Math.random().toString(36).substring(2, 11)}`,
                 userId,
                 walletId: wallet.id,
-                type: "bet_stake",
+                type: isBonus ? "bonus_stake" : "bet_stake",
                 amount: stake,
-                balanceBefore: wallet.balance,
-                balanceAfter: wallet.balance - stake,
+                balanceBefore: isBonus ? wallet.bonusBalance : wallet.balance,
+                balanceAfter: isBonus ? wallet.bonusBalance - stake : wallet.balance - stake,
                 paymentStatus: "success",
-                description: `Staked on bet ${betId}`,
+                description: `Staked on bet ${betId}${isBonus ? " (Bonus)" : ""}`,
                 createdAt: new Date()
             })
 

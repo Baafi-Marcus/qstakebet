@@ -11,16 +11,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     providers: [
         Credentials({
             credentials: {
-                email: { label: "Email", type: "email" },
+                phone: { label: "Phone Number", type: "tel" },
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) {
+                if (!credentials?.phone || !credentials?.password) {
                     return null
                 }
 
-                // Find user by email
-                const user = await db.select().from(users).where(eq(users.email, credentials.email as string)).limit(1)
+                // Find user by phone
+                const user = await db.select().from(users).where(eq(users.phone, credentials.phone as string)).limit(1)
 
                 if (!user || user.length === 0) {
                     return null
@@ -43,6 +43,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     id: user[0].id,
                     email: user[0].email,
                     name: user[0].name,
+                    phone: user[0].phone,
                     role: user[0].role
                 }
             }

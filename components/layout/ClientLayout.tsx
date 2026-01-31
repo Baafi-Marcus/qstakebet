@@ -11,6 +11,7 @@ import { SessionProvider } from "next-auth/react"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
+    const isAuthPage = pathname?.startsWith("/auth")
     const isAdmin = pathname?.startsWith("/admin")
 
     if (isAdmin) {
@@ -33,8 +34,12 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         {children}
                     </main>
                 </div>
-                <BetSlipSidebar />
-                <FloatingBetSlipButton />
+                {!isAuthPage && (
+                    <>
+                        <BetSlipSidebar />
+                        <FloatingBetSlipButton />
+                    </>
+                )}
                 <BottomNav />
             </BetSlipProvider>
         </SessionProvider>

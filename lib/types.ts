@@ -61,3 +61,25 @@ export interface SchoolStrength {
     rating: number
     updatedAt?: Date | null
 }
+
+export interface Bet {
+    id: string
+    userId: string
+    selections: {
+        matchId: string
+        selectionId: string
+        label: string
+        odds: number
+        marketName: string
+        matchLabel: string
+    }[]
+    stake: number
+    totalOdds: number
+    potentialPayout: number
+    status: string
+    bonusUsed?: string | null
+    isBonusBet: boolean
+    bonusAmountUsed?: number | null
+    settledAt?: Date | null
+    createdAt?: Date | null
+}

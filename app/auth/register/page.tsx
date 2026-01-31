@@ -29,6 +29,11 @@ export default function RegisterPage() {
             return
         }
 
+        if (!formData.phone) {
+            setError("Phone number is required")
+            return
+        }
+
         if (formData.password.length < 6) {
             setError("Password must be at least 6 characters")
             return
@@ -41,7 +46,7 @@ export default function RegisterPage() {
                 email: formData.email,
                 password: formData.password,
                 name: formData.name,
-                phone: formData.phone || undefined,
+                phone: formData.phone,
                 referredBy: formData.referredBy || undefined
             })
 
@@ -143,15 +148,16 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
-                        {/* Phone Field (Optional) */}
+                        {/* Phone Field (Required) */}
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Phone Number <span className="text-slate-500">(Optional)</span>
+                                Phone Number
                             </label>
                             <div className="relative">
                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                                 <input
                                     type="tel"
+                                    required
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"

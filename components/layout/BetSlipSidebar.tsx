@@ -9,6 +9,7 @@ import { placeBet } from "@/lib/bet-actions"
 export function BetSlipSidebar() {
     const [isProcessing, setIsProcessing] = React.useState(false)
     const [error, setError] = React.useState("")
+    const [wallet, setWallet] = React.useState<{ balance: number, bonusBalance: number } | null>(null)
     const context = React.useContext(BetSlipContext)
     const selections = context?.selections || []
     const removeSelection = context?.removeSelection || (() => { })
@@ -17,12 +18,19 @@ export function BetSlipSidebar() {
     const setStake = context?.setStake || (() => { })
     const isOpen = context?.isOpen || false
     const toggleSlip = context?.toggleSlip || (() => { })
+    const useBonus = context?.useBonus || false
+    const setUseBonus = context?.setUseBonus || (() => { })
 
-    // Don't render anything if not open
-    if (!isOpen) return null
+    React.useEffect(() => {
+        if (isOpen) {
+            import("@/lib/wallet-actions").then(m => {
+                m.getUserWalletBalance().then(w => setWallet(w))
+            })
+        }
+    }, [isOpen])
 
     const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
-    const potentialWin = stake * totalOdds
+    const potentialWin = useBonus ? (stake * totalOdds) - stake : stake * totalOdds
 
     return (
         <>
@@ -92,6 +100,38 @@ export function BetSlipSidebar() {
                         </div>
 
                         <div className="p-4 border-t border-border bg-card space-y-4 pb-safe">
+                            {/* Wallet Info & Bonus Toggle */}
+                            {wallet && wallet.bonusBalance > 0 && (
+                                <div className={cn(
+                                    "flex items-center justify-between p-3 rounded-xl border transition-all",
+                                    useBonus
+                                        ? "bg-blue-600/20 border-blue-500/40"
+                                        : "bg-slate-900/40 border-white/5"
+                                )}>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Bonus Balance</span>
+                                        <span className="text-sm font-black text-white">GHS {wallet.bonusBalance.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Use Bonus</span>
+                                        <button
+                                            onClick={() => setUseBonus(!useBonus)}
+                                            className={cn(
+                                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
+                                                useBonus ? "bg-blue-600" : "bg-slate-700"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                    useBonus ? "translate-x-5" : "translate-x-1"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <label className="text-xs text-muted-foreground block">Stake (GHS)</label>
                                 <div className="flex items-center gap-2">
@@ -99,29 +139,40 @@ export function BetSlipSidebar() {
                                         type="number"
                                         value={stake}
                                         onChange={(e) => setStake(Number(e.target.value))}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                        className="flex-1 bg-secondary/50 border border-border rounded p-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Total Odds</span>
-                                <span className="font-bold text-foreground">{totalOdds.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Potential Win</span>
+                            <div className="flex justify-between items-center text-sm border-t border-border pt-4">
+                                <div className="flex flex-col">
+                                    <span className="text-muted-foreground">Potential Win</span>
+                                    {useBonus && (
+                                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-tight">Stake Not Returned</span>
+                                    )}
+                                </div>
                                 <span className="font-bold text-accent text-lg">GHS {potentialWin.toFixed(2)}</span>
                             </div>
 
                             <button
                                 onClick={async () => {
                                     if (isProcessing) return
+                                    if (useBonus && wallet && wallet.bonusBalance < stake) {
+                                        setError("Insufficient bonus balance")
+                                        return
+                                    }
+                                    if (!useBonus && wallet && wallet.balance < stake) {
+                                        setError("Insufficient balance")
+                                        return
+                                    }
+
                                     setIsProcessing(true)
                                     setError("")
                                     try {
-                                        const result = await placeBet(stake, selections)
+                                        const result = await placeBet(stake, selections, useBonus)
                                         if (result.success) {
                                             clearSlip()
+                                            setUseBonus(false)
                                             toggleSlip()
                                             // Real-time balance refresh
                                             window.location.reload()

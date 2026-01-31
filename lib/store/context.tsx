@@ -20,6 +20,8 @@ export interface BetSlipContextType {
     removeSelection: (selectionId: string) => void
     setStake: (amount: number) => void
     clearSlip: () => void
+    useBonus: boolean
+    setUseBonus: (use: boolean) => void
 }
 
 export const BetSlipContext = React.createContext<BetSlipContextType | undefined>(undefined)
@@ -28,6 +30,7 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = React.useState(false)
     const [selections, setSelections] = React.useState<Selection[]>([])
     const [stake, setStakeState] = React.useState(10)
+    const [useBonus, setUseBonus] = React.useState(false)
 
     const toggleSlip = () => setIsOpen(prev => !prev)
 
@@ -59,7 +62,9 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
         addSelection,
         removeSelection,
         setStake,
-        clearSlip
+        clearSlip,
+        useBonus,
+        setUseBonus
     }
 
     return (

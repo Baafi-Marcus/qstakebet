@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Activity, Search, X, Loader2 } from "lucide-react"
+import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
 import { createMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
+import { MatchResultModal } from "./MatchResultModal"
+import { BulkResultModal } from "./BulkResultModal"
 
 export function MatchesClient({
     initialMatches,
@@ -20,6 +22,8 @@ export function MatchesClient({
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
+    const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
 
     // Form State
     const [formData, setFormData] = useState({
@@ -108,13 +112,22 @@ export function MatchesClient({
                     <h1 className="text-3xl font-black text-white tracking-tight uppercase">Matches Management</h1>
                     <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Monitor & Resolve Competition Events</p>
                 </div>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"
-                >
-                    <Plus className="h-5 w-5" />
-                    Create Match
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setIsBulkModalOpen(true)}
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"
+                    >
+                        <Sparkles className="h-5 w-5" />
+                        Bulk Entry (AI)
+                    </button>
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Create Match
+                    </button>
+                </div>
             </div>
 
             {/* Filter Bar */}
@@ -166,6 +179,14 @@ export function MatchesClient({
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">Start Schedule</div>
                                 </div>
+                                {match.status !== 'finished' && (
+                                    <button
+                                        onClick={() => setSelectedMatchForResult(match)}
+                                        className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide"
+                                    >
+                                        Enter Result
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))
@@ -276,6 +297,29 @@ export function MatchesClient({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Result Modal */}
+            {selectedMatchForResult && (
+                <MatchResultModal
+                    match={selectedMatchForResult}
+                    onClose={() => setSelectedMatchForResult(null)}
+                    onSuccess={() => {
+                        router.refresh()
+                        setSelectedMatchForResult(null)
+                    }}
+                />
+            )}
+
+            {/* Bulk Result Modal */}
+            {isBulkModalOpen && (
+                <BulkResultModal
+                    onClose={() => setIsBulkModalOpen(false)}
+                    onSuccess={() => {
+                        router.refresh()
+                        setIsBulkModalOpen(false)
+                    }}
+                />
             )}
         </div>
     )
