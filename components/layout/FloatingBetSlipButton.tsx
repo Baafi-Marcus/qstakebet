@@ -8,9 +8,10 @@ export function FloatingBetSlipButton() {
     const pathname = usePathname()
     const context = React.useContext(BetSlipContext)
     const selections = context?.selections || []
+    const isOpen = context?.isOpen || false
     const toggleSlip = context?.toggleSlip || (() => { })
 
-    if (selections.length === 0 || pathname === "/virtuals") return null
+    if (selections.length === 0 || pathname === "/virtuals" || isOpen) return null
 
     return (
         <button
