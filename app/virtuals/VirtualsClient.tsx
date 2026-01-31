@@ -218,7 +218,6 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
-    const [userBalance, setUserBalance] = useState(1000.00)
     const isSimulatingRef = useRef(false)
 
 

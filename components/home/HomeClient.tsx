@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Trophy, Zap, Timer, Search, Filter, ArrowRight, Star, Calendar } from "lucide-react"
+import { Trophy, Zap, Search, Filter, ArrowRight, Star, Calendar } from "lucide-react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
 import { useBetSlip } from "@/lib/store/useBetSlip"

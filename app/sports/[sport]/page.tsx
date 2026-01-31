@@ -1,6 +1,6 @@
 
 import { notFound } from "next/navigation"
-import { Trophy, Map, Activity } from "lucide-react"
+import { Trophy } from "lucide-react"
 
 type Props = {
     params: Promise<{ sport: string }>
