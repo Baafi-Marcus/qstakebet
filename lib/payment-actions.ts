@@ -73,3 +73,65 @@ export async function getRecentTransactions(userId: string, limit = 5) {
         .orderBy(sql`created_at DESC`)
         .limit(limit)
 }
+
+export async function initiateWithdrawal(data: {
+    amount: number
+    phoneNumber: string
+    network: 'mtn' | 'telecel' | 'at'
+}) {
+    const session = await auth()
+    if (!session?.user?.id) {
+        return { success: false, error: "Unauthorized" }
+    }
+
+    const userId = session.user.id
+
+    try {
+        return await db.transaction(async (tx) => {
+            // 1. Get wallet and check balance
+            const userWallets = await tx.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
+            if (!userWallets.length) {
+                throw new Error("Wallet not found")
+            }
+
+            const wallet = userWallets[0]
+            if (wallet.balance < data.amount) {
+                throw new Error("Insufficient balance for withdrawal")
+            }
+
+            // 2. Deduct from wallet immediately (mark as pending withdrawal)
+            await tx.update(wallets)
+                .set({
+                    balance: sql`${wallets.balance} - ${data.amount}`,
+                    updatedAt: new Date()
+                })
+                .where(eq(wallets.id, wallet.id))
+
+            // 3. Create a pending transaction record
+            const reference = `wd-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+            await tx.insert(transactions).values({
+                id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                userId,
+                walletId: wallet.id,
+                type: "withdrawal",
+                amount: data.amount,
+                balanceBefore: wallet.balance,
+                balanceAfter: wallet.balance - data.amount,
+                paymentReference: reference,
+                paymentStatus: "pending",
+                paymentMethod: `${data.network}_momo`,
+                paymentProvider: "moolre",
+                description: `Withdrawal via ${data.network.toUpperCase()}`
+            })
+
+            // TODO: In a real production environment, we would call 
+            // the Moolre Payout API here or via a background job.
+            // For now, we'll simulate the successful request to Moolre
+
+            return { success: true, reference }
+        })
+    } catch (error: any) {
+        console.error("Withdrawal error:", error)
+        return { success: false, error: error.message || "Failed to process withdrawal" }
+    }
+}

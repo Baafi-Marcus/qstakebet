@@ -3,9 +3,12 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { BetSlipContext } from "@/lib/store/context"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
+import { placeBet } from "@/lib/bet-actions"
 
 export function BetSlipSidebar() {
+    const [isProcessing, setIsProcessing] = React.useState(false)
+    const [error, setError] = React.useState("")
     const context = React.useContext(BetSlipContext)
     const selections = context?.selections || []
     const removeSelection = context?.removeSelection || (() => { })
@@ -110,9 +113,38 @@ export function BetSlipSidebar() {
                                 <span className="font-bold text-accent text-lg">GHS {potentialWin.toFixed(2)}</span>
                             </div>
 
-                            <button className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded shadow-lg transition-transform active:scale-[0.98]">
-                                Place Bet
+                            <button
+                                onClick={async () => {
+                                    if (isProcessing) return
+                                    setIsProcessing(true)
+                                    setError("")
+                                    try {
+                                        const result = await placeBet(stake, selections)
+                                        if (result.success) {
+                                            clearSlip()
+                                            toggleSlip()
+                                            // Real-time balance refresh (handled by Next.js revalidatePath if added to action, or just standard router refresh)
+                                            window.location.reload() // Quickest way to refresh all balances including Header
+                                        } else {
+                                            setError(result.error || "Failed to place bet")
+                                        }
+                                    } catch (err) {
+                                        setError("A network error occurred")
+                                    } finally {
+                                        setIsProcessing(false)
+                                    }
+                                }}
+                                disabled={isProcessing}
+                                className="w-full bg-primary hover:bg-blue-600 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-3 rounded shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                {isProcessing ? <><Loader2 className="h-4 w-4 animate-spin" /> PLACING...</> : "Place Bet"}
                             </button>
+
+                            {error && (
+                                <p className="text-xs text-red-500 text-center font-bold animate-pulse">
+                                    {error}
+                                </p>
+                            )}
                         </div>
                     </>
                 )}

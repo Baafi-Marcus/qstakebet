@@ -6,12 +6,20 @@ import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown } from "
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
+import { getUserWalletBalance } from "@/lib/wallet-actions"
 
 export function Header() {
     const { data: session, status } = useSession()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const [balance, setBalance] = useState<number | null>(null)
     const pathname = usePathname()
+
+    React.useEffect(() => {
+        if (status === "authenticated") {
+            getUserWalletBalance().then(data => setBalance(data.balance))
+        }
+    }, [status])
 
     const navLinks = [
         { href: "/", label: "Sports", icon: Trophy },
@@ -67,7 +75,9 @@ export function Header() {
                             <>
                                 <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10">
                                     <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
-                                    <span className="text-xs md:text-sm font-mono font-black text-foreground">GHS 0.00</span>
+                                    <span className="text-xs md:text-sm font-mono font-black text-foreground">
+                                        GHS {balance !== null ? balance.toFixed(2) : "..."}
+                                    </span>
                                 </div>
                                 <div className="relative">
                                     <button
