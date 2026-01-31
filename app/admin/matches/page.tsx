@@ -1,9 +1,9 @@
 
 import { db } from "@/lib/db"
 import { matches, tournaments, schools } from "@/lib/db/schema"
+import { Match, Tournament, School } from "@/lib/types"
 import { MatchesClient } from "./MatchesClient"
 import { desc } from "drizzle-orm"
-import { Match } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +13,8 @@ export default async function MatchesPage() {
     const allSchools = await db.select().from(schools).orderBy(schools.name)
 
     return <MatchesClient
-        initialMatches={allMatches as any}
-        tournaments={allTournaments as any}
-        schools={allSchools as any}
+        initialMatches={allMatches as unknown as Match[]}
+        tournaments={allTournaments as unknown as Tournament[]}
+        schools={allSchools as unknown as School[]}
     />
 }

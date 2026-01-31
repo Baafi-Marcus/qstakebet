@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Activity, Search, X, Loader2, Calendar } from "lucide-react"
+import { Plus, Activity, Search, X, Loader2 } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
 import { createMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
@@ -68,7 +68,7 @@ export function MatchesClient({
                     ...newMatch[0],
                     // Ensure participants match the type structure expected by client if DB returns JSON columns differently
                     // Typically Drizzle handles this, but casting for safety
-                    participants: newMatch[0].participants as any[]
+                    participants: newMatch[0].participants as unknown[]
                 } as Match
 
                 setMatches([created, ...matches])

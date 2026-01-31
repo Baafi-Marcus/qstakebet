@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Filter } from "lucide-react"
+import { Search } from "lucide-react"
 
 type School = {
     id: string
@@ -78,7 +78,7 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
                             {filteredSchools.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                                        No schools found matching "{searchTerm}"
+                                        No schools found matching &quot;{searchTerm}&quot;
                                     </td>
                                 </tr>
                             )}
