@@ -29,6 +29,7 @@ export interface Match {
     sportType: string
     gender: string
     margin: number
+    createdAt?: Date | null
 }
 
 export interface Tournament {
