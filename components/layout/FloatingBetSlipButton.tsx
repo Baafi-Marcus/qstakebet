@@ -11,16 +11,19 @@ export function FloatingBetSlipButton() {
     const isOpen = context?.isOpen || false
     const toggleSlip = context?.toggleSlip || (() => { })
 
-    if (selections.length === 0 || pathname === "/virtuals" || isOpen) return null
+    if (pathname === "/virtuals" || isOpen) return null
 
     return (
-        <button
-            onClick={toggleSlip}
-            className="fixed right-6 bottom-24 lg:bottom-12 z-[100] h-16 w-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white shadow-2xl transition-all hover:scale-110 active:scale-95 border-4 border-white ring-4 ring-red-600/20"
-        >
-            <span className="text-2xl font-bold">
-                {selections.length}
-            </span>
-        </button>
+        <div className="fixed right-6 bottom-24 lg:bottom-12 z-[100] flex flex-col items-center gap-2">
+            <button
+                onClick={toggleSlip}
+                className="h-12 w-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white shadow-2xl transition-all hover:scale-110 active:scale-95 border-2 border-white"
+            >
+                <span className="text-sm font-black">
+                    {selections.length}
+                </span>
+            </button>
+            <span className="text-[10px] font-black text-white uppercase tracking-tighter drop-shadow-md">Betslip</span>
+        </div>
     )
 }

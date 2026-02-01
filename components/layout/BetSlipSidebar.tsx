@@ -208,30 +208,32 @@ export function BetSlipSidebar() {
                     ))}
                 </div>
 
-                {/* Booking Code Section */}
-                <div className="bg-slate-800/30 px-4 py-4 border-b border-slate-800">
-                    <div className="flex items-center gap-2 mb-2 text-slate-300">
-                        <span className="text-sm font-bold">Please insert booking code</span>
-                        <Activity className="h-3 w-3 opacity-50" />
+                {/* Booking Code Section - Hide if selections are present */}
+                {selections.length === 0 && (
+                    <div className="bg-slate-800/30 px-4 py-4 border-b border-slate-800">
+                        <div className="flex items-center gap-2 mb-2 text-slate-300">
+                            <span className="text-sm font-bold">Please insert booking code</span>
+                            <Activity className="h-3 w-3 opacity-50" />
+                        </div>
+                        <div className="flex gap-0 rounded-lg overflow-hidden border border-slate-700 focus-within:border-green-500 transition-all">
+                            <input
+                                type="text"
+                                placeholder="Booking Code"
+                                value={bookingCode}
+                                onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+                                onKeyPress={(e) => e.key === 'Enter' && handleLoadBooking()}
+                                className="flex-1 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-600 outline-none uppercase font-mono tracking-wider"
+                            />
+                            <button
+                                onClick={handleLoadBooking}
+                                disabled={isProcessing || !bookingCode}
+                                className="bg-slate-700 hover:bg-slate-600 px-6 py-2 text-sm font-bold text-slate-300 transition-all disabled:opacity-50 flex items-center justify-center min-w-[80px]"
+                            >
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex gap-0 rounded-lg overflow-hidden border border-slate-700 focus-within:border-green-500 transition-all">
-                        <input
-                            type="text"
-                            placeholder="Booking Code"
-                            value={bookingCode}
-                            onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
-                            onKeyPress={(e) => e.key === 'Enter' && handleLoadBooking()}
-                            className="flex-1 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-600 outline-none uppercase font-mono tracking-wider"
-                        />
-                        <button
-                            onClick={handleLoadBooking}
-                            disabled={isProcessing || !bookingCode}
-                            className="bg-slate-700 hover:bg-slate-600 px-6 py-2 text-sm font-bold text-slate-300 transition-all disabled:opacity-50 flex items-center justify-center min-w-[80px]"
-                        >
-                            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
-                        </button>
-                    </div>
-                </div>
+                )}
 
                 {/* Selections List */}
                 {selections.length === 0 ? (
@@ -443,10 +445,11 @@ export function BetSlipSidebar() {
                                 )}
                             </div>
 
-                            {/* Deposit Link (Moved above action buttons or into a separate persistent area if desired) */}
+                            {/* Deposit Link */}
                             {status === "authenticated" && (
                                 <Link
                                     href="/account/wallet"
+                                    onClick={closeSlip}
                                     className="block p-3 text-center text-xs font-bold text-green-500 hover:bg-green-500/10 transition-colors border-t border-slate-800"
                                 >
                                     Deposit Funds

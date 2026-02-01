@@ -14,43 +14,55 @@ export default function ProfilePage() {
     ]
 
     return (
-        <div className="space-y-12">
-            <div>
-                <h2 className="text-3xl font-black mb-2">Profile Information</h2>
-                <p className="text-slate-400 font-medium">Update your account details and security settings</p>
+        <div className="max-w-4xl">
+            <div className="mb-12">
+                <h2 className="text-4xl font-black mb-2 tracking-tight">Your Account</h2>
+                <p className="text-slate-400 font-medium">Manage your personal information and security settings.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {userInfo.map((info) => (
-                    <div key={info.label} className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-purple-500/30 transition-all group">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-purple-500/10 rounded-2xl">
-                                <info.icon className="h-6 w-6 text-purple-400 group-hover:scale-110 transition-transform" />
+            <div className="space-y-10">
+                {/* Info List */}
+                <div className="space-y-8">
+                    {userInfo.map((info) => (
+                        <div key={info.label} className="flex items-start gap-6 group">
+                            <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-all">
+                                <info.icon className="h-6 w-6 text-slate-400 group-hover:text-purple-400 transition-colors" />
                             </div>
-                            <span className="text-slate-400 font-bold text-sm uppercase tracking-wider">{info.label}</span>
+                            <div className="flex-1 border-b border-white/5 pb-6 group-last:border-0">
+                                <span className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1 block">{info.label}</span>
+                                <p className="text-xl font-bold text-white tracking-tight">{info.value}</p>
+                            </div>
                         </div>
-                        <p className="text-xl font-bold text-white pl-1">{info.value}</p>
-                    </div>
-                ))}
-            </div>
-
-            <div className="pt-8 border-t border-white/5">
-                <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-4 px-8 rounded-2xl transition-all">
-                    Change Password
-                </button>
-            </div>
-
-            <div className="p-8 bg-purple-500/5 rounded-[2.5rem] border border-purple-500/10">
-                <div className="flex items-center gap-4 mb-4">
-                    <Shield className="h-6 w-6 text-purple-400" />
-                    <h3 className="text-xl font-bold">Account Verification</h3>
+                    ))}
                 </div>
-                <p className="text-slate-400 mb-6 font-medium leading-relaxed">
-                    Verify your account to increase your withdrawal limits and participate in exclusive high-stake tournaments.
-                </p>
-                <button className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/20">
-                    Verify Now
-                </button>
+
+                {/* Actions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                    <button className="bg-slate-800 hover:bg-slate-700 border border-white/5 text-white font-bold py-5 px-8 rounded-2xl transition-all text-sm uppercase tracking-widest">
+                        Change Password
+                    </button>
+                    <button className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-5 px-8 rounded-2xl transition-all text-sm uppercase tracking-widest shadow-lg shadow-purple-500/20">
+                        Edit Profile
+                    </button>
+                </div>
+
+                {/* Verification Banner - Keeping it visually distinct but integrated */}
+                <div className="relative overflow-hidden p-8 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-[2.5rem] border border-white/5 mt-8">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="max-w-md">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Shield className="h-5 w-5 text-purple-400" />
+                                <h3 className="text-xl font-black uppercase tracking-tight">Account Verification</h3>
+                            </div>
+                            <p className="text-slate-400 font-medium leading-relaxed text-sm">
+                                Complete your identity verification to unlock higher withdrawal limits and premium betting features.
+                            </p>
+                        </div>
+                        <button className="bg-white text-slate-950 font-black py-4 px-10 rounded-2xl transition-all hover:scale-105 active:scale-95 text-xs uppercase tracking-widest">
+                            Verify Now
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     )
