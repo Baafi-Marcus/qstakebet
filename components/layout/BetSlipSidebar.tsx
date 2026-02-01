@@ -7,7 +7,7 @@ import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Acti
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { bets } from "@/lib/db/schema"
-import { placeBet } from "@/lib/bet-actions"
+import { placeBet, bookBet, loadBookedBet } from "@/lib/bet-actions"
 
 export function BetSlipSidebar() {
     const [isProcessing, setIsProcessing] = React.useState(false)
@@ -62,7 +62,6 @@ export function BetSlipSidebar() {
         setIsProcessing(true)
         setError("")
         try {
-            const { loadBookedBet } = await import("@/lib/bet-actions")
             const res = await loadBookedBet(bookingCode)
             if (res.success && res.selections) {
                 // Add selections to context
@@ -85,7 +84,6 @@ export function BetSlipSidebar() {
         setIsBooking(true)
         setError("")
         try {
-            const { bookBet } = await import("@/lib/bet-actions")
             const res = await bookBet(selections as any)
             if (res.success && res.code) {
                 setBookedCodeResult(res.code)
@@ -247,6 +245,31 @@ export function BetSlipSidebar() {
                 ) : (
                     <>
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50">
+                            {/* Booking Success Message */}
+                            {bookedCodeResult && (
+                                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl animate-in zoom-in-95 duration-200 mb-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Bet Booked!</span>
+                                        <button onClick={() => setBookedCodeResult(null)} className="text-green-400/50 hover:text-green-400">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center justify-between bg-black/20 rounded-lg p-2">
+                                        <span className="text-xl font-black text-white font-mono tracking-widest">{bookedCodeResult}</span>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(bookedCodeResult)
+                                                alert("Code copied to clipboard!")
+                                            }}
+                                            className="text-[10px] font-black bg-green-500 text-white px-2 py-1 rounded-md uppercase"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-green-400/70 mt-2 text-center">Share this code with your friends!</p>
+                                </div>
+                            )}
+
                             {selections.map((item) => (
                                 <div key={item.selectionId} className="bg-slate-800/80 rounded-xl p-4 relative group">
                                     {/* Remove Button */}
