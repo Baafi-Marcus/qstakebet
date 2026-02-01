@@ -44,35 +44,35 @@ export default function UserDetailPage() {
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'bets' | 'transactions'>('bets')
 
-    const loadData = React.useCallback(async () => {
-        if (!id) return
-        // No synchronous setLoading(true) here
-        const result = await getUserDetails(id as string)
-        if (result.success) {
-            setData(result as unknown as UserDetailData)
-        }
-        setLoading(false)
-    }, [id])
-
     useEffect(() => {
         let isMounted = true
-        if (isMounted) {
-            loadData()
+        const fetchData = async () => {
+            if (!id) return
+            const result = await getUserDetails(id as string)
+            if (isMounted) {
+                if (result.success) {
+                    setData(result as unknown as UserDetailData)
+                }
+                setLoading(false)
+            }
         }
+        fetchData()
         return () => { isMounted = false }
-    }, [loadData])
+    }, [id])
 
     const handleStatusToggle = React.useCallback(async () => {
         if (!data?.user) return
-        setLoading(true) // Set loading in event handler
+        setLoading(true)
         const newStatus = (data.user.status === 'active' ? 'suspended' : 'active') as "active" | "suspended"
         const result = await updateUserStatus(data.user.id, newStatus)
         if (result.success) {
-            loadData()
-        } else {
-            setLoading(false)
+            const refresh = await getUserDetails(data.user.id)
+            if (refresh.success) {
+                setData(refresh as unknown as UserDetailData)
+            }
         }
-    }, [data, loadData])
+        setLoading(false)
+    }, [data])
 
     if (loading) return <div className="p-12 text-center text-slate-500 font-black uppercase tracking-widest animate-pulse">Loading Intelligence...</div>
     if (!data?.user) return <div className="p-12 text-center text-red-500 font-black uppercase tracking-widest">User Assets Not Found</div>

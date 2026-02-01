@@ -23,15 +23,6 @@ export default function UsersPage() {
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
 
-    const loadUsers = React.useCallback(async () => {
-        // We don't call setLoading(true) here anymore to avoid synchronous state updates in useEffect
-        const result = await getUsers(debouncedSearch)
-        if (result.success) {
-            setUsers((result.users as unknown as AdminUser[]) || [])
-        }
-        setLoading(false)
-    }, [debouncedSearch])
-
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search)
@@ -41,21 +32,31 @@ export default function UsersPage() {
 
     useEffect(() => {
         let isMounted = true
-        if (isMounted) {
-            loadUsers()
+        const fetchData = async () => {
+            const result = await getUsers(debouncedSearch)
+            if (isMounted) {
+                if (result.success) {
+                    setUsers((result.users as unknown as AdminUser[]) || [])
+                }
+                setLoading(false)
+            }
         }
+        fetchData()
         return () => { isMounted = false }
-    }, [loadUsers])
+    }, [debouncedSearch])
 
     const handleStatusToggle = async (userId: string, currentStatus: string) => {
         setLoading(true)
         const newStatus = (currentStatus === "active" ? "suspended" : "active") as "active" | "suspended"
         const result = await updateUserStatus(userId, newStatus)
         if (result.success) {
-            loadUsers()
-        } else {
-            setLoading(false)
+            // Trigger a re-fetch by updating the debounced search or just calling getUsers directly
+            const refresh = await getUsers(debouncedSearch)
+            if (refresh.success) {
+                setUsers((refresh.users as unknown as AdminUser[]) || [])
+            }
         }
+        setLoading(false)
     }
 
     return (
