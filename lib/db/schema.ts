@@ -172,6 +172,13 @@ export const referrals = pgTable("referrals", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const bookedBets = pgTable("booked_bets", {
+    id: text("id").primaryKey(),
+    code: text("code").notNull().unique(),
+    selections: jsonb("selections").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ one }) => ({
     wallet: one(wallets, {
         fields: [users.id],

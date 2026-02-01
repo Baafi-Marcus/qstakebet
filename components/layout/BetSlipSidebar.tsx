@@ -11,10 +11,14 @@ import { placeBet } from "@/lib/bet-actions"
 
 export function BetSlipSidebar() {
     const [isProcessing, setIsProcessing] = React.useState(false)
+    const [bookingCode, setBookingCode] = React.useState("")
+    const [isBooking, setIsBooking] = React.useState(false)
+    const [bookedCodeResult, setBookedCodeResult] = React.useState<string | null>(null)
     const [error, setError] = React.useState("")
     const [wallet, setWallet] = React.useState<{ balance: number, bonusBalance: number } | null>(null)
     const [betMode, setBetMode] = React.useState<'single' | 'multiple' | 'system'>('single')
     const [userBets, setUserBets] = React.useState<typeof bets.$inferSelect[]>([])
+    const { status } = useSession()
     const context = React.useContext(BetSlipContext)
 
     const selections = context?.selections || []
@@ -27,6 +31,7 @@ export function BetSlipSidebar() {
     const closeSlip = context?.closeSlip || (() => { })
     const useBonus = context?.useBonus || false
     const setUseBonus = context?.setUseBonus || (() => { })
+    const addSelection = context?.addSelection || (() => { })
 
     // Helper for sport icons
     const getSportIcon = (sport?: string) => {
@@ -52,15 +57,65 @@ export function BetSlipSidebar() {
         }
     }, [isOpen])
 
-    const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
+    const handleLoadBooking = async () => {
+        if (!bookingCode) return
+        setIsProcessing(true)
+        setError("")
+        try {
+            const { loadBookedBet } = await import("@/lib/bet-actions")
+            const res = await loadBookedBet(bookingCode)
+            if (res.success && res.selections) {
+                // Add selections to context
+                res.selections.forEach((sel: any) => {
+                    addSelection(sel)
+                })
+                setBookingCode("")
+            } else {
+                setError(res.error || "Invalid code")
+            }
+        } catch (_err) {
+            setError("Failed to load code")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    const handleBookBet = async () => {
+        if (!selections.length) return
+        setIsBooking(true)
+        setError("")
+        try {
+            const { bookBet } = await import("@/lib/bet-actions")
+            const res = await bookBet(selections as any)
+            if (res.success && res.code) {
+                setBookedCodeResult(res.code)
+            } else {
+                setError(res.error || "Failed to book")
+            }
+        } catch (_err) {
+            setError("System error booking bet")
+        } finally {
+            setIsBooking(false)
+        }
+    }
+
+    const totalOdds = selections.reduce((acc, curr) => {
+        // Only include active games in odds
+        if ((curr as any).matchStatus === 'finished') return acc
+        return acc * curr.odds
+    }, 1)
 
     const calculatePotentialWin = () => {
         if (betMode === 'single') {
             return selections.reduce((acc, s) => {
+                // Don't count finished selections in win
+                if ((s as any).matchStatus === 'finished') return acc
                 const sStake = s.stake || stake
                 return acc + (sStake * s.odds)
             }, 0)
         }
+
+        // Multiples: only if all games are active (checked in buttons later)
         return stake * totalOdds
     }
 
@@ -153,6 +208,31 @@ export function BetSlipSidebar() {
                     ))}
                 </div>
 
+                {/* Booking Code Section */}
+                <div className="bg-slate-800/30 px-4 py-4 border-b border-slate-800">
+                    <div className="flex items-center gap-2 mb-2 text-slate-300">
+                        <span className="text-sm font-bold">Please insert booking code</span>
+                        <Activity className="h-3 w-3 opacity-50" />
+                    </div>
+                    <div className="flex gap-0 rounded-lg overflow-hidden border border-slate-700 focus-within:border-green-500 transition-all">
+                        <input
+                            type="text"
+                            placeholder="Booking Code"
+                            value={bookingCode}
+                            onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+                            onKeyPress={(e) => e.key === 'Enter' && handleLoadBooking()}
+                            className="flex-1 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-600 outline-none uppercase font-mono tracking-wider"
+                        />
+                        <button
+                            onClick={handleLoadBooking}
+                            disabled={isProcessing || !bookingCode}
+                            className="bg-slate-700 hover:bg-slate-600 px-6 py-2 text-sm font-bold text-slate-300 transition-all disabled:opacity-50 flex items-center justify-center min-w-[80px]"
+                        >
+                            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
+                        </button>
+                    </div>
+                </div>
+
                 {/* Selections List */}
                 {selections.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -183,16 +263,42 @@ export function BetSlipSidebar() {
 
                                         <div className="flex-1 min-w-0">
                                             {/* Selection Name */}
-                                            <div className="text-white font-bold text-base mb-1">{item.label}</div>
+                                            <div className="text-white font-bold text-base mb-1">
+                                                {item.label}
+                                                {(item as any).matchStatus === 'finished' && (
+                                                    <span className="ml-2 text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded uppercase font-black">Finished</span>
+                                                )}
+                                            </div>
                                             {/* Match Name */}
                                             <div className="text-slate-400 text-sm font-medium mb-1">{item.matchLabel}</div>
-                                            {/* Market Type */}
-                                            <div className="text-slate-500 text-xs font-bold uppercase">{item.marketName}</div>
+                                            {/* Market Type - Hide if finished */}
+                                            {(item as any).matchStatus !== 'finished' && (
+                                                <div className="text-slate-500 text-xs font-bold uppercase">{item.marketName}</div>
+                                            )}
+
+                                            {/* Match Result Display */}
+                                            {(item as any).matchStatus === 'finished' && (item as any).matchResult && (
+                                                <div className="mt-2 p-2 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Final Result</div>
+                                                    <div className="text-xs text-white font-bold">
+                                                        {Object.entries((item as any).matchResult.scores || {}).map(([id, score], idx, arr) => (
+                                                            <span key={id}>
+                                                                {score as number}{idx < arr.length - 1 ? ' - ' : ''}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Odds */}
                                         <div className="text-right flex-shrink-0">
-                                            <div className="text-white font-black text-xl">{item.odds.toFixed(2)}</div>
+                                            <div className={cn(
+                                                "text-white font-black text-xl",
+                                                (item as any).matchStatus === 'finished' && "opacity-30 line-through"
+                                            )}>
+                                                {item.odds.toFixed(2)}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -267,14 +373,22 @@ export function BetSlipSidebar() {
                                     </>
                                 ) : (
                                     <>
-                                        <Link
-                                            href="/account/wallet"
-                                            className="py-5 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all border-r border-slate-700 flex items-center justify-center"
+                                        <button
+                                            onClick={handleBookBet}
+                                            disabled={isBooking || selections.length === 0}
+                                            className="py-5 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all border-r border-slate-700 flex items-center justify-center gap-2"
                                         >
-                                            Deposit
-                                        </Link>
+                                            {isBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Bet"}
+                                        </button>
                                         <button
                                             onClick={async () => {
+                                                // Check for finished games
+                                                const hasFinished = selections.some((s: any) => s.matchStatus === 'finished')
+                                                if (hasFinished) {
+                                                    setError("Please remove finished games to place bet")
+                                                    return
+                                                }
+
                                                 if (isProcessing) return
                                                 setIsProcessing(true)
                                                 setError("")
@@ -316,13 +430,28 @@ export function BetSlipSidebar() {
                                             ) : (
                                                 <>
                                                     <span>Place Bet</span>
-                                                    <span className="text-xs font-normal">About to pay {totalStake.toFixed(2)}</span>
+                                                    <span className="text-xs font-normal">
+                                                        {selections.some((s: any) => s.matchStatus === 'finished')
+                                                            ? "Remove finished games"
+                                                            : `About to pay ${totalStake.toFixed(2)}`
+                                                        }
+                                                    </span>
                                                 </>
                                             )}
                                         </button>
                                     </>
                                 )}
                             </div>
+
+                            {/* Deposit Link (Moved above action buttons or into a separate persistent area if desired) */}
+                            {status === "authenticated" && (
+                                <Link
+                                    href="/account/wallet"
+                                    className="block p-3 text-center text-xs font-bold text-green-500 hover:bg-green-500/10 transition-colors border-t border-slate-800"
+                                >
+                                    Deposit Funds
+                                </Link>
+                            )}
 
                             {error && (
                                 <p className="text-xs text-red-500 text-center py-2 font-bold animate-pulse">

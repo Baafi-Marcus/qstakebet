@@ -147,3 +147,82 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
         return { success: false, error: errorMessage }
     }
 }
+
+/**
+ * Saves current betslip selections and returns a unique 6-char booking code.
+ */
+export async function bookBet(selections: SelectionInput[]) {
+    if (!selections.length) return { success: false, error: "Slip is empty" }
+
+    try {
+        const { bookedBets } = await import("@/lib/db/schema")
+
+        // Generate a 6-char alphanumeric code (no hyphens)
+        const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Avoid ambiguous chars
+        let code = ''
+        for (let i = 0; i < 6; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length))
+        }
+
+        const id = `bk-${Math.random().toString(36).substring(2, 11)}`
+
+        await db.insert(bookedBets).values({
+            id,
+            code,
+            selections,
+            createdAt: new Date()
+        })
+
+        return { success: true, code }
+    } catch (error) {
+        console.error("Booking error:", error)
+        return { success: false, error: "Failed to book bet" }
+    }
+}
+
+/**
+ * Loads selections from a booking code and enriches them with current match status.
+ */
+export async function loadBookedBet(code: string) {
+    if (!code) return { success: false, error: "Please enter a code" }
+
+    try {
+        const { bookedBets, matches } = await import("@/lib/db/schema")
+        const cleanCode = code.trim().toUpperCase()
+
+        const results = await db.select()
+            .from(bookedBets)
+            .where(eq(bookedBets.code, cleanCode))
+            .limit(1)
+
+        if (!results.length) {
+            return { success: false, error: "Booking code not found" }
+        }
+
+        const booked = results[0]
+        const selections = booked.selections as SelectionInput[]
+
+        // Enrich selections with current match data (status, results)
+        const enrichedSelections = await Promise.all(selections.map(async (sel) => {
+            const matchData = await db.select().from(matches)
+                .where(eq(matches.id, sel.matchId))
+                .limit(1)
+
+            if (matchData.length) {
+                const match = matchData[0]
+                return {
+                    ...sel,
+                    matchStatus: match.status,
+                    matchResult: match.result as any,
+                    currentOdds: (match.odds as Record<string, any>)?.[sel.selectionId] || sel.odds // Update odds if changed
+                }
+            }
+            return sel
+        }))
+
+        return { success: true, selections: enrichedSelections }
+    } catch (error) {
+        console.error("Load booking error:", error)
+        return { success: false, error: "Failed to load booking code" }
+    }
+}
