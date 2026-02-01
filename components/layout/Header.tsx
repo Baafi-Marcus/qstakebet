@@ -25,7 +25,6 @@ export function Header() {
         { href: "/", label: "Sports", icon: Trophy },
         { href: "/live", label: "Live", icon: Timer },
         { href: "/virtuals", label: "Virtuals", icon: Zap, status: "NEW" },
-        { href: "/results", label: "Results", icon: Trophy },
     ]
 
     const isLoggedIn = status === "authenticated"
