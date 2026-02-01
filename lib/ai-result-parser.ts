@@ -173,3 +173,71 @@ function levenshteinDistance(a: string, b: string): number {
 
     return matrix[b.length][a.length]
 }
+
+export type AIMarketSuggestion = {
+    marketName: string
+    selections: Array<{
+        label: string
+        odds: number
+    }>
+}
+
+/**
+ * Generate creative, profitable betting markets using AI
+ * @param matchDetails Description of the match (teams, sport, context)
+ * @param existingMarkets List of market names already present to avoid duplicates
+ */
+export async function getAIMarketSuggestions(
+    matchDetails: string,
+    existingMarkets: string[] = []
+): Promise<AIMarketSuggestion[]> {
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                messages: [
+                    {
+                        role: "system",
+                        content: `You are a professional sports bookmaker. Generate 3-5 creative, high-engagement betting markets for this match.
+                        
+Rules:
+1. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
+2. **Profitability**: You MUST build in a **15% House Margin (Vig)** into the odds. The implied probability of all options in a market should sum to ~115%.
+   - Formula: FairProb = 1/FairOdd. VigProb = FairProb * 1.15. FinalOdd = 1/VigProb.
+3. **Format**: Return ONLY valid JSON array.
+   [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
+4. **Variety**: Suggest things like Player Props, specific Scorelines, or Period-based outcomes (Halves/Quarters).
+5. **Realism**: Odds must be realistic for the sport.`
+                    },
+                    {
+                        role: "user",
+                        content: `Create markets for: ${matchDetails}`
+                    }
+                ],
+                model: "gpt-4o",
+                temperature: 0.7, // Higher creativity
+                max_tokens: 1500
+            })
+        })
+
+        if (!response.ok) throw new Error(`AI request failed: ${response.status}`)
+
+        const result = await response.json() as { choices: Array<{ message: { content: string } }> }
+        const content = result.choices[0]?.message?.content || "[]"
+
+        // Extract JSON
+        const jsonMatch = content.match(/\[[\s\S]*\]/)
+        const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
+
+        return JSON.parse(jsonStr) as AIMarketSuggestion[]
+
+    } catch (error) {
+        console.error("AI Market Gen Error:", error)
+        // Fallback: Return empty or simple defaults if AI fails
+        return []
+    }
+}

@@ -141,7 +141,7 @@ export function MatchRow({
                             <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
                                 <OddsButton
                                     label={(idx + 1).toString()}
-                                    odds={p.odd || match.odds[p.schoolId] || null}
+                                    odds={p.odd || match.odds?.[p.schoolId] || null}
                                     matchId={match.id}
                                     matchLabel={matchLabel}
                                     marketName="Match Winner"
@@ -153,6 +153,22 @@ export function MatchRow({
                                 />
                             </div>
                         ))}
+                        {(match.sportType === "football" || match.sportType === "handball") && (
+                            <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
+                                <OddsButton
+                                    label="X"
+                                    odds={match.odds?.["X"] || 3.20}
+                                    matchId={match.id}
+                                    matchLabel={matchLabel}
+                                    marketName="Match Winner"
+                                    showLabel={true}
+                                    onClick={onOddsClick}
+                                    isSelected={checkSelected(`${match.id}-Match Winner-X`)}
+                                    isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                />
+                            </div>
+                        )}
                     </>
                 )}
 

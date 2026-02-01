@@ -157,10 +157,14 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
     schoolPowers.forEach(sp => {
         const prob = sp.power / totalPower;
         const rawOdd = 1 / prob;
-        // Apply margin: Final Odd = Raw Odd * (1 - Margin)
-        // e.g. for a 50/50, raw odd is 2.0. With 10% margin, displayed odd is 1.8
         odds[sp.id] = parseFloat((rawOdd * (1 - margin)).toFixed(2));
     });
+
+    // 4. Add Draw odd for relevant sports
+    if (sportType === "football" || sportType === "handball") {
+        // Simple logic: Draw is roughly 25-30% probability in these sports
+        odds["X"] = 3.20;
+    }
 
     return odds;
 }
@@ -172,6 +176,7 @@ export async function updateMatchResult(matchId: string, resultData: {
     scores: { [schoolId: string]: number }
     winner: string
     status: string
+    metadata?: any
 }) {
     try {
         const { settleMatch } = await import("./settlement")
@@ -181,7 +186,8 @@ export async function updateMatchResult(matchId: string, resultData: {
             .set({
                 result: {
                     scores: resultData.scores,
-                    winner: resultData.winner
+                    winner: resultData.winner,
+                    metadata: resultData.metadata
                 },
                 status: resultData.status
             })
@@ -312,5 +318,66 @@ export async function parseResults(text: string) {
     } catch (error) {
         console.error("Parse error:", error)
         return { success: false, error: "Failed to parse results", results: [] }
+    }
+}
+
+/**
+ * Generate AI market suggestions for a specific match
+ */
+export async function getMatchSuggestions(matchId: string) {
+    try {
+        const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+        if (!matchData.length) throw new Error("Match not found")
+
+        const match = matchData[0]
+        const participants = match.participants as Array<{ name: string }> | null
+        const pNames = participants?.map(p => p.name).join(" vs ") || "Teams"
+
+        // Get existing markets
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const currentOdds = (match.extendedOdds as Record<string, any>) || {}
+        const currentMarkets = Object.keys(currentOdds)
+
+        const details = `${match.sportType} match between ${pNames}. Gender: ${match.gender}. Stage: ${match.stage}.`
+
+        const { getAIMarketSuggestions } = await import("./ai-result-parser")
+        const suggestions = await getAIMarketSuggestions(details, currentMarkets)
+
+        return { success: true, suggestions }
+    } catch (error) {
+        console.error("Suggestion Error:", error)
+        return { success: false, error: "Failed to get suggestions" }
+    }
+}
+
+/**
+ * Publish approved markets to the match
+ */
+export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
+    marketName: string,
+    selections: Array<{ label: string, odds: number }>
+}>) {
+    try {
+        const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+        if (!matchData.length) throw new Error("Match not found")
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const currentOdds = (matchData[0].extendedOdds as Record<string, any>) || {}
+
+        // Merge new markets
+        newMarkets.forEach(m => {
+            const selectionsMap: Record<string, number> = {}
+            m.selections.forEach((s) => selectionsMap[s.label] = s.odds)
+            currentOdds[m.marketName] = selectionsMap
+        })
+
+        await db.update(matches)
+            .set({ extendedOdds: currentOdds })
+            .where(eq(matches.id, matchId))
+
+        return { success: true }
+    } catch (error) {
+        console.error("Publish Error:", error)
+        return { success: false, error: "Failed to publish markets" }
     }
 }

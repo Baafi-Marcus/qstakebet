@@ -7,6 +7,7 @@ import { createMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
+import { MarketReviewModal } from "./MarketReviewModal"
 
 export function MatchesClient({
     initialMatches,
@@ -23,6 +24,7 @@ export function MatchesClient({
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
+    const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
 
     // Form State
@@ -179,14 +181,27 @@ export function MatchesClient({
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">Start Schedule</div>
                                 </div>
-                                {match.status !== 'finished' && (
-                                    <button
-                                        onClick={() => setSelectedMatchForResult(match)}
-                                        className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide"
-                                    >
-                                        Enter Result
-                                    </button>
-                                )}
+
+                                <div className="flex items-center gap-2">
+                                    {match.status === 'upcoming' && (
+                                        <button
+                                            onClick={() => setSelectedMatchForAI(match)}
+                                            className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20 text-xs font-bold rounded-lg transition-all uppercase tracking-wide flex items-center gap-2"
+                                        >
+                                            <Sparkles className="h-3 w-3" />
+                                            AI Markets
+                                        </button>
+                                    )}
+
+                                    {match.status !== 'finished' && (
+                                        <button
+                                            onClick={() => setSelectedMatchForResult(match)}
+                                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide"
+                                        >
+                                            Enter Result
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))
@@ -297,6 +312,18 @@ export function MatchesClient({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* AI Review Modal */}
+            {selectedMatchForAI && (
+                <MarketReviewModal
+                    match={selectedMatchForAI}
+                    onClose={() => setSelectedMatchForAI(null)}
+                    onSuccess={() => {
+                        router.refresh()
+                        setSelectedMatchForAI(null)
+                    }}
+                />
             )}
 
             {/* Result Modal */}
