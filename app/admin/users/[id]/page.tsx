@@ -46,7 +46,7 @@ export default function UserDetailPage() {
 
     const loadData = React.useCallback(async () => {
         if (!id) return
-        setLoading(true)
+        // No synchronous setLoading(true) here
         const result = await getUserDetails(id as string)
         if (result.success) {
             setData(result as unknown as UserDetailData)
@@ -64,10 +64,13 @@ export default function UserDetailPage() {
 
     const handleStatusToggle = React.useCallback(async () => {
         if (!data?.user) return
+        setLoading(true) // Set loading in event handler
         const newStatus = (data.user.status === 'active' ? 'suspended' : 'active') as "active" | "suspended"
         const result = await updateUserStatus(data.user.id, newStatus)
         if (result.success) {
             loadData()
+        } else {
+            setLoading(false)
         }
     }, [data, loadData])
 
