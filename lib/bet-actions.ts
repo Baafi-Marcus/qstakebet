@@ -20,6 +20,10 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
         return { success: false, error: "Please log in to place a bet" }
     }
 
+    if (session.user.role === "admin") {
+        return { success: false, error: "Administrators are restricted from placing bets." }
+    }
+
     if (stake < 1) {
         return { success: false, error: "Minimum stake is GHS 1.00" }
     }

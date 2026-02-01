@@ -36,8 +36,11 @@ export const authConfig = {
             }
 
             // Protect admin pages (require admin role)
-            if (isAdminPage && (!isLoggedIn || auth?.user?.role !== "admin")) {
-                return Response.redirect(new URL("/", nextUrl.url))
+            // Allow access to /admin/login for all
+            if (isAdminPage && nextUrl.nextUrl.pathname !== "/admin/login") {
+                if (!isLoggedIn || auth?.user?.role !== "admin") {
+                    return Response.redirect(new URL("/admin/login", nextUrl.url))
+                }
             }
 
             return true
