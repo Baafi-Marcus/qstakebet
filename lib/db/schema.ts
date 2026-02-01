@@ -38,6 +38,15 @@ export const matches = pgTable("matches", {
     sportType: text("sport_type").default("quiz").notNull(),
     gender: text("gender").default("male").notNull(),
     margin: jsonb("margin").default(0.1).notNull(), // Default 10% profit margin
+    betVolume: jsonb("bet_volume").$type<{
+        [selectionId: string]: {
+            totalStake: number,
+            betCount: number,
+            lastUpdated: string
+        }
+    }>().default({}),
+    baseOdds: jsonb("base_odds").$type<Record<string, number>>(), // Original odds before adjustment
+    lastRecalculatedAt: timestamp("last_recalculated_at"),
     createdAt: timestamp("created_at").defaultNow(),
 });
 

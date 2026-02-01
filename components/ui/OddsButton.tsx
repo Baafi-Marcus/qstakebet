@@ -19,6 +19,7 @@ interface OddsButtonProps {
     isSelected?: boolean
     isCorrelated?: boolean
     id?: string // Explicit selection ID override
+    sportType?: string // Added sportType
 }
 
 export function OddsButton({
@@ -32,7 +33,8 @@ export function OddsButton({
     onClick,
     isSelected: manualSelected,
     isCorrelated,
-    id: explicitId
+    id: explicitId,
+    sportType // Destructure sportType
 }: OddsButtonProps) {
     const context = React.useContext(BetSlipContext)
     // if (!context) throw new Error("Missing Context") // Optional: Context might be undefined if not wrapped, but shouldn't happen
@@ -54,7 +56,8 @@ export function OddsButton({
             label,
             odds: odds,
             marketName,
-            matchLabel
+            matchLabel,
+            sportType // Include sportType in selection object
         }
         if (onClick) {
             onClick(selection)

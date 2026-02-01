@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { bets, transactions, wallets } from "@/lib/db/schema"
+import { bets, transactions, wallets, matches } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
@@ -33,6 +33,30 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
     }
 
     const userId = session.user.id
+
+    // NEW: Check if any match is locked
+    const { getMatchLockStatus } = await import("@/lib/match-utils")
+
+    for (const selection of selections) {
+        const matchData = await db.select().from(matches)
+            .where(eq(matches.id, selection.matchId))
+            .limit(1)
+
+        if (!matchData.length) {
+            return { success: false, error: "One or more matches in your betslip were not found." }
+        }
+
+        // Cast matchData[0] to any then to Match to avoid complex type issues with jsonb in server actions
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const lockStatus = getMatchLockStatus(matchData[0] as any)
+
+        if (lockStatus.isLocked) {
+            return {
+                success: false,
+                error: `The match "${selection.matchLabel}" is locked (${lockStatus.reason}). Please remove it to place your bet.`
+            }
+        }
+    }
 
     try {
         return await db.transaction(async (tx) => {
@@ -106,6 +130,14 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
                 description: `Staked on bet ${betId}${isBonus ? " (Bonus)" : ""}`,
                 createdAt: new Date()
             })
+
+            // 6. Record stake for dynamic odds (after successful transaction)
+            const { recordBetStake } = await import("@/lib/odds-engine")
+            for (const selection of selections) {
+                // We record the portion of the stake for this match
+                // For multis, we record the full stake on each selection (liability accumulation)
+                await recordBetStake(selection.matchId, selection.selectionId, stake)
+            }
 
             return { success: true, betId }
         })

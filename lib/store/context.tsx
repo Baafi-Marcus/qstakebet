@@ -9,6 +9,7 @@ export type Selection = {
     odds: number
     marketName: string
     matchLabel: string
+    sportType?: string // The sport type for dynamic icons
     stake?: number // Individual stake for Single mode
 }
 

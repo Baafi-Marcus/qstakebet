@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Zap, ChevronDown } from "lucide-react"
+import { Zap, ChevronDown, Lock } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
+import { getMatchLockStatus } from "@/lib/match-utils"
 
 
 
@@ -45,6 +46,10 @@ export function MatchRow({
 }: MatchRowProps) {
     const participants = match.participants || []
     const matchLabel = participants.map(p => p.name).join(' vs ')
+
+    // NEW: Calculate lock status
+    const lockStatus = getMatchLockStatus(match)
+    const isLocked = lockStatus.isLocked
 
     // Helper to format market name to Title Case
     const formatMarketName = (market: string) => {
@@ -90,6 +95,7 @@ export function MatchRow({
                         onClick={onOddsClick}
                         isSelected={checkSelected(`${match.id}-${marketLabel}-${idx + 1}`)}
                         isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
+                        sportType={match.sportType}
                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                     />
                 </div>
@@ -131,10 +137,27 @@ export function MatchRow({
                         </div>
                     ))}
                 </div>
+
+                {/* Lock Indicator for Start Time */}
+                {lockStatus.timeUntilLock !== undefined && lockStatus.timeUntilLock < 30 && !isLocked && (
+                    <div className="mt-2 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[9px] font-bold text-orange-400 inline-flex items-center gap-1">
+                        <Lock className="h-2.5 w-2.5" />
+                        LOCKING IN {Math.floor(lockStatus.timeUntilLock)} MINS
+                    </div>
+                )}
             </div>
 
             {/* Right side: Odds Columns */}
-            <div className="flex items-stretch divide-x divide-white/5 bg-slate-950/20">
+            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/20">
+                {/* Lock Overlay */}
+                {isLocked && (
+                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-1">
+                            <Lock className="h-4 w-4 text-slate-500" />
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
+                        </div>
+                    </div>
+                )}
                 {activeMarket === 'winner' && (
                     <>
                         {participants.map((p, idx) => (
@@ -149,6 +172,7 @@ export function MatchRow({
                                     onClick={onOddsClick}
                                     isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                     isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                    sportType={match.sportType}
                                     className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                 />
                             </div>
@@ -165,6 +189,7 @@ export function MatchRow({
                                     onClick={onOddsClick}
                                     isSelected={checkSelected(`${match.id}-Match Winner-X`)}
                                     isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                    sportType={match.sportType}
                                     className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                 />
                             </div>
@@ -220,6 +245,7 @@ export function MatchRow({
                                         id={`${match.id}-Total Points-Over ${selectedTotalLine}`}
                                         isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                        sportType={match.sportType}
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />
                                 </div>
@@ -234,6 +260,7 @@ export function MatchRow({
                                         id={`${match.id}-Total Points-Under ${selectedTotalLine}`}
                                         isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                        sportType={match.sportType}
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />
                                 </div>
@@ -289,6 +316,7 @@ export function MatchRow({
                                 onClick={onOddsClick}
                                 isSelected={checkSelected(`${match.id}-Winning Margin-1-10`)}
                                 isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                sportType={match.sportType}
                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                             />
                         </div>
@@ -302,6 +330,7 @@ export function MatchRow({
                                 onClick={onOddsClick}
                                 isSelected={checkSelected(`${match.id}-Winning Margin-11-25`)}
                                 isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                sportType={match.sportType}
                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                             />
                         </div>
@@ -315,6 +344,7 @@ export function MatchRow({
                                 onClick={onOddsClick}
                                 isSelected={checkSelected(`${match.id}-Winning Margin-26+`)}
                                 isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                sportType={match.sportType}
                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                             />
                         </div>
@@ -328,13 +358,13 @@ export function MatchRow({
                         activeMarket === 'highest_scoring_round' ? (
                             <>
                                 <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
-                                    <OddsButton label="R1" odds={match.extendedOdds?.highestScoringRound?.["Round 1"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Round 1`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} className="h-full w-full bg-transparent border-0" />
+                                    <OddsButton label="R1" odds={match.extendedOdds?.highestScoringRound?.["Round 1"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Round 1`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
                                 <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
-                                    <OddsButton label="R2&3" odds={match.extendedOdds?.highestScoringRound?.["Rounds 2 & 3"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 2 & 3`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} className="h-full w-full bg-transparent border-0" />
+                                    <OddsButton label="R2&3" odds={match.extendedOdds?.highestScoringRound?.["Rounds 2 & 3"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 2 & 3`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
                                 <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
-                                    <OddsButton label="R4&5" odds={match.extendedOdds?.highestScoringRound?.["Rounds 4 & 5"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 4 & 5`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} className="h-full w-full bg-transparent border-0" />
+                                    <OddsButton label="R4&5" odds={match.extendedOdds?.highestScoringRound?.["Rounds 4 & 5"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 4 & 5`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
                             </>
                         ) : (
@@ -351,6 +381,7 @@ export function MatchRow({
                                         onClick={onOddsClick}
                                         isSelected={checkSelected(`${match.id}-${formatMarketName(activeMarket)}-${key}`)} // Consistent ID
                                         isCorrelated={checkIsCorrelated?.(match.id, formatMarketName(activeMarket))}
+                                        sportType={match.sportType}
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />
                                 </div>
