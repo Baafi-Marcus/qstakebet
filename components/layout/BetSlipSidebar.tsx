@@ -3,7 +3,7 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { BetSlipContext } from "@/lib/store/context"
-import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity } from "lucide-react"
+import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity, Share2, Copy, Download, Send } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { bets } from "@/lib/db/schema"
@@ -244,29 +244,121 @@ export function BetSlipSidebar() {
                     </div>
                 ) : (
                     <>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50">
-                            {/* Booking Success Message */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50 relative">
+                            {/* Rich Booking Success Modal */}
                             {bookedCodeResult && (
-                                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl animate-in zoom-in-95 duration-200 mb-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Bet Booked!</span>
-                                        <button onClick={() => setBookedCodeResult(null)} className="text-green-400/50 hover:text-green-400">
-                                            <X className="h-3 w-3" />
+                                <div className="absolute inset-0 z-[100] bg-slate-900 flex flex-col animate-in slide-in-from-bottom duration-300">
+                                    {/* Modal Header */}
+                                    <div className="bg-red-600 px-4 py-3 flex items-center justify-between shadow-lg">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-white font-black italic tracking-tighter text-xl">QSTAKE</span>
+                                            <span className="bg-white/20 text-[10px] text-white px-1 rounded font-bold">GH</span>
+                                        </div>
+                                        <div className="text-white/80 text-[10px] font-bold">
+                                            {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        <button onClick={() => setBookedCodeResult(null)} className="text-white hover:bg-white/10 p-1 rounded-full transition-colors">
+                                            <X className="h-5 w-5" />
                                         </button>
                                     </div>
-                                    <div className="flex items-center justify-between bg-black/20 rounded-lg p-2">
-                                        <span className="text-xl font-black text-white font-mono tracking-widest">{bookedCodeResult}</span>
-                                        <button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(bookedCodeResult)
-                                                alert("Code copied to clipboard!")
-                                            }}
-                                            className="text-[10px] font-black bg-green-500 text-white px-2 py-1 rounded-md uppercase"
-                                        >
-                                            Copy
-                                        </button>
+
+                                    <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
+                                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Booking Code</span>
+                                        <h2 className="text-5xl font-black text-green-500 tracking-[0.2em] mb-6 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                                            {bookedCodeResult}
+                                        </h2>
+
+                                        {/* Odds Summary Card */}
+                                        <div className="w-full bg-slate-800 rounded-xl overflow-hidden border border-slate-700 mb-6">
+                                            <div className="grid grid-cols-2 divide-x divide-slate-700">
+                                                <div className="p-4 flex flex-col items-center">
+                                                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-1">Total Odds</span>
+                                                    <span className="text-2xl font-black text-white">{totalOdds.toFixed(2)}</span>
+                                                </div>
+                                                <div className="p-4 flex flex-col items-center text-center">
+                                                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-1">Selections</span>
+                                                    <span className="text-2xl font-black text-white">{selections.length}</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-green-500/10 border-t border-slate-700 p-2 text-center">
+                                                <span className="text-green-500 text-[10px] font-black uppercase">Max Bonus: 2.40%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Example Bet Table */}
+                                        <div className="w-full space-y-3 mb-8">
+                                            <div className="flex items-center gap-2 text-green-500 mb-2">
+                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Example Bet</span>
+                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
+                                            </div>
+                                            <div className="flex justify-between items-center px-2">
+                                                <span className="text-slate-400 font-bold text-sm">Stake</span>
+                                                <span className="text-white font-black text-sm">100.00</span>
+                                            </div>
+                                            <div className="flex justify-between items-center px-2">
+                                                <span className="text-slate-400 font-bold text-sm">Bonus</span>
+                                                <span className="text-green-500 font-black text-sm">8.13</span>
+                                            </div>
+                                            <div className="flex justify-between items-center px-2 pt-2 border-t border-slate-800">
+                                                <span className="text-slate-400 font-bold text-sm">Potential Win</span>
+                                                <span className="text-white font-black text-lg">{(100 * totalOdds + 8.13).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Selections List within Modal */}
+                                        <div className="w-full space-y-4 mb-8">
+                                            <div className="flex items-center gap-2 text-green-500 mb-2">
+                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Selections</span>
+                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
+                                            </div>
+                                            {selections.map((item) => (
+                                                <div key={item.selectionId} className="flex gap-4 items-start border-b border-slate-800 pb-4 last:border-0">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mt-1">
+                                                        <Activity className="h-4 w-4" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-start">
+                                                            <span className="text-white font-bold text-base leading-tight">{item.label}</span>
+                                                            <span className="text-white font-black text-base">{item.odds.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="text-slate-400 text-xs font-medium mt-0.5">{item.matchLabel}</div>
+                                                        <div className="text-slate-500 text-[10px] font-black uppercase mt-1 tracking-wider">{item.marketName}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Sharing Actions */}
+                                        <div className="grid grid-cols-4 gap-4 w-full mt-auto pt-6 border-t border-slate-800">
+                                            {[
+                                                { icon: Download, label: "Save Image", color: "bg-slate-700" },
+                                                {
+                                                    icon: Copy, label: "Copy Link", color: "bg-slate-700", onClick: () => {
+                                                        navigator.clipboard.writeText(bookedCodeResult);
+                                                        alert("Code copied!");
+                                                    }
+                                                },
+                                                { icon: Send, label: "Telegram", color: "bg-blue-500" },
+                                                { icon: Activity, label: "WhatsApp", color: "bg-green-500" },
+                                            ].map((action, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={action.onClick}
+                                                    className="flex flex-col items-center gap-2 group"
+                                                >
+                                                    <div className={cn(
+                                                        "w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110",
+                                                        action.color
+                                                    )}>
+                                                        <action.icon className="h-5 w-5 text-white" />
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-500 group-hover:text-white transition-colors">{action.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <p className="text-[10px] text-green-400/70 mt-2 text-center">Share this code with your friends!</p>
                                 </div>
                             )}
 
