@@ -38,7 +38,11 @@ export default function UsersPage() {
     }, [search])
 
     useEffect(() => {
-        loadUsers()
+        let isMounted = true
+        if (isMounted) {
+            loadUsers()
+        }
+        return () => { isMounted = false }
     }, [loadUsers])
 
     const handleStatusToggle = async (userId: string, currentStatus: string) => {

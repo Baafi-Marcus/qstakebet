@@ -19,8 +19,22 @@ interface UserDetailData {
             bonusBalance: number
         } | null
     }
-    bets: any[]
-    transactions: any[]
+    bets: {
+        id: string
+        status: string
+        createdAt: Date
+        stake: number
+        potentialPayout: number
+    }[]
+    transactions: {
+        id: string
+        type: string
+        createdAt: Date
+        description: string | null
+        provider: string | null
+        amount: number
+        status: string | null
+    }[]
 }
 
 export default function UserDetailPage() {
@@ -41,7 +55,11 @@ export default function UserDetailPage() {
     }, [id])
 
     useEffect(() => {
-        loadData()
+        let isMounted = true
+        if (isMounted) {
+            loadData()
+        }
+        return () => { isMounted = false }
     }, [loadData])
 
     const handleStatusToggle = React.useCallback(async () => {
@@ -51,7 +69,7 @@ export default function UserDetailPage() {
         if (result.success) {
             loadData()
         }
-    }, [data?.user, loadData])
+    }, [data, loadData])
 
     if (loading) return <div className="p-12 text-center text-slate-500 font-black uppercase tracking-widest animate-pulse">Loading Intelligence...</div>
     if (!data?.user) return <div className="p-12 text-center text-red-500 font-black uppercase tracking-widest">User Assets Not Found</div>
@@ -222,7 +240,7 @@ export default function UserDetailPage() {
                         <div className="divide-y divide-white/5">
                             {transactions.length === 0 ? (
                                 <div className="p-20 text-center text-slate-600 font-black uppercase tracking-widest text-xs">No Movement in Wallet</div>
-                            ) : transactions.map((tx: { id: string, type: string, createdAt: Date, description: string, provider: string | null, amount: number, status: string }) => (
+                            ) : transactions.map((tx: { id: string, type: string, createdAt: Date, description: string | null, provider: string | null, amount: number, status: string | null }) => (
                                 <div key={tx.id} className="p-8 hover:bg-white/[0.02] transition-all flex items-center justify-between">
                                     <div className="flex items-center gap-6">
                                         <div className={cn(
