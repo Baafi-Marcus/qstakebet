@@ -157,11 +157,37 @@ export async function bookBet(selections: SelectionInput[]) {
     try {
         const { bookedBets } = await import("@/lib/db/schema")
 
+        // Sort selections to ensure consistent fingerprinting (idempotency)
+        const sortedSelections = [...selections].sort((a, b) => {
+            if (a.matchId !== b.matchId) return a.matchId.localeCompare(b.matchId)
+            return a.selectionId.localeCompare(b.selectionId)
+        })
+
+        // Check if this exact slip (same matches + same markets) has been booked before
+        // We use sql comparison for jsonb content
+        const existing = await db.select()
+            .from(bookedBets)
+            .where(sql`${bookedBets.selections}::jsonb = ${JSON.stringify(sortedSelections)}::jsonb`)
+            .limit(1)
+
+        if (existing.length > 0) {
+            return { success: true, code: existing[0].code }
+        }
+
         // Generate a 6-char alphanumeric code (no hyphens)
         const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Avoid ambiguous chars
         let code = ''
-        for (let i = 0; i < 6; i++) {
-            code += characters.charAt(Math.floor(Math.random() * characters.length))
+        const existingCodes = await db.select({ code: bookedBets.code }).from(bookedBets)
+        const codeSet = new Set(existingCodes.map(c => c.code))
+
+        // Ensure uniqueness for the new code
+        let isUnique = false
+        while (!isUnique) {
+            code = ''
+            for (let i = 0; i < 6; i++) {
+                code += characters.charAt(Math.floor(Math.random() * characters.length))
+            }
+            if (!codeSet.has(code)) isUnique = true
         }
 
         const id = `bk-${Math.random().toString(36).substring(2, 11)}`
@@ -169,7 +195,7 @@ export async function bookBet(selections: SelectionInput[]) {
         await db.insert(bookedBets).values({
             id,
             code,
-            selections,
+            selections: sortedSelections,
             createdAt: new Date()
         })
 
