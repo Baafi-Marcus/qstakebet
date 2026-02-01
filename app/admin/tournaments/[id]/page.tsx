@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, use } from "react"
 import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock } from "lucide-react"
 import Link from "next/link"
