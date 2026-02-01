@@ -82,6 +82,7 @@ export async function updateUserStatus(userId: string, status: "active" | "suspe
         revalidatePath(`/admin/users/${userId}`)
         return { success: true }
     } catch (error) {
+        console.error("Failed to update user status:", error)
         return { success: false, error: "Failed to update status" }
     }
 }

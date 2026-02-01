@@ -2,40 +2,56 @@
 
 import React, { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ChevronLeft, Wallet, Trophy, History, Shield, Smartphone, Mail, Calendar, Ban, CheckCircle, ArrowDownLeft, ArrowUpRight } from "lucide-react"
-import Link from "next/link"
+import { ChevronLeft, Wallet, Trophy, Shield, Smartphone, Mail, Calendar, Ban, CheckCircle, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { getUserDetails, updateUserStatus } from "@/lib/admin-user-actions"
 import { cn } from "@/lib/utils"
+
+interface UserDetailData {
+    user: {
+        id: string
+        name: string | null
+        phone: string
+        email: string
+        status: string
+        createdAt: Date
+        wallet: {
+            balance: number
+            bonusBalance: number
+        } | null
+    }
+    bets: any[]
+    transactions: any[]
+}
 
 export default function UserDetailPage() {
     const { id } = useParams()
     const router = useRouter()
-    const [data, setData] = useState<any>(null)
+    const [data, setData] = useState<UserDetailData | null>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'bets' | 'transactions'>('bets')
 
-    useEffect(() => {
-        loadData()
-    }, [id])
-
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         if (!id) return
         setLoading(true)
         const result = await getUserDetails(id as string)
         if (result.success) {
-            setData(result)
+            setData(result as unknown as UserDetailData)
         }
         setLoading(false)
-    }
+    }, [id])
 
-    const handleStatusToggle = async () => {
+    useEffect(() => {
+        loadData()
+    }, [loadData])
+
+    const handleStatusToggle = React.useCallback(async () => {
         if (!data?.user) return
-        const newStatus = data.user.status === 'active' ? 'suspended' : 'active'
+        const newStatus = (data.user.status === 'active' ? 'suspended' : 'active') as "active" | "suspended"
         const result = await updateUserStatus(data.user.id, newStatus)
         if (result.success) {
             loadData()
         }
-    }
+    }, [data?.user, loadData])
 
     if (loading) return <div className="p-12 text-center text-slate-500 font-black uppercase tracking-widest animate-pulse">Loading Intelligence...</div>
     if (!data?.user) return <div className="p-12 text-center text-red-500 font-black uppercase tracking-widest">User Assets Not Found</div>
@@ -166,7 +182,7 @@ export default function UserDetailPage() {
                         <div className="divide-y divide-white/5">
                             {bets.length === 0 ? (
                                 <div className="p-20 text-center text-slate-600 font-black uppercase tracking-widest text-xs">No Wagering History</div>
-                            ) : bets.map((bet: any) => (
+                            ) : bets.map((bet: { id: string, status: string, createdAt: Date, stake: number, potentialPayout: number }) => (
                                 <div key={bet.id} className="p-8 hover:bg-white/[0.02] transition-all flex items-center justify-between group">
                                     <div className="flex items-center gap-6">
                                         <div className={cn(
@@ -206,7 +222,7 @@ export default function UserDetailPage() {
                         <div className="divide-y divide-white/5">
                             {transactions.length === 0 ? (
                                 <div className="p-20 text-center text-slate-600 font-black uppercase tracking-widest text-xs">No Movement in Wallet</div>
-                            ) : transactions.map((tx: any) => (
+                            ) : transactions.map((tx: { id: string, type: string, createdAt: Date, description: string, provider: string | null, amount: number, status: string }) => (
                                 <div key={tx.id} className="p-8 hover:bg-white/[0.02] transition-all flex items-center justify-between">
                                     <div className="flex items-center gap-6">
                                         <div className={cn(

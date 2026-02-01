@@ -1,16 +1,36 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Search, User, MoreVertical, Shield, Ban, CheckCircle, Wallet, ArrowUpRight } from "lucide-react"
+import { Search, Ban, CheckCircle, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
 import { getUsers, updateUserStatus } from "@/lib/admin-user-actions"
 import { cn } from "@/lib/utils"
 
+interface AdminUser {
+    id: string
+    name: string | null
+    phone: string
+    role: string
+    status: string
+    createdAt: Date | null
+    balance: number | null
+    referralCount: number
+}
+
 export default function UsersPage() {
-    const [users, setUsers] = useState<any[]>([])
+    const [users, setUsers] = useState<AdminUser[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
+
+    const loadUsers = React.useCallback(async () => {
+        setLoading(true)
+        const result = await getUsers(debouncedSearch)
+        if (result.success) {
+            setUsers((result.users as unknown as AdminUser[]) || [])
+        }
+        setLoading(false)
+    }, [debouncedSearch])
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 500)
@@ -19,19 +39,10 @@ export default function UsersPage() {
 
     useEffect(() => {
         loadUsers()
-    }, [debouncedSearch])
-
-    const loadUsers = async () => {
-        setLoading(true)
-        const result = await getUsers(debouncedSearch)
-        if (result.success) {
-            setUsers(result.users || [])
-        }
-        setLoading(false)
-    }
+    }, [loadUsers])
 
     const handleStatusToggle = async (userId: string, currentStatus: string) => {
-        const newStatus = currentStatus === "active" ? "suspended" : "active"
+        const newStatus = (currentStatus === "active" ? "suspended" : "active") as "active" | "suspended"
         const result = await updateUserStatus(userId, newStatus)
         if (result.success) {
             loadUsers()

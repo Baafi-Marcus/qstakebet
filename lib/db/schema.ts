@@ -163,6 +163,20 @@ export const referrals = pgTable("referrals", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const usersRelations = relations(users, ({ one }) => ({
+    wallet: one(wallets, {
+        fields: [users.id],
+        references: [wallets.userId],
+    }),
+}));
+
+export const walletsRelations = relations(wallets, ({ one }) => ({
+    user: one(users, {
+        fields: [wallets.userId],
+        references: [users.id],
+    }),
+}));
+
 // Type exports
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
