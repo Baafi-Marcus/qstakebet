@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown } from "lucide-react"
+import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, ShieldCheck } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -108,7 +108,15 @@ export function Header() {
                                                 <Wallet className="h-4 w-4 text-purple-400" />
                                                 Wallet & Deposit
                                             </Link>
-                                            <div className="h-px bg-white/5 my-2" />
+                                            {session.user?.role === "admin" && (
+                                                <>
+                                                    <Link href="/admin" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
+                                                        <ShieldCheck className="h-4 w-4 text-orange-400" />
+                                                        Admin Dashboard
+                                                    </Link>
+                                                    <div className="h-px bg-white/5 my-2" />
+                                                </>
+                                            )}
                                             <button
                                                 onClick={() => {
                                                     setIsProfileOpen(false)

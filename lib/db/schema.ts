@@ -1,4 +1,5 @@
 import { pgTable, text, boolean, jsonb, timestamp, real, integer } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const schools = pgTable("schools", {
     id: text("id").primaryKey(),

@@ -39,7 +39,7 @@ export async function registerUser(data: {
             phone: data.phone,
             referralCode,
             referredBy: data.referredBy || null,
-            role: "user",
+            role: data.phone === process.env.ADMIN_PHONE ? "admin" : "user",
             status: "active"
         }).returning()
 
@@ -78,6 +78,69 @@ export async function registerUser(data: {
         return { success: true, user: newUser[0] }
     } catch (error) {
         console.error("Registration error:", error)
+        return { success: false, error: "Registration failed" }
+    }
+}
+
+export async function registerAdmin(data: {
+    email: string
+    password: string
+    name: string
+    phone: string
+    adminToken: string
+}) {
+    // Verify the admin registration token
+    if (!process.env.ADMIN_REGISTRATION_TOKEN || data.adminToken !== process.env.ADMIN_REGISTRATION_TOKEN) {
+        return { success: false, error: "Invalid registration token" }
+    }
+
+    try {
+        const existingUser = await db.select().from(users)
+            .where(or(eq(users.email, data.email), eq(users.phone, data.phone)))
+            .limit(1)
+
+        if (existingUser.length > 0) {
+            return { success: false, error: "Email or Phone already registered" }
+        }
+
+        const passwordHash = await bcrypt.hash(data.password, 10)
+        const userId = `adm-${Math.random().toString(36).substr(2, 9)}`
+        const referralCode = `ADM-${data.name.substring(0, 3).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+
+        const newUser = await db.insert(users).values({
+            id: userId,
+            email: data.email,
+            passwordHash,
+            name: data.name,
+            phone: data.phone,
+            referralCode,
+            role: "admin",
+            status: "active"
+        }).returning()
+
+        if (!newUser || newUser.length === 0) {
+            return { success: false, error: "Failed to create admin" }
+        }
+
+        // Create wallet
+        await db.insert(wallets).values({
+            id: `wlt-${Math.random().toString(36).substring(2, 11)}`,
+            userId: userId,
+            balance: 0,
+            bonusBalance: 0,
+            currency: "GHS"
+        })
+
+        // Auto sign in
+        await signIn("credentials", {
+            phone: data.phone,
+            password: data.password,
+            redirect: false
+        })
+
+        return { success: true, user: newUser[0] }
+    } catch (error) {
+        console.error("Admin Registration error:", error)
         return { success: false, error: "Registration failed" }
     }
 }
