@@ -33,10 +33,8 @@ export default function LoginPage() {
                 return
             }
 
-            // Redirect to home page
-            router.push("/")
-            router.push("/")
-            router.refresh()
+            // Redirect to home page with a full refresh to ensure session is recognized
+            window.location.href = "/"
         } catch {
             setError("An error occurred. Please try again.")
             setLoading(false)

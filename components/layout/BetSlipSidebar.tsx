@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { bets } from "@/lib/db/schema"
 import { placeBet, bookBet, loadBookedBet } from "@/lib/bet-actions"
-import { FINANCE_LIMITS } from "@/lib/constants"
+import { FINANCE_LIMITS, MULTI_BONUS } from "@/lib/constants"
 
 export function BetSlipSidebar() {
     const [isProcessing, setIsProcessing] = React.useState(false)
@@ -125,6 +125,35 @@ export function BetSlipSidebar() {
         : stake
 
     const potentialWin = calculatePotentialWin()
+
+    // NEW: Bonus Calculation logic
+    const getBonusDetails = () => {
+        if (betMode !== 'multiple' || selections.length < MULTI_BONUS.MIN_SELECTIONS) {
+            return { bonusPct: 0, bonusAmount: 0, cappedBonus: 0 };
+        }
+
+        const count = selections.length;
+        let bonusPct = 0;
+
+        Object.entries(MULTI_BONUS.SCALING)
+            .sort((a, b) => Number(b[0]) - Number(a[0]))
+            .some(([threshold, percent]) => {
+                if (count >= Number(threshold)) {
+                    bonusPct = Number(percent);
+                    return true;
+                }
+                return false;
+            });
+
+        const baseWin = potentialWin;
+        const bonusAmount = baseWin * (bonusPct / 100);
+        const cappedBonus = Math.min(bonusAmount, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+
+        return { bonusPct, bonusAmount, cappedBonus };
+    };
+
+    const { cappedBonus } = getBonusDetails();
+    const finalPotentialWin = potentialWin + cappedBonus;
 
     return (
         <>
@@ -393,14 +422,20 @@ export function BetSlipSidebar() {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Max Bonus</span>
-                                    <span className="text-lg font-black text-green-500">0.00</span>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Total Odds</span>
+                                    <span className="text-lg font-black text-white">{totalOdds.toFixed(2)}</span>
                                 </div>
-                                <div className="col-span-2 pt-2 border-t border-slate-700/50 flex justify-between items-end">
-                                    <span className="text-[10px] uppercase font-bold text-slate-400 mb-1">Potential Win</span>
-                                    <span className="text-2xl font-black text-white tracking-tight leading-none">
-                                        GHS {calculatePotentialWin().toFixed(2)}
+                                <div className="col-span-1">
+                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Max Bonus</span>
+                                    <span className="text-lg font-black text-green-500">
+                                        {cappedBonus.toFixed(2)}
                                     </span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 mb-1">Potential Win</span>
+                                    <div className="text-2xl font-black text-white tracking-tight leading-none">
+                                        GHS {finalPotentialWin.toFixed(2)}
+                                    </div>
                                 </div>
                             </div>
 

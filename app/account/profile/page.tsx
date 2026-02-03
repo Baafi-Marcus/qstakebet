@@ -1,64 +1,79 @@
 "use client"
 
-import { useSession } from "next-auth/react"
-import { Mail, Phone, User, Shield } from "lucide-react"
+import { useState, useEffect } from "react"
+import {
+    Mail,
+    Phone,
+    User,
+    Calendar,
+    Wallet,
+    Loader2,
+    Settings
+} from "lucide-react"
+import { getUserProfileSummary } from "@/lib/user-actions"
 
 export default function ProfilePage() {
-    const { data: session } = useSession()
+    const [loading, setLoading] = useState(true)
+    const [data, setData] = useState<any>(null)
 
-    const userInfo = [
-        { label: "Full Name", value: session?.user?.name || "Not provided", icon: User },
-        { label: "Email Address", value: session?.user?.email || "Not provided", icon: Mail },
-        { label: "Phone Number", value: "Not provided", icon: Phone },
-        { label: "Account ID", value: session?.user?.id || "---", icon: Shield },
-    ]
+    useEffect(() => {
+        getUserProfileSummary().then((res: any) => {
+            if (res.success) setData(res)
+            setLoading(false)
+        })
+    }, [])
+
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+        </div>
+    )
+
+    if (!data) return <div className="p-8 text-center text-slate-500">Failed to load profile summary.</div>
+
+    const { user, balance } = data
 
     return (
-        <div className="max-w-4xl">
-            <div className="mb-12">
-                <h2 className="text-4xl font-black mb-2 tracking-tight">Your Account</h2>
-                <p className="text-slate-400 font-medium">Manage your personal information and security settings.</p>
+        <div className="max-w-2xl mx-auto py-4">
+            {/* Minimal Header */}
+            <div className="flex items-center gap-6 mb-12 border-b border-white/5 pb-12">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-2xl font-black text-white">
+                    {user.name?.[0]?.toUpperCase()}
+                </div>
+                <div>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase text-white mb-1">{user.name}</h1>
+                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Account Predictor</p>
+                </div>
             </div>
 
-            <div className="space-y-12">
-                {/* Info List - Flat Design */}
-                <div className="border-t border-white/10">
-                    {userInfo.map((info) => (
-                        <div key={info.label} className="flex items-center gap-6 py-6 border-b border-white/10 group">
-                            <div className="p-0">
-                                <info.icon className="h-5 w-5 text-slate-500 group-hover:text-purple-400 transition-colors" />
-                            </div>
-                            <div className="flex-1">
-                                <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1 block">{info.label}</span>
-                                <p className="text-lg font-bold text-white tracking-tight">{info.value}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            {/* Quality Summary Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
+                <InfoRow icon={Phone} label="Phone Number" value={user.phone} />
+                <InfoRow icon={Mail} label="Email Address" value={user.email} />
+                <InfoRow icon={Calendar} label="Member Since" value={new Date(user.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} />
+                <InfoRow icon={Wallet} label="Main Balance" value={`GHS ${balance.toFixed(2)}`} highlight />
+            </div>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <button className="flex-1 bg-transparent hover:bg-white/5 border border-white/10 text-white font-bold py-4 px-8 rounded-lg transition-all text-sm uppercase tracking-widest">
-                        Change Password
-                    </button>
-                    <button className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-lg transition-all text-sm uppercase tracking-widest">
-                        Edit Profile
-                    </button>
-                </div>
+            {/* Simple Actions */}
+            <div className="mt-16 flex items-center gap-4 border-t border-white/5 pt-10">
+                <button className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs font-black uppercase tracking-widest">
+                    <Settings className="h-4 w-4" />
+                    Security Settings
+                </button>
+            </div>
+        </div>
+    )
+}
 
-                {/* Verification Section - Minimalist */}
-                <div className="flex items-start gap-4 p-0">
-                    <Shield className="h-5 w-5 text-purple-500 mt-1" />
-                    <div className="flex-1">
-                        <h3 className="text-base font-bold text-white mb-1">Account Verification</h3>
-                        <p className="text-slate-400 text-sm mb-4 max-w-xl">
-                            Complete your identity verification to unlock higher withdrawal limits and premium betting features.
-                        </p>
-                        <button className="text-purple-400 font-black text-xs uppercase tracking-widest hover:text-purple-300 transition-colors">
-                            Verify Identity &rarr;
-                        </button>
-                    </div>
-                </div>
+function InfoRow({ icon: Icon, label, value, highlight }: any) {
+    return (
+        <div className="flex gap-4">
+            <div className="mt-1">
+                <Icon className={`h-4 w-4 ${highlight ? 'text-purple-400' : 'text-slate-600'}`} />
+            </div>
+            <div>
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</span>
+                <span className={`text-sm font-bold ${highlight ? 'text-purple-400' : 'text-slate-200'}`}>{value}</span>
             </div>
         </div>
     )

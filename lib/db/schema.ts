@@ -109,6 +109,7 @@ export const bets = pgTable("bets", {
     bonusUsed: text("bonus_id"), // If bonus was used
     isBonusBet: boolean("is_bonus_bet").default(false).notNull(),
     bonusAmountUsed: real("bonus_amount_used").default(0),
+    bonusGiftAmount: real("bonus_gift_amount").default(0),
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),

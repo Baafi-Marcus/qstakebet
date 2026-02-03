@@ -1,110 +1,137 @@
 "use client"
 
-import { Smartphone, Wallet as WalletIcon, Banknote, ArrowUpRight, ArrowDownLeft, History, Clock } from "lucide-react"
+import { useState, useEffect } from "react"
+import {
+    Wallet as WalletIcon,
+    ArrowUpRight,
+    ArrowDownLeft,
+    Clock,
+    Loader2,
+    CheckCircle2,
+    CreditCard
+} from "lucide-react"
+import { getUserWalletDetails } from "@/lib/user-actions"
 import Link from "next/link"
-
-import { useEffect, useState } from "react"
-import { getUserWalletBalance } from "@/lib/wallet-actions"
+import { cn } from "@/lib/utils"
 
 export default function WalletPage() {
-
-    // const { data: session } = useSession()
-    const [balances, setBalances] = useState({ balance: 0, bonusBalance: 0 })
     const [loading, setLoading] = useState(true)
+    const [data, setData] = useState<any>(null)
 
     useEffect(() => {
-        const fetchBalance = async () => {
-            const data = await getUserWalletBalance()
-            setBalances(data)
+        getUserWalletDetails().then((res: any) => {
+            if (res.success) setData(res)
             setLoading(false)
-        }
-        fetchBalance()
+        })
     }, [])
 
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+        </div>
+    )
+
+    if (!data) return <div className="p-8 text-center text-slate-500">Failed to load wallet.</div>
+
+    const { wallet, transactions } = data
+
     return (
-        <div className="space-y-8 pb-10">
-            {/* Header with Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="max-w-4xl mx-auto py-4">
+            {/* Minimal Balance Header */}
+            <div className="border-b border-white/5 pb-12 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                    <h2 className="text-3xl font-black mb-1">Wallet Overview</h2>
-                    <p className="text-slate-400 font-medium">Manage your funds and track transactions</p>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase text-white mb-6">Financial Overview</h1>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Available Balance</p>
+                        <p className="text-5xl font-black text-white tracking-tighter">GHS {wallet.balance.toFixed(2)}</p>
+                    </div>
                 </div>
-                <div className="flex gap-4">
-                    <Link href="/account/deposit" className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2">
-                        <ArrowUpRight className="h-5 w-5" />
-                        DEPOSIT
+                <div className="flex gap-3">
+                    <Link href="/account/deposit" className="px-10 py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-purple-500/20 flex items-center gap-2 active:scale-95">
+                        <ArrowUpRight className="h-4 w-4" />
+                        Deposit
                     </Link>
-                    <Link href="/account/withdraw" className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-2xl transition-all flex items-center gap-2">
-                        <ArrowDownLeft className="h-5 w-5 text-pink-400" />
-                        WITHDRAW
+                    <Link href="/account/withdraw" className="px-10 py-4 bg-white/5 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all border border-white/5 flex items-center gap-2 active:scale-95">
+                        <ArrowDownLeft className="h-4 w-4 text-pink-400" />
+                        Withdraw
                     </Link>
                 </div>
             </div>
 
-            {/* Balance Overview - Flat */}
-            <div className="border-b border-white/10 pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
-                    <div>
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Main Wallet</p>
-                        <h2 className="text-5xl font-mono font-black text-white tracking-tighter">
-                            {loading ? "..." : `GHS ${balances.balance.toFixed(2)}`}
-                        </h2>
-                    </div>
-                    <div>
-                        <p className="text-xs font-black text-purple-400 uppercase tracking-widest mb-2">Bonus Balance</p>
-                        <h2 className="text-5xl font-mono font-black text-white tracking-tighter">
-                            {loading ? "..." : `GHS ${balances.bonusBalance.toFixed(2)}`}
-                        </h2>
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Stats - Text Only Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 border-b border-white/10 pb-8">
-                {[
-                    { label: "Total Deposits", value: "GHS 0.00", icon: ArrowUpRight, color: "text-green-500" },
-                    { label: "Total Winnings", value: "GHS 0.00", icon: Trophy, color: "text-yellow-500" },
-                    { label: "Pending Withdraws", value: "GHS 0.00", icon: Clock, color: "text-blue-500" },
-                    { label: "Referral Earned", value: "GHS 0.00", icon: Banknote, color: "text-purple-500" },
-                ].map((stat, i) => {
-                    return (
-                        <div key={i} className="py-2">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                                {stat.label}
-                            </p>
-                            <p className={cn("text-xl font-black", stat.color)}>{stat.value}</p>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {/* Transaction History Heading */}
-            <div className="pt-2">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black">Transaction History</h3>
-                    <button className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
-                        View All
-                    </button>
+            {/* Transaction Ledger */}
+            <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        Recent Transactions
+                    </h3>
                 </div>
 
-                {/* Empty State - Minimal */}
-                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-slate-600" />
+                {transactions.length > 0 ? (
+                    <div className="divide-y divide-white/5">
+                        {transactions.map((txn: any) => (
+                            <div key={txn.id} className="py-6 flex items-center justify-between group">
+                                <div className="flex items-center gap-4">
+                                    <div className={cn(
+                                        "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                                        txn.type === 'deposit' || txn.type === 'bet_payout' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                                    )}>
+                                        {txn.type === 'deposit' ? <ArrowUpRight className="h-5 w-5" /> :
+                                            txn.type === 'bet_payout' ? <Trophy className="h-4 w-4" /> :
+                                                <CreditCard className="h-4 w-4" />}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-200 capitalize">{txn.type.replace('_', ' ')}</p>
+                                        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                            {new Date(txn.createdAt).toLocaleDateString('en-GB')} • Ref: {txn.id.slice(-6).toUpperCase()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className={cn(
+                                        "text-sm font-black",
+                                        txn.type === 'deposit' || txn.type === 'bet_payout' ? 'text-emerald-400' : 'text-slate-200'
+                                    )}>
+                                        {txn.type === 'deposit' || txn.type === 'bet_payout' ? '+' : '-'} GHS {txn.amount.toFixed(2)}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+                                        Bal: {txn.balanceAfter.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <div className="max-w-xs space-y-1">
-                        <p className="text-white font-bold text-sm">No recent transactions</p>
-                        <p className="text-xs text-slate-500">Your activity will appear here.</p>
+                ) : (
+                    <div className="py-16 text-center bg-slate-900/10 rounded-3xl border border-dashed border-white/5">
+                        <WalletIcon className="h-10 w-10 text-slate-800 mx-auto mb-4" />
+                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">No transaction history available.</p>
                     </div>
-                    <Link href="/account/deposit" className="text-xs font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest mt-2">
-                        Make a deposit
-                    </Link>
-                </div>
+                )}
             </div>
         </div>
     )
 }
 
-// Fixed imports and added Trophy which was missing
-import { Trophy } from "lucide-react"
-import { cn } from "@/lib/utils"
+function Trophy({ className }: { className?: string }) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+        >
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </svg>
+    )
+}

@@ -45,23 +45,33 @@ export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> 
                     messages: [
                         {
                             role: "system",
-                            content: `You are a sports result parser. Extract match results from text and return ONLY valid JSON array.
-Format: [{"team1": "School A", "team2": "School B", "score1": 3, "score2": 1, "winner": "School A"}]
+                            content: `You are a high-precision sports result extractor. Your task is to extract match results from the provided text.
+                            
 Rules:
-- team1/team2: Full school names
-- score1/score2: Numbers (optional if not provided)
-- winner: Full name of winning team
-- If draw/tie, winner is the team mentioned as winner (e.g., "won on penalties")
-- Return empty array [] if no results found`
+1. Return ONLY a valid JSON array. No conversational text, no "Here is your JSON".
+2. If match results are ambiguous, make your best professional guess based on the phrasing.
+3. If no match results are found, return an empty array [].
+4. Format:
+[
+  {
+    "team1": "Full School Name",
+    "team2": "Full School Name",
+    "score1": 3,
+    "score2": 1,
+    "winner": "Full School Name"
+  }
+]
+5. If the score is missing but a winner is mentioned, include the winner and leave scores null.`
                         },
                         {
                             role: "user",
-                            content: `Parse these match results:\n\n${text}`
+                            content: `Extract match results from this text and return as JSON array:\n\n${text}`
                         }
                     ],
                     model: "gpt-4o",
                     temperature: 0.1,
-                    max_tokens: 2000
+                    max_tokens: 2000,
+                    response_format: { type: "json_object" } // Try to force JSON if supported, though we wrap in array. Actually gpt-4o supports it.
                 })
             })
 
@@ -246,10 +256,10 @@ Rules:
 1. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
 2. **Profitability**: You MUST build in a **15% House Margin (Vig)** into the odds. The implied probability of all options in a market should sum to ~115%.
    - Formula: FairProb = 1/FairOdd. VigProb = FairProb * 1.15. FinalOdd = 1/VigProb.
-3. **Format**: Return ONLY valid JSON array.
+3. **Format**: Return ONLY valid JSON array of objects.
    [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
-4. **Variety**: Suggest things like Player Props, specific Scorelines, or Period-based outcomes (Halves/Quarters).
-5. **Realism**: Odds must be realistic for the sport.`
+4. **Variety**: Suggest things like Winner, Correct Score, Over/Under, or Period-based outcomes (Halves/Quarters).
+5. **Realism**: Odds must be realistic for the specific schools and sports mentioned.`
                         },
                         {
                             role: "user",

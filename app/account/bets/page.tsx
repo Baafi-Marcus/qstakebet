@@ -1,58 +1,92 @@
 "use client"
 
-// import { useSession } from "next-auth/react"
-import { Trophy, ArrowRight } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect } from "react"
+import { Trophy, History, Loader2, Search } from "lucide-react"
+import { getUserBets } from "@/lib/user-actions"
+import { cn } from "@/lib/utils"
 
 export default function BetsPage() {
-    // const { data: session } = useSession()
+    const [loading, setLoading] = useState(true)
+    const [bets, setBets] = useState<any[]>([])
+
+    useEffect(() => {
+        getUserBets().then((res: any) => {
+            if (res.success) setBets(res.bets || [])
+            setLoading(false)
+        })
+    }, [])
+
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+        </div>
+    )
 
     return (
-        <div className="space-y-12">
-            <div>
-                <h2 className="text-3xl font-black mb-2">My Betting History</h2>
-                <p className="text-slate-400 font-medium">View and track your previous and active bets</p>
-            </div>
-
-            {/* Filters */}
-            <div className="flex gap-2 p-1 bg-white/5 rounded-2xl w-fit">
-                <button className="px-6 py-2 bg-purple-600 rounded-xl text-sm font-black transition-all">ALL BETS</button>
-                <button className="px-6 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all tracking-wider">OPEN</button>
-                <button className="px-6 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all tracking-wider">SETTLED</button>
-            </div>
-
-            {/* Bets List Placeholder */}
-            <div className="bg-slate-900/40 rounded-[2.5rem] border border-white/5 divide-y divide-white/5 overflow-hidden">
-                <div className="p-20 text-center">
-                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Trophy className="h-10 w-10 text-slate-700" />
-                    </div>
-                    <h3 className="text-2xl font-black text-white mb-2">No Bets Found</h3>
-                    <p className="text-slate-500 font-medium max-w-sm mx-auto mb-8">
-                        It looks like you have not placed any bets yet. Browse our top matches and start betting!
-                    </p>
-                    <Link href="/" className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-xl shadow-purple-500/20 group">
-                        EXPLORE MATCHES
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+        <div className="max-w-4xl mx-auto py-4">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase text-white mb-1">Betting History</h1>
+                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Live & Settled Predictions</p>
+                </div>
+                <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-white/5 rounded-full px-4 py-2 opacity-50">
+                    <Search className="h-3 w-3 text-slate-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Search History</span>
                 </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-8 bg-white/5 rounded-3xl border border-white/5">
-                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2">Total Staked</p>
-                    <p className="text-3xl font-black">GHS 0.00</p>
+            {bets.length > 0 ? (
+                <div className="space-y-4">
+                    {bets.map((bet) => (
+                        <div key={bet.id} className="group bg-slate-900/40 border border-white/5 hover:border-white/10 p-6 rounded-3xl transition-all">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            bet.status === 'won' ? 'bg-emerald-500' :
+                                                bet.status === 'pending' ? 'bg-amber-500 animate-pulse' :
+                                                    'bg-red-500'
+                                        )} />
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none">
+                                            {bet.status} • {new Date(bet.createdAt).toLocaleDateString('en-GB')}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {(bet.selections as any[]).map((sel, idx) => (
+                                            <p key={idx} className="text-sm font-bold text-slate-200">
+                                                {sel.matchLabel} • <span className="text-purple-400">{sel.label}</span>
+                                            </p>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-8 text-right self-end md:self-center">
+                                    <div>
+                                        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Stake</p>
+                                        <p className="text-sm font-black text-white">GHS {bet.stake?.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">
+                                            {bet.status === 'won' ? 'Payout' : 'Potential'}
+                                        </p>
+                                        <p className={cn(
+                                            "text-sm font-black",
+                                            bet.status === 'won' ? 'text-emerald-400' : 'text-slate-200'
+                                        )}>
+                                            GHS {bet.potentialPayout?.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-                <div className="p-8 bg-white/5 rounded-3xl border border-white/5">
-                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2">Total Returned</p>
-                    <p className="text-3xl font-black text-green-400">GHS 0.00</p>
+            ) : (
+                <div className="py-24 text-center border border-dashed border-white/5 rounded-[2.5rem]">
+                    <History className="h-10 w-10 text-slate-800 mx-auto mb-4" />
+                    <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">No predictions found in your history.</p>
                 </div>
-                <div className="p-8 bg-white/5 rounded-3xl border border-white/5">
-                    <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-2">Net Profit/Loss</p>
-                    <p className="text-3xl font-black text-purple-400">GHS 0.00</p>
-                </div>
-            </div>
+            )}
         </div>
     )
 }

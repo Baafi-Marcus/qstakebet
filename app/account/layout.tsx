@@ -5,10 +5,19 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { User, History, Wallet, Gift, Settings, LogOut, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getUserProfileSummary } from "@/lib/user-actions"
+import { useEffect, useState } from "react"
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession()
     const pathname = usePathname()
+    const [balance, setBalance] = useState<number>(0)
+
+    useEffect(() => {
+        getUserProfileSummary().then((res: any) => {
+            if (res.success) setBalance(res.balance ?? 0)
+        })
+    }, [pathname])
 
     const menuItems = [
         { href: "/account/profile", label: "My Profile", icon: User },
@@ -78,8 +87,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                 <Wallet className="h-4 w-4" />
                                 Total Balance
                             </div>
-                            <div className="text-4xl font-black text-white">GHS <span className="text-white">0.00</span></div>
-                            <Link href="/account/wallet" className="mt-6 block w-full bg-white text-purple-600 hover:bg-indigo-50 font-black py-4 rounded-2xl text-center transition-colors">
+                            <div className="text-4xl font-black text-white">GHS <span className="text-white">{balance.toFixed(2)}</span></div>
+                            <Link href="/account/deposit" className="mt-6 block w-full bg-white text-purple-600 hover:bg-indigo-50 font-black py-4 rounded-2xl text-center transition-colors">
                                 RECHARGE NOW
                             </Link>
                         </div>

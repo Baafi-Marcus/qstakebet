@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown } from "lucide-react"
+import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -22,7 +22,8 @@ export function Header() {
     }, [status])
 
     const navLinks = [
-        { href: "/", label: "Sports", icon: Trophy },
+        { href: "/", label: "Featured", icon: Star },
+        { href: "/live", label: "Live Matches", icon: Timer },
         { href: "/virtuals", label: "Virtuals", icon: Zap, status: "NEW" },
     ]
 

@@ -61,13 +61,37 @@ export async function settleMatch(matchId: string) {
 
                 // Recalculate Total Odds
                 const newTotalOdds = updatedSelections.reduce((acc, curr) => acc * curr.odds, 1)
-                const newPayout = bet.stake * newTotalOdds
 
-                // Update Bet with new odds/payout
+                // Recalculate Bonus
+                let newBonusGiftAmount = 0
+                if (updatedSelections.length >= 3 && !bet.isBonusBet) {
+                    const { MULTI_BONUS } = await import("@/lib/constants")
+                    const count = updatedSelections.length
+                    let bonusPct = 0
+
+                    Object.entries(MULTI_BONUS.SCALING)
+                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                        .some(([threshold, percent]) => {
+                            if (count >= Number(threshold)) {
+                                bonusPct = Number(percent)
+                                return true
+                            }
+                            return false
+                        })
+
+                    const baseWin = bet.stake * newTotalOdds
+                    const rawBonus = baseWin * (bonusPct / 100)
+                    newBonusGiftAmount = Math.min(rawBonus, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP)
+                }
+
+                const newPayout = (bet.stake * newTotalOdds) + newBonusGiftAmount
+
+                // Update Bet with new odds/payout/bonus
                 await db.update(bets).set({
                     selections: updatedSelections,
                     totalOdds: newTotalOdds,
                     potentialPayout: newPayout,
+                    bonusGiftAmount: newBonusGiftAmount,
                     updatedAt: new Date()
                 }).where(eq(bets.id, bet.id))
 

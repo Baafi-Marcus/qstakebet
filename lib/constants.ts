@@ -26,3 +26,22 @@ export const AI_RISK_SETTINGS = {
     // "Smart" margin that increases for riskier (lower probability) bets
     DYNAMIC_MARGIN_FACTOR: 1.15
 }
+
+export const MULTI_BONUS = {
+    // Hard cap on the bonus GIFT amount (GHS)
+    MAX_BONUS_AMOUNT_CAP: 250,
+    // Minimum selections to qualify for bonus
+    MIN_SELECTIONS: 3,
+    // Bonus percentage based on selection count
+    SCALING: {
+        3: 5,   // 3 selections = 5% bonus
+        4: 10,  // 4 selections = 10%
+        5: 15,  // 5 selections = 15%
+        6: 20,  // 6 selections = 20%
+        7: 25,  // 7 selections = 25%
+        8: 30,  // 8 selections = 30%
+        9: 40,  // 9 selections = 40%
+        10: 50, // 10 selections = 50%
+        15: 100 // 15+ selections = 100%
+    }
+}

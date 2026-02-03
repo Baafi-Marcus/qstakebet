@@ -80,9 +80,31 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
                 }
             }
 
-            // 2. Calculate total odds
+            // 2. Calculate total odds and Multi-Bonus
             const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
-            const potentialPayout = stake * totalOdds
+
+            let bonusGiftAmount = 0
+            if (selections.length >= 3 && !isBonus) {
+                const { MULTI_BONUS } = await import("@/lib/constants")
+                const count = selections.length
+                let bonusPct = 0
+
+                Object.entries(MULTI_BONUS.SCALING)
+                    .sort((a, b) => Number(b[0]) - Number(a[0]))
+                    .some(([threshold, percent]) => {
+                        if (count >= Number(threshold)) {
+                            bonusPct = Number(percent)
+                            return true
+                        }
+                        return false
+                    })
+
+                const baseWin = stake * totalOdds
+                const rawBonus = baseWin * (bonusPct / 100)
+                bonusGiftAmount = Math.min(rawBonus, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP)
+            }
+
+            const potentialPayout = (stake * totalOdds) + bonusGiftAmount
 
             // 3. Create the Bet
             const betId = `bet-${Math.random().toString(36).substr(2, 9)}`
@@ -96,6 +118,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
                 selections: selections, // JSONB column
                 isBonusBet: isBonus,
                 bonusAmountUsed: isBonus ? stake : 0,
+                bonusGiftAmount: bonusGiftAmount,
                 createdAt: new Date(),
                 updatedAt: new Date()
             })

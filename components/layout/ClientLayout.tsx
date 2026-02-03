@@ -6,21 +6,24 @@ import { BottomNav } from "./BottomNav"
 import { FloatingBetSlipButton } from "./FloatingBetSlipButton"
 import { BetSlipSidebar } from "./BetSlipSidebar"
 import { Header } from "./Header"
-import { Sidebar } from "./Sidebar"
+import { SubNavBar } from "./SubNavBar"
+import { Footer } from "./Footer"
 import { SessionProvider } from "next-auth/react"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const isAuthPage = pathname?.startsWith("/auth")
     const isAdmin = pathname?.startsWith("/admin")
-
     const isVirtuals = pathname?.startsWith("/virtuals")
 
+    // Admin Layout (Minimal)
     if (isAdmin) {
         return (
             <SessionProvider>
                 <BetSlipProvider>
-                    {children}
+                    <div className="min-h-screen bg-background">
+                        {children}
+                    </div>
                 </BetSlipProvider>
             </SessionProvider>
         )
@@ -29,26 +32,31 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     return (
         <SessionProvider>
             <BetSlipProvider>
-                {!isVirtuals && <Header />}
-                <div className={pathname?.startsWith("/virtuals") ? "" : "flex pt-14 lg:pt-0"}>
-                    {!isVirtuals && <Sidebar />}
-                    <main className="flex-1 min-w-0">
-                        {children}
-                    </main>
+                <div className="min-h-screen flex flex-col bg-background">
+                    {/* Sticky Main Header */}
+                    {!isVirtuals && <Header />}
+
+                    {/* Sticky Secondary Navigation (Sports/Regions) */}
+                    {!isVirtuals && !isAuthPage && <SubNavBar />}
+
+                    <div className="flex-1 flex flex-col">
+                        <main className="flex-1 min-w-0">
+                            {children}
+                        </main>
+                    </div>
+
+                    {/* Standard Footer */}
+                    {!isVirtuals && !isAuthPage && <Footer />}
+
+                    {/* Overlay components */}
+                    {!isAuthPage && !isVirtuals && (
+                        <>
+                            <BetSlipSidebar />
+                            <FloatingBetSlipButton />
+                            <BottomNav />
+                        </>
+                    )}
                 </div>
-                {!isAuthPage && !isVirtuals && (
-                    <>
-                        <BetSlipSidebar />
-                        <FloatingBetSlipButton />
-                    </>
-                )}
-                {/* For virtuals, we might want to hide standard betslip sidebar as it uses its own betting logic? 
-                    Actually, user didn't ask to remove it, but usually virtuals are self-contained. 
-                    Let's hide it for now to avoid clutter, adhering to "own nav bar" request implies isolation. 
-                    If user wants betslip, they usually have a custom one in virtuals. 
-                    VirtualsClient has its own betslip logic (PendingSlips etc). 
-                */}
-                {!isVirtuals && <BottomNav />}
             </BetSlipProvider>
         </SessionProvider>
     )
