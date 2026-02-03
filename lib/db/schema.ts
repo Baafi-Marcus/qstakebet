@@ -172,10 +172,58 @@ export const referrals = pgTable("referrals", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const virtualSchoolStats = pgTable("virtual_school_stats", {
+    id: text("id").primaryKey(), // vss-xxxxx
+    schoolId: text("school_id").notNull().references(() => schools.id),
+
+    // AI Learning Parameters
+    learningIndex: real("learning_index").default(0.0), // 0.0 - 1.0 (AI Confidence)
+    volatilityIndex: real("volatility_index").default(0.1), // Stability of performance
+
+    // Performance Tracking
+    matchesPlayed: integer("matches_played").default(0),
+    wins: integer("wins").default(0),
+    currentForm: real("current_form").default(1.0), // 1.0 = Base strength
+    lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const realSchoolStats = pgTable("real_school_stats", {
+    id: text("id").primaryKey(), // rss-xxxxx
+    schoolId: text("school_id").notNull().references(() => schools.id),
+
+    // Context
+    sportType: text("sport_type").default("football").notNull(),
+    gender: text("gender").default("male").notNull(),
+
+    // Performance Tracking
+    matchesPlayed: integer("matches_played").default(0),
+    wins: integer("wins").default(0),
+    losses: integer("losses").default(0),
+    draws: integer("draws").default(0),
+    goalsFor: integer("goals_for").default(0),
+    goalsAgainst: integer("goals_against").default(0),
+    points: integer("points").default(0), // League Points (3 for win, 1 for draw)
+
+    currentForm: real("current_form").default(1.0), // 1.0 = Base
+    lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 export const bookedBets = pgTable("booked_bets", {
     id: text("id").primaryKey(),
     code: text("code").notNull().unique(),
     selections: jsonb("selections").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const apiKeys = pgTable("api_keys", {
+    id: text("id").primaryKey(), // key-xxxxx
+    key: text("key").notNull(),
+    provider: text("provider").default("github_models").notNull(), // "github_models", "openai"
+    label: text("label"), // e.g. "Primary Key", "Backup 1"
+    isActive: boolean("is_active").default(true).notNull(),
+    usageCount: integer("usage_count").default(0).notNull(),
+    errorCount: integer("error_count").default(0).notNull(),
+    lastUsedAt: timestamp("last_used_at"),
     createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -206,3 +254,5 @@ export type Bet = typeof bets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Bonus = typeof bonuses.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;
+export type VirtualSchoolStat = typeof virtualSchoolStats.$inferSelect;
+export type RealSchoolStat = typeof realSchoolStats.$inferSelect;

@@ -19,26 +19,32 @@ export function getMatchLockStatus(match: Match): {
     const diffMs = startTime.getTime() - now.getTime()
     const minutesUntilStart = diffMs / 60000
 
-    // Lock if within 5 minutes of start
-    if (minutesUntilStart <= 5 && minutesUntilStart > 0) {
+    // RELAXED LOCKING FOR "GHANA TIME"
+    // We do NOT lock based on strict time anymore. 
+    // We only lock if the status is explicitly 'live', 'finished', 'cancelled' or 'locked'.
+
+    const isExplicitlyLocked = ['live', 'finished', 'cancelled', 'locked'].includes(match.status || "");
+
+    if (isExplicitlyLocked) {
         return {
             isLocked: true,
-            reason: 'Match starting soon',
+            reason: `Match is ${match.status}`,
             timeUntilLock: 0
         }
     }
 
-    // Lock if match has already started or is finished
-    if (minutesUntilStart <= 0 || match.status === 'finished') {
+    // Safety Net: Lock if 24 hours past scheduled time (Abandoned/Forgotten matches)
+    const hoursPast = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    if (hoursPast > 24) {
         return {
             isLocked: true,
-            reason: match.status === 'finished' ? 'Match finished' : 'Match has started',
+            reason: 'Match expired (24h+ overdue)',
             timeUntilLock: 0
         }
     }
 
     return {
         isLocked: false,
-        timeUntilLock: minutesUntilStart
+        timeUntilLock: minutesUntilStart // Informational only now
     }
 }

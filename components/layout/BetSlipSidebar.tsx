@@ -3,11 +3,13 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { BetSlipContext } from "@/lib/store/context"
-import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity, Share2, Copy, Download, Send } from "lucide-react"
+import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity } from "lucide-react"
+import { BookingSuccessModal } from "@/components/ui/BookingSuccessModal"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { bets } from "@/lib/db/schema"
 import { placeBet, bookBet, loadBookedBet } from "@/lib/bet-actions"
+import { FINANCE_LIMITS } from "@/lib/constants"
 
 export function BetSlipSidebar() {
     const [isProcessing, setIsProcessing] = React.useState(false)
@@ -87,6 +89,7 @@ export function BetSlipSidebar() {
             const res = await bookBet(selections as any)
             if (res.success && res.code) {
                 setBookedCodeResult(res.code)
+                closeSlip() // Close the sidebar so modal is centered visible
             } else {
                 setError(res.error || "Failed to book")
             }
@@ -188,9 +191,9 @@ export function BetSlipSidebar() {
                     </div>
                 </div>
 
-                {/* Bet Mode Tabs (Single/Multiple/System) */}
-                <div className="grid grid-cols-3 gap-0 bg-slate-800/50">
-                    {(['single', 'multiple', 'system'] as const).map((mode) => (
+                {/* Bet Mode Tabs (Single/Multiple) */}
+                <div className="grid grid-cols-2 gap-0 bg-slate-800/50">
+                    {(['single', 'multiple'] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setBetMode(mode)}
@@ -233,6 +236,28 @@ export function BetSlipSidebar() {
                     </div>
                 )}
 
+
+                {/* Stake All Input for Singles */}
+                {betMode === 'single' && selections.length > 0 && (
+                    <div className="px-4 py-3 bg-slate-800/80 border-b border-slate-800 flex items-center justify-between">
+                        <span className="text-slate-300 text-xs font-bold uppercase">Stake All</span>
+                        <div className="flex items-center gap-2 bg-slate-900 rounded-lg px-3 py-1.5 border border-slate-700 w-32">
+                            <span className="text-slate-500 text-xs font-bold">GHS</span>
+                            <input
+                                type="number"
+                                placeholder={FINANCE_LIMITS.BET.MIN_STAKE.toString()}
+                                className="bg-transparent text-right font-bold text-sm text-white focus:outline-none w-full"
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                        selections.forEach(s => updateSelectionStake(s.selectionId, val));
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* Selections List */}
                 {selections.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -245,121 +270,14 @@ export function BetSlipSidebar() {
                 ) : (
                     <>
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50 relative">
-                            {/* Rich Booking Success Modal */}
+                            {/* Booking Success Modal (Centered) */}
                             {bookedCodeResult && (
-                                <div className="absolute inset-0 z-[100] bg-slate-900 flex flex-col animate-in slide-in-from-bottom duration-300">
-                                    {/* Modal Header */}
-                                    <div className="bg-red-600 px-4 py-3 flex items-center justify-between shadow-lg">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-white font-black italic tracking-tighter text-xl">QSTAKE</span>
-                                            <span className="bg-white/20 text-[10px] text-white px-1 rounded font-bold">GH</span>
-                                        </div>
-                                        <div className="text-white/80 text-[10px] font-bold">
-                                            {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                        <button onClick={() => setBookedCodeResult(null)} className="text-white hover:bg-white/10 p-1 rounded-full transition-colors">
-                                            <X className="h-5 w-5" />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-                                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Booking Code</span>
-                                        <h2 className="text-5xl font-black text-green-500 tracking-[0.2em] mb-6 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                                            {bookedCodeResult}
-                                        </h2>
-
-                                        {/* Odds Summary Card */}
-                                        <div className="w-full bg-slate-800 rounded-xl overflow-hidden border border-slate-700 mb-6">
-                                            <div className="grid grid-cols-2 divide-x divide-slate-700">
-                                                <div className="p-4 flex flex-col items-center">
-                                                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-1">Total Odds</span>
-                                                    <span className="text-2xl font-black text-white">{totalOdds.toFixed(2)}</span>
-                                                </div>
-                                                <div className="p-4 flex flex-col items-center text-center">
-                                                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-1">Selections</span>
-                                                    <span className="text-2xl font-black text-white">{selections.length}</span>
-                                                </div>
-                                            </div>
-                                            <div className="bg-green-500/10 border-t border-slate-700 p-2 text-center">
-                                                <span className="text-green-500 text-[10px] font-black uppercase">Max Bonus: 2.40%</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Example Bet Table */}
-                                        <div className="w-full space-y-3 mb-8">
-                                            <div className="flex items-center gap-2 text-green-500 mb-2">
-                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Example Bet</span>
-                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
-                                            </div>
-                                            <div className="flex justify-between items-center px-2">
-                                                <span className="text-slate-400 font-bold text-sm">Stake</span>
-                                                <span className="text-white font-black text-sm">100.00</span>
-                                            </div>
-                                            <div className="flex justify-between items-center px-2">
-                                                <span className="text-slate-400 font-bold text-sm">Bonus</span>
-                                                <span className="text-green-500 font-black text-sm">8.13</span>
-                                            </div>
-                                            <div className="flex justify-between items-center px-2 pt-2 border-t border-slate-800">
-                                                <span className="text-slate-400 font-bold text-sm">Potential Win</span>
-                                                <span className="text-white font-black text-lg">{(100 * totalOdds + 8.13).toFixed(2)}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Selections List within Modal */}
-                                        <div className="w-full space-y-4 mb-8">
-                                            <div className="flex items-center gap-2 text-green-500 mb-2">
-                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Selections</span>
-                                                <div className="h-[1px] flex-1 bg-green-500/20"></div>
-                                            </div>
-                                            {selections.map((item) => (
-                                                <div key={item.selectionId} className="flex gap-4 items-start border-b border-slate-800 pb-4 last:border-0">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mt-1">
-                                                        <Activity className="h-4 w-4" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-start">
-                                                            <span className="text-white font-bold text-base leading-tight">{item.label}</span>
-                                                            <span className="text-white font-black text-base">{item.odds.toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="text-slate-400 text-xs font-medium mt-0.5">{item.matchLabel}</div>
-                                                        <div className="text-slate-500 text-[10px] font-black uppercase mt-1 tracking-wider">{item.marketName}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Sharing Actions */}
-                                        <div className="grid grid-cols-4 gap-4 w-full mt-auto pt-6 border-t border-slate-800">
-                                            {[
-                                                { icon: Download, label: "Save Image", color: "bg-slate-700" },
-                                                {
-                                                    icon: Copy, label: "Copy Link", color: "bg-slate-700", onClick: () => {
-                                                        navigator.clipboard.writeText(bookedCodeResult);
-                                                        alert("Code copied!");
-                                                    }
-                                                },
-                                                { icon: Send, label: "Telegram", color: "bg-blue-500" },
-                                                { icon: Activity, label: "WhatsApp", color: "bg-green-500" },
-                                            ].map((action, i) => (
-                                                <button
-                                                    key={i}
-                                                    onClick={action.onClick}
-                                                    className="flex flex-col items-center gap-2 group"
-                                                >
-                                                    <div className={cn(
-                                                        "w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110",
-                                                        action.color
-                                                    )}>
-                                                        <action.icon className="h-5 w-5 text-white" />
-                                                    </div>
-                                                    <span className="text-[9px] font-bold text-slate-500 group-hover:text-white transition-colors">{action.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                <BookingSuccessModal
+                                    code={bookedCodeResult}
+                                    selections={selections}
+                                    totalOdds={totalOdds}
+                                    onClose={() => setBookedCodeResult(null)}
+                                />
                             )}
 
                             {selections.map((item) => (
@@ -454,36 +372,51 @@ export function BetSlipSidebar() {
                             </div>
                         )}
 
-                        {/* Bottom Section */}
-                        <div className="bg-slate-900 border-t border-slate-800">
-                            {/* Total Stake Input */}
-                            <div className="px-4 py-4 flex items-center justify-between">
-                                <span className="text-white font-bold text-sm">Total Stake</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-slate-400 text-sm font-bold">GHS</span>
-                                    <input
-                                        type="number"
-                                        value={betMode === 'single' ? totalStake.toFixed(2) : stake}
-                                        onChange={(e) => betMode !== 'single' && setStake(Math.max(0, Number(e.target.value)))}
-                                        disabled={betMode === 'single'}
-                                        className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-right font-bold text-white focus:outline-none focus:border-green-500 disabled:opacity-50"
-                                    />
+                        {/* Unified Compact Summary Card */}
+                        <div className="bg-slate-900 border-t border-slate-800 p-4 space-y-3">
+                            {/* Summary Grid */}
+                            <div className="grid grid-cols-2 gap-4 bg-slate-800/50 rounded-xl p-3 border border-slate-800">
+                                <div>
+                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Total Stake</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-bold text-slate-500">GHS</span>
+                                        {betMode === 'single' ? (
+                                            <span className="text-lg font-black text-white">{totalStake.toFixed(2)}</span>
+                                        ) : (
+                                            <input
+                                                type="number"
+                                                value={stake}
+                                                onChange={(e) => setStake(Math.max(0, Number(e.target.value)))}
+                                                className="bg-transparent text-lg font-black text-white w-20 focus:outline-none border-b border-dashed border-slate-600 focus:border-green-500 transition-colors"
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Max Bonus</span>
+                                    <span className="text-lg font-black text-green-500">0.00</span>
+                                </div>
+                                <div className="col-span-2 pt-2 border-t border-slate-700/50 flex justify-between items-end">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 mb-1">Potential Win</span>
+                                    <span className="text-2xl font-black text-white tracking-tight leading-none">
+                                        GHS {calculatePotentialWin().toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="grid grid-cols-2 gap-0">
+                            <div className="grid grid-cols-2 gap-0 rounded-xl overflow-hidden">
                                 {status === "unauthenticated" ? (
                                     <>
                                         <Link
                                             href="/auth/login"
-                                            className="py-5 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all border-r border-slate-700 flex items-center justify-center"
+                                            className="py-4 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all flex items-center justify-center"
                                         >
                                             Login
                                         </Link>
                                         <Link
                                             href="/auth/register"
-                                            className="py-5 bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase transition-all flex items-center justify-center"
+                                            className="py-4 bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase transition-all flex items-center justify-center"
                                         >
                                             Register
                                         </Link>
@@ -493,16 +426,18 @@ export function BetSlipSidebar() {
                                         <button
                                             onClick={handleBookBet}
                                             disabled={isBooking || selections.length === 0}
-                                            className="py-5 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all border-r border-slate-700 flex items-center justify-center gap-2"
+                                            className="py-4 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all flex items-center justify-center gap-2 border-r border-slate-700"
                                         >
                                             {isBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Bet"}
                                         </button>
                                         <button
                                             onClick={async () => {
-                                                // Check for finished games
-                                                const hasFinished = selections.some((s: any) => s.matchStatus === 'finished')
-                                                if (hasFinished) {
-                                                    setError("Please remove finished games to place bet")
+                                                if (selections.some((s: any) => s.matchStatus === 'finished')) {
+                                                    setError("Please remove finished games")
+                                                    return
+                                                }
+                                                if (totalStake < FINANCE_LIMITS.BET.MIN_STAKE) {
+                                                    setError(`Min stake is GHS ${FINANCE_LIMITS.BET.MIN_STAKE}`)
                                                     return
                                                 }
 
@@ -512,7 +447,9 @@ export function BetSlipSidebar() {
                                                 try {
                                                     if (betMode === 'single') {
                                                         for (const sel of selections) {
-                                                            await placeBet(sel.stake || stake, [sel], useBonus)
+                                                            if ((sel.stake || stake) >= FINANCE_LIMITS.BET.MIN_STAKE) {
+                                                                await placeBet(sel.stake || stake, [sel], useBonus)
+                                                            }
                                                         }
                                                         clearSlip()
                                                         setUseBonus(false)
@@ -536,24 +473,13 @@ export function BetSlipSidebar() {
                                                     setIsProcessing(false)
                                                 }
                                             }}
-                                            disabled={isProcessing || totalStake < 1}
-                                            className="py-5 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase transition-all flex flex-col items-center justify-center gap-1"
+                                            disabled={isProcessing || totalStake < FINANCE_LIMITS.BET.MIN_STAKE}
+                                            className="py-4 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase transition-all flex flex-col items-center justify-center"
                                         >
                                             {isProcessing ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    <span>Processing...</span>
-                                                </div>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
-                                                <>
-                                                    <span>Place Bet</span>
-                                                    <span className="text-xs font-normal">
-                                                        {selections.some((s: any) => s.matchStatus === 'finished')
-                                                            ? "Remove finished games"
-                                                            : `About to pay ${totalStake.toFixed(2)}`
-                                                        }
-                                                    </span>
-                                                </>
+                                                "Place Bet"
                                             )}
                                         </button>
                                     </>
@@ -565,14 +491,14 @@ export function BetSlipSidebar() {
                                 <Link
                                     href="/account/wallet"
                                     onClick={closeSlip}
-                                    className="block p-3 text-center text-xs font-bold text-green-500 hover:bg-green-500/10 transition-colors border-t border-slate-800"
+                                    className="block text-center text-[10px] font-bold text-green-500 hover:text-green-400 transition-colors uppercase tracking-widest"
                                 >
                                     Deposit Funds
                                 </Link>
                             )}
 
                             {error && (
-                                <p className="text-xs text-red-500 text-center py-2 font-bold animate-pulse">
+                                <p className="text-xs text-red-500 text-center font-bold animate-pulse">
                                     {error}
                                 </p>
                             )}

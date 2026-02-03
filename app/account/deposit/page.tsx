@@ -5,6 +5,7 @@ import { CreditCard, Phone, Smartphone, ChevronRight, AlertCircle, CheckCircle2,
 import Link from "next/link"
 import { createDeposit } from "@/lib/payment-actions"
 import { cn } from "@/lib/utils"
+import { FINANCE_LIMITS } from "@/lib/constants"
 
 const NETWORKS = [
     { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400', textColor: 'text-black' },
@@ -30,8 +31,13 @@ export default function DepositPage() {
         e.preventDefault()
         setError("")
 
-        if (!amount || parseFloat(amount) < 1) {
-            setError("Min deposit is 1 GHS")
+        if (!amount || parseFloat(amount) < FINANCE_LIMITS.DEPOSIT.MIN) {
+            setError(`Min deposit is ${FINANCE_LIMITS.DEPOSIT.MIN} GHS`)
+            return
+        }
+
+        if (parseFloat(amount) > FINANCE_LIMITS.DEPOSIT.MAX) {
+            setError(`Max deposit is ${FINANCE_LIMITS.DEPOSIT.MAX} GHS`)
             return
         }
 

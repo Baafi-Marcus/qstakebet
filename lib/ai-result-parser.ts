@@ -1,6 +1,6 @@
 import "server-only"
 
-const token = process.env.GITHUB_TOKEN || ""
+// Token logic moved to getActiveKey
 const endpoint = "https://models.inference.ai.azure.com/chat/completions"
 
 export interface ParsedResult {
@@ -15,19 +15,37 @@ export interface ParsedResult {
 /**
  * Parse match results using GitHub Models AI (GPT-4o)
  */
+// Replace static token
+import { getActiveKey, reportKeyError } from "./ai-key-manager"
+
+// Helper to wait
+const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> {
-    try {
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                messages: [
-                    {
-                        role: "system",
-                        content: `You are a sports result parser. Extract match results from text and return ONLY valid JSON array.
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        attempts++;
+        const token = await getActiveKey("github_models");
+
+        if (!token) {
+            console.error("No available API keys.");
+            break;
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: "system",
+                            content: `You are a sports result parser. Extract match results from text and return ONLY valid JSON array.
 Format: [{"team1": "School A", "team2": "School B", "score1": 3, "score2": 1, "winner": "School A"}]
 Rules:
 - team1/team2: Full school names
@@ -35,42 +53,54 @@ Rules:
 - winner: Full name of winning team
 - If draw/tie, winner is the team mentioned as winner (e.g., "won on penalties")
 - Return empty array [] if no results found`
-                    },
-                    {
-                        role: "user",
-                        content: `Parse these match results:\n\n${text}`
-                    }
-                ],
-                model: "gpt-4o",
-                temperature: 0.1,
-                max_tokens: 2000
+                        },
+                        {
+                            role: "user",
+                            content: `Parse these match results:\n\n${text}`
+                        }
+                    ],
+                    model: "gpt-4o",
+                    temperature: 0.1,
+                    max_tokens: 2000
+                })
             })
-        })
 
-        if (!response.ok) {
-            throw new Error(`AI request failed: ${response.status}`)
+
+            if (!response.ok) {
+                // If 429 (Too Many Requests) or 401 (Unauthorized), report error and retry
+                if (response.status === 429 || response.status === 401) {
+                    console.warn(`AI Request failed with ${response.status}. Switching key...`);
+                    await reportKeyError(token);
+                    continue; // Retry loop will get new key
+                }
+                throw new Error(`AI request failed: ${response.status}`)
+            }
+
+            const result = await response.json() as { choices: Array<{ message: { content: string } }> }
+            const content = result.choices[0]?.message?.content || "[]"
+
+            // Extract JSON from response (handle markdown code blocks)
+            const jsonMatch = content.match(/\[[\s\S]*\]/)
+            const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
+
+            const parsed = JSON.parse(jsonStr) as ParsedResult[]
+
+            // Add rawText to each result
+            return parsed.map((r, i) => ({
+                ...r,
+                rawText: text.split('\n')[i] || text
+            }))
+
+        } catch (error) {
+            console.error(`Attempt ${attempts} failed:`, error);
+            // If it's the last attempt, fall through to regex
+            if (attempts >= maxAttempts) break;
+            await wait(1000); // Backoff slightly
         }
-
-        const result = await response.json() as { choices: Array<{ message: { content: string } }> }
-        const content = result.choices[0]?.message?.content || "[]"
-
-        // Extract JSON from response (handle markdown code blocks)
-        const jsonMatch = content.match(/\[[\s\S]*\]/)
-        const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
-
-        const parsed = JSON.parse(jsonStr) as ParsedResult[]
-
-        // Add rawText to each result
-        return parsed.map((r, i) => ({
-            ...r,
-            rawText: text.split('\n')[i] || text
-        }))
-
-    } catch (error) {
-        console.error("AI parsing error:", error)
-        // Fallback to regex-based parsing
-        return parseResultsWithRegex(text)
     }
+
+    console.warn("Falling back to Regex parser due to AI failure.");
+    return parseResultsWithRegex(text)
 }
 
 /**
@@ -191,18 +221,26 @@ export async function getAIMarketSuggestions(
     matchDetails: string,
     existingMarkets: string[] = []
 ): Promise<AIMarketSuggestion[]> {
-    try {
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                messages: [
-                    {
-                        role: "system",
-                        content: `You are a professional sports bookmaker. Generate 3-5 creative, high-engagement betting markets for this match.
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        attempts++;
+        const token = await getActiveKey("github_models");
+        if (!token) return [];
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: "system",
+                            content: `You are a professional sports bookmaker. Generate 3-5 creative, high-engagement betting markets for this match.
                         
 Rules:
 1. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
@@ -212,32 +250,40 @@ Rules:
    [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
 4. **Variety**: Suggest things like Player Props, specific Scorelines, or Period-based outcomes (Halves/Quarters).
 5. **Realism**: Odds must be realistic for the sport.`
-                    },
-                    {
-                        role: "user",
-                        content: `Create markets for: ${matchDetails}`
-                    }
-                ],
-                model: "gpt-4o",
-                temperature: 0.7, // Higher creativity
-                max_tokens: 1500
+                        },
+                        {
+                            role: "user",
+                            content: `Create markets for: ${matchDetails}`
+                        }
+                    ],
+                    model: "gpt-4o",
+                    temperature: 0.7, // Higher creativity
+                    max_tokens: 1500
+                })
             })
-        })
 
-        if (!response.ok) throw new Error(`AI request failed: ${response.status}`)
+            if (!response.ok) {
+                if (response.status === 429 || response.status === 401) {
+                    await reportKeyError(token);
+                    continue;
+                }
+                throw new Error(`AI request failed: ${response.status}`)
+            }
 
-        const result = await response.json() as { choices: Array<{ message: { content: string } }> }
-        const content = result.choices[0]?.message?.content || "[]"
+            const result = await response.json() as { choices: Array<{ message: { content: string } }> }
+            const content = result.choices[0]?.message?.content || "[]"
 
-        // Extract JSON
-        const jsonMatch = content.match(/\[[\s\S]*\]/)
-        const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
+            // Extract JSON
+            const jsonMatch = content.match(/\[[\s\S]*\]/)
+            const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
 
-        return JSON.parse(jsonStr) as AIMarketSuggestion[]
+            return JSON.parse(jsonStr) as AIMarketSuggestion[]
 
-    } catch (error) {
-        console.error("AI Market Gen Error:", error)
-        // Fallback: Return empty or simple defaults if AI fails
-        return []
+        } catch (error) {
+            console.error("AI Market Gen Error:", error)
+            if (attempts >= maxAttempts) return [];
+            await wait(1000);
+        }
     }
+    return []
 }

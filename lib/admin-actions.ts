@@ -3,7 +3,7 @@
 
 import { db } from "./db"
 import { schools, tournaments, schoolStrengths, matches } from "./db/schema"
-import { eq, and, sql } from "drizzle-orm"
+import { eq, and, sql, inArray } from "drizzle-orm"
 
 // import { School, Tournament } from "./types" 
 
@@ -136,18 +136,38 @@ export async function createMatch(data: {
  * If strengths don't exist, it defaults to balanced odds with margin.
  */
 export async function calculateInitialOdds(schoolIds: string[], sportType: string, gender: string, margin: number = 0.1) {
-    // 1. Fetch school ratings
-    const strengths = await db.select().from(schoolStrengths)
+    // 1. Fetch school ratings (Base Seed)
+    const baseStrengths = await db.select().from(schoolStrengths)
         .where(and(
             eq(schoolStrengths.sportType, sportType),
             eq(schoolStrengths.gender, gender)
         ));
 
+    // 1b. Fetch Live Form (Real Stats)
+    const liveStats = await db.select().from(realSchoolStats)
+        .where(and(
+            inArray(realSchoolStats.schoolId, schoolIds),
+            eq(realSchoolStats.sportType, sportType),
+            eq(realSchoolStats.gender, gender)
+        ));
+
     // 2. Calculate probabilities
     let totalPower = 0;
     const schoolPowers = schoolIds.map(id => {
-        const s = strengths.find(st => st.schoolId === id);
-        const power = (s?.rating as { overall?: number })?.overall || 50; // Default power 50
+        // Base Rating (Default 50)
+        const s = baseStrengths.find(st => st.schoolId === id);
+        let power = (s?.rating as { overall?: number })?.overall || 50;
+
+        // Live Form Adjustment
+        const live = liveStats.find(l => l.schoolId === id);
+        if (live && live.matchesPlayed && live.matchesPlayed > 0) {
+            // FormFactor: 1.0 is neutral. Range 0.5 to 2.0.
+            // Blend: 70% Base + 30% Form? Or direct multiplier?
+            // Let's use Multiplier for dynamic drift.
+            const formMultiplier = live.currentForm || 1.0;
+            power = power * formMultiplier;
+        }
+
         totalPower += power;
         return { id, power };
     });
@@ -193,9 +213,17 @@ export async function updateMatchResult(matchId: string, resultData: {
             })
             .where(eq(matches.id, matchId))
 
-        // If match is finished, trigger settlement
+        // If match is finished, trigger settlement + Update History Stats
         if (resultData.status === "finished") {
             const settlementResult = await settleMatch(matchId)
+
+            // Update Real School Stats (Background)
+            // Fetch match details to get sport type and school IDs
+            const matchDetails = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+            if (matchDetails.length > 0) {
+                await updateRealSchoolStats(matchDetails[0], resultData);
+            }
+
             return {
                 success: true,
                 message: `Match result saved. ${settlementResult.settledCount || 0} bets settled.`
@@ -206,6 +234,103 @@ export async function updateMatchResult(matchId: string, resultData: {
     } catch (error) {
         console.error("Error updating match result:", error)
         return { success: false, error: "Failed to update match result" }
+    }
+}
+
+// Helper to update persistent cumulative stats
+import { realSchoolStats } from "./db/schema"
+
+async function updateRealSchoolStats(match: any, resultData: { scores: any, winner: any }) {
+    try {
+        const participants = match.participants as any[];
+        const sport = match.sportType;
+
+        for (const p of participants) {
+            const schoolId = p.schoolId;
+            // Get stats for this school or create
+            // Note: Postgres upsert is better but Drizzle syntax varies. simplify: select/update
+            // We use 'realSchoolStats' table.
+
+            const existing = await db.select().from(realSchoolStats)
+                .where(and(
+                    eq(realSchoolStats.schoolId, schoolId),
+                    eq(realSchoolStats.sportType, sport),
+                    eq(realSchoolStats.gender, match.gender || 'male')
+                ))
+                .limit(1);
+
+            let stats = existing[0];
+            if (!stats) {
+                // Init
+                const newId = `rss-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                [stats] = await db.insert(realSchoolStats).values({
+                    id: newId,
+                    schoolId: schoolId,
+                    sportType: sport,
+                    gender: match.gender || 'male',
+                    matchesPlayed: 0,
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    goalsFor: 0,
+                    goalsAgainst: 0,
+                    points: 0,
+                    currentForm: 1.0
+                }).returning();
+            }
+
+            // Calculate impact
+            const isWin = resultData.winner === schoolId;
+            const isDraw = resultData.winner === "X" || resultData.winner === "draw";
+            const isLoss = !isWin && !isDraw;
+
+            // Determine goals/points for this match
+            let goalsFor = 0;
+            let goalsAgainst = 0;
+
+            if (sport === 'football' || sport === 'handball' || sport === 'basketball' || sport === 'quiz') {
+                // scores is { schoolId: score }
+                goalsFor = resultData.scores[schoolId] || 0;
+                // find opponent score
+                const opponent = participants.find((x: any) => x.schoolId !== schoolId);
+                if (opponent) {
+                    goalsAgainst = resultData.scores[opponent.schoolId] || 0;
+                } else if (participants.length > 2) {
+                    // Multi-team (quiz), opponents average? Or max?
+                    // For quiz, 'goalsAgainst' is ambiguous. Maybe average of others.
+                    // Let's just sum all others.
+                    const others = participants.filter((x: any) => x.schoolId !== schoolId);
+                    goalsAgainst = others.reduce((acc: number, x: any) => acc + (resultData.scores[x.schoolId] || 0), 0) / others.length;
+                }
+            } else if (sport === 'volleyball') {
+                // scores is { schoolId: sets }
+                goalsFor = resultData.scores[schoolId] || 0; // Sets won
+                const opponent = participants.find((x: any) => x.schoolId !== schoolId);
+                goalsAgainst = resultData.scores[opponent?.schoolId] || 0;
+            }
+
+            // Update Form (Simple Elo-like movement)
+            let formChange = 0;
+            if (isWin) formChange = 0.05;
+            else if (isDraw) formChange = 0.01;
+            else formChange = -0.05;
+
+            await db.update(realSchoolStats).set({
+                matchesPlayed: (stats.matchesPlayed || 0) + 1,
+                wins: (stats.wins || 0) + (isWin ? 1 : 0),
+                losses: (stats.losses || 0) + (isLoss ? 1 : 0),
+                draws: (stats.draws || 0) + (isDraw ? 1 : 0),
+                goalsFor: (stats.goalsFor || 0) + goalsFor,
+                goalsAgainst: (stats.goalsAgainst || 0) + goalsAgainst,
+                points: (stats.points || 0) + (isWin ? 3 : (isDraw ? 1 : 0)),
+                currentForm: Math.max(0.2, (stats.currentForm || 1.0) + formChange),
+                lastUpdated: new Date()
+            }).where(eq(realSchoolStats.id, stats.id));
+        }
+
+    } catch (e) {
+        console.error("Failed to update real school stats:", e);
+        // Don't fail the request, this is background
     }
 }
 
@@ -379,5 +504,25 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
     } catch (error) {
         console.error("Publish Error:", error)
         return { success: false, error: "Failed to publish markets" }
+    }
+}
+
+/**
+ * Bulk Start Matches (Go Live)
+ */
+export async function startMatches(matchIds: string[]) {
+    try {
+        await db.update(matches)
+            .set({
+                status: "live",
+                isLive: true,
+                // We might want to set a 'startedAt' timestamp if we had one
+            })
+            .where(inArray(matches.id, matchIds))
+
+        return { success: true, count: matchIds.length }
+    } catch (error) {
+        console.error("Bulk start error:", error)
+        return { success: false, error: "Failed to start matches" }
     }
 }

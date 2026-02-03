@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
-import { createMatch } from "@/lib/admin-actions"
+import { createMatch, startMatches } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
@@ -26,6 +26,35 @@ export function MatchesClient({
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
     const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
+
+    // Bulk Start State
+    const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([])
+    const [isBulkStarting, setIsBulkStarting] = useState(false)
+
+    const toggleMatchSelection = (id: string) => {
+        if (selectedMatchIds.includes(id)) {
+            setSelectedMatchIds(prev => prev.filter(mid => mid !== id))
+        } else {
+            setSelectedMatchIds(prev => [...prev, id])
+        }
+    }
+
+    const handleBulkStart = async () => {
+        if (!confirm(`Are you sure you want to START ${selectedMatchIds.length} matches? This will lock betting.`)) return;
+        setIsBulkStarting(true)
+        try {
+            await startMatches(selectedMatchIds)
+            // Update local state optimistically or wait for refresh
+            setMatches(prev => prev.map(m => selectedMatchIds.includes(m.id) ? { ...m, status: 'live', isLive: true } : m))
+            setSelectedMatchIds([])
+            router.refresh()
+        } catch (e) {
+            console.error(e)
+            alert("Failed to start matches")
+        } finally {
+            setIsBulkStarting(false)
+        }
+    }
 
     // Form State
     const [formData, setFormData] = useState({
@@ -148,10 +177,39 @@ export function MatchesClient({
 
             {/* Match List */}
             <div className="grid grid-cols-1 gap-4">
+                {/* Bulk Actions Bar */}
+                {selectedMatchIds.length > 0 && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500/50 p-4 rounded-2xl shadow-2xl shadow-purple-900/50 flex items-center gap-6 z-40 animate-in slide-in-from-bottom-5">
+                        <div className="text-white font-bold text-sm">
+                            <span className="text-purple-400">{selectedMatchIds.length}</span> Selected
+                        </div>
+                        <button
+                            onClick={handleBulkStart}
+                            disabled={isBulkStarting}
+                            className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                        >
+                            {isBulkStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Set Live (Lock Bets)"}
+                        </button>
+                        <button onClick={() => setSelectedMatchIds([])} className="text-slate-500 hover:text-white">
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+                )}
+
                 {filteredMatches.length > 0 ? (
                     filteredMatches.map((match) => (
-                        <div key={match.id} className="group bg-slate-900/40 border border-white/5 hover:border-white/10 p-6 rounded-[2rem] transition-all hover:bg-slate-800/40 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                        <div key={match.id} className={`group bg-slate-900/40 border p-6 rounded-[2rem] transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-8 ${selectedMatchIds.includes(match.id) ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/5 hover:border-white/10 hover:bg-slate-800/40'}`}>
                             <div className="flex items-start gap-5">
+                                {/* Checkbox for Bulk Selection */}
+                                <div className="pt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedMatchIds.includes(match.id)}
+                                        onChange={() => toggleMatchSelection(match.id)}
+                                        className="h-5 w-5 rounded border-white/20 bg-black/50 checked:bg-purple-600 focus:ring-purple-500 transition-all cursor-pointer"
+                                    />
+                                </div>
+
                                 <div className={`p-4 rounded-2xl ${match.isLive ? "bg-red-500/10 text-red-500" : "bg-purple-600/10 text-purple-400"}`}>
                                     <Activity className="h-6 w-6" />
                                 </div>

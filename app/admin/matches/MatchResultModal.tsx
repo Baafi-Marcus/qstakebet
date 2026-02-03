@@ -304,7 +304,28 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
                         {/* 3. ACTIONS */}
                         <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                            <button type="button" onClick={onClose} className="h-16 px-8 rounded-3xl bg-white/5 border border-white/5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-white/10">Abort Operation</button>
+                            <button type="button" onClick={onClose} className="h-16 px-8 rounded-3xl bg-white/5 border border-white/5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-white/10">Abort</button>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
+                                    setLoading(true);
+                                    await updateMatchResult(match.id, {
+                                        scores: {},
+                                        winner: 'void',
+                                        status: 'cancelled',
+                                        metadata: { voided: true }
+                                    });
+                                    setLoading(false);
+                                    onSuccess();
+                                    onClose();
+                                }}
+                                className="h-16 px-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20"
+                            >
+                                Void Match
+                            </button>
+
                             <button type="submit" disabled={loading} className="flex-1 h-16 bg-primary text-slate-950 rounded-3xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] shadow-xl shadow-primary/20 disabled:opacity-50">
                                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Settlement"}
                             </button>

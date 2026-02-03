@@ -21,10 +21,12 @@ export async function settleMatch(matchId: string) {
             metadata?: Record<string, unknown>
         } | null
 
-        if (!result?.winner) {
+        if (!result?.winner && match.status !== 'cancelled') {
             console.error("Match has no winner declared")
             return { success: false, error: "Match has no winner" }
         }
+
+        const isVoid = match.status === 'cancelled' || result?.winner === 'void' || result?.winner === 'cancelled'
 
         // 2. Fetch all PENDING bets for this match
         const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
@@ -43,8 +45,63 @@ export async function settleMatch(matchId: string) {
                 selectionId: string,
                 odds: number,
                 marketName?: string,
-                label?: string
+                label?: string,
+                status?: string // Track individual leg status
             }>
+
+            // Handle Void Match
+            if (isVoid) {
+                // Find legs for this match and mark them void
+                const updatedSelections = selections.map(s => {
+                    if (s.matchId === matchId) {
+                        return { ...s, status: 'void', odds: 1.00 } // Set odds to 1.00
+                    }
+                    return s
+                })
+
+                // Recalculate Total Odds
+                const newTotalOdds = updatedSelections.reduce((acc, curr) => acc * curr.odds, 1)
+                const newPayout = bet.stake * newTotalOdds
+
+                // Update Bet with new odds/payout
+                await db.update(bets).set({
+                    selections: updatedSelections,
+                    totalOdds: newTotalOdds,
+                    potentialPayout: newPayout,
+                    updatedAt: new Date()
+                }).where(eq(bets.id, bet.id))
+
+                // If it was a Single Bet, it is now WON (Refunded) but strictly it's a "Void Refund"
+                if (updatedSelections.length === 1) {
+                    const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                    if (userWallet.length > 0) {
+                        const balanceBefore = parseFloat(userWallet[0].balance.toString())
+                        const balanceAfter = balanceBefore + newPayout
+
+                        await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
+
+                        await db.insert(transactions).values({
+                            id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                            userId: bet.userId,
+                            walletId: userWallet[0].id,
+                            amount: newPayout,
+                            type: "bet_payout",
+                            balanceBefore,
+                            balanceAfter,
+                            reference: bet.id,
+                            description: `Refund (Void): ${match.participants?.[0]?.name || 'Match'} vs ${match.participants?.[1]?.name || 'Opponent'}`
+                        })
+                    }
+
+                    await db.update(bets).set({ status: 'void', settledAt: new Date() }).where(eq(bets.id, bet.id))
+                    settledCount++
+                    continue;
+                }
+
+                // For multis with other pending legs, we just updated the odds. 
+                // We do NOT mark the whole bet as settled unless all legs are done (task for another time).
+                continue;
+            }
 
             // For now, we only support single bets or accumulators that are all purely decided
             // We iterate through selections. If ANY selection in the bet is for THIS match, we check it.
@@ -61,6 +118,9 @@ export async function settleMatch(matchId: string) {
             if (!matchSelection) continue
 
             const { selectionId, marketName, label } = matchSelection
+
+            // If we are here, it's NOT a void match, so result must be valid
+            if (!result) continue; // Should catch by earlier check but safety first
 
             const isWin = isSelectionWinner(selectionId, marketName || "Match Winner", label || "", match, result)
 

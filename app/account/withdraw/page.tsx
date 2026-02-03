@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Banknote, Phone, Smartphone, ChevronRight, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { FINANCE_LIMITS } from "@/lib/constants"
 // Note: We'll create the initiateWithdrawal action in lib/payment-actions.ts
 // for now this is a placeholder to show the UI
 import { initiateWithdrawal } from "@/lib/payment-actions"
@@ -26,8 +27,13 @@ export default function WithdrawPage() {
         e.preventDefault()
         setError("")
 
-        if (!amount || parseFloat(amount) < 10) {
-            setError("Min withdrawal is 10 GHS")
+        if (!amount || parseFloat(amount) < FINANCE_LIMITS.WITHDRAWAL.MIN) {
+            setError(`Min withdrawal is ${FINANCE_LIMITS.WITHDRAWAL.MIN} GHS`)
+            return
+        }
+
+        if (parseFloat(amount) > FINANCE_LIMITS.WITHDRAWAL.MAX) {
+            setError(`Max withdrawal is ${FINANCE_LIMITS.WITHDRAWAL.MAX} GHS`)
             return
         }
 
@@ -136,7 +142,7 @@ export default function WithdrawPage() {
                             type="number"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            placeholder="Min 10.00"
+                            placeholder={`Min ${FINANCE_LIMITS.WITHDRAWAL.MIN}.00`}
                             className="w-full bg-white/5 border-2 border-white/5 focus:border-purple-600 rounded-[2rem] pl-16 pr-8 py-6 text-2xl font-black text-white outline-none transition-all placeholder:text-slate-700"
                             required
                         />

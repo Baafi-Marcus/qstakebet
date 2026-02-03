@@ -4,6 +4,9 @@ import { VirtualsClient } from "./VirtualsClient"
 
 export const dynamic = "force-dynamic"
 
+import { auth } from "@/lib/auth"
+import { getUserWalletBalance } from "@/lib/wallet-actions"
+
 export default async function VirtualsPage() {
     // Fetch all schools on the server
     const schoolsData = await getAllSchools()
@@ -12,5 +15,13 @@ export default async function VirtualsPage() {
         region: s.region
     }))
 
-    return <VirtualsClient schools={schools} />
+    const session = await auth()
+    let profile = { balance: 0, currency: "GHS" }
+
+    if (session?.user) {
+        const wallet = await getUserWalletBalance()
+        profile = { balance: wallet.balance, currency: "GHS" }
+    }
+
+    return <VirtualsClient schools={schools} profile={profile} />
 }

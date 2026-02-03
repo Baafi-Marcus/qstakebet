@@ -41,77 +41,63 @@ export default function WalletPage() {
                 </div>
             </div>
 
-            {/* Balance Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[2rem] border border-white/5 shadow-2xl group">
-                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <WalletIcon className="w-24 h-24 text-white" />
-                    </div>
-                    <div className="relative z-10 space-y-4">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Main Wallet</p>
-                        <h2 className="text-5xl font-mono font-black tracking-tight text-white">
+            {/* Balance Overview - Flat */}
+            <div className="border-b border-white/10 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
+                    <div>
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Main Wallet</p>
+                        <h2 className="text-5xl font-mono font-black text-white tracking-tighter">
                             {loading ? "..." : `GHS ${balances.balance.toFixed(2)}`}
                         </h2>
                     </div>
-                </div>
-
-                <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-slate-950 p-8 rounded-[2rem] border border-purple-500/10 shadow-2xl group">
-                    <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-30 transition-opacity">
-                        <Smartphone className="w-24 h-24 text-purple-400" />
-                    </div>
-                    <div className="relative z-10 space-y-4">
-                        <p className="text-xs font-black text-purple-400/60 uppercase tracking-[0.2em]">Bonus Balance</p>
-                        <h2 className="text-5xl font-mono font-black tracking-tight text-white">
+                    <div>
+                        <p className="text-xs font-black text-purple-400 uppercase tracking-widest mb-2">Bonus Balance</p>
+                        <h2 className="text-5xl font-mono font-black text-white tracking-tighter">
                             {loading ? "..." : `GHS ${balances.bonusBalance.toFixed(2)}`}
                         </h2>
                     </div>
                 </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Quick Stats - Text Only Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 border-b border-white/10 pb-8">
                 {[
-                    { label: "Total Deposits", value: "GHS 0.00", icon: ArrowUpRight, color: "text-green-400" },
-                    { label: "Total Winnings", value: "GHS 0.00", icon: Trophy, color: "text-yellow-400" },
-                    { label: "Pending Withdraws", value: "GHS 0.00", icon: Clock, color: "text-blue-400" },
-                    { label: "Referral Earned", value: "GHS 0.00", icon: Banknote, color: "text-purple-400" },
+                    { label: "Total Deposits", value: "GHS 0.00", icon: ArrowUpRight, color: "text-green-500" },
+                    { label: "Total Winnings", value: "GHS 0.00", icon: Trophy, color: "text-yellow-500" },
+                    { label: "Pending Withdraws", value: "GHS 0.00", icon: Clock, color: "text-blue-500" },
+                    { label: "Referral Earned", value: "GHS 0.00", icon: Banknote, color: "text-purple-500" },
                 ].map((stat, i) => {
-                    const Icon = stat.icon
                     return (
-                        <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 transition-colors">
-                            <Icon className={cn("h-5 w-5 mb-3", stat.color)} />
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                            <p className="text-lg font-black text-white">{stat.value}</p>
+                        <div key={i} className="py-2">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
+                                {stat.label}
+                            </p>
+                            <p className={cn("text-xl font-black", stat.color)}>{stat.value}</p>
                         </div>
                     )
                 })}
             </div>
 
             {/* Transaction History Heading */}
-            <div className="pt-8 border-t border-white/5">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                            <History className="h-5 w-5 text-purple-400" />
-                        </div>
-                        <h3 className="text-xl font-black">Transaction History</h3>
-                    </div>
-                    <button className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
+            <div className="pt-2">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-black">Transaction History</h3>
+                    <button className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
                         View All
                     </button>
                 </div>
 
-                {/* Empty State */}
-                <div className="p-12 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-                        <Clock className="h-8 w-8 text-slate-600" />
+                {/* Empty State - Minimal */}
+                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-slate-600" />
                     </div>
                     <div className="max-w-xs space-y-1">
-                        <p className="text-white font-black">No transactions yet</p>
-                        <p className="text-sm text-slate-500 font-medium">Your deposits, withdrawals, and winnings will appear here.</p>
+                        <p className="text-white font-bold text-sm">No recent transactions</p>
+                        <p className="text-xs text-slate-500">Your activity will appear here.</p>
                     </div>
-                    <Link href="/account/deposit" className="text-sm font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest">
-                        Make your first deposit
+                    <Link href="/account/deposit" className="text-xs font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest mt-2">
+                        Make a deposit
                     </Link>
                 </div>
             </div>

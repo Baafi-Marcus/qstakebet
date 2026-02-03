@@ -19,8 +19,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     return null
                 }
 
-                // Find user by phone
-                const user = await db.select().from(users).where(eq(users.phone, credentials.phone as string)).limit(1)
+                // Find user by phone (normalize input)
+                const phone = (credentials.phone as string).replace(/\s+/g, "")
+                const user = await db.select().from(users).where(eq(users.phone, phone)).limit(1)
 
                 if (!user || user.length === 0) {
                     return null

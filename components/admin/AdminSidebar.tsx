@@ -11,7 +11,8 @@ import {
     Users,
     Settings,
     Activity,
-    LineChart
+    LineChart,
+    Monitor
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -74,7 +75,15 @@ export function AdminSidebar() {
                 </div>
             </div>
 
-            <div className="p-4 border-t border-white/5">
+            <div className="p-4 border-t border-white/5 space-y-2">
+                <Link
+                    href="/"
+                    target="_blank"
+                    className="flex items-center gap-4 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest text-green-400 hover:text-green-300 hover:bg-green-500/10 transition-all"
+                >
+                    <Monitor className="h-4 w-4" />
+                    View Live Site
+                </Link>
                 <Link
                     href="/admin/settings"
                     className="flex items-center gap-4 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"

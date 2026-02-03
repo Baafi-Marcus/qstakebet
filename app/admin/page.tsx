@@ -4,47 +4,86 @@ import { Trophy, Users, Calendar, Activity, TrendingUp, ShieldCheck } from "luci
 
 export default function AdminDashboardPage() {
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-4xl font-black text-white tracking-tight uppercase">Admin Dashboard</h1>
-                <p className="text-slate-400 text-sm mt-1 uppercase tracking-widest font-bold">Platform Overview & Statistics</p>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-white uppercase tracking-tight">System Status</h1>
+                    <p className="text-slate-500 text-xs mt-1 uppercase tracking-wider font-medium">Real-time Platform Metrics</p>
+                </div>
+                <div className="flex gap-2">
+                    <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-sm flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        Live
+                    </span>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Dense Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: "Active Tournaments", value: "12", icon: Trophy, color: "text-purple-500", bg: "bg-purple-500/10" },
-                    { label: "Total Schools", value: "148", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                    { label: "Pending Matches", value: "24", icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
-                    { label: "Platform Margin", value: "10%", icon: ShieldCheck, color: "text-orange-500", bg: "bg-orange-500/10" },
-                    { label: "Total Volume", value: "₵ 12,450", icon: TrendingUp, color: "text-pink-500", bg: "bg-pink-500/10" },
-                    { label: "Upcoming Events", value: "8", icon: Calendar, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+                    { label: "Active Tournaments", value: "12", icon: Trophy, color: "text-purple-400" },
+                    { label: "Total Schools", value: "148", icon: Users, color: "text-blue-400" },
+                    { label: "Pending Matches", value: "24", icon: Activity, color: "text-green-400" },
+                    { label: "Platform Margin", value: "10.0%", icon: ShieldCheck, color: "text-orange-400" },
+                    { label: "24h Volume", value: "₵ 12,450", icon: TrendingUp, color: "text-pink-400" },
+                    { label: "Scheduled Events", value: "8", icon: Calendar, color: "text-indigo-400" },
+                    { label: "User Online", value: "342", icon: Users, color: "text-teal-400" },
+                    { label: "Server Load", value: "45%", icon: Activity, color: "text-red-400" },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden group hover:border-white/10 transition-all">
-                        <div className={`absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform`}>
-                            <stat.icon className={`h-24 w-24 ${stat.color}`} />
+                    <div key={i} className="bg-slate-900 border border-white/10 p-4 rounded-lg flex items-start justify-between hover:bg-white/5 transition-colors group">
+                        <div>
+                            <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
+                            <div className="text-2xl font-mono font-bold text-white tracking-tight">{stat.value}</div>
                         </div>
-                        <div className="relative z-10">
-                            <div className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] mb-4">{stat.label}</div>
-                            <div className="text-4xl font-black text-white tracking-tighter">{stat.value}</div>
-                        </div>
+                        <stat.icon className={`h-5 w-5 ${stat.color} opacity-70 group-hover:opacity-100 transition-opacity`} />
                     </div>
                 ))}
             </div>
 
-            <div className="bg-slate-900/40 border border-white/5 rounded-[3rem] p-10">
-                <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">System Health</h2>
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-sm font-bold text-slate-300">Database Connection</span>
-                        <span className="text-xs font-black text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 uppercase">Operational</span>
+            {/* System Health Table - Flat */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-slate-900 border border-white/10 rounded-lg">
+                    <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                        <h2 className="text-xs font-black text-white uppercase tracking-widest">Service Status</h2>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-sm font-bold text-slate-300">Odds Engine (Auto-Calc)</span>
-                        <span className="text-xs font-black text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 uppercase">Active</span>
+                    <div>
+                        {[
+                            { name: "Database Connection", status: "Operational", color: "text-green-500" },
+                            { name: "Odds Engine (Auto-Calc)", status: "Active", color: "text-blue-500" },
+                            { name: "Virtual Simulation Service", status: "Synced (1s ago)", color: "text-green-500" },
+                            { name: "Payment Gateway", status: "Standby", color: "text-yellow-500" },
+                            { name: "SMS Notification Service", status: "Operational", color: "text-green-500" },
+                        ].map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                                <span className="text-xs font-bold text-slate-400 font-mono">{item.name}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${item.color}`}>
+                                    {item.status}
+                                </span>
+                            </div>
+                        ))}
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-sm font-bold text-slate-300">Virtual Simulation Service</span>
-                        <span className="text-xs font-black text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 uppercase">Synced</span>
+                </div>
+
+                <div className="bg-slate-900 border border-white/10 rounded-lg">
+                    <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                        <h2 className="text-xs font-black text-white uppercase tracking-widest">Recent System Alerts</h2>
+                    </div>
+                    <div className="p-0">
+                        {/* Empty State placeholder for logs */}
+                        <div className="px-4 py-3 border-b border-white/5 flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-blue-500 flex-shrink-0"></div>
+                            <div>
+                                <p className="text-xs text-slate-300 font-mono">Backup completed successfully</p>
+                                <p className="text-[10px] text-slate-600 font-bold uppercase mt-0.5">02:30 AM - System</p>
+                            </div>
+                        </div>
+                        <div className="px-4 py-3 border-b border-white/5 flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-yellow-500 flex-shrink-0"></div>
+                            <div>
+                                <p className="text-xs text-slate-300 font-mono">High latency detected on gh-west-1</p>
+                                <p className="text-[10px] text-slate-600 font-bold uppercase mt-0.5">01:15 AM - Monitor</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

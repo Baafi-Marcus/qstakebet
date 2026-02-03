@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/layout/Header"
 import { Selection as BetSlipSelection } from "@/lib/store/context"
 import { MatchRow } from "@/components/ui/MatchRow"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
@@ -11,15 +10,18 @@ import {
     generateVirtualMatches,
     simulateMatch,
     VirtualMatchOutcome,
-    VirtualSchool
+    VirtualSchool,
+    DEFAULT_SCHOOLS // Added for AI strength fetching
 } from "@/lib/virtuals"
+import { updateSchoolStats, getAIStrengths, getPlayableSchools } from "@/lib/virtual-actions" // Added for AI stats and Real Schools
 import { Match } from "@/lib/types"
 import {
     Zap, ShieldAlert,
     ChevronRight,
     Trophy, X, Info, ChevronLeft, ArrowLeft, Home, Ticket,
     Banknote,
-    AlertTriangle
+    AlertTriangle,
+    Wallet
 } from "lucide-react"
 
 interface VirtualsClientProps {
@@ -168,7 +170,7 @@ const normalizeSchoolName = (name: string) => {
         .trim();
 }
 
-export function VirtualsClient({ schools }: VirtualsClientProps) {
+export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'all' | 'regional' | 'national'>('all')
     const [activeMarket, setActiveMarket] = useState<
@@ -186,16 +188,56 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
         'late_surge'
     >('winner')
     // const [historyTab, setHistoryTab] = useState<'results' | 'bets'>('results') // Unused
-    const [betMode, setBetMode] = useState<'single' | 'multi' | 'system'>('single')
+    const [betMode, setBetMode] = useState<'single' | 'multi'>('single')
     const [showSlip, setShowSlip] = useState(false)
     const [currentRound, setCurrentRound] = useState(() => {
         const now = Date.now()
         const cycleTime = 60000 // 1 minute
         return Math.floor(now / cycleTime)
+        return Math.floor(now / cycleTime)
     })
-    const matches = useMemo(() => {
-        return generateVirtualMatches(15, schools, currentRound)
-    }, [currentRound, schools])
+
+    // REAL SCHOOLS: Fetch from DB
+    const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
+
+    useEffect(() => {
+        const loadSchools = async () => {
+            const realSchools = await getPlayableSchools();
+            if (realSchools.length > 0) {
+                setActiveSchools(realSchools);
+            }
+        }
+        loadSchools();
+    }, [])
+
+    // AI LEARNING: Store strengths in state
+    const [aiStrengths, setAiStrengths] = useState<Record<string, number>>({})
+
+    // Fetch AI Strengths on Load / Round Change
+    useEffect(() => {
+        const loadAI = async () => {
+            const names = activeSchools.map(s => s.name); // Use dynamic schools list
+            const stats = await getAIStrengths(names);
+            const strengthMap: Record<string, number> = {};
+            stats.forEach(s => {
+                if (s.name && s.form) strengthMap[s.name] = s.form;
+            });
+            setAiStrengths(strengthMap);
+        }
+        loadAI();
+    }, [currentRound, activeSchools]) // Re-run if schools change
+
+
+    const { matches, outcomes } = useMemo(() => {
+        return generateVirtualMatches(15, activeSchools, currentRound, aiStrengths)
+    }, [currentRound, activeSchools, aiStrengths])
+
+    // Keep outcomes in a ref for access during simulation without triggering re-renders
+    const outcomesRef = useRef<VirtualMatchOutcome[]>(outcomes)
+    useEffect(() => {
+        outcomesRef.current = outcomes
+    }, [outcomes])
+
     const [selections, setSelections] = useState<VirtualSelection[]>([])
     const [globalStake, setGlobalStake] = useState(0)
 
@@ -311,14 +353,13 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
         }
 
         // Finalize results
-        const allRoundResults = matches.map(m => {
-            const parts = m.id.split("-")
-            const roundId = parseInt(parts[1])
-            const index = parseInt(parts[2])
-            const catStr = parts[3]
-            const cat = catStr === "Regional Qualifier" ? "regional" : "national"
-            return simulateMatch(roundId, index, schools, cat)
-        })
+        // Finalize results using the PRE-CALCULATED outcomes (Consistency)
+        const allRoundResults = outcomesRef.current;
+
+        // SAVE RESULTS TO AI BRAIN
+        // Fire and forget - don't await to avoid blocking UI
+        updateSchoolStats(allRoundResults).catch(e => console.error("AI Learning Failed:", e));
+
 
 
         // Helper for checking wins across all 14 markets
@@ -467,7 +508,9 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                         const cat = parts[3] as 'regional' | 'national'
 
                         // Regenerate outcome specifically for this match to ensure correctness across rounds
-                        const outcome = simulateMatch(rId, mIdx, schools, cat);
+                        // Ideally we should use the stored outcomes, but for slip resolution of past/different rounds we might need re-simulation.
+                        // Important: Pass aiStrengths to maintain consistency with how it was generated!
+                        const outcome = simulateMatch(rId, mIdx, schools, cat, aiStrengths);
 
                         const won = checkSelectionWin(sel, outcome);
 
@@ -509,7 +552,7 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                 const cat = parts[3] as 'regional' | 'national'
 
                 // Regenerate outcome specifically for this match to ensure correctness across rounds
-                const outcome = simulateMatch(rId, mIdx, schools, cat);
+                const outcome = simulateMatch(rId, mIdx, schools, cat, aiStrengths);
 
                 const won = checkSelectionWin(sel, outcome);
 
@@ -739,21 +782,13 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
 
         let totalStakeUsed = 0;
         const finalSelections = [...selections];
-        let combinations: { selections: VirtualSelection[], odds: number }[] = [];
-        let stakePerCombo = 0;
+        const combinations: { selections: VirtualSelection[], odds: number }[] = [];
+        const stakePerCombo = 0;
 
         if (betMode === 'single') {
             totalStakeUsed = globalStake * selections.length
         } else if (betMode === 'multi') {
             totalStakeUsed = globalStake
-        } else if (betMode === 'system') {
-            totalStakeUsed = globalStake
-            // For virtuals, we'll default to "Combinations of (N-1)" for simplicity, 
-            // but we can make it more dynamic. Let's do combinations of size (selections.length - 1)
-            const comboSize = Math.max(2, selections.length - 1);
-            const combos = getCombinations(selections, comboSize);
-            combinations = combos.map(c => ({ selections: c, odds: calculateTotalOdds(c) }));
-            stakePerCombo = globalStake / combinations.length;
         }
 
         if (totalStakeUsed > MAX_STAKE) {
@@ -786,59 +821,67 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
-            <Header />
+            {/* Custom Virtuals Navbar */}
+            <div className="flex items-center bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 py-3 px-4 gap-4">
+                {/* Left: Back Button */}
+                <button
+                    onClick={() => router.push('/')}
+                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors shrink-0"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                </button>
+
+                <div className="h-6 w-px bg-white/10 shrink-0" />
+
+                {/* Middle: Scrollable Filters */}
+                <div className="flex-1 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setActiveTab('all')}
+                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'all' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
+                        >
+                            All Matches
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('regional')}
+                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'regional' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
+                        >
+                            Regional
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('national')}
+                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'national' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
+                        >
+                            National
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right: Balance & History */}
+                <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
+                    <div className="flex items-center gap-2 bg-slate-950/50 rounded-full px-3 py-1.5 border border-white/5">
+                        <Wallet className="h-3 w-3 text-green-500" />
+                        <span className="text-xs font-black text-white font-mono">
+                            {(profile?.balance || 0).toFixed(2)}
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setShowHistoryModal(true)}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors relative"
+                    >
+                        <Ticket className="h-4 w-4" />
+                        {/* Dot indicator if active bets exist? */}
+                        {betHistory.some(b => b.status === "PENDING") && (
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
+                        )}
+                    </button>
+                </div>
+            </div>
+
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar removed */}
                 <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-                    {/* Main Content Area */}
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-44 md:pb-32">
-                        {/* Competition Scroller */}
-                        <div className="flex bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-20 overflow-x-auto no-scrollbar py-3 px-4 -mx-4 md:-mx-8">
-                            <div className="flex items-center justify-between w-full min-w-max">
-                                <div className="flex items-center gap-4">
-                                    {/* Back Button */}
-                                    <button
-                                        onClick={() => router.push('/')}
-                                        className="p-2 mr-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
-                                    >
-                                        <ArrowLeft className="h-4 w-4" />
-                                    </button>
-
-                                    <div className="h-6 w-px bg-white/10 mx-2" />
-
-                                    <button
-                                        onClick={() => setActiveTab('all')}
-                                        className={cn("text-xs font-black uppercase tracking-widest transition-all px-2 py-1", activeTab === 'all' ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-500 hover:text-slate-300")}
-                                    >
-                                        <span className="hidden md:inline">All Matches</span>
-                                        <span className="md:hidden">ALL</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('regional')}
-                                        className={cn("text-xs font-black uppercase tracking-widest transition-all px-2 py-1", activeTab === 'regional' ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-500 hover:text-slate-300")}
-                                    >
-                                        <span className="md:hidden">REG</span>
-                                        <span className="hidden md:inline">Regional Qualifiers</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('national')}
-                                        className={cn("text-xs font-black uppercase tracking-widest transition-all px-2 py-1", activeTab === 'national' ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-500 hover:text-slate-300")}
-                                    >
-                                        <span className="md:hidden">NAT</span>
-                                        <span className="hidden md:inline">National Championship</span>
-                                    </button>
-                                </div>
-
-                                <button
-                                    onClick={() => setShowHistoryModal(true)}
-                                    className="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all shadow-lg shadow-red-600/20 active:scale-95"
-                                >
-                                    <Ticket className="h-4 w-4" />
-                                    {/* <span className="text-[10px] font-black uppercase tracking-widest">Bet History</span> */}
-                                </button>
-                            </div>
-                        </div>
-
                         {/* Market Scroller */}
                         <div className="flex bg-slate-950/80 border-b border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 mb-4">
                             <div className="flex items-center gap-4 min-w-max">
@@ -1007,329 +1050,333 @@ export function VirtualsClient({ schools }: VirtualsClientProps) {
                     </div>
 
                     {/* Fullscreen Modal Bet Slip */}
-                    {showSlip && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-                            {/* Backdrop */}
-                            <div
-                                className="absolute inset-0 bg-black/90 backdrop-blur-sm"
-                                onClick={() => setShowSlip(false)}
-                            />
+                    {
+                        showSlip && (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                                {/* Backdrop */}
+                                <div
+                                    className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+                                    onClick={() => setShowSlip(false)}
+                                />
 
-                            {/* Fullscreen Modal Content */}
-                            <div className="relative w-full h-full bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
-                                    <div className="flex items-center gap-3">
-                                        <Zap className="h-5 w-5 text-purple-400" />
-                                        <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
-                                    </div>
-                                    <button onClick={() => setShowSlip(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400">
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-
-                                {/* Selections / My Bets Tabs */}
-                                <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5">
-                                    <button
-                                        onClick={() => setSlipTab('selections')}
-                                        className={cn(
-                                            "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
-                                            slipTab === 'selections' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
-                                        )}
-                                    >
-                                        Selections
-                                        {selections.length > 0 && (
-                                            <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
-                                                {selections.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => setSlipTab('pending')}
-                                        className={cn(
-                                            "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
-                                            slipTab === 'pending' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
-                                        )}
-                                    >
-                                        My Bets
-                                        {pendingSlips.length > 0 && (
-                                            <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
-                                                {pendingSlips.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                </div>
-
-                                {slipTab === 'selections' ? (
-                                    <>
-                                        {/* Singles/Multi/System Toggle */}
-                                        <div className="p-2 grid grid-cols-3 gap-1 bg-slate-900/50 border-b border-white/5">
-                                            {['single', 'multi', 'system'].map((mode) => (
-                                                <button
-                                                    key={mode}
-                                                    onClick={() => setBetMode(mode as typeof betMode)}
-                                                    className={cn(
-                                                        "py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                                                        betMode === mode ? "bg-slate-700 text-white shadow-inner" : "text-slate-500 hover:text-slate-300"
-                                                    )}
-                                                >
-                                                    {mode}
-                                                </button>
-                                            ))}
+                                {/* Fullscreen Modal Content */}
+                                <div className="relative w-full h-full bg-slate-900 flex flex-col animate-in fade-in duration-200">
+                                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                                        <div className="flex items-center gap-3">
+                                            <Zap className="h-5 w-5 text-purple-400" />
+                                            <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
                                         </div>
+                                        <button onClick={() => setShowSlip(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400">
+                                            <X className="h-5 w-5" />
+                                        </button>
+                                    </div>
 
-                                        {/* Selections List - Ultra Compact */}
-                                        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                                            {selections.map((sel) => (
-                                                <div key={sel.selectionId} className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3">
+                                    {/* Selections / My Bets Tabs */}
+                                    <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5">
+                                        <button
+                                            onClick={() => setSlipTab('selections')}
+                                            className={cn(
+                                                "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
+                                                slipTab === 'selections' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
+                                            )}
+                                        >
+                                            Selections
+                                            {selections.length > 0 && (
+                                                <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                                    {selections.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setSlipTab('pending')}
+                                            className={cn(
+                                                "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
+                                                slipTab === 'pending' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
+                                            )}
+                                        >
+                                            My Bets
+                                            {pendingSlips.length > 0 && (
+                                                <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                                    {pendingSlips.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {slipTab === 'selections' ? (
+                                        <>
+                                            {/* Singles/Multi/System Toggle */}
+                                            <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-4 max-w-[200px] shadow-inner">
+                                                {(['single', 'multi'] as const).map((mode) => (
                                                     <button
-                                                        onClick={() => toggleSelection(sel)}
-                                                        className="absolute top-1 left-1 text-slate-500 hover:text-red-400 transition-colors"
+                                                        key={mode}
+                                                        onClick={() => setBetMode(mode)}
+                                                        className={cn(
+                                                            "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all",
+                                                            betMode === mode
+                                                                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/50"
+                                                                : "text-slate-500 hover:text-slate-300"
+                                                        )}
                                                     >
-                                                        <X className="h-3 w-3" />
+                                                        {mode}
                                                     </button>
+                                                ))}
+                                            </div>
 
-                                                    {/* Compact single row layout */}
-                                                    <div className="flex items-center justify-between gap-3 pl-5">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="text-[9px] font-bold text-white leading-tight truncate">
-                                                                {sel.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')}
-                                                            </div>
-                                                            <div className="text-[8px] text-slate-400 leading-tight truncate mt-0.5">
-                                                                {sel.matchLabel.split(' vs ').map(name => getSchoolAcronym(name, [sel.schoolA, sel.schoolB, sel.schoolC])).join(' vs ')}
-                                                            </div>
-                                                            <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-0.5">
-                                                                {sel.marketName}
-                                                            </div>
-                                                            {/* Individual Leg Stake (Singles Mode Overlay) */}
-                                                            {betMode === 'single' && (
-                                                                <div className="mt-2 pt-1 border-t border-white/5 flex items-center justify-between">
-                                                                    <span className="text-[7px] font-black text-slate-500 uppercase italic">MAX {sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS}</span>
-                                                                    <div className="flex items-center gap-1 bg-black/40 rounded p-1 border border-white/10">
-                                                                        <span className="text-[7px] text-slate-500 font-bold">GHS</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            value={sel.stakeUsed || ""}
-                                                                            onChange={(e) => {
-                                                                                const val = parseFloat(e.target.value);
-                                                                                const limit = sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS;
-                                                                                const cappedVal = isNaN(val) ? 0 : Math.min(val, limit);
+                                            {/* Selections List - Ultra Compact */}
+                                            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
+                                                {selections.map((sel) => (
+                                                    <div key={sel.selectionId} className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3">
+                                                        <button
+                                                            onClick={() => toggleSelection(sel)}
+                                                            className="absolute top-1 left-1 text-slate-500 hover:text-red-400 transition-colors"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
 
-                                                                                setSelections(prev => prev.map(s =>
-                                                                                    s.selectionId === sel.selectionId ? { ...s, stakeUsed: cappedVal } : s
-                                                                                ));
-                                                                            }}
-                                                                            className="w-10 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
-                                                                            placeholder="0.00"
-                                                                        />
-                                                                    </div>
+                                                        {/* Compact single row layout */}
+                                                        <div className="flex items-center justify-between gap-3 pl-5">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-[9px] font-bold text-white leading-tight truncate">
+                                                                    {sel.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <div className="text-sm font-black text-accent font-mono">{sel.odds.toFixed(2)}</div>
+                                                                <div className="text-[8px] text-slate-400 leading-tight truncate mt-0.5">
+                                                                    {sel.matchLabel.split(' vs ').map(name => getSchoolAcronym(name, [sel.schoolA, sel.schoolB, sel.schoolC])).join(' vs ')}
+                                                                </div>
+                                                                <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-0.5">
+                                                                    {sel.marketName}
+                                                                </div>
+                                                                {/* Individual Leg Stake (Singles Mode Overlay) */}
+                                                                {betMode === 'single' && (
+                                                                    <div className="mt-2 pt-1 border-t border-white/5 flex items-center justify-between">
+                                                                        <span className="text-[7px] font-black text-slate-500 uppercase italic">MAX {sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS}</span>
+                                                                        <div className="flex items-center gap-1 bg-black/40 rounded p-1 border border-white/10">
+                                                                            <span className="text-[7px] text-slate-500 font-bold">GHS</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                value={sel.stakeUsed || ""}
+                                                                                onChange={(e) => {
+                                                                                    const val = parseFloat(e.target.value);
+                                                                                    const limit = sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS;
+                                                                                    const cappedVal = isNaN(val) ? 0 : Math.min(val, limit);
+
+                                                                                    setSelections(prev => prev.map(s =>
+                                                                                        s.selectionId === sel.selectionId ? { ...s, stakeUsed: cappedVal } : s
+                                                                                    ));
+                                                                                }}
+                                                                                className="w-10 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
+                                                                                placeholder="0.00"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-right flex-shrink-0">
+                                                                <div className="text-sm font-black text-accent font-mono">{sel.odds.toFixed(2)}</div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2">
-                                            {/* Alerts at bottom for visibility */}
-                                            {hasConflicts && (
-                                                <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
-                                                    <ShieldAlert className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
-                                                    <p className="text-[7px] font-bold text-red-400 leading-tight">Multiple markets from same match = Singles only</p>
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                <div className="flex flex-col">
-                                                    <span>Total Stake</span>
-                                                    <span className="text-[7px] text-slate-500 lowercase leading-none mt-0.5">limit {STAKE_LIMITS.TOTAL_SLIP}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 bg-black/40 rounded p-1.5 border border-white/10">
-                                                    <span className="text-[8px] text-slate-500 font-bold">GHS</span>
-                                                    <input
-                                                        type="number"
-                                                        value={globalStake || ""}
-                                                        onChange={(e) => {
-                                                            const val = parseFloat(e.target.value);
-                                                            if (val > STAKE_LIMITS.TOTAL_SLIP) {
-                                                                setGlobalStake(STAKE_LIMITS.TOTAL_SLIP);
-                                                            } else {
-                                                                setGlobalStake(isNaN(val) ? 0 : val);
-                                                            }
-                                                        }}
-                                                        className="w-12 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
-                                                    />
-                                                </div>
+                                                ))}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                <span>Total Odds</span>
-                                                <div className="text-white font-mono text-sm">
-                                                    {calculateTotalOdds(selections).toFixed(2)}
-                                                </div>
-                                            </div>
+                                            <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2">
+                                                {/* Alerts at bottom for visibility */}
+                                                {hasConflicts && (
+                                                    <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
+                                                        <ShieldAlert className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
+                                                        <p className="text-[7px] font-bold text-red-400 leading-tight">Multiple markets from same match = Singles only</p>
+                                                    </div>
+                                                )}
 
-                                            <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                <span>Max Profit</span>
-                                                <div className="text-slate-300 font-mono text-sm">
-                                                    GHS {(() => {
-                                                        const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
-                                                        const potential = calculateTotalOdds(selections) * totalStake;
-                                                        const cappedWin = Math.min(potential, totalStake * 10, totalStake + MAX_PROFIT_VIRTUAL);
-                                                        return Math.max(0, cappedWin - totalStake).toFixed(2);
-                                                    })()}
+                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                    <div className="flex flex-col">
+                                                        <span>Total Stake</span>
+                                                        <span className="text-[7px] text-slate-500 lowercase leading-none mt-0.5">limit {STAKE_LIMITS.TOTAL_SLIP}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-black/40 rounded p-1.5 border border-white/10">
+                                                        <span className="text-[8px] text-slate-500 font-bold">GHS</span>
+                                                        <input
+                                                            type="number"
+                                                            value={globalStake || ""}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (val > STAKE_LIMITS.TOTAL_SLIP) {
+                                                                    setGlobalStake(STAKE_LIMITS.TOTAL_SLIP);
+                                                                } else {
+                                                                    setGlobalStake(isNaN(val) ? 0 : val);
+                                                                }
+                                                            }}
+                                                            className="w-12 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                <span>Potential Win</span>
-                                                <div className="text-green-400 font-mono text-right flex flex-col items-end">
-                                                    <span className="text-sm">
+                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                    <span>Total Odds</span>
+                                                    <div className="text-white font-mono text-sm">
+                                                        {calculateTotalOdds(selections).toFixed(2)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                    <span>Max Profit</span>
+                                                    <div className="text-slate-300 font-mono text-sm">
                                                         GHS {(() => {
                                                             const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
                                                             const potential = calculateTotalOdds(selections) * totalStake;
-                                                            // Cap 1: 10x Stake
-                                                            const cap1 = totalStake * 10;
-                                                            // Cap 2: Absolute Profit
-                                                            const cap2 = totalStake + MAX_PROFIT_VIRTUAL;
-                                                            return Math.min(potential, cap1, cap2).toFixed(2);
+                                                            const cappedWin = Math.min(potential, totalStake * 10, totalStake + MAX_PROFIT_VIRTUAL);
+                                                            return Math.max(0, cappedWin - totalStake).toFixed(2);
                                                         })()}
-                                                    </span>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <button
-                                                onClick={addToSlip}
-                                                disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
-                                                className={cn(
-                                                    "w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-[10px] shadow-lg transition-all active:scale-95",
-                                                    (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
-                                                        ? "bg-red-600 hover:bg-red-500 text-white"
-                                                        : "bg-slate-700 text-slate-500 cursor-not-allowed"
-                                                )}
-                                            >
-                                                Place Bet
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex-1 flex flex-col h-full bg-slate-900">
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                            {pendingSlips.map((slip) => (
-                                                <div key={slip.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center">
-                                                                <Ticket className="h-4 w-4 text-red-500" />
+                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                    <span>Potential Win</span>
+                                                    <div className="text-green-400 font-mono text-right flex flex-col items-end">
+                                                        <span className="text-sm">
+                                                            GHS {(() => {
+                                                                const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
+                                                                const potential = calculateTotalOdds(selections) * totalStake;
+                                                                // Cap 1: 10x Stake
+                                                                const cap1 = totalStake * 10;
+                                                                // Cap 2: Absolute Profit
+                                                                const cap2 = totalStake + MAX_PROFIT_VIRTUAL;
+                                                                return Math.min(potential, cap1, cap2).toFixed(2);
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={addToSlip}
+                                                    disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
+                                                    className={cn(
+                                                        "w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-[10px] shadow-lg transition-all active:scale-95",
+                                                        (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
+                                                            ? "bg-red-600 hover:bg-red-500 text-white"
+                                                            : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    Place Bet
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex-1 flex flex-col h-full bg-slate-900">
+                                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                                {pendingSlips.map((slip) => (
+                                                    <div key={slip.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center">
+                                                                    <Ticket className="h-4 w-4 text-red-500" />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{slip.time}</span>
+                                                                    <span className="text-[10px] font-black text-white">{slip.selections.length} Legs • {slip.mode}</span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{slip.time}</span>
-                                                                <span className="text-[10px] font-black text-white">{slip.selections.length} Legs • {slip.mode}</span>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <div className="text-xs font-black text-accent">GHS {slip.totalStake.toFixed(2)}</div>
+                                                                {slip.cashedOut && (
+                                                                    <span className="px-1.5 py-0.5 bg-green-500/10 text-green-500 text-[7px] font-black uppercase rounded border border-green-500/20 animate-pulse">
+                                                                        Cashed Out
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <div className="text-xs font-black text-accent">GHS {slip.totalStake.toFixed(2)}</div>
-                                                            {slip.cashedOut && (
-                                                                <span className="px-1.5 py-0.5 bg-green-500/10 text-green-500 text-[7px] font-black uppercase rounded border border-green-500/20 animate-pulse">
+                                                        {slip.cashedOut ? (
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-black uppercase rounded border border-green-500/20 animate-pulse whitespace-nowrap">
                                                                     Cashed Out
                                                                 </span>
-                                                            )}
-                                                        </div>
+                                                                <span className="text-[7px] text-slate-500 font-bold">Ref: {slip.totalStake.toFixed(2)}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setConfirmCashoutSlipId(slip.id)}
+                                                                disabled={isSimulating}
+                                                                className={cn(
+                                                                    "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 text-slate-500 hover:text-white bg-white/5",
+                                                                    isSimulating ? "opacity-30 cursor-not-allowed" : "hover:bg-red-500/20 hover:text-red-400"
+                                                                )}
+                                                            >
+                                                                <Banknote className="h-4 w-4" />
+                                                                <span className="text-[7px] font-black uppercase">Cashout</span>
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                    {slip.cashedOut ? (
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-black uppercase rounded border border-green-500/20 animate-pulse whitespace-nowrap">
-                                                                Cashed Out
-                                                            </span>
-                                                            <span className="text-[7px] text-slate-500 font-bold">Ref: {slip.totalStake.toFixed(2)}</span>
+                                                ))}
+                                                {pendingSlips.length === 0 && (
+                                                    <div className="flex flex-col items-center justify-center h-full opacity-30 py-20 text-center">
+                                                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center mb-4">
+                                                            <Ticket className="h-8 w-8" />
                                                         </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => setConfirmCashoutSlipId(slip.id)}
-                                                            disabled={isSimulating}
-                                                            className={cn(
-                                                                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 text-slate-500 hover:text-white bg-white/5",
-                                                                isSimulating ? "opacity-30 cursor-not-allowed" : "hover:bg-red-500/20 hover:text-red-400"
-                                                            )}
-                                                        >
-                                                            <Banknote className="h-4 w-4" />
-                                                            <span className="text-[7px] font-black uppercase">Cashout</span>
-                                                        </button>
+                                                        <p className="text-xs font-bold uppercase tracking-widest leading-loose">No active bets.<br />Add selections to get started!</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-4 border-t border-white/10 bg-slate-900 flex gap-3">
+                                                <button
+                                                    onClick={() => setSlipTab('selections')}
+                                                    className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black uppercase tracking-wider text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                    Add More
+                                                </button>
+                                                <button
+                                                    onClick={kickoff}
+                                                    disabled={isSimulating || pendingSlips.length === 0}
+                                                    className={cn(
+                                                        "flex-[2] py-3.5 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2",
+                                                        isSimulating ? "bg-slate-800 text-slate-500" :
+                                                            pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
+                                                                "bg-red-600 text-white shadow-red-600/30"
                                                     )}
-                                                </div>
-                                            ))}
-                                            {pendingSlips.length === 0 && (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-30 py-20 text-center">
-                                                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center mb-4">
-                                                        <Ticket className="h-8 w-8" />
+                                                >
+                                                    {isSimulating ? "LIVE" : "KICKOFF"}
+                                                </button>
+                                            </div>
+
+                                            {/* Confirmation Modal Overlay */}
+                                            {confirmCashoutSlipId && (
+                                                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                                                    <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col items-center text-center space-y-4">
+                                                        <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 mb-2">
+                                                            <Banknote className="h-6 w-6" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-white font-black uppercase tracking-wider text-sm mb-1">Confirm Cashout</h3>
+                                                            <p className="text-slate-400 text-xs">
+                                                                Refund <span className="text-white font-bold">GHS {pendingSlips.find(s => s.id === confirmCashoutSlipId)?.totalStake.toFixed(2)}</span>?
+                                                                <br />This will cancel the bet.
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex w-full gap-2">
+                                                            <button
+                                                                onClick={() => setConfirmCashoutSlipId(null)}
+                                                                className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold uppercase tracking-wider"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleConfirmCashout}
+                                                                className="flex-1 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20"
+                                                            >
+                                                                Confirm
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-xs font-bold uppercase tracking-widest leading-loose">No active bets.<br />Add selections to get started!</p>
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="p-4 border-t border-white/10 bg-slate-900 flex gap-3">
-                                            <button
-                                                onClick={() => setSlipTab('selections')}
-                                                className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black uppercase tracking-wider text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                                Add More
-                                            </button>
-                                            <button
-                                                onClick={kickoff}
-                                                disabled={isSimulating || pendingSlips.length === 0}
-                                                className={cn(
-                                                    "flex-[2] py-3.5 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2",
-                                                    isSimulating ? "bg-slate-800 text-slate-500" :
-                                                        pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
-                                                            "bg-red-600 text-white shadow-red-600/30"
-                                                )}
-                                            >
-                                                {isSimulating ? "LIVE" : "KICKOFF"}
-                                            </button>
-                                        </div>
-
-                                        {/* Confirmation Modal Overlay */}
-                                        {confirmCashoutSlipId && (
-                                            <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                                                <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col items-center text-center space-y-4">
-                                                    <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 mb-2">
-                                                        <Banknote className="h-6 w-6" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-white font-black uppercase tracking-wider text-sm mb-1">Confirm Cashout</h3>
-                                                        <p className="text-slate-400 text-xs">
-                                                            Refund <span className="text-white font-bold">GHS {pendingSlips.find(s => s.id === confirmCashoutSlipId)?.totalStake.toFixed(2)}</span>?
-                                                            <br />This will cancel the bet.
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex w-full gap-2">
-                                                        <button
-                                                            onClick={() => setConfirmCashoutSlipId(null)}
-                                                            className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold uppercase tracking-wider"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                        <button
-                                                            onClick={handleConfirmCashout}
-                                                            className="flex-1 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </main>
+                        )
+                    }
+                </main >
             </div >
 
             {/* Modal for Results - SportyBet Style */}

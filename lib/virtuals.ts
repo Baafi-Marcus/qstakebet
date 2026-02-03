@@ -1,11 +1,12 @@
 import { Match } from "./types";
+import { AI_RISK_SETTINGS } from "./constants";
 
 export interface VirtualSchool {
     name: string;
     region: string;
 }
 
-const DEFAULT_SCHOOLS: VirtualSchool[] = [
+export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Mfantsipim School", region: "Central" },
     { name: "St. Augustine's College", region: "Central" },
     { name: "Opoku Ware School", region: "Ashanti" },
@@ -65,7 +66,8 @@ export function simulateMatch(
     roundId: number,
     index: number,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
-    category: 'regional' | 'national' = 'national'
+    category: 'regional' | 'national' = 'national',
+    aiStrengths: Record<string, number> = {} // New Param for AI Memory
 ): VirtualMatchOutcome {
     const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000);
 
@@ -98,8 +100,16 @@ export function simulateMatch(
     }
 
     const schoolNames = selectedSchools.map(s => s.name) as [string, string, string];
-    // Re-expanded strength variance: 0.3 to 2.3 for clear paper favorites
-    const strengths = schoolNames.map((_, i) => 0.3 + (seededRandom(seed + i + 100) * 2.0)) as [number, number, number];
+    // Re-expanded strength variance: Check AI Memory first, else fallback to random
+    const strengths = schoolNames.map((name, i) => {
+        if (aiStrengths[name]) {
+            // Use stored AI strength + tiny random variation (0.1)
+            const aiVal = aiStrengths[name];
+            return aiVal + ((seededRandom(seed + i) * 0.2) - 0.1);
+        }
+        // Fallback: 0.3 to 2.3 for clear paper favorites
+        return 0.3 + (seededRandom(seed + i + 100) * 2.0);
+    }) as [number, number, number];
 
     // Stats Tracking
     let leadChanges = 0;
@@ -119,10 +129,10 @@ export function simulateMatch(
             const rand = seededRandom(rSeed);
             let roundScore = 0;
 
-            // CHAOS FACTOR: 15% chance to completely invert/shuffle effective strengths for this round
-            // This simulates underdogs having a "good day" or favorites choking
+            // CHAOS FACTOR: AI Reduced from 15% to 5% to prevent "Black Swan" events
+            // This ensures favorites win more consistently, protecting the house
             let effectiveStrength = s;
-            if (seededRandom(rSeed + 999) < 0.15) {
+            if (seededRandom(rSeed + 999) < 0.05) {
                 effectiveStrength = 3.0 - s; // Invert strength (approximate range flip)
             }
 
@@ -285,31 +295,50 @@ export function simulateMatch(
 }
 
 // Master Table Logic for Odds Generation
+// AI-POWERED ODDS GENERATION
+// Uses heuristic logic to balance RTP and minimize house risk
+function calculateSmartOdds(
+    probability: number,
+    baseMargin: number = 0.25,
+    seed: number = 0,
+    minOdds: number = 1.15,
+    maxOdds: number = 6.00,
+    noiseRange: number = 0.10
+): number | null {
+    if (!AI_RISK_SETTINGS.ENABLED) return null; // Fallback or strict mode
+
+    // 1. DAMPENED NOISE: Reduce randomness to avoid accidental "Value Bets"
+    const dampedNoise = (noiseRange * AI_RISK_SETTINGS.VOLATILITY_DAMPING);
+    const noise = (seededRandom(seed) * dampedNoise) - (dampedNoise / 2);
+    const probWithNoise = Math.max(0.01, Math.min(0.99, probability + noise));
+
+    // 2. SMART MARGIN: Increase margin for lower probabilities (Riskier bets for house)
+    // If prob is low (e.g. 0.1), risk is high => Increase margin
+    const dynamicMargin = baseMargin * (1 + ((1 - probWithNoise) * (AI_RISK_SETTINGS.DYNAMIC_MARGIN_FACTOR - 1)));
+    const adjustedProb = Math.min(0.95, probWithNoise * (1 + dynamicMargin));
+
+    // 3. TARGET RTP ENFORCEMENT
+    // Ensure the implied probability never drops below the Target RTP inverse
+    // Standard Odds = 1 / P.  House Odds = Standard * RTP.
+    const rawOdds = 1 / adjustedProb;
+    const rtpControlledOdds = rawOdds * AI_RISK_SETTINGS.TARGET_RTP;
+
+    // 4. CAPS & LIMITS
+    const finalOdds = Math.max(minOdds, Math.min(AI_RISK_SETTINGS.MAX_ODDS_CAP, Math.min(maxOdds, rtpControlledOdds)));
+
+    return Number(finalOdds.toFixed(2));
+}
+
+// Legacy wrapper to keep signature compatible if needed, but we replace usage
 function calculateOddsFromProbability(
     probability: number,
     margin: number = 0.25,
     seed: number = 0,
     minOdds: number = 1.20,
     maxOdds: number = 6.00,
-    noiseRange: number = 0.16 // ±8% default
+    noiseRange: number = 0.16
 ): number | null {
-    // 🎲 Randomized Noise (Increased to ±8% for "twist")
-    const noise = (seededRandom(seed) * noiseRange) - (noiseRange / 2);
-    const probabilityWithNoise = Math.max(0.01, Math.min(0.99, probability + noise));
-
-    // HOUSE EDGE: Reduce the probability to increase the house advantage
-    const adjustedProb = Math.min(0.95, probabilityWithNoise * (1 + margin));
-
-    // Calculate fair odds from adjusted probability
-    const rawOdds = 1 / adjustedProb;
-
-    // 💰 10% REDUCTION (Balanced safety)
-    const reducedOdds = rawOdds * 0.90;
-
-    // 🔒 SAFETY CAPS (Dynamic per market)
-    const finalOdds = Math.max(minOdds, Math.min(maxOdds, reducedOdds));
-
-    return Number(finalOdds.toFixed(2));
+    return calculateSmartOdds(probability, margin, seed, minOdds, maxOdds, noiseRange);
 }
 
 export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: number): Match {
@@ -519,18 +548,21 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
 export function generateVirtualMatches(
     count: number = 8,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
-    roundId: number
-): Match[] {
+    roundId: number,
+    aiStrengths: Record<string, number> = {} // Added AI param
+): { matches: Match[], outcomes: VirtualMatchOutcome[] } { // Changed Return Type
     const matches: Match[] = [];
+    const outcomes: VirtualMatchOutcome[] = [];
     const cycleTime = 60000; // 1 minute cycle
 
     for (let i = 0; i < count; i++) {
         const category = i < count / 2 ? 'regional' : 'national';
-        const outcome = simulateMatch(roundId, i, schoolsList, category);
+        const outcome = simulateMatch(roundId, i, schoolsList, category, aiStrengths);
         matches.push(mapOutcomeToMatch(outcome, roundId * cycleTime));
+        outcomes.push(outcome);
     }
 
-    return matches;
+    return { matches, outcomes };
 }
 
 export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS): Match | undefined {
