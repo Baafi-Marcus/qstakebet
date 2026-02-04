@@ -20,7 +20,6 @@ export async function recalculateOdds(matchId: string) {
 
         const match = matchData[0] as unknown as Match
         // We use any to access the newly added fields since types might not be updated yet
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const m = matchData[0] as any
 
         const betVolume = m.betVolume || {}

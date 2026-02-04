@@ -91,6 +91,8 @@ export const wallets = pgTable("wallets", {
     userId: text("user_id").notNull().references(() => users.id).unique(),
     balance: real("balance").default(0).notNull(),
     bonusBalance: real("bonus_balance").default(0).notNull(),
+    lockedBalance: real("locked_balance").default(0).notNull(), // Funds pending withdrawal or bonus turnover
+    turnoverWagered: real("turnover_wagered").default(0).notNull(), // Amount wagered since last deposit
     currency: text("currency").default("GHS").notNull(), // Ghana Cedis
     lastDepositAt: timestamp("last_deposit_at"),
     lastWithdrawalAt: timestamp("last_withdrawal_at"),
@@ -154,6 +156,20 @@ export const bonuses = pgTable("bonuses", {
     betId: text("bet_id").references(() => bets.id), // If used on a bet
 
     createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+    id: text("id").primaryKey(), // Format: wrq-xxxxx
+    userId: text("user_id").notNull().references(() => users.id),
+    amount: real("amount").notNull(),
+    status: text("status").default("pending").notNull(), // "pending", "approved", "rejected", "paid"
+    paymentMethod: text("payment_method").notNull(), // "mtn_momo", "telecel_cash", "at_money"
+    accountNumber: text("account_number").notNull(),
+    accountName: text("account_name"),
+    adminId: text("admin_id").references(() => users.id),
+    adminNotes: text("admin_notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const referrals = pgTable("referrals", {
@@ -257,3 +273,5 @@ export type Bonus = typeof bonuses.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;
 export type VirtualSchoolStat = typeof virtualSchoolStats.$inferSelect;
 export type RealSchoolStat = typeof realSchoolStats.$inferSelect;
+export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+export type NewWithdrawalRequest = typeof withdrawalRequests.$inferInsert;

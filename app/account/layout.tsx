@@ -55,16 +55,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                         </Link>
                                     )
                                 })}
-
-                                <div className="mt-4 pt-4 border-t border-white/5">
-                                    <button
-                                        onClick={() => signOut({ callbackUrl: "/" })}
-                                        className="w-full flex items-center gap-4 px-5 py-4 rounded-3xl text-red-400 hover:bg-red-400/10 transition-all duration-200 text-lg font-bold"
-                                    >
-                                        <LogOut className="h-6 w-6" />
-                                        <span>Sign Out</span>
-                                    </button>
-                                </div>
                             </nav>
                         </div>
 

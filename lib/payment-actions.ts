@@ -8,16 +8,15 @@ import { auth } from "@/lib/auth"
 
 export async function createDeposit(data: {
     amount: number
-    phoneNumber: string
-    network: 'mtn' | 'telecel' | 'at'
 }) {
     const session = await auth()
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.email) {
         return { success: false, error: "Unauthorized" }
     }
 
     try {
         const userId = session.user.id
+        const email = session.user.email
 
         // 1. Get user wallet
         const wallet = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
@@ -39,18 +38,16 @@ export async function createDeposit(data: {
             balanceAfter: wallet[0].balance, // Balance stays same until confirmed
             paymentReference: reference,
             paymentStatus: "pending",
-            paymentMethod: `${data.network}_momo`,
-            paymentProvider: "moolre",
-            description: `Deposit via ${data.network.toUpperCase()}`
+            paymentMethod: "paystack",
+            paymentProvider: "paystack",
+            description: `Deposit via Paystack`
         })
 
-        // 4. Initiate payment with Moolre
-        const result = await initiateMomoDeposit({
+        // 4. Initiate payment with Paystack
+        const { initiatePaystackTransaction } = await import("./payment/paystack")
+        const result = await initiatePaystackTransaction({
             amount: data.amount,
-            phoneNumber: data.phoneNumber,
-            network: data.network,
-            customerName: session.user.name || "User",
-            customerEmail: session.user.email,
+            email: email,
             reference
         })
 
@@ -58,7 +55,11 @@ export async function createDeposit(data: {
             return { success: false, error: result.error || "Failed to initiate payment" }
         }
 
-        return { success: true, reference }
+        return {
+            success: true,
+            reference,
+            authorization_url: result.authorization_url
+        }
     } catch (error) {
         console.error("Deposit creation error:", error)
         return { success: false, error: "Failed to initiate deposit" }

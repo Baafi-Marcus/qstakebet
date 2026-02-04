@@ -27,7 +27,8 @@ export async function getUserProfileSummary() {
             success: true,
             user,
             balance: wallet?.balance || 0,
-            bonusBalance: wallet?.bonusBalance || 0
+            bonusBalance: wallet?.bonusBalance || 0,
+            lockedBalance: wallet?.lockedBalance || 0
         }
     } catch (e) {
         return { success: false, error: "Internal Error" }
@@ -75,7 +76,8 @@ export async function getUserWalletDetails() {
             success: true,
             wallet: {
                 balance: wallet?.balance || 0,
-                bonusBalance: wallet?.bonusBalance || 0
+                bonusBalance: wallet?.bonusBalance || 0,
+                lockedBalance: wallet?.lockedBalance || 0
             },
             transactions: history
         }

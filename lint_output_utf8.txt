@@ -1,0 +1,30 @@
+﻿
+> qstakebet-app@0.1.0 lint
+> eslint
+
+
+C:\Users\marcu\Desktop\QSTAKEbet\app\account\profile\page.tsx
+  55:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\marcu\Desktop\QSTAKEbet\app\admin\matches\MarketReviewModal.tsx
+  57:8  warning  React Hook useEffect has a missing dependency: 'fetchSuggestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\marcu\Desktop\QSTAKEbet\app\admin\withdrawals\page.tsx
+  228:43  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  230:41  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  230:46  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\marcu\Desktop\QSTAKEbet\lib\admin-actions.ts
+  462:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  489:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\marcu\Desktop\QSTAKEbet\lib\bet-actions.ts
+  50:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\marcu\Desktop\QSTAKEbet\lib\odds-engine.ts
+   23:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  103:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+Γ£û 10 problems (3 errors, 7 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+

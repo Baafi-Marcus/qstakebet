@@ -459,7 +459,6 @@ export async function getMatchSuggestions(matchId: string) {
         const pNames = participants?.map(p => p.name).join(" vs ") || "Teams"
 
         // Get existing markets
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentOdds = (match.extendedOdds as Record<string, any>) || {}
         const currentMarkets = Object.keys(currentOdds)
 

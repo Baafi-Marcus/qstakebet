@@ -14,7 +14,7 @@ export function BottomNav() {
         { label: "Home", icon: Home, href: "/" },
         { label: "Virtuals", icon: Zap, href: "/virtuals" },
         { label: "Comps", icon: Trophy, href: "/competitions/regional" },
-        { label: "Me", icon: User, href: "/profile" },
+        { label: "Me", icon: User, href: "/account/profile" },
     ]
 
     return (

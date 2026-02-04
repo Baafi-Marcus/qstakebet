@@ -106,7 +106,7 @@ export function MatchRow({
     return (
         <div className="flex items-center bg-slate-900/40 border-b border-white/5 hover:bg-slate-800/40 transition-colors group">
             {/* Left side: Teams & Info */}
-            <div className="flex-1 py-3 px-4 min-w-0">
+            <div className="flex-1 py-2 sm:py-3 px-3 sm:px-4 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                     {isSimulating ? (
                         <div className="flex items-center gap-1.5 bg-red-600/20 px-1.5 py-0.5 rounded text-[8px] font-black text-red-400 animate-pulse border border-red-500/20">
@@ -127,12 +127,12 @@ export function MatchRow({
                         <Zap className="h-2.5 w-2.5 text-purple-400" />
                     )}
                 </div>
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-0">
                     {participants.map((p, idx) => (
                         <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-1 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
-                            <span className="text-xs font-bold text-white truncate max-w-[150px]">{p.name}</span>
+                            <span className="text-[11px] sm:text-xs font-bold text-white truncate max-w-[120px] sm:max-w-[150px]">{p.name}</span>
                             {isSimulating && currentScores && (
-                                <span className="text-sm font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
+                                <span className="text-xs sm:text-sm font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
                             )}
                         </div>
                     ))}
@@ -395,8 +395,8 @@ export function MatchRow({
                 }
 
                 {/* More Button */}
-                <div onClick={() => onMoreClick?.(match)} className="w-8 md:w-10 flex items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch">
-                    <span className="text-[9px] md:text-[10px] text-slate-500 font-bold -rotate-90">MORE</span>
+                <div onClick={() => onMoreClick?.(match)} className="w-10 sm:w-12 flex items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch">
+                    <span className="text-[8px] sm:text-[10px] text-slate-500 font-bold -rotate-90">MORE</span>
                 </div>
             </div>
         </div>

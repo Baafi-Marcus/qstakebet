@@ -46,8 +46,6 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             return { success: false, error: "One or more matches in your betslip were not found." }
         }
 
-        // Cast matchData[0] to any then to Match to avoid complex type issues with jsonb in server actions
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const lockStatus = getMatchLockStatus(matchData[0] as any)
 
         if (lockStatus.isLocked) {
@@ -133,7 +131,24 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             })
 
             // 4. Deduct balances
-            if (bonusAmount > 0) {
+            if (bonusId) {
+                const { bonuses } = await import("@/lib/db/schema")
+                const bonusData = await tx.select().from(bonuses).where(eq(bonuses.id, bonusId)).limit(1)
+
+                if (bonusData.length > 0) {
+                    const currentBonus = bonusData[0]
+                    const newBonusAmount = Math.max(0, currentBonus.amount - bonusAmount)
+
+                    await tx.update(bonuses)
+                        .set({
+                            amount: newBonusAmount,
+                            status: newBonusAmount <= 0 ? "used" : "active",
+                            usedAt: new Date(),
+                            betId: betId
+                        })
+                        .where(eq(bonuses.id, bonusId))
+                }
+
                 await tx.update(wallets)
                     .set({
                         bonusBalance: sql`${wallets.bonusBalance} - ${bonusAmount}`,
@@ -146,6 +161,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 await tx.update(wallets)
                     .set({
                         balance: sql`${wallets.balance} - ${cashAmount}`,
+                        turnoverWagered: sql`${wallets.turnoverWagered} + ${cashAmount}`,
                         updatedAt: new Date()
                     })
                     .where(eq(wallets.id, wallet.id))

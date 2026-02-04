@@ -177,21 +177,27 @@ export async function settleMatch(matchId: string) {
             if (newStatus === "won" && payoutAmount > 0) {
                 const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
                 if (userWallet.length > 0) {
-                    const balanceBefore = parseFloat(userWallet[0].balance.toString())
-                    const balanceAfter = balanceBefore + payoutAmount
+                    const wallet = userWallet[0]
+                    const isBonusWin = bet.isBonusBet
 
-                    await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
+                    await db.update(wallets)
+                        .set({
+                            balance: isBonusWin ? wallet.balance : sql`${wallets.balance} + ${payoutAmount}`,
+                            lockedBalance: isBonusWin ? sql`${wallets.lockedBalance} + ${payoutAmount}` : wallet.lockedBalance,
+                            updatedAt: new Date()
+                        })
+                        .where(eq(wallets.userId, bet.userId))
 
                     await db.insert(transactions).values({
                         id: `txn-${Math.random().toString(36).substr(2, 9)}`,
                         userId: bet.userId,
-                        walletId: userWallet[0].id,
+                        walletId: wallet.id,
                         amount: payoutAmount,
                         type: "bet_payout",
-                        balanceBefore,
-                        balanceAfter,
+                        balanceBefore: isBonusWin ? wallet.lockedBalance : wallet.balance,
+                        balanceAfter: isBonusWin ? wallet.lockedBalance + payoutAmount : wallet.balance + payoutAmount,
                         reference: bet.id,
-                        description: `Winnings: ${marketName || 'Match Winner'} - ${label || 'Selection'}`
+                        description: `${isBonusWin ? 'Bonus ' : ''}Winnings: ${marketName || 'Match Winner'} - ${label || 'Selection'}`
                     })
                 }
             }

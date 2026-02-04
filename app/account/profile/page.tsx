@@ -11,7 +11,8 @@ import {
     ArrowRightLeft,
     Gift,
     Loader2,
-    ArrowUpFromLine
+    ArrowUpFromLine,
+    LogOut
 } from "lucide-react"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import Link from "next/link"
@@ -47,7 +48,7 @@ export default function ProfilePage() {
         <div className="max-w-md mx-auto bg-[#1a1c23] text-white min-h-[500px] rounded-3xl overflow-hidden shadow-2xl">
             {/* Header Section */}
             <div className="p-6">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-2">
                     <Link href="/account/settings" className="flex items-center gap-3 group">
                         <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 flex items-center justify-center">
                             {user.image ? (
@@ -59,61 +60,49 @@ export default function ProfilePage() {
                             )}
                         </div>
                         <div className="flex items-center gap-1">
-                            <span className="text-xl font-bold tracking-tight">{user.name}</span>
-                            <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-white transition-colors" />
+                            <div className="flex flex-col">
+                                <span className="text-xl font-bold tracking-tight leading-tight">{user.name}</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{user.phone || user.email}</span>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-slate-500 group-hover:text-white transition-colors" />
                         </div>
                     </Link>
                     <Link href="/account/settings" className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                        <Settings className="h-7 w-7 text-slate-200" />
-                    </Link>
-                </div>
-
-                {/* Balance Section */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-2 text-slate-200">
-                        <button onClick={() => setShowBalance(!showBalance)} className="p-1 hover:bg-white/5 rounded">
-                            {showBalance ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />}
-                        </button>
-                        <span className="text-lg font-medium">Total Balance</span>
-                    </div>
-                    <div className="text-2xl font-black tracking-tight">
-                        GHS {showBalance ? (balance || 0).toFixed(2) : "****"}
-                    </div>
-                </div>
-
-                {/* Primary Action Buttons */}
-                <div className="grid grid-cols-2 gap-4 mb-10">
-                    <Link href="/account/deposit" className="flex items-center justify-center gap-3 bg-[#1ca13e] hover:bg-[#158030] py-5 px-4 rounded-xl transition-all active:scale-[0.98]">
-                        <Wallet className="h-8 w-8" />
-                        <span className="text-xl font-extrabold uppercase tracking-tight">Deposit</span>
-                    </Link>
-                    <Link href="/account/withdraw" className="flex items-center justify-center gap-3 bg-[#1ca13e] hover:bg-[#158030] py-5 px-4 rounded-xl transition-all active:scale-[0.98]">
-                        <div className="relative">
-                            <Wallet className="h-8 w-8 opacity-40" />
-                            <ArrowUpFromLine className="h-5 w-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white" />
-                        </div>
-                        <span className="text-xl font-extrabold uppercase tracking-tight">Withdraw</span>
+                        <Settings className="h-7 w-7 text-slate-300" />
                     </Link>
                 </div>
             </div>
 
             {/* Navigation Grid */}
-            <div className="bg-[#121418] grid grid-cols-3 py-10 px-2 rounded-t-[2.5rem] border-t border-white/5">
-                <NavButton
-                    href="/account/bets"
-                    icon={History}
-                    label="Sports Bet History"
-                />
-                <NavButton
-                    href="/account/wallet"
-                    icon={ArrowRightLeft}
-                    label="Transactions"
-                />
-                <NavButton
-                    href="/account/bonuses"
-                    icon={Gift}
-                    label={`Gifts (${bonusCount})`}
-                />
+            <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
+                <div className="grid grid-cols-3 py-10 px-2">
+                    <NavButton
+                        href="/account/bets"
+                        icon={History}
+                        label="Bet History"
+                    />
+                    <NavButton
+                        href="/account/wallet"
+                        icon={ArrowRightLeft}
+                        label="Transactions"
+                    />
+                    <NavButton
+                        href="/account/bonuses"
+                        icon={Gift}
+                        label={`Gifts (${bonusCount})`}
+                    />
+                </div>
+
+                {/* Logout Button */}
+                <div className="px-6 mt-4">
+                    <button
+                        onClick={() => import("next-auth/react").then(m => m.signOut({ callbackUrl: "/" }))}
+                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-4 rounded-2xl transition-all border border-red-500/10 font-black text-xs uppercase tracking-widest group"
+                    >
+                        <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                        Log Out
+                    </button>
+                </div>
             </div>
         </div>
     )
