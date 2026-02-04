@@ -260,6 +260,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
+    const [countdown, setCountdown] = useState<'READY' | '3' | '2' | '1' | 'START' | null>(null)
     const isSimulatingRef = useRef(false)
 
 
@@ -334,6 +335,21 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
         setIsSimulating(true)
         isSimulatingRef.current = true
         setSimulationProgress(0)
+
+        // Pre-Sim Countdown - ONLY for the FIRST round (Matchday 1)
+        if (currentRound === 1) {
+            setCountdown('READY')
+            await new Promise(r => setTimeout(r, 600))
+            setCountdown('3')
+            await new Promise(r => setTimeout(r, 800))
+            setCountdown('2')
+            await new Promise(r => setTimeout(r, 800))
+            setCountdown('1')
+            await new Promise(r => setTimeout(r, 800))
+            setCountdown('START')
+            await new Promise(r => setTimeout(r, 600))
+            setCountdown(null)
+        }
         if (matches.length > 0) {
             // Priority 1: Match from a pending slip
             // Priority 2: First match in the list
@@ -1856,115 +1872,230 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                 )
             }
 
-            {/* Live Match Progress View - Scoreboard Redesign */}
-            {
-                activeLiveMatch && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 md:p-4">
-                        <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setActiveLiveMatch(null)} />
-                        <div className="relative bg-slate-900 w-full max-w-3xl h-full md:h-auto max-h-[92dvh] md:max-h-[85vh] rounded-[2rem] md:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col">
-                            {(() => {
-                                const match = matches.find(m => m.id === activeLiveMatch);
-                                if (!match) return null;
-                                const stage = match.id.split("-")[3] === "Regional Qualifier" ? "regional" : "national";
-                                const outcome = simulateMatch(parseInt(match.id.split("-")[1]), parseInt(match.id.split("-")[2]), schools, stage);
-                                const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
-                                const roundsToShow = outcome.rounds.slice(0, currentRoundIdx + 1);
-                                const isFullTime = simulationProgress >= 60;
+            {/* Live Match Progress View - Scoreboard Design */}
+            {activeLiveMatch && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 md:p-4">
+                    <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setActiveLiveMatch(null)} />
 
-                                return (
-                                    <div className="flex-1 flex flex-col min-h-0">
-                                        {/* Scoreboard Header with Pitch Background */}
-                                        <div className="relative h-48 md:h-72 bg-emerald-900 overflow-hidden shrink-0">
-                                            {/* Pitch Texture */}
-                                            <div className="absolute inset-0 opacity-20 pointer-events-none">
-                                                <div className="absolute inset-x-4 inset-y-4 border-2 border-white/40 rounded-sm" />
-                                                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/40" />
-                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
-                                            </div>
+                    {/* Countdown Overlay */}
+                    {countdown && (
+                        <div className="absolute inset-0 z-[120] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+                            <div className="flex flex-col items-center animate-in zoom-in duration-300">
+                                <div className="px-6 py-2 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.4em] rounded-full mb-8 shadow-2xl shadow-red-600/20">
+                                    Prepare to win
+                                </div>
+                                <div className={cn(
+                                    "text-8xl md:text-[10rem] font-black italic tracking-tighter transition-all duration-300",
+                                    countdown === 'START' ? "text-emerald-400 scale-110 drop-shadow-[0_0_30px_rgba(52,211,153,0.5)]" : "text-white"
+                                )}>
+                                    {countdown}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                                            <div className="relative z-10 flex flex-col h-full items-center justify-center p-3 pt-6 md:p-8">
-                                                <div className="flex items-center gap-2 md:gap-6 w-full justify-center">
-                                                    {outcome.schools.map((school: string, sIdx: number) => (
-                                                        <React.Fragment key={sIdx}>
-                                                            <div className="flex flex-col items-center gap-2 md:gap-3 flex-1 min-w-0">
-                                                                <div className="w-10 h-10 md:w-14 md:h-14 bg-slate-900 rounded-xl md:rounded-2xl flex items-center justify-center text-sm md:text-xl font-black text-white border border-white/10 shadow-xl shrink-0">
-                                                                    {school[0]}
-                                                                </div>
-                                                                <span className="text-[7px] md:text-[9px] font-black uppercase text-white tracking-widest text-center h-8 flex items-center line-clamp-2 leading-tight px-1">{school}</span>
-                                                                <div className="text-xl md:text-3xl font-black font-mono text-white bg-black/40 px-2 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl border border-white/10 shadow-2xl mt-1 md:mt-2 w-full text-center">
-                                                                    {roundsToShow.reduce((acc: number, r: { scores: number[] }) => acc + r.scores[sIdx], 0)}
-                                                                </div>
-                                                            </div>
-                                                            {sIdx < 2 && (
-                                                                <div className="flex flex-col items-center gap-2 self-start mt-2 md:mt-4">
-                                                                    <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-tighter">VS</span>
-                                                                </div>
-                                                            )}
-                                                        </React.Fragment>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-6 flex flex-col items-center gap-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500 animate-pulse bg-black/40 px-4 py-1.5 rounded-full border border-red-500/20 flex items-center gap-2">
-                                                        {isFullTime ? "FULL TIME" : `ROUND ${currentRoundIdx + 1} `}
-                                                    </span>
-                                                    {!isFullTime && (
-                                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 rounded-full border border-yellow-500/20">
-                                                            <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                                                            <span className="text-[8px] font-black text-yellow-500 uppercase">Match in Progress • Cannot Cancel</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                    <div className="relative bg-[#0d1117] w-full max-w-4xl h-full md:h-auto max-h-[92dvh] md:max-h-[85vh] rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col">
+                        {(() => {
+                            const match = matches.find(m => m.id === activeLiveMatch);
+                            if (!match) return null;
+                            const stage = match.id.split("-")[3] as 'regional' | 'national';
+                            const outcome = simulateMatch(parseInt(match.id.split("-")[1]), parseInt(match.id.split("-")[2]), schools, stage, aiStrengths);
+                            const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+                            const roundsToShow = outcome.rounds.slice(0, currentRoundIdx + 1);
+                            const isFullTime = simulationProgress >= 60;
 
+                            return (
+                                <div className="flex-1 flex flex-col min-h-0">
+                                    {/* Scoreboard Header with Pitch Background (Green Area) */}
+                                    <div className="relative bg-emerald-950/80 overflow-hidden shrink-0 border-b border-white/10">
+                                        <div className="absolute inset-0 opacity-10">
+                                            <div className="absolute inset-x-8 inset-y-8 border-2 border-white/20 rounded-lg" />
+                                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
+                                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white/20 rounded-full" />
                                         </div>
 
-                                        <div className="p-3 md:p-8 bg-slate-900 flex-1 overflow-y-auto custom-scrollbar">
-                                            <div className="flex items-center justify-between mb-4 md:mb-6">
-                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Match Progress</h3>
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-[10px] font-black font-mono text-slate-400">Total: {roundsToShow.reduce((acc, r) => acc + r.scores.reduce((a, b) => a + b, 0), 0)} pts</span>
-                                                </div>
+                                        <div className="relative z-10 p-4 md:p-8 flex flex-col items-center">
+                                            <div className="flex items-center gap-2 mb-6">
+                                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                                <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.3em]">{match.stage} • Matchday {parseInt(match.id.split("-")[1])}</span>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="flex items-center gap-4 md:gap-10 w-full max-w-xl justify-center">
+                                                {outcome.schools.map((school: string, sIdx: number) => (
+                                                    <React.Fragment key={sIdx}>
+                                                        <div className="flex flex-col items-center gap-4 flex-1">
+                                                            <div className="text-3xl md:text-5xl font-black italic text-white drop-shadow-lg">
+                                                                {roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)}
+                                                            </div>
+                                                            <span className="text-[8px] md:text-[10px] font-black uppercase text-emerald-400 tracking-widest text-center truncate w-full">{school}</span>
+                                                        </div>
+                                                        {sIdx < 2 && <div className="text-white/20 font-black italic text-xs mb-6">VS</div>}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+
+                                            {/* Rounds Progress (Integrated into Green Area) */}
+                                            <div className="w-full max-w-xl mt-8 grid grid-cols-5 gap-1.5">
                                                 {outcome.rounds.slice(0, 5).map((r, rIdx) => (
                                                     <div key={rIdx} className={cn(
-                                                        "p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-500 flex justify-between items-center",
-                                                        rIdx === currentRoundIdx ? "bg-red-600/10 border-red-600/20 shadow-lg shadow-red-600/5 translate-x-1" :
-                                                            rIdx < currentRoundIdx ? "bg-slate-800/20 border-white/5 opacity-50" :
-                                                                "bg-transparent border-white/5 opacity-10"
+                                                        "flex flex-col items-center p-2 rounded-xl border transition-all duration-300",
+                                                        rIdx === currentRoundIdx ? "bg-white/10 border-white/30 scale-105 shadow-xl" :
+                                                            rIdx < currentRoundIdx ? "bg-white/5 border-white/10" : "bg-black/20 border-white/5 opacity-50"
                                                     )}>
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 w-24 shrink-0">{r.roundName}</span>
-                                                        <div className="flex gap-3 font-black font-mono text-[10px] items-center">
-                                                            {r.scores.map((score, sIdx) => (
-                                                                <React.Fragment key={sIdx}>
-                                                                    <span className={cn(rIdx <= currentRoundIdx ? "text-white" : "text-transparent")}>{score}</span>
-                                                                    {sIdx < 2 && <span className="text-slate-600 text-[8px]">|</span>}
-                                                                </React.Fragment>
+                                                        <span className="text-[7px] font-black text-white/40 uppercase mb-1">R{rIdx + 1}</span>
+                                                        <div className="flex flex-col items-center gap-0.5 font-mono text-[9px] font-bold text-white">
+                                                            {r.scores.map((sc, scIdx) => (
+                                                                <span key={scIdx} className={rIdx <= currentRoundIdx ? "block" : "invisible"}>{sc}</span>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="p-4 md:p-6 pb-12 md:pb-6 bg-slate-900 border-t border-white/5 shrink-0 flex items-center justify-center">
-                                            {!isFullTime && (
-                                                <button
-                                                    onClick={skipToResult}
-                                                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-red-600/10"
-                                                >
-                                                    Skip to Result
-                                                </button>
-                                            )}
+                                    <div className="flex-1 overflow-y-auto bg-[#0d1117] p-4 md:p-6 custom-scrollbar">
+                                        {/* Your Tickets Status */}
+                                        {pendingSlips.length > 0 && (
+                                            <div className="mb-8">
+                                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 flex items-center gap-2">
+                                                    <Ticket className="h-3 w-3" />
+                                                    Your Active Tickets
+                                                </h3>
+                                                <div className="space-y-3">
+                                                    {pendingSlips.map((slip) => {
+                                                        const isWonHelper = (selection: any, mOut: any) => {
+                                                            if (!mOut) return false;
+                                                            const { marketName, label } = selection;
+                                                            if (marketName === "Match Winner") {
+                                                                const winner = mOut.schools[mOut.winnerIndex];
+                                                                let pred = label;
+                                                                if (label === "1") pred = mOut.schools[0];
+                                                                if (label === "2") pred = mOut.schools[1];
+                                                                if (label === "3") pred = mOut.schools[2];
+                                                                return pred?.toLowerCase().replace(/[^a-z0-9]/g, '') === winner?.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                                            }
+                                                            if (marketName === "Total Points") {
+                                                                const tot = mOut.totalScores.reduce((a: number, b: number) => a + b, 0);
+                                                                const line = parseFloat(label.split(' ')[1]);
+                                                                return label.split(' ')[0] === "Over" ? tot > line : tot < line;
+                                                            }
+                                                            return false;
+                                                        };
+
+                                                        const resultsForSlip = slip.selections.map(sel => {
+                                                            const parts = sel.matchId.split("-");
+                                                            const mOut = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, parts[3] as any, aiStrengths);
+                                                            const cIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+                                                            const partialTotal = [0, 1, 2].map(sIdx => mOut.rounds.slice(0, cIdx + 1).reduce((acc, r) => acc + r.scores[sIdx], 0));
+                                                            const isWon = isWonHelper(sel, { ...mOut, totalScores: partialTotal });
+                                                            return { ...sel, won: isWon };
+                                                        });
+
+                                                        const won = slip.mode === 'multi' ? resultsForSlip.every(r => r.won) : resultsForSlip.some(r => r.won);
+                                                        const resolved = simulationProgress >= 60;
+
+                                                        return (
+                                                            <div key={slip.id} className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{slip.mode} • {slip.selections.length} Legs</span>
+                                                                            <div className={cn(
+                                                                                "px-2 py-0.5 rounded text-[8px] font-black uppercase",
+                                                                                won ? "bg-green-500/20 text-green-400" : (resolved ? "bg-red-500/20 text-red-400" : "bg-yellow-500/10 text-yellow-500")
+                                                                            )}>
+                                                                                {won ? "Winning" : (resolved ? "Lost" : "Pending")}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-xs font-black text-white">GHS {slip.totalStake.toFixed(2)} Stake</div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <div className="text-[8px] font-bold text-slate-500 uppercase mb-1">Potential</div>
+                                                                        <div className="text-sm font-black text-accent">GHS {slip.potentialPayout.toFixed(2)}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Ticket Match Results breakdown */}
+                                                                <div className="space-y-2 pt-2 border-t border-white/5">
+                                                                    {slip.selections.map((sel, sIdx) => {
+                                                                        const parts = sel.matchId.split("-");
+                                                                        const mOut = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, parts[3] as any, aiStrengths);
+                                                                        const cIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+                                                                        const total = mOut.rounds.slice(0, cIdx + 1).reduce((acc, r) => acc + r.scores.reduce((a, b) => a + b, 0), 0);
+                                                                        return (
+                                                                            <div key={sIdx} className="flex flex-col gap-2 p-2 bg-black/20 rounded-xl">
+                                                                                <div className="flex justify-between items-center px-1">
+                                                                                    <span className="text-[8px] font-black uppercase text-slate-400 truncate w-32">{sel.matchLabel}</span>
+                                                                                    <span className="text-[9px] font-mono text-emerald-400 font-bold">{total} pts total</span>
+                                                                                </div>
+                                                                                <div className="grid grid-cols-5 gap-1">
+                                                                                    {mOut.rounds.slice(0, 5).map((r, rIdx) => (
+                                                                                        <div key={rIdx} className={cn(
+                                                                                            "flex flex-col items-center p-1 rounded-md border text-[9px]",
+                                                                                            rIdx === cIdx ? "bg-emerald-500/10 border-emerald-500/20" :
+                                                                                                rIdx < cIdx ? "bg-white/5 border-white/5" : "opacity-10 border-white/5"
+                                                                                        )}>
+                                                                                            <span className="text-[6px] font-bold text-slate-500 mb-0.5">R{rIdx + 1}</span>
+                                                                                            <div className="flex flex-col items-center gap-0.5 font-mono text-white/80">
+                                                                                                {r.scores.map((sc, scIdx) => (
+                                                                                                    <span key={scIdx} className={rIdx <= cIdx ? "block" : "invisible"}>{sc}</span>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Live Commentary */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Live Commentary</h3>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {roundsToShow.reverse().map((r, i) => (
+                                                <div key={i} className="flex gap-4 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                                                        <Zap className="h-4 w-4 text-emerald-400" />
+                                                    </div>
+                                                    <div className="flex-1 pt-1">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-black text-white uppercase italic">{r.roundName}</span>
+                                                            <span className="text-[9px] font-bold text-slate-500">{r.scores.reduce((a, b) => a + b, 0)} pts total</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                                                            Competitive action in {r.roundName}. Scores: {outcome.schools[0]} ({r.scores[0]}), {outcome.schools[1]} ({r.scores[1]}), {outcome.schools[2]} ({r.scores[2]}).
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                );
-                            })()}
-                        </div>
+
+                                    <div className="p-4 md:p-6 pb-12 md:pb-6 bg-slate-900 border-t border-white/5 shrink-0 flex items-center justify-center">
+                                        {!isFullTime && (
+                                            <button
+                                                onClick={skipToResult}
+                                                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-red-600/10"
+                                            >
+                                                Skip to Result
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
-                )
-            }
+                </div>
+            )}
         </div >
     )
 }
