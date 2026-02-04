@@ -3,7 +3,7 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { BetSlipContext } from "@/lib/store/context"
-import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity } from "lucide-react"
+import { X, Loader2, Trash2, ChevronDown, Trophy, Target, Timer, Lightbulb, Activity, Gift } from "lucide-react"
 import { BookingSuccessModal } from "@/components/ui/BookingSuccessModal"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
@@ -18,6 +18,7 @@ export function BetSlipSidebar() {
     const [bookedCodeResult, setBookedCodeResult] = React.useState<string | null>(null)
     const [error, setError] = React.useState("")
     const [wallet, setWallet] = React.useState<{ balance: number, bonusBalance: number } | null>(null)
+    const [gifts, setGifts] = React.useState<any[]>([])
     const [betMode, setBetMode] = React.useState<'single' | 'multiple' | 'system'>('single')
     const [userBets, setUserBets] = React.useState<typeof bets.$inferSelect[]>([])
     const { status } = useSession()
@@ -33,6 +34,10 @@ export function BetSlipSidebar() {
     const closeSlip = context?.closeSlip || (() => { })
     const useBonus = context?.useBonus || false
     const setUseBonus = context?.setUseBonus || (() => { })
+    const bonusId = context?.bonusId
+    const setBonusId = context?.setBonusId || (() => { })
+    const bonusAmount = context?.bonusAmount || 0
+    const setBonusAmount = context?.setBonusAmount || (() => { })
     const addSelection = context?.addSelection || (() => { })
 
     // Helper for sport icons
@@ -47,11 +52,16 @@ export function BetSlipSidebar() {
         }
     }
 
-    // Fetch wallet and bets
+    // Fetch wallet, gifts and bets
     React.useEffect(() => {
         if (isOpen) {
             import("@/lib/wallet-actions").then(m => {
                 m.getUserWalletBalance().then(w => setWallet(w))
+            })
+            import("@/lib/user-actions").then(m => {
+                m.getUserGifts().then(res => {
+                    if (res.success) setGifts(res.gifts)
+                })
             })
             fetch("/api/user/bets").then(res => res.json()).then(data => {
                 if (data.success) setUserBets(data.bets)
@@ -310,76 +320,75 @@ export function BetSlipSidebar() {
                             )}
 
                             {selections.map((item) => (
-                                <div key={item.selectionId} className="bg-slate-800/80 rounded-xl p-4 relative group">
-                                    {/* Remove Button */}
-                                    <button
-                                        onClick={() => removeSelection(item.selectionId)}
-                                        className="absolute top-3 left-3 p-1 bg-slate-700 hover:bg-red-500 rounded-md transition-all"
-                                    >
-                                        <X className="h-4 w-4 text-white" />
-                                    </button>
-
-                                    <div className="flex items-start gap-3 pl-8">
-                                        {/* Dynamic Sport Icon */}
-                                        <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <div key={item.selectionId} className="py-3 border-b border-white/5 relative group last:border-0">
+                                    <div className="flex items-start gap-2.5">
+                                        {/* Dynamic Sport Icon - Smaller */}
+                                        <div className="w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/5">
                                             {getSportIcon(item.sportType)}
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            {/* Selection Name */}
-                                            <div className="text-white font-bold text-base mb-1">
-                                                {item.label}
-                                                {(item as any).matchStatus === 'finished' && (
-                                                    <span className="ml-2 text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded uppercase font-black">Finished</span>
-                                                )}
-                                            </div>
-                                            {/* Match Name */}
-                                            <div className="text-slate-400 text-sm font-medium mb-1">{item.matchLabel}</div>
-                                            {/* Market Type - Hide if finished */}
-                                            {(item as any).matchStatus !== 'finished' && (
-                                                <div className="text-slate-500 text-xs font-bold uppercase">{item.marketName}</div>
-                                            )}
+                                            <div className="flex justify-between items-start gap-2">
+                                                {/* Selection Name */}
+                                                <div className="text-white font-black text-sm truncate">
+                                                    {item.label}
+                                                    {(item as any).matchStatus === 'finished' && (
+                                                        <span className="ml-2 text-[8px] bg-red-500/20 text-red-500 px-1 py-0.5 rounded uppercase font-black">Finished</span>
+                                                    )}
+                                                </div>
 
-                                            {/* Match Result Display */}
-                                            {(item as any).matchStatus === 'finished' && (item as any).matchResult && (
-                                                <div className="mt-2 p-2 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                                                    <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Final Result</div>
-                                                    <div className="text-xs text-white font-bold">
-                                                        {Object.entries((item as any).matchResult.scores || {}).map(([id, score], idx, arr) => (
-                                                            <span key={id}>
-                                                                {score as number}{idx < arr.length - 1 ? ' - ' : ''}
-                                                            </span>
-                                                        ))}
+                                                {/* Odds & Remove */}
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <div className={cn(
+                                                        "text-white font-black text-base",
+                                                        (item as any).matchStatus === 'finished' && "opacity-30 line-through"
+                                                    )}>
+                                                        {item.odds.toFixed(2)}
                                                     </div>
+                                                    <button
+                                                        onClick={() => removeSelection(item.selectionId)}
+                                                        className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Combined Match & Market Name */}
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-slate-400 text-[10px] font-bold truncate max-w-[120px]">{item.matchLabel}</span>
+                                                <span className="text-slate-600 text-[10px]">•</span>
+                                                <span className="text-slate-500 text-[10px] font-black uppercase truncate">{item.marketName}</span>
+                                            </div>
+
+                                            {/* Match Result Display - Compact */}
+                                            {(item as any).matchStatus === 'finished' && (item as any).matchResult && (
+                                                <div className="mt-1.5 py-1 px-2 bg-slate-800/50 rounded flex items-center gap-2 border border-white/5">
+                                                    <span className="text-[8px] text-slate-500 uppercase font-black">Result</span>
+                                                    <span className="text-[10px] text-white font-black">
+                                                        {Object.entries((item as any).matchResult.scores || {}).map(([id, score], idx, arr) => (
+                                                            <React.Fragment key={id}>
+                                                                {score as number}{idx < arr.length - 1 ? ' - ' : ''}
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </span>
                                                 </div>
                                             )}
-                                        </div>
-
-                                        {/* Odds */}
-                                        <div className="text-right flex-shrink-0">
-                                            <div className={cn(
-                                                "text-white font-black text-xl",
-                                                (item as any).matchStatus === 'finished' && "opacity-30 line-through"
-                                            )}>
-                                                {item.odds.toFixed(2)}
-                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Single Stake Input */}
+                                    {/* Single Stake Input - Compact */}
                                     {betMode === 'single' && (
-                                        <div className="mt-3 pt-3 border-t border-slate-700">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-slate-400 text-xs font-bold">Stake</span>
-                                                <div className="flex items-center gap-2 bg-slate-700 rounded-lg px-3 py-1.5">
-                                                    <span className="text-slate-400 text-xs">GHS</span>
-                                                    <input
-                                                        type="number"
-                                                        value={item.stake || stake}
-                                                        onChange={(e) => updateSelectionStake(item.selectionId, Math.max(0, Number(e.target.value)))}
-                                                        className="w-16 bg-transparent text-right font-bold text-sm text-white focus:outline-none"
-                                                    />
-                                                </div>
+                                        <div className="mt-2.5 flex items-center justify-between gap-4">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">Stake</span>
+                                            <div className="flex items-center gap-1.5 bg-slate-800/50 rounded-lg px-2 py-1 border border-white/5">
+                                                <span className="text-[10px] font-bold text-slate-600">GHS</span>
+                                                <input
+                                                    type="number"
+                                                    value={item.stake || stake}
+                                                    onChange={(e) => updateSelectionStake(item.selectionId, Math.max(0, Number(e.target.value)))}
+                                                    className="w-14 bg-transparent text-right font-black text-xs text-white focus:outline-none"
+                                                />
                                             </div>
                                         </div>
                                     )}
@@ -387,17 +396,67 @@ export function BetSlipSidebar() {
                             ))}
                         </div>
 
-                        {/* Bonus Prompt (Green Bar) */}
-                        {wallet && wallet.bonusBalance > 0 && (
-                            <div className="px-4 py-2 bg-green-600/90">
-                                <button
-                                    onClick={() => setUseBonus(!useBonus)}
-                                    className="w-full text-white text-xs font-bold text-center"
-                                >
-                                    {useBonus
-                                        ? `Using GHS ${wallet.bonusBalance.toFixed(2)} bonus`
-                                        : "Add more qualifying selections to boost your bonus"}
-                                </button>
+                        {/* Gifts Section (Individual Bonus Selection) */}
+                        {gifts.length > 0 && (
+                            <div className="px-4 py-4 bg-slate-900 border-t border-slate-800">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Gift className="h-5 w-5 text-purple-400" />
+                                    <span className="text-sm font-black text-white uppercase tracking-tight">Available Gifts</span>
+                                </div>
+                                <div className="space-y-3">
+                                    {gifts.map((gift) => (
+                                        <div key={gift.id} className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{gift.type}</span>
+                                                    <span className="text-xs font-black text-white">GHS {gift.amount.toFixed(2)}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        if (bonusId === gift.id) {
+                                                            setBonusId(undefined)
+                                                            setBonusAmount(0)
+                                                            setUseBonus(false)
+                                                        } else {
+                                                            setBonusId(gift.id)
+                                                            // Default to the full stake or full gift amount
+                                                            const totalSlipStake = selections.reduce((sum, s) => sum + (s.stake || stake), 0)
+                                                            setBonusAmount(Math.min(gift.amount, totalSlipStake))
+                                                            setUseBonus(true)
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all",
+                                                        bonusId === gift.id
+                                                            ? "bg-red-500/20 text-red-400 border border-red-500/20"
+                                                            : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+                                                    )}
+                                                >
+                                                    {bonusId === gift.id ? "Cancel" : "Use Gift"}
+                                                </button>
+                                            </div>
+
+                                            {/* Amount Input for active Gift */}
+                                            {bonusId === gift.id && (
+                                                <div className="mt-2 pt-2 border-t border-slate-700/50 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    <span className="text-[10px] font-bold text-slate-400 flex-shrink-0 uppercase">Use Amount:</span>
+                                                    <div className="flex items-center gap-2 bg-slate-900 rounded-lg px-2 py-1 border border-white/5">
+                                                        <span className="text-[10px] font-bold text-slate-600">GHS</span>
+                                                        <input
+                                                            type="number"
+                                                            value={bonusAmount}
+                                                            onChange={(e) => {
+                                                                const val = Math.max(0, Math.min(gift.amount, Number(e.target.value)))
+                                                                setBonusAmount(val)
+                                                            }}
+                                                            className="w-16 bg-transparent text-right font-black text-xs text-white focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -483,18 +542,16 @@ export function BetSlipSidebar() {
                                                     if (betMode === 'single') {
                                                         for (const sel of selections) {
                                                             if ((sel.stake || stake) >= FINANCE_LIMITS.BET.MIN_STAKE) {
-                                                                await placeBet(sel.stake || stake, [sel], useBonus)
+                                                                await placeBet(sel.stake || stake, [sel], bonusId, bonusAmount)
                                                             }
                                                         }
                                                         clearSlip()
-                                                        setUseBonus(false)
                                                         closeSlip()
                                                         window.location.reload()
                                                     } else {
-                                                        const result = await placeBet(stake, selections, useBonus)
+                                                        const result = await placeBet(stake, selections, bonusId, bonusAmount)
                                                         if (result.success) {
                                                             clearSlip()
-                                                            setUseBonus(false)
                                                             closeSlip()
                                                             window.location.reload()
                                                         } else {

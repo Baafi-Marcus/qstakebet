@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, wallets, bets, transactions } from "@/lib/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { users, wallets, bets, transactions, bonuses } from "@/lib/db/schema"
+import { eq, desc, sql, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
 /**
@@ -81,5 +81,74 @@ export async function getUserWalletDetails() {
         }
     } catch (e) {
         return { success: false, error: "Internal Error" }
+    }
+}
+/**
+ * Updates user profile information.
+ */
+export async function updateUserProfile(formData: { name?: string; phone?: string }) {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    try {
+        const userId = session.user.id
+        await db.update(users)
+            .set({
+                name: formData.name,
+                phone: formData.phone,
+                updatedAt: new Date()
+            })
+            .where(eq(users.id, userId))
+
+        return { success: true }
+    } catch (e) {
+        console.error("Update profile error:", e)
+        return { success: false, error: "Internal Error" }
+    }
+}
+/**
+ * Fetches the count of active bonuses for the user.
+ */
+export async function getUserBonusesCount() {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, count: 0 }
+
+    try {
+        const result = await db.select({
+            count: sql<number>`count(*)`
+        })
+            .from(bonuses)
+            .where(and(
+                eq(bonuses.userId, session.user.id),
+                eq(bonuses.status, "active")
+            ))
+
+        return { success: true, count: Number(result[0]?.count) || 0 }
+    } catch (e) {
+        console.error("Get bonuses count error:", e)
+        return { success: false, count: 0 }
+    }
+}
+
+/**
+ * Fetches the list of active bonuses/gifts for the user.
+ */
+export async function getUserGifts() {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, gifts: [] }
+
+    try {
+        const activeGifts = await db.query.bonuses.findMany({
+            where: and(
+                eq(bonuses.userId, session.user.id),
+                eq(bonuses.status, "active")
+            ),
+            orderBy: [desc(bonuses.expiresAt)]
+        })
+
+        return { success: true, gifts: activeGifts }
+    } catch (e) {
+        console.error("Get user gifts error:", e)
+        return { success: false, gifts: [] }
     }
 }

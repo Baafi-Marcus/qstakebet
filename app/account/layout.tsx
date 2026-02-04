@@ -28,25 +28,12 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white pb-20">
-            {/* Header / Banner area */}
-            <div className="bg-gradient-to-b from-purple-900/30 to-slate-950 pt-8 pb-12 px-4">
-                <div className="container max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-6">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-4xl font-black shadow-2xl shadow-purple-500/20">
-                        {session?.user?.name?.[0]?.toUpperCase() || "U"}
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black tracking-tight">{session?.user?.name || "User"}</h1>
-                        <p className="text-slate-400 font-medium">Manage your account and track your activity</p>
-                    </div>
-                </div>
-            </div>
-
-            <main className="container max-w-6xl mx-auto px-4 -mt-6">
+        <div className="min-h-screen bg-[#0f1115] text-white pb-20">
+            <main className="container max-w-6xl mx-auto px-4 pt-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar navigation */}
-                    <div className="lg:col-span-4 self-start">
-                        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden">
+                    {/* Sidebar navigation - Hidden on mobile, shown on desktop */}
+                    <div className="hidden lg:block lg:col-span-4 self-start sticky top-24">
+                        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden">
                             <nav className="p-3">
                                 {menuItems.map((item) => {
                                     const Icon = item.icon
@@ -81,7 +68,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                             </nav>
                         </div>
 
-                        {/* Quick balance card (mobile/sidebar) */}
+                        {/* Quick balance card (sidebar) */}
                         <div className="mt-6 p-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[2.5rem] shadow-xl shadow-purple-500/10">
                             <div className="flex items-center gap-2 text-indigo-100 text-sm font-bold uppercase tracking-wider mb-2">
                                 <Wallet className="h-4 w-4" />
@@ -96,9 +83,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
                     {/* Content area */}
                     <div className="lg:col-span-8">
-                        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 md:p-12 min-h-[600px]">
-                            {children}
-                        </div>
+                        {children}
                     </div>
                 </div>
             </main>

@@ -14,7 +14,7 @@ export type SelectionInput = {
     matchLabel: string
 }
 
-export async function placeBet(stake: number, selections: SelectionInput[], isBonus: boolean = false) {
+export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0) {
     const session = await auth()
     if (!session?.user?.id) {
         return { success: false, error: "Please log in to place a bet" }
@@ -69,14 +69,20 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
 
             const wallet = userWallets[0]
 
-            // Check balance based on type
-            if (isBonus) {
-                if (wallet.bonusBalance < stake) {
-                    throw new Error("Insufficient bonus balance")
+            // Calculate required cash stake
+            const cashAmount = Math.max(0, stake - bonusAmount)
+
+            // Validate Gift usage if applicable
+            if (bonusAmount > 0) {
+                if (wallet.bonusBalance < bonusAmount) {
+                    throw new Error("Insufficient bonus balance for the selected gift amount.")
                 }
-            } else {
-                if (wallet.balance < stake) {
-                    throw new Error("Insufficient balance")
+            }
+
+            // Validate Cash balance
+            if (cashAmount > 0) {
+                if (wallet.balance < cashAmount) {
+                    throw new Error("Insufficient balance to cover the remaining stake.")
                 }
             }
 
@@ -84,7 +90,9 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
             const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
 
             let bonusGiftAmount = 0
-            if (selections.length >= 3 && !isBonus) {
+            // Multi-Bonus only applies to cash bets or if not a full bonus bet? 
+            // In many sportsbooks, bonus bets don't qualify for extra win bonuses.
+            if (selections.length >= 3 && bonusAmount === 0) {
                 const { MULTI_BONUS } = await import("@/lib/constants")
                 const count = selections.length
                 let bonusPct = 0
@@ -116,31 +124,35 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
                 potentialPayout,
                 status: "pending",
                 selections: selections, // JSONB column
-                isBonusBet: isBonus,
-                bonusAmountUsed: isBonus ? stake : 0,
+                isBonusBet: bonusAmount > 0,
+                bonusUsed: bonusId,
+                bonusAmountUsed: bonusAmount,
                 bonusGiftAmount: bonusGiftAmount,
                 createdAt: new Date(),
                 updatedAt: new Date()
             })
 
-            // 4. Deduct stake from correct balance
-            if (isBonus) {
+            // 4. Deduct balances
+            if (bonusAmount > 0) {
                 await tx.update(wallets)
                     .set({
-                        bonusBalance: sql`${wallets.bonusBalance} - ${stake}`,
+                        bonusBalance: sql`${wallets.bonusBalance} - ${bonusAmount}`,
                         updatedAt: new Date()
                     })
                     .where(eq(wallets.id, wallet.id))
-            } else {
+            }
+
+            if (cashAmount > 0) {
                 await tx.update(wallets)
                     .set({
-                        balance: sql`${wallets.balance} - ${stake}`,
+                        balance: sql`${wallets.balance} - ${cashAmount}`,
                         updatedAt: new Date()
                     })
                     .where(eq(wallets.id, wallet.id))
             }
 
             // 5. Record the transaction
+            const isBonus = bonusAmount > 0
             await tx.insert(transactions).values({
                 id: `txn-${Math.random().toString(36).substring(2, 11)}`,
                 userId,
@@ -148,9 +160,9 @@ export async function placeBet(stake: number, selections: SelectionInput[], isBo
                 type: isBonus ? "bonus_stake" : "bet_stake",
                 amount: stake,
                 balanceBefore: isBonus ? wallet.bonusBalance : wallet.balance,
-                balanceAfter: isBonus ? wallet.bonusBalance - stake : wallet.balance - stake,
+                balanceAfter: isBonus ? wallet.bonusBalance - bonusAmount : wallet.balance - cashAmount,
                 paymentStatus: "success",
-                description: `Staked on bet ${betId}${isBonus ? " (Bonus)" : ""}`,
+                description: `Staked on bet ${betId}${isBonus ? ` (GHS ${bonusAmount} Gift)` : ""}`,
                 createdAt: new Date()
             })
 

@@ -25,6 +25,10 @@ export interface BetSlipContextType {
     clearSlip: () => void
     useBonus: boolean
     setUseBonus: (use: boolean) => void
+    bonusId: string | undefined
+    setBonusId: (id: string | undefined) => void
+    bonusAmount: number
+    setBonusAmount: (amount: number) => void
     openSlip: () => void
     closeSlip: () => void
 }
@@ -35,7 +39,9 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = React.useState(false)
     const [selections, setSelections] = React.useState<Selection[]>([])
     const [stake, setStakeState] = React.useState(10)
-    const [useBonus, setUseBonus] = React.useState(false)
+    const [useBonus, setUseBonus] = React.useState(false) // Whether ANY bonus is being used
+    const [bonusId, setBonusId] = React.useState<string | undefined>(undefined)
+    const [bonusAmount, setBonusAmount] = React.useState(0)
 
     const toggleSlip = () => setIsOpen(prev => !prev)
     const openSlip = () => setIsOpen(true)
@@ -64,7 +70,12 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
             s.selectionId === selectionId ? { ...s, stake: amount } : s
         ))
     }
-    const clearSlip = () => setSelections([])
+    const clearSlip = () => {
+        setSelections([])
+        setUseBonus(false)
+        setBonusId(undefined)
+        setBonusAmount(0)
+    }
 
     const value = {
         isOpen,
@@ -78,6 +89,10 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
         clearSlip,
         useBonus,
         setUseBonus,
+        bonusId,
+        setBonusId,
+        bonusAmount,
+        setBonusAmount,
         openSlip,
         closeSlip
     }
