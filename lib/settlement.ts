@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { bets, matches, wallets, transactions } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { Bet, Match } from "@/lib/types"
 
 export async function settleMatch(matchId: string) {

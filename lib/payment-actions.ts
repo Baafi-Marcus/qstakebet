@@ -52,17 +52,17 @@ export async function createDeposit(data: {
         })
 
         if (!result.success) {
-            return { success: false, error: result.error || "Failed to initiate payment" }
+            return { success: false as const, error: result.error || "Failed to initiate payment" }
         }
 
         return {
-            success: true,
+            success: true as const,
             reference,
             authorization_url: result.authorization_url
         }
     } catch (error) {
         console.error("Deposit creation error:", error)
-        return { success: false, error: "Failed to initiate deposit" }
+        return { success: false as const, error: "Failed to initiate deposit" }
     }
 }
 

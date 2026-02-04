@@ -106,11 +106,11 @@ export async function createWithdrawalRequest(data: {
                 description: `Withdrawal request for GHS ${data.amount.toFixed(2)}`
             })
 
-            return { success: true, requestId }
+            return { success: true as const, requestId }
         })
     } catch (error: any) {
         console.error("Withdrawal request error:", error)
-        return { success: false, error: error.message || "Failed to submit withdrawal request" }
+        return { success: false as const, error: error.message || "Failed to submit withdrawal request" }
     }
 }
 
@@ -168,10 +168,10 @@ export async function adminProcessWithdrawal(requestId: string, status: 'approve
                 })
                 .where(eq(withdrawalRequests.id, requestId))
 
-            return { success: true }
+            return { success: true as const }
         })
     } catch (error: any) {
-        return { success: false, error: error.message }
+        return { success: false as const, error: error.message }
     }
 }
 
