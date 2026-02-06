@@ -398,26 +398,26 @@ export function BetSlipSidebar() {
                         </div>
 
                         {/* Unified Compact Summary Card */}
-                        <div className="bg-slate-900 border-t border-slate-800 p-4 space-y-3">
+                        <div className="bg-slate-900 border-t border-slate-800 p-2 space-y-2">
                             {/* Summary Grid */}
-                            <div className="grid grid-cols-2 gap-4 bg-slate-800/50 rounded-xl p-3 border border-slate-800">
+                            <div className="grid grid-cols-2 gap-2 bg-slate-800/50 rounded-lg p-2 border border-slate-800">
                                 <div>
-                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Total Stake</span>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-xs font-bold text-slate-500">GHS</span>
+                                    <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Total Stake</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-slate-500">GHS</span>
                                         {betMode === 'single' ? (
-                                            <span className="text-lg font-black text-white">{(totalStake - (useBonus ? bonusAmount : 0)).toFixed(2)}</span>
+                                            <span className="text-sm font-black text-white">{(totalStake - (useBonus ? bonusAmount : 0)).toFixed(2)}</span>
                                         ) : (
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1">
                                                 <input
                                                     type="number"
                                                     value={stake}
                                                     disabled={useBonus && bonusAmount >= stake}
                                                     onChange={(e) => setStake(Math.max(0, Number(e.target.value)))}
-                                                    className="bg-transparent text-lg font-black text-white w-20 focus:outline-none border-b border-dashed border-slate-600 focus:border-green-500 transition-colors disabled:opacity-50"
+                                                    className="bg-transparent text-sm font-black text-white w-14 focus:outline-none border-b border-dashed border-slate-600 focus:border-green-500 transition-colors disabled:opacity-50"
                                                 />
                                                 {useBonus && (
-                                                    <span className="text-xs font-bold text-slate-500 line-through">
+                                                    <span className="text-[10px] font-bold text-slate-500 line-through">
                                                         {stake.toFixed(2)}
                                                     </span>
                                                 )}
@@ -425,56 +425,56 @@ export function BetSlipSidebar() {
                                         )}
                                     </div>
                                     {useBonus && (
-                                        <div className="mt-1 flex items-center gap-1 text-[9px] font-black text-purple-400 uppercase">
-                                            <Gift className="h-2.5 w-2.5" />
+                                        <div className="mt-0.5 flex items-center gap-1 text-[8px] font-black text-purple-400 uppercase">
+                                            <Gift className="h-2 w-2" />
                                             -{bonusAmount.toFixed(2)} Gift Applied
                                         </div>
                                     )}
                                 </div>
                                 <div className="text-right flex flex-col items-end">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
                                         {gifts.length > 0 && (
                                             <button
                                                 onClick={() => setShowGiftModal(true)}
                                                 className={cn(
-                                                    "p-1.5 rounded-lg transition-all border",
+                                                    "p-1 rounded transition-all border",
                                                     useBonus ? "bg-purple-600 border-purple-500 text-white" : "bg-slate-900 border-white/5 text-purple-400 hover:bg-slate-800"
                                                 )}
                                             >
-                                                <Gift className="h-4 w-4" />
+                                                <Gift className="h-3 w-3" />
                                             </button>
                                         )}
-                                        <span className="text-[10px] uppercase font-bold text-slate-500">Total Odds</span>
+                                        <span className="text-[9px] uppercase font-bold text-slate-500">Total Odds</span>
                                     </div>
-                                    <span className="text-lg font-black text-white">{totalOdds.toFixed(2)}</span>
+                                    <span className="text-sm font-black text-white">{totalOdds.toFixed(2)}</span>
                                 </div>
                                 <div className="col-span-1">
-                                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Max Bonus</span>
-                                    <span className="text-lg font-black text-green-500">
+                                    <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Max Bonus</span>
+                                    <span className="text-sm font-black text-green-500">
                                         {cappedBonus.toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-[10px] uppercase font-bold text-slate-400 mb-1">Potential Win</span>
-                                    <div className="text-2xl font-black text-white tracking-tight leading-none">
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 mb-0.5">Potential Win</span>
+                                    <div className="text-base font-black text-white tracking-tight leading-none">
                                         GHS {finalPotentialWin.toFixed(2)}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="grid grid-cols-2 gap-0 rounded-xl overflow-hidden">
+                            <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden">
                                 {status === "unauthenticated" ? (
                                     <>
                                         <Link
                                             href="/auth/login"
-                                            className="py-4 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all flex items-center justify-center"
+                                            className="py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs md:text-sm uppercase transition-all flex items-center justify-center"
                                         >
                                             Login
                                         </Link>
                                         <Link
                                             href="/auth/register"
-                                            className="py-4 bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase transition-all flex items-center justify-center"
+                                            className="py-3 bg-green-600 hover:bg-green-500 text-white font-black text-xs md:text-sm uppercase transition-all flex items-center justify-center"
                                         >
                                             Register
                                         </Link>
@@ -484,7 +484,7 @@ export function BetSlipSidebar() {
                                         <button
                                             onClick={handleBookBet}
                                             disabled={isBooking || selections.length === 0}
-                                            className="py-4 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase transition-all flex items-center justify-center gap-2 border-r border-slate-700"
+                                            className="py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs md:text-sm uppercase transition-all flex items-center justify-center gap-2 border-r border-slate-700"
                                         >
                                             {isBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Bet"}
                                         </button>
@@ -530,7 +530,7 @@ export function BetSlipSidebar() {
                                                 }
                                             }}
                                             disabled={isProcessing || totalStake < FINANCE_LIMITS.BET.MIN_STAKE}
-                                            className="py-4 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase transition-all flex flex-col items-center justify-center"
+                                            className="py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-xs md:text-sm uppercase transition-all flex flex-col items-center justify-center"
                                         >
                                             {isProcessing ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -547,7 +547,7 @@ export function BetSlipSidebar() {
                                 <Link
                                     href="/account/wallet"
                                     onClick={closeSlip}
-                                    className="block text-center text-[10px] font-bold text-green-500 hover:text-green-400 transition-colors uppercase tracking-widest"
+                                    className="block text-center text-[9px] font-bold text-green-500 hover:text-green-400 transition-colors uppercase tracking-widest mt-1"
                                 >
                                     Deposit Funds
                                 </Link>
@@ -564,118 +564,120 @@ export function BetSlipSidebar() {
             </div>
 
             {/* Gift Selection Modal */}
-            {showGiftModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowGiftModal(false)} />
-                    <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-purple-600/20 rounded-2xl">
-                                    <Gift className="h-6 w-6 text-purple-400" />
+            {
+                showGiftModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowGiftModal(false)} />
+                        <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-3 bg-purple-600/20 rounded-2xl">
+                                        <Gift className="h-6 w-6 text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-white uppercase tracking-tight">Select Gift</h3>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Available Balance</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Select Gift</h3>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Available Balance</p>
-                                </div>
-                            </div>
 
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                                {gifts.map((gift) => (
-                                    <div
-                                        key={gift.id}
-                                        className={cn(
-                                            "p-4 rounded-2xl border transition-all cursor-pointer group",
-                                            bonusId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-slate-900 border-white/5 hover:border-purple-500/50"
-                                        )}
-                                        onClick={() => {
-                                            setBonusId(gift.id)
-                                            setBonusAmount(Math.min(gift.amount, totalStake))
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", bonusId === gift.id ? "text-purple-200" : "text-slate-500")}>{gift.type}</span>
-                                                <span className={cn("text-lg font-black", bonusId === gift.id ? "text-white" : "text-slate-200")}>GHS {gift.amount.toFixed(2)}</span>
-                                            </div>
-                                            {bonusId === gift.id && (
-                                                <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
-                                                    <div className="h-2.5 w-2.5 bg-purple-600 rounded-full" />
-                                                </div>
+                                <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                                    {gifts.map((gift) => (
+                                        <div
+                                            key={gift.id}
+                                            className={cn(
+                                                "p-4 rounded-2xl border transition-all cursor-pointer group",
+                                                bonusId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-slate-900 border-white/5 hover:border-purple-500/50"
                                             )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {bonusId && (
-                                <div className="mt-6 pt-6 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Use Amount</span>
-                                        <div className="flex items-center gap-2 bg-slate-900 rounded-xl px-3 py-2 border border-white/5">
-                                            <span className="text-xs font-bold text-slate-600">GHS</span>
-                                            <input
-                                                type="number"
-                                                value={bonusAmount}
-                                                onChange={(e) => {
-                                                    const gift = gifts.find(g => g.id === bonusId)
-                                                    if (gift) {
-                                                        const val = Math.max(0, Math.min(gift.amount, Number(e.target.value)))
-                                                        setBonusAmount(val)
-                                                    }
-                                                }}
-                                                className="w-20 bg-transparent text-right font-black text-sm text-white focus:outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <button
                                             onClick={() => {
-                                                const gift = gifts.find(g => g.id === bonusId)
-                                                if (gift) setBonusAmount(gift.amount)
+                                                setBonusId(gift.id)
+                                                setBonusAmount(Math.min(gift.amount, totalStake))
                                             }}
-                                            className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase rounded-lg transition-all"
                                         >
-                                            Use Max
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setBonusAmount(0)
-                                                setBonusId(undefined)
-                                            }}
-                                            className="flex-1 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-lg transition-all"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", bonusId === gift.id ? "text-purple-200" : "text-slate-500")}>{gift.type}</span>
+                                                    <span className={cn("text-lg font-black", bonusId === gift.id ? "text-white" : "text-slate-200")}>GHS {gift.amount.toFixed(2)}</span>
+                                                </div>
+                                                {bonusId === gift.id && (
+                                                    <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
+                                                        <div className="h-2.5 w-2.5 bg-purple-600 rounded-full" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
 
-                            <div className="grid grid-cols-2 gap-3 mt-8">
-                                <button
-                                    onClick={() => {
-                                        setBonusId(undefined)
-                                        setBonusAmount(0)
-                                        setUseBonus(false)
-                                        setShowGiftModal(false)
-                                    }}
-                                    className="py-4 bg-slate-900 hover:bg-slate-800 text-slate-500 font-black text-[10px] uppercase rounded-2xl transition-all"
-                                >
-                                    Clear Selection
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setUseBonus(!!bonusId)
-                                        setShowGiftModal(false)
-                                    }}
-                                    className="py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase rounded-2xl transition-all shadow-lg shadow-purple-500/20"
-                                >
-                                    Confirm
-                                </button>
+                                {bonusId && (
+                                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">Use Amount</span>
+                                            <div className="flex items-center gap-2 bg-slate-900 rounded-xl px-3 py-2 border border-white/5">
+                                                <span className="text-xs font-bold text-slate-600">GHS</span>
+                                                <input
+                                                    type="number"
+                                                    value={bonusAmount}
+                                                    onChange={(e) => {
+                                                        const gift = gifts.find(g => g.id === bonusId)
+                                                        if (gift) {
+                                                            const val = Math.max(0, Math.min(gift.amount, Number(e.target.value)))
+                                                            setBonusAmount(val)
+                                                        }
+                                                    }}
+                                                    className="w-20 bg-transparent text-right font-black text-sm text-white focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <button
+                                                onClick={() => {
+                                                    const gift = gifts.find(g => g.id === bonusId)
+                                                    if (gift) setBonusAmount(gift.amount)
+                                                }}
+                                                className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase rounded-lg transition-all"
+                                            >
+                                                Use Max
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setBonusAmount(0)
+                                                    setBonusId(undefined)
+                                                }}
+                                                className="flex-1 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-lg transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3 mt-8">
+                                    <button
+                                        onClick={() => {
+                                            setBonusId(undefined)
+                                            setBonusAmount(0)
+                                            setUseBonus(false)
+                                            setShowGiftModal(false)
+                                        }}
+                                        className="py-4 bg-slate-900 hover:bg-slate-800 text-slate-500 font-black text-[10px] uppercase rounded-2xl transition-all"
+                                    >
+                                        Clear Selection
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setUseBonus(!!bonusId)
+                                            setShowGiftModal(false)
+                                        }}
+                                        className="py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase rounded-2xl transition-all shadow-lg shadow-purple-500/20"
+                                    >
+                                        Confirm
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </>
     )
 }
