@@ -136,3 +136,56 @@ export async function initiateWithdrawal(data: {
         return { success: false, error: errorMessage }
     }
 }
+
+export async function confirmDeposit(reference: string) {
+    try {
+        const { verifyPaystackTransaction } = await import("./payment/paystack")
+        const verification = await verifyPaystackTransaction(reference)
+
+        if (!verification.success) {
+            return { success: false, error: verification.error }
+        }
+
+        return await db.transaction(async (tx) => {
+            // 1. Find the transaction
+            const existingTxn = await tx.select()
+                .from(transactions)
+                .where(eq(transactions.paymentReference, reference))
+                .limit(1)
+
+            if (!existingTxn.length) {
+                return { success: false, error: "Transaction not found" }
+            }
+
+            const txn = existingTxn[0]
+
+            // 2. If already completed, just return success
+            if (txn.paymentStatus === "completed") {
+                return { success: true, alreadyCompleted: true }
+            }
+
+            // 3. Update the transaction status
+            const balanceAfter = txn.balanceBefore + verification.amount
+            await tx.update(transactions)
+                .set({
+                    paymentStatus: "completed",
+                    balanceAfter: balanceAfter,
+                    updatedAt: new Date()
+                })
+                .where(eq(transactions.id, txn.id))
+
+            // 4. Update the wallet balance
+            await tx.update(wallets)
+                .set({
+                    balance: balanceAfter,
+                    updatedAt: new Date()
+                })
+                .where(eq(wallets.id, txn.walletId))
+
+            return { success: true, amount: verification.amount }
+        })
+    } catch (error) {
+        console.error("Deposit confirmation error:", error)
+        return { success: false, error: "Failed to confirm deposit" }
+    }
+}

@@ -106,15 +106,15 @@ export function MatchRow({
     return (
         <div className="flex items-center bg-slate-900/40 border-b border-white/5 hover:bg-slate-800/40 transition-colors group">
             {/* Left side: Teams & Info */}
-            <div className="flex-1 py-2 sm:py-3 px-3 sm:px-4 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+            <div className="flex-1 py-1.5 px-3 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
                     {isSimulating ? (
-                        <div className="flex items-center gap-1.5 bg-red-600/20 px-1.5 py-0.5 rounded text-[8px] font-black text-red-400 animate-pulse border border-red-500/20">
+                        <div className="flex items-center gap-1.5 bg-red-600/20 px-1.5 py-0.5 rounded text-[7px] font-black text-red-400 animate-pulse border border-red-500/20">
                             <div className="w-1 h-1 rounded-full bg-red-500" />
-                            LIVE • ROUND {currentRoundIdx !== undefined ? currentRoundIdx + 1 : '?'}
+                            LIVE • R{currentRoundIdx !== undefined ? currentRoundIdx + 1 : '?'}
                         </div>
                     ) : (
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                             {match.isVirtual
                                 ? `VIRTUAL • ${match.stage}`
                                 : match.tournamentName
@@ -124,15 +124,15 @@ export function MatchRow({
                         </span>
                     )}
                     {match.isVirtual && !isSimulating && (
-                        <Zap className="h-2.5 w-2.5 text-purple-400" />
+                        <Zap className="h-2 w-2 text-purple-400" />
                     )}
                 </div>
-                <div className="flex flex-col gap-0">
+                <div className="flex flex-col gap-0.5">
                     {participants.map((p, idx) => (
-                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-1 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
-                            <span className="text-[11px] sm:text-xs font-bold text-white truncate max-w-[120px] sm:max-w-[150px]">{p.name}</span>
+                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
+                            <span className="text-[10px] sm:text-[11px] font-bold text-white truncate max-w-[140px] md:max-w-none">{p.name}</span>
                             {isSimulating && currentScores && (
-                                <span className="text-xs sm:text-sm font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
+                                <span className="text-xs font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
                             )}
                         </div>
                     ))}
@@ -140,9 +140,9 @@ export function MatchRow({
 
                 {/* Lock Indicator for Start Time */}
                 {lockStatus.timeUntilLock !== undefined && lockStatus.timeUntilLock < 30 && !isLocked && (
-                    <div className="mt-2 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[9px] font-bold text-orange-400 inline-flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5" />
-                        LOCKING IN {Math.floor(lockStatus.timeUntilLock)} MINS
+                    <div className="mt-1 px-1.5 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[8px] font-bold text-orange-400 inline-flex items-center gap-1">
+                        <Lock className="h-2 w-2" />
+                        LOCKING IN {Math.floor(lockStatus.timeUntilLock)}m
                     </div>
                 )}
             </div>
