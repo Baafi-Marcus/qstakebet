@@ -10,7 +10,7 @@ export async function getMatchStatsByRegion() {
 
     matches.forEach(match => {
         // Normalize region from database to match UI labels
-        let dbRegion = (match.region || "National").toLowerCase().trim()
+        const dbRegion = (match.region || "National").toLowerCase().trim()
 
         // Find exact match in our UI display names if possible
         const regionLabels: Record<string, string> = {
