@@ -28,6 +28,7 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
     const [regenerating, setRegenerating] = useState(false)
 
     // Helper to get suggestions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const fetchSuggestions = async () => {
         try {
             setLoading(true)

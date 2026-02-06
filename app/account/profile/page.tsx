@@ -52,6 +52,7 @@ export default function ProfilePage() {
                     <Link href="/account/settings" className="flex items-center gap-3 group">
                         <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 flex items-center justify-center">
                             {user.image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
                             ) : (
                                 <div className="h-full w-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-xl font-bold">
