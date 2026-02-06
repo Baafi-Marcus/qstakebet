@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { confirmDeposit } from "@/lib/payment-actions"
 
-export default function PaystackCallbackPage() {
+function CallbackContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -138,5 +138,18 @@ export default function PaystackCallbackPage() {
                 </Link>
             </div>
         </div>
+    )
+}
+
+export default function PaystackCallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-6">
+                <Loader2 className="h-16 w-16 text-purple-600 animate-spin" />
+                <h2 className="text-2xl font-black text-white">Loading Verification...</h2>
+            </div>
+        }>
+            <CallbackContent />
+        </Suspense>
     )
 }
