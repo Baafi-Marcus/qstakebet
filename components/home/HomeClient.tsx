@@ -1,11 +1,10 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Trophy, Zap, Search, Filter, ArrowRight, Star, Calendar } from "lucide-react"
+import { Trophy, Search, Filter, Calendar } from "lucide-react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
 import { useBetSlip } from "@/lib/store/useBetSlip"
-import Link from "next/link"
 
 interface HomeClientProps {
     initialMatches: Match[]
@@ -100,36 +99,6 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     return (
         <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 space-y-10">
 
-            {/* Hero Section */}
-            <div className="relative rounded-[3rem] overflow-hidden bg-slate-900 border border-white/5 p-8 md:p-12 lg:p-16">
-                <div className="absolute top-0 right-0 w-1/2 h-full opacity-20 pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-l from-purple-600/30 to-transparent" />
-                    <Trophy className="absolute top-1/2 right-0 -translate-y-1/2 w-[400px] h-[400px] text-purple-500 blur-3xl opacity-20" />
-                </div>
-
-                <div className="relative z-10 max-w-2xl space-y-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-600/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-widest">
-                        <Star className="h-3 w-3 fill-current" />
-                        New year expansion live
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-white leading-[0.9] tracking-tighter uppercase">
-                        Predict the <span className="text-purple-500">Academic</span> Giants.
-                    </h1>
-                    <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                        Predict outcomes for NSMQ, Inter-Schools Athletics, and Regional Championships. Experience the next generation of academic prediction.
-                    </p>
-                    <div className="flex flex-wrap gap-4 pt-4">
-                        <button className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-black transition-all flex items-center gap-3 shadow-xl shadow-purple-900/40 group">
-                            START PREDICTING
-                            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                        <Link href="/virtuals" className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black transition-all flex items-center gap-3 border border-white/5">
-                            <Zap className="h-5 w-5 text-purple-400" />
-                            INSTANT VIRTUALS
-                        </Link>
-                    </div>
-                </div>
-            </div>
 
             {/* Market Controls */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
