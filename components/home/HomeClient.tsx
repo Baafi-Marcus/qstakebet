@@ -97,62 +97,59 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     }
 
     return (
-        <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 space-y-10">
+        <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">
 
 
             {/* Market Controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/5">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+                <div className="flex items-center gap-1 sm:gap-2 bg-slate-900/50 p-1 rounded-2xl border border-white/5 w-full sm:w-auto">
                     <button
                         onClick={() => setActiveMarket('winner')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'winner' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'winner' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
                     >
                         Winner
                     </button>
                     <button
                         onClick={() => setActiveMarket('total_points')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'total_points' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'total_points' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
                     >
                         Total Points
                     </button>
                 </div>
 
-                <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search competitions..."
-                            className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                            placeholder="Search..."
+                            className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                         />
                     </div>
-                    <button className="p-3 bg-slate-900/50 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all">
-                        <Filter className="h-5 w-5" />
-                    </button>
                 </div>
             </div>
 
             {/* Matches List - Grouped by Date */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
                 {groupedMatches.length > 0 ? (
                     groupedMatches.map((group) => (
-                        <div key={group.label} className="space-y-4">
+                        <div key={group.label} className="space-y-3 sm:space-y-4">
                             {/* Date Header */}
-                            <div className="flex items-center gap-3 px-4">
-                                <Calendar className="h-5 w-5 text-purple-500" />
-                                <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                            <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4">
+                                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                                <h2 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight">
                                     {group.label}
                                 </h2>
                                 <div className="flex-1 h-px bg-white/5" />
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                <span className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
                                     {group.matches.length} {group.matches.length === 1 ? 'Match' : 'Matches'}
                                 </span>
                             </div>
 
                             {/* Matches in this group */}
-                            <div className="bg-slate-900/20 border border-white/5 rounded-[2.5rem] overflow-hidden divide-y divide-white/5">
+                            <div className="bg-slate-900/20 border border-white/5 rounded-2xl sm:rounded-[2.5rem] overflow-hidden divide-y divide-white/5">
                                 {group.matches.map((match) => (
                                     <MatchRow
                                         key={match.id}

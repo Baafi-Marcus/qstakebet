@@ -12,7 +12,8 @@ import {
     Zap,
     Timer,
     ChevronDown,
-    LayoutGrid
+    LayoutGrid,
+    X
 } from "lucide-react"
 
 const SPORTS = [
@@ -53,45 +54,45 @@ export function SubNavBar() {
             <div className="max-w-[1400px] mx-auto px-4">
                 <div className="flex items-center h-12 gap-6 overflow-x-auto no-scrollbar">
                     {/* Main Sections */}
-                    <div className="flex items-center gap-1 border-r border-white/10 pr-4">
+                    <div className="flex items-center gap-0.5 sm:gap-1 border-r border-white/10 pr-2 sm:pr-4">
                         <Link
                             href="/"
                             className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
+                                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all whitespace-nowrap",
                                 pathname === "/"
                                     ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
                                     : "text-slate-400 hover:text-white"
                             )}
                         >
-                            <Star className="h-3.5 w-3.5" />
+                            <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             FEATURED
                         </Link>
                         <Link
                             href="/live"
                             className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
+                                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all whitespace-nowrap",
                                 pathname === "/live"
                                     ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
                                     : "text-slate-400 hover:text-white"
                             )}
                         >
-                            <Timer className="h-3.5 w-3.5" />
+                            <Timer className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             LIVE
                         </Link>
                         <Link
                             href="/virtuals"
                             className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap text-emerald-400 hover:text-emerald-300",
+                                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all whitespace-nowrap text-emerald-400 hover:text-emerald-300",
                                 pathname === "/virtuals" && "bg-emerald-500/10"
                             )}
                         >
-                            <Zap className="h-3.5 w-3.5" />
+                            <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             VIRTUALS
                         </Link>
                     </div>
 
                     {/* Sports Horizontal List */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-1">
                         {SPORTS.map((sport) => {
                             const Icon = sport.icon
                             const isActive = pathname === sport.href
@@ -100,47 +101,57 @@ export function SubNavBar() {
                                     key={sport.href}
                                     href={sport.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-1 py-1.5 text-[11px] font-bold transition-all whitespace-nowrap uppercase tracking-tighter",
+                                        "flex items-center gap-1.5 px-0.5 py-1 text-[9px] sm:text-[11px] font-bold transition-all whitespace-nowrap uppercase tracking-tighter",
                                         isActive ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-400 hover:text-white"
                                     )}
                                 >
-                                    <Icon className="h-3.5 w-3.5" />
+                                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     {sport.label}
                                 </Link>
                             )
                         })}
                     </div>
 
-                    {/* Regions Dropdown */}
-                    <div className="relative ml-auto">
+                    {/* Regions Dropdown/Modal */}
+                    <div className="relative ml-auto shrink-0 pl-2">
                         <button
                             onClick={() => setIsRegionsOpen(!isRegionsOpen)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-1.5 rounded-full border text-[11px] font-black tracking-widest uppercase transition-all",
+                                "flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full border text-[9px] sm:text-[11px] font-black tracking-widest uppercase transition-all",
                                 isRegionsOpen
                                     ? "bg-white text-black border-white"
                                     : "bg-transparent text-white border-white/20 hover:border-white/40"
                             )}
                         >
-                            <LayoutGrid className="h-3.5 w-3.5" />
-                            REGIONS
-                            <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isRegionsOpen && "rotate-180")} />
+                            <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span className="hidden xs:inline">REGIONS</span>
+                            <span className="xs:hidden">REG</span>
+                            <ChevronDown className={cn("h-2.5 w-2.5 sm:h-3 sm:w-3 transition-transform duration-200", isRegionsOpen && "rotate-180")} />
                         </button>
 
                         {isRegionsOpen && (
                             <>
                                 <div
-                                    className="fixed inset-0 z-40"
+                                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none"
                                     onClick={() => setIsRegionsOpen(false)}
                                 />
-                                <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="grid grid-cols-2 gap-1">
+                                <div className={cn(
+                                    "fixed lg:absolute left-1/2 lg:left-auto lg:right-0 top-1/2 lg:top-full -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 lg:translate-y-0 lg:mt-2",
+                                    "w-[90vw] sm:w-[500px] lg:w-72 bg-slate-900 border border-white/10 rounded-2xl sm:rounded-3xl lg:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-4 z-50 animate-in fade-in zoom-in-95 duration-200"
+                                )}>
+                                    <div className="flex items-center justify-between mb-4 lg:hidden">
+                                        <h3 className="text-xs font-black text-white uppercase tracking-widest">Select Region</h3>
+                                        <button onClick={() => setIsRegionsOpen(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5 sm:gap-2 lg:gap-1">
                                         {REGIONS.map((region) => (
                                             <Link
                                                 key={region.href}
                                                 href={region.href}
                                                 onClick={() => setIsRegionsOpen(false)}
-                                                className="px-3 py-2 text-[10px] font-bold text-slate-400 hover:bg-white/5 hover:text-white rounded-lg transition-all"
+                                                className="px-3 py-2.5 lg:py-2 text-[10px] sm:text-[11px] lg:text-[10px] font-bold text-slate-400 hover:bg-white/5 hover:text-white rounded-lg transition-all border border-transparent hover:border-white/10"
                                             >
                                                 {region.label}
                                             </Link>

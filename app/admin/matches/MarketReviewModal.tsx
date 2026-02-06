@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { X, Loader2, Sparkles, Check, Trash2, RotateCcw, Save } from "lucide-react"
 import { Match } from "@/lib/types"
 import { getMatchSuggestions, publishMatchMarkets } from "@/lib/admin-actions"
@@ -28,8 +28,7 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
     const [regenerating, setRegenerating] = useState(false)
 
     // Helper to get suggestions
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const fetchSuggestions = async () => {
+    const fetchSuggestions = useCallback(async () => {
         try {
             setLoading(true)
             setError("")
@@ -50,12 +49,12 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
             setLoading(false)
             setRegenerating(false)
         }
-    }
+    }, [match.id])
 
     // Initial Fetch
     useEffect(() => {
         fetchSuggestions()
-    }, [match.id])
+    }, [fetchSuggestions])
 
     const handlePublish = async () => {
         if (drafts.length === 0) return

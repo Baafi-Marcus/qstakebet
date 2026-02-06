@@ -20,8 +20,11 @@ export default function PaystackCallbackPage() {
         const finalRef = reference || trxref
 
         if (!finalRef) {
-            setStatus('error')
-            setError("No transaction reference found")
+            // Use a tiny timeout or just let verify handle it
+            setTimeout(() => {
+                setStatus('error')
+                setError("No transaction reference found")
+            }, 0)
             return
         }
 

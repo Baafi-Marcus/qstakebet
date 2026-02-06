@@ -127,12 +127,12 @@ export function MatchRow({
                         <Zap className="h-2 w-2 text-purple-400" />
                     )}
                 </div>
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-0.5 sm:gap-1">
                     {participants.map((p, idx) => (
                         <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
-                            <span className="text-[10px] sm:text-[11px] font-bold text-white truncate max-w-[140px] md:max-w-none">{p.name}</span>
+                            <span className="text-[9px] sm:text-[11px] font-bold text-white truncate max-w-[140px] md:max-w-none uppercase tracking-tighter sm:tracking-normal">{p.name}</span>
                             {isSimulating && currentScores && (
-                                <span className="text-xs font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
+                                <span className="text-[10px] sm:text-xs font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
                             )}
                         </div>
                     ))}
