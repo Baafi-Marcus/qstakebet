@@ -36,7 +36,8 @@ export default function PaystackCallbackPage() {
                 const result = await confirmDeposit(finalRef)
                 if (result.success) {
                     setStatus('success')
-                    setAmount(result.amount || null)
+                    const finalAmount = (result as any).amount
+                    setAmount(finalAmount || null)
 
                     // Auto redirect after 5 seconds
                     setTimeout(() => {

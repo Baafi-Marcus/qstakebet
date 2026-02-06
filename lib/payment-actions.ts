@@ -142,8 +142,8 @@ export async function confirmDeposit(reference: string) {
         const { verifyPaystackTransaction } = await import("./payment/paystack")
         const verification = await verifyPaystackTransaction(reference)
 
-        if (!verification.success) {
-            return { success: false, error: verification.error }
+        if (!verification.success || verification.amount === undefined) {
+            return { success: false, error: verification.error || "Invalid verification data", amount: undefined }
         }
 
         return await db.transaction(async (tx) => {
@@ -161,7 +161,7 @@ export async function confirmDeposit(reference: string) {
 
             // 2. If already completed, just return success
             if (txn.paymentStatus === "completed") {
-                return { success: true, alreadyCompleted: true }
+                return { success: true, alreadyCompleted: true, amount: txn.amount }
             }
 
             // 3. Update the transaction status
@@ -186,6 +186,6 @@ export async function confirmDeposit(reference: string) {
         })
     } catch (error) {
         console.error("Deposit confirmation error:", error)
-        return { success: false, error: "Failed to confirm deposit" }
+        return { success: false, error: "Failed to confirm deposit", amount: undefined }
     }
 }
