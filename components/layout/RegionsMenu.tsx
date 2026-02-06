@@ -71,7 +71,7 @@ export function RegionsMenu({ isOpen, onClose }: RegionsMenuProps) {
             />
 
             {/* Menu Content */}
-            <div className="fixed left-0 right-0 w-screen top-[104px] bottom-0 lg:max-h-[85vh] bg-slate-900 border-t border-white/10 z-50 overflow-y-auto no-scrollbar animate-in slide-in-from-top-2 duration-200">
+            <div className="fixed inset-x-0 top-[104px] bottom-0 lg:max-h-[85vh] bg-slate-900 border-t border-white/10 z-[9999] overflow-y-auto no-scrollbar animate-in slide-in-from-top-2 duration-200 shadow-2xl">
                 <div className="w-full">
                     <div className="flex flex-col">
                         {/* Header Area (Mobile only) */}
