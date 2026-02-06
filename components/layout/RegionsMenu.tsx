@@ -54,84 +54,78 @@ export function RegionsMenu({ isOpen, onClose }: RegionsMenuProps) {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-md z-[45] animate-in fade-in duration-300"
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] animate-in fade-in duration-300 lg:hidden"
                 onClick={onClose}
             />
 
             {/* Menu Content */}
-            <div className="fixed left-0 right-0 top-[104px] bottom-0 lg:bottom-auto lg:max-h-[80vh] bg-slate-900 border-t border-white/5 z-50 overflow-y-auto no-scrollbar animate-in slide-in-from-top-4 duration-300">
-                <div className="max-w-[1400px] mx-auto px-4 py-8 md:py-12">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="fixed left-0 right-0 top-[104px] bottom-0 lg:bottom-auto lg:max-h-[85vh] bg-slate-900 border-t border-white/10 z-50 overflow-y-auto no-scrollbar animate-in slide-in-from-top-2 duration-200">
+                <div className="w-full max-w-[1400px] mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12">
 
-                        {/* Sidebar / Categories */}
-                        <div className="lg:col-span-3 space-y-8">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-2xl font-black text-white tracking-widest uppercase">Browse</h2>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-colors lg:hidden"
-                                >
-                                    <X className="h-6 w-6" />
-                                </button>
-                            </div>
-
-                            {/* Sports Selection */}
-                            <div className="space-y-4">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <Trophy className="h-3 w-3" />
-                                    By Sport
-                                </h3>
-                                <div className="grid grid-cols-1 gap-1">
+                        {/* Sports Section - Top/Left */}
+                        <div className="lg:col-span-3 border-r border-white/5 bg-slate-900/50">
+                            <div className="p-4 lg:p-6 space-y-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-[10px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Trophy className="h-3 w-3" />
+                                        Categories
+                                    </h3>
+                                    <button
+                                        onClick={onClose}
+                                        className="p-2 hover:bg-white/5 rounded-full text-slate-500 lg:hidden"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="flex flex-row lg:flex-col gap-1 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
                                     {SPORTS.map((sport) => (
                                         <Link
                                             key={sport.href}
                                             href={sport.href}
                                             onClick={onClose}
-                                            className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group"
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group min-w-[140px] lg:min-w-0"
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <sport.icon className="h-5 w-5 text-purple-400 group-hover:scale-110 transition-transform" />
-                                                <span className="font-bold">{sport.label}</span>
-                                            </div>
-                                            <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0" />
+                                            <sport.icon className="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                                            <span className="text-xs font-bold whitespace-nowrap">{sport.label}</span>
                                         </Link>
                                     ))}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Main Regions Grid */}
-                        <div className="lg:col-span-9 space-y-8">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <Map className="h-3 w-3" />
-                                    By Region
-                                </h3>
-                                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-slate-500">
-                                    <Search className="h-3 w-3" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Search Regions</span>
+                        {/* Regions List - Main Area */}
+                        <div className="lg:col-span-9 bg-slate-900">
+                            <div className="p-4 lg:p-6 space-y-6">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Map className="h-3 w-3" />
+                                        All Regions
+                                    </h3>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-slate-500">
+                                        <Search className="h-3 w-3" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Search</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-                                {REGIONS.map((region) => (
-                                    <Link
-                                        key={region.href}
-                                        href={region.href}
-                                        onClick={onClose}
-                                        className="relative group overflow-hidden"
-                                    >
-                                        <div className="p-4 md:p-6 bg-slate-800/20 hover:bg-purple-600 border border-white/5 hover:border-purple-500 rounded-2xl md:rounded-3xl transition-all duration-300 flex flex-col items-start gap-4">
-                                            <div className="h-8 w-8 rounded-xl bg-white/5 group-hover:bg-white/20 flex items-center justify-center transition-colors">
-                                                <LayoutGrid className="h-4 w-4 text-slate-400 group-hover:text-white" />
+                                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0 divide-y divide-white/5 xs:divide-y-0">
+                                    {REGIONS.map((region) => (
+                                        <Link
+                                            key={region.href}
+                                            href={region.href}
+                                            onClick={onClose}
+                                            className="flex items-center justify-between p-4 hover:bg-purple-600/10 group transition-all border-b border-white/5 sm:border-b-0"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-7 w-7 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-purple-600 transition-colors">
+                                                    <LayoutGrid className="h-3.5 w-3.5 text-slate-500 group-hover:text-white" />
+                                                </div>
+                                                <span className="text-xs font-black text-slate-200 group-hover:text-white uppercase tracking-tight">{region.label}</span>
                                             </div>
-                                            <div>
-                                                <p className="text-xs md:text-sm font-black text-white uppercase tracking-tight leading-none mb-1">{region.label}</p>
-                                                <p className="text-[9px] md:text-[10px] font-bold text-slate-500 group-hover:text-purple-200 uppercase tracking-widest">View Competitions</p>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <ChevronRight className="h-3 w-3 text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
