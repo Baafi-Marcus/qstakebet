@@ -8,7 +8,8 @@ import {
     Clock,
     Loader2,
     CheckCircle2,
-    CreditCard
+    CreditCard,
+    ArrowLeft
 } from "lucide-react"
 import { getUserWalletDetails } from "@/lib/user-actions"
 import Link from "next/link"
@@ -37,6 +38,17 @@ export default function WalletPage() {
 
     return (
         <div className="max-w-4xl mx-auto py-4">
+            {/* Header with Back Button */}
+            <div className="flex items-center gap-4 mb-8">
+                <Link href="/account" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
+                    <ArrowLeft className="h-6 w-6" />
+                </Link>
+                <div>
+                    <h2 className="text-3xl font-black mb-1">My Wallet</h2>
+                    <p className="text-slate-400 font-medium">Manage funds and track transactions</p>
+                </div>
+            </div>
+
             {/* Balance Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 {/* Main Cash Balance */}
@@ -106,7 +118,17 @@ export default function WalletPage() {
                                                 <CreditCard className="h-4 w-4" />}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-200 capitalize">{txn.type.replace('_', ' ')}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-slate-200 capitalize">{txn.type.replace('_', ' ')}</p>
+                                            <span className={cn(
+                                                "text-[8px] font-black uppercase px-1.5 py-0.5 rounded border",
+                                                txn.paymentStatus === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                    txn.paymentStatus === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse' :
+                                                        'bg-red-500/10 text-red-500 border-red-500/20'
+                                            )}>
+                                                {txn.paymentStatus || 'Pending'}
+                                            </span>
+                                        </div>
                                         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">
                                             {new Date(txn.createdAt).toLocaleDateString('en-GB')} • Ref: {txn.id.slice(-6).toUpperCase()}
                                         </p>

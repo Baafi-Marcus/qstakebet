@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Wallet, Smartphone, ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { createWithdrawalRequest, getUserWithdrawalRequests } from "@/lib/withdrawal-actions"
@@ -14,6 +15,7 @@ const NETWORKS = [
 ] as const
 
 export default function WithdrawPage() {
+    const { data: session } = useSession()
     const [amount, setAmount] = useState("")
     const [phoneNumber, setPhoneNumber] = useState("")
     const [accountName, setAccountName] = useState("")
@@ -25,7 +27,10 @@ export default function WithdrawPage() {
 
     useEffect(() => {
         loadRequests()
-    }, [])
+        if (session?.user?.phone) {
+            setPhoneNumber(session.user.phone)
+        }
+    }, [session])
 
     const loadRequests = async () => {
         const data = await getUserWithdrawalRequests()
@@ -154,11 +159,11 @@ export default function WithdrawPage() {
                             <input
                                 type="tel"
                                 value={phoneNumber}
-                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                placeholder="024 XXX XXXX"
-                                className="w-full bg-white/5 border-2 border-white/5 focus:border-purple-600 rounded-2xl px-6 py-4 text-lg font-black text-white outline-none transition-all placeholder:text-slate-700"
+                                readOnly
+                                className="w-full bg-white/5 border-2 border-white/5 rounded-2xl px-6 py-4 text-lg font-black text-slate-400 outline-none cursor-not-allowed opacity-80"
                                 required
                             />
+                            <p className="text-[9px] text-purple-500/80 font-bold uppercase tracking-widest px-1">Fixed to registered account number</p>
                         </div>
                         <div className="space-y-4">
                             <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">Account Name (Optional)</label>

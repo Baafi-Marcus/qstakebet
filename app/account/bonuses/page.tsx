@@ -1,7 +1,8 @@
 "use client"
 
 // import { useSession } from "next-auth/react"
-import { Gift, Zap, Users, Trophy, Star, ArrowRight } from "lucide-react"
+import { Gift, Zap, Users, Trophy, Star, ArrowRight, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function BonusesPage() {
     // const { data: session } = useSession()
@@ -20,9 +21,14 @@ export default function BonusesPage() {
 
     return (
         <div className="space-y-12">
-            <div>
-                <h2 className="text-3xl font-black mb-2">My Offers & Bonuses</h2>
-                <p className="text-slate-400 font-medium">Redeem rewards, manage bonuses, and earn from referrals</p>
+            <div className="flex items-center gap-4">
+                <Link href="/account" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
+                    <ArrowLeft className="h-6 w-6" />
+                </Link>
+                <div>
+                    <h2 className="text-3xl font-black mb-2">My Offers & Bonuses</h2>
+                    <p className="text-slate-400 font-medium">Redeem rewards, manage bonuses, and earn from referrals</p>
+                </div>
             </div>
 
             {/* Referral Banner */}

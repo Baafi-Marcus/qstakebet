@@ -112,8 +112,8 @@ export function SubNavBar() {
                         })}
                     </div>
 
-                    {/* Regions Dropdown/Modal */}
-                    <div className="relative ml-auto shrink-0 pl-2">
+                    {/* Regions Toggle */}
+                    <div className="ml-auto shrink-0 pl-2">
                         <button
                             onClick={() => setIsRegionsOpen(!isRegionsOpen)}
                             className={cn(
@@ -128,41 +128,17 @@ export function SubNavBar() {
                             <span className="xs:hidden">REG</span>
                             <ChevronDown className={cn("h-2.5 w-2.5 sm:h-3 sm:w-3 transition-transform duration-200", isRegionsOpen && "rotate-180")} />
                         </button>
-
-                        {isRegionsOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none"
-                                    onClick={() => setIsRegionsOpen(false)}
-                                />
-                                <div className={cn(
-                                    "fixed lg:absolute left-1/2 lg:left-auto lg:right-0 top-1/2 lg:top-full -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 lg:translate-y-0 lg:mt-2",
-                                    "w-[90vw] sm:w-[500px] lg:w-72 bg-slate-900 border border-white/10 rounded-2xl sm:rounded-3xl lg:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-4 z-50 animate-in fade-in zoom-in-95 duration-200"
-                                )}>
-                                    <div className="flex items-center justify-between mb-4 lg:hidden">
-                                        <h3 className="text-xs font-black text-white uppercase tracking-widest">Select Region</h3>
-                                        <button onClick={() => setIsRegionsOpen(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5 sm:gap-2 lg:gap-1">
-                                        {REGIONS.map((region) => (
-                                            <Link
-                                                key={region.href}
-                                                href={region.href}
-                                                onClick={() => setIsRegionsOpen(false)}
-                                                className="px-3 py-2.5 lg:py-2 text-[10px] sm:text-[11px] lg:text-[10px] font-bold text-slate-400 hover:bg-white/5 hover:text-white rounded-lg transition-all border border-transparent hover:border-white/10"
-                                            >
-                                                {region.label}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </div>
                 </div>
             </div>
+
+            {/* Mega Menu Overlay */}
+            <RegionsMenu
+                isOpen={isRegionsOpen}
+                onClose={() => setIsRegionsOpen(false)}
+            />
         </div>
     )
 }
+
+import { RegionsMenu } from "./RegionsMenu"

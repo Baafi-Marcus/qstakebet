@@ -1,24 +1,38 @@
-import { Timer } from "lucide-react";
+import { getAllMatches } from "@/lib/data"
+import { HomeClient } from "@/components/home/HomeClient"
+import { Timer } from "lucide-react"
 
-export default function LivePage() {
+export const dynamic = 'force-dynamic'
+
+export default async function LivePage() {
+    const allMatches = await getAllMatches()
+
+    // Filter for Today only
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const todayMatches = allMatches.filter(m => {
+        if (!m.scheduledAt) return m.isLive // If no schedule but live, show it
+        const sched = new Date(m.scheduledAt)
+        return sched >= today && sched < tomorrow
+    })
+
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 md:p-6 lg:p-8">
-            <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500">
-                <div className="inline-flex p-4 rounded-3xl bg-purple-500/10 border border-purple-500/20 shadow-2xl shadow-purple-500/10">
-                    <Timer className="h-12 w-12 text-purple-400 animate-pulse" />
+        <div className="min-h-screen bg-background flex flex-col">
+            <main className="flex-1 pb-20">
+                <div className="max-w-[1400px] mx-auto px-4 pt-8 underline-offset-8">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="p-2 bg-purple-500/10 rounded-xl">
+                            <Timer className="h-6 w-6 text-purple-400 animate-pulse" />
+                        </div>
+                        <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Live & Today's Matches</h1>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-black text-white tracking-tighter uppercase sm:text-5xl">
-                        Live Matches
-                    </h1>
-                    <p className="text-slate-500 font-bold tracking-widest uppercase text-xs">
-                        Real-time coverage is coming soon
-                    </p>
-                </div>
-                <div className="max-w-xs mx-auto text-slate-400 text-sm font-medium">
-                    We&apos;re working on bringing you the most immersive live-betting experience for academic competitions. Stay tuned!
-                </div>
-            </div>
+                <HomeClient initialMatches={todayMatches} />
+            </main>
         </div>
-    );
+    )
 }

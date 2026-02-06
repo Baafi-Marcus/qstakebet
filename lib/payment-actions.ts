@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { transactions, wallets } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { initiateMomoDeposit } from "./payment/moolre"
+import { FINANCE_LIMITS } from "./constants"
 import { auth } from "@/lib/auth"
 
 export async function createDeposit(data: {
@@ -12,6 +13,14 @@ export async function createDeposit(data: {
     const session = await auth()
     if (!session?.user?.id || !session?.user?.email) {
         return { success: false, error: "Unauthorized" }
+    }
+
+    if (data.amount < FINANCE_LIMITS.DEPOSIT.MIN) {
+        return { success: false, error: `Minimum deposit is GHS ${FINANCE_LIMITS.DEPOSIT.MIN}` }
+    }
+
+    if (data.amount > FINANCE_LIMITS.DEPOSIT.MAX) {
+        return { success: false, error: `Maximum deposit is GHS ${FINANCE_LIMITS.DEPOSIT.MAX}` }
     }
 
     try {

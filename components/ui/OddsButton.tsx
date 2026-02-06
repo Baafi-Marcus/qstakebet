@@ -72,16 +72,16 @@ export function OddsButton({
             <button
                 disabled
                 className={cn(
-                    "flex flex-col items-center justify-center py-2 px-1 rounded-md transition-all duration-200 border bg-white/5 border-white/5 cursor-not-allowed opacity-50",
+                    "flex flex-col items-center justify-center py-1 px-1 rounded-md transition-all duration-200 border bg-white/5 border-white/5 cursor-not-allowed opacity-50",
                     "font-medium text-sm w-full",
                     isCorrelated && "grayscale brightness-50", // Extra visual for correlation
                     className
                 )}
             >
                 {showLabel && (
-                    <span className="text-xs text-slate-600 mb-0.5" suppressHydrationWarning>{label}</span>
+                    <span className="text-[8px] text-slate-600 mb-0.5 uppercase" suppressHydrationWarning>{label}</span>
                 )}
-                <Lock className="h-4 w-4 text-slate-600" />
+                <Lock className="h-3 w-3 text-slate-600" />
             </button>
         )
     }
@@ -90,7 +90,7 @@ export function OddsButton({
         <button
             onClick={handleClick}
             className={cn(
-                "flex flex-col items-center justify-center py-2 px-1 rounded-md transition-all duration-200 border",
+                "flex flex-col items-center justify-center py-1 px-1 rounded-md transition-all duration-200 border",
                 "font-medium text-sm w-full",
                 isSelected
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_0_10px_rgba(59,130,246,0.5)] scale-[1.02]"
@@ -99,9 +99,9 @@ export function OddsButton({
             )}
         >
             {showLabel && (
-                <span className="text-xs text-muted-foreground mb-0.5" suppressHydrationWarning>{label}</span>
+                <span className="text-[9px] text-muted-foreground mb-0.5 font-bold uppercase" suppressHydrationWarning>{label}</span>
             )}
-            <span className="font-bold text-accent font-display tracking-wide">{odds.toFixed(2)}</span>
+            <span className="font-black text-[11px] text-accent font-display tracking-tight leading-none">{odds.toFixed(2)}</span>
         </button>
     )
 }

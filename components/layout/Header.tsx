@@ -73,55 +73,19 @@ export function Header() {
                     <div className="flex items-center space-x-2 md:space-x-4">
                         {isLoggedIn ? (
                             <>
-                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10">
+                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
                                     <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
                                     <span className="text-xs md:text-sm font-mono font-black text-foreground">
                                         GHS {balance !== null ? balance.toFixed(2) : "..."}
                                     </span>
                                 </div>
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="h-9 px-2 rounded-full hover:bg-white/5 flex items-center gap-2 transition-all active:scale-95"
-                                    >
-                                        <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-[10px] font-black text-white shadow-lg shadow-purple-500/10">
-                                            {session.user?.name?.[0]?.toUpperCase() || "U"}
-                                        </div>
-                                        <ChevronDown className={cn("h-4 w-4 text-slate-500 transition-transform", isProfileOpen && "rotate-180")} />
-                                    </button>
-
-                                    {isProfileOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="px-4 py-2 border-b border-white/5 mb-2">
-                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">My Account</p>
-                                                <p className="text-sm font-black truncate text-white">{session.user?.name}</p>
-                                            </div>
-                                            <Link href="/account/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
-                                                <User className="h-4 w-4 text-purple-400" />
-                                                Profile Details
-                                            </Link>
-                                            <Link href="/account/bets" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
-                                                <Trophy className="h-4 w-4 text-purple-400" />
-                                                Betting History
-                                            </Link>
-                                            <Link href="/account/wallet" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
-                                                <Wallet className="h-4 w-4 text-purple-400" />
-                                                Wallet & Deposit
-                                            </Link>
-                                            <div className="h-px bg-white/5 my-2" />
-                                            <button
-                                                onClick={() => {
-                                                    setIsProfileOpen(false)
-                                                    signOut({ callbackUrl: "/" })
-                                                }}
-                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm font-bold text-red-400 hover:bg-red-400/10"
-                                            >
-                                                <LogOut className="h-4 w-4" />
-                                                Sign Out
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                <Link
+                                    href="/account/deposit"
+                                    className="bg-primary hover:bg-primary/90 text-white font-black px-4 py-2 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
+                                >
+                                    <Zap className="h-3 w-3" />
+                                    DEPOSIT
+                                </Link>
                             </>
                         ) : (
                             <div className="flex items-center gap-2">

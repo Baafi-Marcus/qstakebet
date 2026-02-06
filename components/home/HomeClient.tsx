@@ -10,29 +10,37 @@ interface HomeClientProps {
     initialMatches: Match[]
 }
 
+// Helper to get ordinal suffix
+function getOrdinalSuffix(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+        case 1: return "st";
+        case 2: return "nd";
+        case 3: return "rd";
+        default: return "th";
+    }
+}
+
 // Helper to get date group label
 function getDateGroupLabel(date: Date): string {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     const matchDate = new Date(date);
     matchDate.setHours(0, 0, 0, 0);
 
-    if (matchDate.getTime() === today.getTime()) {
-        return "Today";
-    } else if (matchDate.getTime() === tomorrow.getTime()) {
-        return "Tomorrow";
-    } else if (matchDate < today) {
-        return "Live & Recent";
+    const isToday = matchDate.getTime() === today.getTime();
+
+    const day = matchDate.getDate();
+    const month = matchDate.toLocaleDateString('en-GB', { month: 'short' });
+    const year = matchDate.getFullYear();
+    const formattedDate = `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+
+    if (isToday) {
+        return `Today ${formattedDate}`;
     } else {
-        return matchDate.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-        });
+        const weekday = matchDate.toLocaleDateString('en-GB', { weekday: 'short' });
+        return `${weekday} ${formattedDate}`;
     }
 }
 

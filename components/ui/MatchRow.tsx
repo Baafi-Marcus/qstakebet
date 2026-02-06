@@ -127,12 +127,12 @@ export function MatchRow({
                         <Zap className="h-2 w-2 text-purple-400" />
                     )}
                 </div>
-                <div className="flex flex-col gap-0.5 sm:gap-1">
+                <div className="flex flex-col gap-0.5">
                     {participants.map((p, idx) => (
-                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 75}ms` }}>
-                            <span className="text-[9px] sm:text-[11px] font-bold text-white truncate max-w-[140px] md:max-w-none uppercase tracking-tighter sm:tracking-normal">{p.name}</span>
+                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 50}ms` }}>
+                            <span className="text-[9px] sm:text-[10px] font-bold text-white truncate max-w-[120px] md:max-w-none uppercase tracking-tighter">{p.name}</span>
                             {isSimulating && currentScores && (
-                                <span className="text-[10px] sm:text-xs font-black font-mono text-red-500 ml-2">{currentScores[idx]}</span>
+                                <span className="text-[10px] sm:text-xs font-black font-mono text-red-500 ml-1.5">{currentScores[idx]}</span>
                             )}
                         </div>
                     ))}
@@ -140,28 +140,28 @@ export function MatchRow({
 
                 {/* Lock Indicator for Start Time */}
                 {lockStatus.timeUntilLock !== undefined && lockStatus.timeUntilLock < 30 && !isLocked && (
-                    <div className="mt-1 px-1.5 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[8px] font-bold text-orange-400 inline-flex items-center gap-1">
-                        <Lock className="h-2 w-2" />
+                    <div className="mt-1 px-1 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[7px] font-bold text-orange-400 inline-flex items-center gap-1">
+                        <Lock className="h-1.5 w-1.5" />
                         LOCKING IN {Math.floor(lockStatus.timeUntilLock)}m
                     </div>
                 )}
             </div>
 
             {/* Right side: Odds Columns */}
-            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/20">
+            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10">
                 {/* Lock Overlay */}
                 {isLocked && (
                     <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-1">
-                            <Lock className="h-4 w-4 text-slate-500" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
+                        <div className="flex flex-col items-center gap-0.5">
+                            <Lock className="h-3 w-3 text-slate-500" />
+                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
                         </div>
                     </div>
                 )}
                 {activeMarket === 'winner' && (
                     <>
                         {participants.map((p, idx) => (
-                            <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
+                            <div key={p.schoolId} className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                 <OddsButton
                                     label={(idx + 1).toString()}
                                     odds={p.odd || match.odds?.[p.schoolId] || null}
@@ -178,7 +178,7 @@ export function MatchRow({
                             </div>
                         ))}
                         {(match.sportType === "football" || match.sportType === "handball") && (
-                            <div className="w-16 sm:w-20 md:w-24 flex items-center justify-center">
+                            <div className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                 <OddsButton
                                     label="X"
                                     odds={match.odds?.["X"] || 3.20}
@@ -200,16 +200,19 @@ export function MatchRow({
                 {activeMarket === 'total_points' && (
                     <div className="flex items-center">
                         {/* Selector */}
-                        <div className="relative w-24 border-r border-white/5 h-full">
+                        <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="w-full h-full flex items-center justify-between px-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                             >
-                                {selectedTotalLine || "Line"}
-                                <ChevronDown className="h-3 w-3 opacity-50" />
+                                <span className="text-[7px] uppercase opacity-50">LINE</span>
+                                <div className="flex items-center gap-0.5">
+                                    {selectedTotalLine || "---"}
+                                    <ChevronDown className="h-2 w-2 opacity-50" />
+                                </div>
                             </button>
                             {isDropdownOpen && (
-                                <div className="absolute top-full left-0 w-full z-50 bg-slate-800 border border-white/10 shadow-xl max-h-48 overflow-y-auto rounded-b-md">
+                                <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md">
                                     {Object.keys(match.extendedOdds?.totalPoints || {})
                                         .map(k => k.split(" ")[1])
                                         .filter((v, i, a) => a.indexOf(v) === i)
@@ -221,7 +224,7 @@ export function MatchRow({
                                                     setSelectedTotalLine(line);
                                                     setIsDropdownOpen(false);
                                                 }}
-                                                className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white block"
+                                                className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
                                             >
                                                 {line}
                                             </button>
@@ -234,9 +237,9 @@ export function MatchRow({
                         {/* Odds for Selected Line */}
                         {selectedTotalLine && (
                             <>
-                                <div className="w-20 sm:w-24 flex items-center justify-center">
+                                <div className="w-14 sm:w-16 flex items-center justify-center">
                                     <OddsButton
-                                        label={`O ${selectedTotalLine}`}
+                                        label={`O`}
                                         odds={match.extendedOdds?.totalPoints?.[`Over ${selectedTotalLine}`] ?? null}
                                         matchId={match.id}
                                         marketName="Total Points"
@@ -249,9 +252,9 @@ export function MatchRow({
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />
                                 </div>
-                                <div className="w-20 sm:w-24 flex items-center justify-center border-r border-white/5">
+                                <div className="w-14 sm:w-16 flex items-center justify-center border-r border-white/5">
                                     <OddsButton
-                                        label={`U ${selectedTotalLine}`}
+                                        label={`U`}
                                         odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
                                         matchId={match.id}
                                         marketName="Total Points"
@@ -272,16 +275,19 @@ export function MatchRow({
                 {activeMarket === 'round_winner' && (
                     <div className="flex items-center">
                         {/* Round Selector */}
-                        <div className="relative w-28 border-r border-white/5 h-full">
+                        <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="w-full h-full flex items-center justify-between px-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                             >
-                                {selectedRound}
-                                <ChevronDown className="h-3 w-3 opacity-50" />
+                                <span className="text-[7px] uppercase opacity-50">ROUND</span>
+                                <div className="flex items-center gap-0.5">
+                                    {selectedRound.replace("Round ", "R")}
+                                    <ChevronDown className="h-2 w-2 opacity-50" />
+                                </div>
                             </button>
                             {isDropdownOpen && (
-                                <div className="absolute top-full left-0 w-full z-50 bg-slate-800 border border-white/10 shadow-xl rounded-b-md">
+                                <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md">
                                     {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map(r => (
                                         <button
                                             key={r}
@@ -289,7 +295,7 @@ export function MatchRow({
                                                 setSelectedRound(r);
                                                 setIsDropdownOpen(false);
                                             }}
-                                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white block"
+                                            className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
                                         >
                                             {r}
                                         </button>
@@ -306,7 +312,7 @@ export function MatchRow({
 
                 {activeMarket === 'winning_margin' && (
                     <>
-                        <div className="w-20 md:w-24 flex items-center justify-center">
+                        <div className="w-14 sm:w-16 flex items-center justify-center">
                             <OddsButton
                                 label="1-10"
                                 odds={match.extendedOdds?.winningMargin?.["1-10"] ?? 2.15}
@@ -320,7 +326,7 @@ export function MatchRow({
                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                             />
                         </div>
-                        <div className="w-20 md:w-24 flex items-center justify-center">
+                        <div className="w-14 sm:w-16 flex items-center justify-center">
                             <OddsButton
                                 label="11-25"
                                 odds={match.extendedOdds?.winningMargin?.["11-25"] ?? 3.50}
@@ -334,7 +340,7 @@ export function MatchRow({
                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                             />
                         </div>
-                        <div className="w-20 md:w-24 flex items-center justify-center">
+                        <div className="w-14 sm:w-16 flex items-center justify-center">
                             <OddsButton
                                 label="26+"
                                 odds={match.extendedOdds?.winningMargin?.["26+"] ?? 5.80}
@@ -357,20 +363,20 @@ export function MatchRow({
                 ].includes(activeMarket) && (
                         activeMarket === 'highest_scoring_round' ? (
                             <>
-                                <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
+                                <div className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                     <OddsButton label="R1" odds={match.extendedOdds?.highestScoringRound?.["Round 1"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Round 1`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
-                                <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
+                                <div className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                     <OddsButton label="R2&3" odds={match.extendedOdds?.highestScoringRound?.["Rounds 2 & 3"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 2 & 3`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
-                                <div className="w-20 sm:w-24 md:w-28 flex items-center justify-center">
+                                <div className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                     <OddsButton label="R4&5" odds={match.extendedOdds?.highestScoringRound?.["Rounds 4 & 5"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 4 & 5`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
                                 </div>
                             </>
                         ) : (
                             // Default fallback for Yes/No props or generic single-row
                             Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
-                                <div key={key} className="w-20 md:w-24 flex items-center justify-center">
+                                <div key={key} className="w-14 sm:w-16 md:w-20 flex items-center justify-center">
                                     <OddsButton
                                         label={key}
                                         odds={odd as number}

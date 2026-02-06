@@ -18,6 +18,12 @@ export default function DepositPage() {
         setAmount(val.toString())
     }
 
+    const handleAmountChange = (val: string) => {
+        // Remove negative signs and any non-numeric/non-decimal characters
+        const sanitized = val.replace(/[^0-9.]/g, '')
+        setAmount(sanitized)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
@@ -55,6 +61,17 @@ export default function DepositPage() {
 
     return (
         <div className="space-y-10">
+            <style jsx global>{`
+                /* Hide number input spinners */
+                input[type=number]::-webkit-inner-spin-button, 
+                input[type=number]::-webkit-outer-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                input[type=number] {
+                    -moz-appearance: textfield;
+                }
+            `}</style>
             <div className="flex items-center gap-4">
                 <Link href="/account/wallet" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
                     <ArrowLeft className="h-6 w-6" />
@@ -80,8 +97,9 @@ export default function DepositPage() {
                         <CreditCard className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                         <input
                             type="number"
+                            inputMode="decimal"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            onChange={(e) => handleAmountChange(e.target.value)}
                             placeholder="0.00"
                             className="w-full bg-white/5 border-2 border-white/5 focus:border-purple-600 rounded-[2rem] pl-16 pr-8 py-6 text-2xl font-black text-white outline-none transition-all placeholder:text-slate-700"
                             required

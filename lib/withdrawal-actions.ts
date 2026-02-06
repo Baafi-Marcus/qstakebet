@@ -24,6 +24,15 @@ export async function createWithdrawalRequest(data: {
     const userId = session.user.id
 
     try {
+        // Enforce withdrawal ONLY to the registered phone number
+        const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+        if (!userRecords.length) throw new Error("User not found")
+        const registeredPhone = userRecords[0].phone
+
+        if (data.accountNumber.replace(/\s+/g, "") !== registeredPhone.replace(/\s+/g, "")) {
+            return { success: false, error: "Withdrawals are only allowed to your registered phone number." }
+        }
+
         return await db.transaction(async (tx) => {
             // 1. Get wallet
             const userWallets = await tx.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
