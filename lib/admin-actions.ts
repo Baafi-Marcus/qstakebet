@@ -485,7 +485,6 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
         const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
         if (!matchData.length) throw new Error("Match not found")
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentOdds = (matchData[0].extendedOdds as Record<string, any>) || {}
 
         // Merge new markets

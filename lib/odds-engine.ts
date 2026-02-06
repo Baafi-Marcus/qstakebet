@@ -99,7 +99,6 @@ export async function recordBetStake(matchId: string, selectionId: string, stake
         const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
         if (!matchData.length) return
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const m = matchData[0] as any
         const betVolume = m.betVolume || {}
 

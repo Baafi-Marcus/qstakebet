@@ -15,7 +15,7 @@ export async function createWithdrawalRequest(data: {
     paymentMethod: string
     accountNumber: string
     accountName?: string
-}) {
+}): Promise<{ success: true; requestId: string } | { success: false; error: string }> {
     const session = await auth()
     if (!session?.user?.id) {
         return { success: false, error: "Unauthorized" }
