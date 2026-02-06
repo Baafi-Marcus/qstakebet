@@ -32,6 +32,21 @@ export async function getAllMatches(): Promise<Match[]> {
     return results.map(mapDbMatchToMatch)
 }
 
+export async function getAllMatchesWithTournaments() {
+    const results = await db.select({
+        match: matches,
+        region: tournaments.region
+    })
+        .from(matches)
+        .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+        .where(eq(matches.isVirtual, false))
+
+    return results.map(r => ({
+        ...mapDbMatchToMatch(r.match),
+        region: r.region
+    }))
+}
+
 export async function getVirtualMatches(): Promise<Match[]> {
     const results = await db.select().from(matches).where(eq(matches.isVirtual, true))
     return results.map(mapDbMatchToMatch)

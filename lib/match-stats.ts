@@ -1,22 +1,20 @@
 "use server"
 
-import { getAllMatches } from "./data"
+import { getAllMatchesWithTournaments } from "./data"
 
 export async function getMatchStatsByRegion() {
-    const matches = await getAllMatches()
+    const matches = await getAllMatchesWithTournaments()
 
     // Structure: { [regionName]: { [sportType]: count, total: number } }
     const stats: Record<string, Record<string, number>> = {}
 
     matches.forEach(match => {
-        // Find region from tournament or participants if available, 
-        // but since our REGIONS list in UI is static, we'll try to match it.
-        // For now, we assume tournaments have the region.
-        const region = match.stage.split(' ').pop() || "National" // Fallback or logic to extract
+        // Normalize region from database to match UI labels
+        // DB might have "ashanti" while UI has "Ashanti"
+        let region = match.region || "National"
 
-        // Better logic: Match against the known regions if possible
-        // This is a placeholder for real region resolution logic
-        // In a real app, match.tournament.region would be the source.
+        // Capitalize first letter and handle special cases if needed
+        region = region.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 
         const sport = match.sportType.toLowerCase()
 
