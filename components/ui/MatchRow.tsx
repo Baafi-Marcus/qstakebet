@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Zap, ChevronDown, Lock } from "lucide-react"
+import { Zap, ChevronDown, Lock, ChevronRight } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { normalizeMarketName } from "@/lib/utils"
 import { Match } from "@/lib/types"
@@ -402,9 +402,10 @@ export function MatchRow({
                         e.stopPropagation();
                         onMoreClick?.(match);
                     }}
-                    className="w-10 sm:w-12 flex items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch group/more"
+                    className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch group/more"
                 >
-                    <span className="text-[7px] sm:text-[8px] text-slate-500 font-bold group-hover/more:text-white transition-colors [writing-mode:vertical-lr] rotate-180">MORE</span>
+                    <ChevronRight className="h-4 w-4 text-slate-500 group-hover/more:text-purple-400 group-hover/more:translate-x-0.5 transition-all" />
+                    <span className="text-[7px] text-slate-500 font-black group-hover/more:text-white transition-colors mt-0.5">MORE</span>
                 </button>
             </div>
         </div>

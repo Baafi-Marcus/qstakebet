@@ -4,7 +4,9 @@ import { useState, useMemo } from "react"
 import { Trophy, Search, Filter, Calendar } from "lucide-react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
+import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { useBetSlip } from "@/lib/store/useBetSlip"
+import { cn } from "@/lib/utils"
 
 interface HomeClientProps {
     initialMatches: Match[]
@@ -47,6 +49,7 @@ function getDateGroupLabel(date: Date): string {
 export function HomeClient({ initialMatches }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [searchQuery, setSearchQuery] = useState("")
+    const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
 
     const filteredMatches = initialMatches.filter(m =>
@@ -104,25 +107,56 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         return selections.some(s => s.selectionId === selectionId)
     }
 
+    const availableMarkets = useMemo(() => {
+        const markets = new Set<string>();
+        markets.add('winner');
+        markets.add('total_points');
+        initialMatches.forEach(m => {
+            if (m.extendedOdds) {
+                Object.keys(m.extendedOdds).forEach(k => {
+                    // Map common keys to friendly IDs
+                    if (k === 'winningMargin') markets.add('winning_margin');
+                    else if (k === 'highestScoringRound') markets.add('highest_scoring_round');
+                    else if (k === 'roundWinner') markets.add('round_winner');
+                    else if (k === 'perfectRound') markets.add('perfect_round');
+                    else if (k === 'shutoutRound') markets.add('shutout_round');
+                    else if (k === 'comebackWin') markets.add('comeback_win');
+                    else if (k === 'leadChanges') markets.add('lead_changes');
+                    else markets.add(k);
+                });
+            }
+        });
+        return Array.from(markets).map(m => ({
+            id: m,
+            label: m === 'winner' ? 'Match Winner' :
+                m === 'total_points' ? 'Total Points' :
+                    m.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
+        }));
+    }, [initialMatches]);
+
     return (
         <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">
 
 
             {/* Market Controls */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-                <div className="flex items-center gap-1 sm:gap-2 bg-slate-900/50 p-1 rounded-2xl border border-white/5 w-full sm:w-auto">
-                    <button
-                        onClick={() => setActiveMarket('winner')}
-                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'winner' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
-                    >
-                        Winner
-                    </button>
-                    <button
-                        onClick={() => setActiveMarket('total_points')}
-                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeMarket === 'total_points' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-white'}`}
-                    >
-                        Total Points
-                    </button>
+                <div className="flex bg-slate-950/80 border border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 w-full md:w-auto rounded-xl md:rounded-full">
+                    <div className="flex items-center gap-3 min-w-max">
+                        {availableMarkets.map((m) => (
+                            <button
+                                key={m.id}
+                                onClick={() => setActiveMarket(m.id as any)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border whitespace-nowrap",
+                                    activeMarket === m.id
+                                        ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20"
+                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                {m.label.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
@@ -165,6 +199,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                                         activeMarket={activeMarket}
                                         onOddsClick={addSelection}
                                         checkSelected={checkSelected}
+                                        onMoreClick={(m) => setSelectedMatchForDetails(m)}
                                     />
                                 ))}
                             </div>
@@ -183,6 +218,14 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                 )}
             </div>
 
+            {selectedMatchForDetails && (
+                <MatchDetailsModal
+                    match={selectedMatchForDetails}
+                    onClose={() => setSelectedMatchForDetails(null)}
+                    onOddsClick={addSelection}
+                    checkSelected={checkSelected}
+                />
+            )}
         </div>
     )
 }
