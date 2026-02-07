@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen } from "lucide-react"
+import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen, ArrowUpRight, ArrowDownLeft } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -104,10 +104,38 @@ export function Header() {
                                                 className="fixed inset-0 z-40"
                                                 onClick={() => setIsProfileOpen(false)}
                                             />
-                                            <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
                                                 <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
                                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Account User</p>
                                                     <p className="text-xs font-black text-white truncate">{session?.user?.email || session?.user?.name || "Member"}</p>
+                                                </div>
+
+                                                {/* Balance Display */}
+                                                <div className="px-4 py-4 border-b border-white/5 bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Balance</p>
+                                                            <p className="text-2xl font-black text-white tracking-tighter">GHS {balance !== null ? balance.toFixed(2) : "0.00"}</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Link
+                                                                href="/account/deposit"
+                                                                onClick={() => setIsProfileOpen(false)}
+                                                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                                            >
+                                                                <ArrowUpRight className="h-3 w-3" />
+                                                                Deposit
+                                                            </Link>
+                                                            <Link
+                                                                href="/account/withdraw"
+                                                                onClick={() => setIsProfileOpen(false)}
+                                                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                                            >
+                                                                <ArrowDownLeft className="h-3 w-3" />
+                                                                Withdraw
+                                                            </Link>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div className="p-2 space-y-1">

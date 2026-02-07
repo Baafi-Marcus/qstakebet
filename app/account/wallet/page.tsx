@@ -50,26 +50,7 @@ export default function WalletPage() {
             </div>
 
             {/* Balance Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {/* Main Cash Balance */}
-                <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-8 space-y-4 shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 blur-[80px] group-hover:bg-purple-600/20 transition-all" />
-                    <div className="space-y-1 relative">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Main Balance (Cash)</p>
-                        <p className="text-4xl font-black text-white tracking-tighter">GHS {wallet.balance.toFixed(2)}</p>
-                    </div>
-                    <div className="flex gap-2 relative">
-                        <Link href="/account/deposit" className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 active:scale-95">
-                            <ArrowUpRight className="h-3.5 w-3.5" />
-                            Deposit
-                        </Link>
-                        <Link href="/account/withdraw" className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all border border-white/10 flex items-center justify-center gap-2 active:scale-95">
-                            <ArrowDownLeft className="h-3.5 w-3.5 text-pink-400" />
-                            Withdraw
-                        </Link>
-                    </div>
-                </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {/* Bonus Balance */}
                 <div className="bg-slate-900/50 border border-white/5 rounded-[2.5rem] p-8 space-y-4 flex flex-col justify-center">
                     <div className="space-y-1">
