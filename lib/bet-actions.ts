@@ -14,7 +14,7 @@ export type SelectionInput = {
     matchLabel: string
 }
 
-export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0) {
+export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0, mode: 'single' | 'multi' = 'multi') {
     const session = await auth()
     if (!session?.user?.id) {
         return { success: false, error: "Please log in to place a bet" }
@@ -89,13 +89,20 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 }
             }
 
-            // 2. Calculate total odds and Multi-Bonus
+            // 2. Calculate total odds and Potential Payout
             const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
 
+            let potentialPayout = 0
+            if (mode === 'single') {
+                const stakePerSelection = stake / selections.length
+                potentialPayout = selections.reduce((acc, s) => acc + (stakePerSelection * s.odds), 0)
+            } else {
+                potentialPayout = stake * totalOdds
+            }
+
             let bonusGiftAmount = 0
-            // Multi-Bonus only applies to cash bets or if not a full bonus bet? 
-            // In many sportsbooks, bonus bets don't qualify for extra win bonuses.
-            if (selections.length >= 3 && bonusAmount === 0) {
+            // Multi-Bonus only applies to cash multi-bets of 3+ legs
+            if (selections.length >= 3 && bonusAmount === 0 && mode === 'multi') {
                 const { MULTI_BONUS } = await import("@/lib/constants")
                 const count = selections.length
                 let bonusPct = 0
@@ -110,12 +117,12 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                         return false
                     })
 
-                const baseWin = stake * totalOdds
+                const baseWin = potentialPayout
                 const rawBonus = baseWin * (bonusPct / 100)
                 bonusGiftAmount = Math.min(rawBonus, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP)
             }
 
-            const potentialPayout = (stake * totalOdds) + bonusGiftAmount
+            potentialPayout += bonusGiftAmount
 
             // 3. Create the Bet
             const betId = `bet-${Math.random().toString(36).substr(2, 9)}`

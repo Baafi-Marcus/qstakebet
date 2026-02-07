@@ -65,9 +65,6 @@ function calculateTotalOdds(selections: { odds: number }[]) {
     // ... existing implementation ...
     if (selections.length === 0) return 0;
     const raw = selections.reduce((acc, s) => acc * s.odds, 1);
-    if (selections.length > 1) {
-        return raw * Math.pow(0.99, selections.length); // 1% penalty per leg
-    }
     return raw;
 }
 
@@ -842,7 +839,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 totalStakeUsed,
                 serverSelections,
                 undefined,
-                balanceType === 'gift' ? totalStakeUsed : 0
+                balanceType === 'gift' ? totalStakeUsed : 0,
+                betMode
             ) as { success: true; betId: string } | { success: false; error: string };
 
             if (result.success) {
