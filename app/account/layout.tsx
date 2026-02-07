@@ -57,19 +57,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                         </Link>
                                     )
                                 })}
-                            </nav>
-                        </div>
-
-                        {/* Quick balance card (sidebar) */}
-                        <div className="mt-6 p-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[2.5rem] shadow-xl shadow-purple-500/10">
-                            <div className="flex items-center gap-2 text-indigo-100 text-sm font-bold uppercase tracking-wider mb-2">
-                                <Wallet className="h-4 w-4" />
-                                Total Balance
-                            </div>
-                            <div className="text-4xl font-black text-white">GHS <span className="text-white">{balance.toFixed(2)}</span></div>
-                            <Link href="/account/deposit" className="mt-6 block w-full bg-white text-purple-600 hover:bg-indigo-50 font-black py-4 rounded-2xl text-center transition-colors">
-                                RECHARGE NOW
-                            </Link>
                         </div>
                     </div>
 
