@@ -9,7 +9,7 @@ export function normalizeMarketName(name: string): string {
   if (!name) return "";
 
   // Handle snake_case and camelCase
-  let normalized = name
+  const normalized = name
     .replace(/([A-Z])/g, ' $1') // Split camelCase
     .replace(/_/g, ' ')         // Replace underscores with spaces
     .trim();
