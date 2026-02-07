@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Zap, ChevronDown, Lock, ChevronRight } from "lucide-react"
 import { OddsButton } from "./OddsButton"
-import { normalizeMarketName } from "@/lib/utils"
+import { normalizeMarketName, cn } from "@/lib/utils"
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
@@ -26,6 +26,7 @@ interface MatchRowProps {
     'lead_changes' |
     'late_surge'
     isSimulating?: boolean
+    isFinished?: boolean
     currentScores?: [number, number, number]
     currentRoundIdx?: number
     onOddsClick: (selection: Selection) => void
@@ -42,6 +43,7 @@ export function MatchRow({
     checkIsCorrelated,
     onMoreClick,
     isSimulating,
+    isFinished,
     currentScores,
     currentRoundIdx
 }: MatchRowProps) {
@@ -143,278 +145,309 @@ export function MatchRow({
                 )}
             </div>
 
-            {/* Right side: Odds Columns */}
-            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10">
-                {/* Lock Overlay */}
-                {isLocked && (
-                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-0.5">
-                            <Lock className="h-3 w-3 text-slate-500" />
-                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
-                        </div>
-                    </div>
-                )}
-                {activeMarket === 'winner' && (
-                    <>
+            {/* Right side: Odds Columns OR Live Scores OR Finished Results */}
+            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
+                {(isSimulating || isFinished) ? (
+                    <div className={cn(
+                        "flex items-center px-4 gap-6 animate-in fade-in duration-500",
+                        isSimulating ? "bg-red-600/5" : "bg-slate-900/50"
+                    )}>
                         {participants.map((p, idx) => (
-                            <div key={p.schoolId} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                <OddsButton
-                                    label={(idx + 1).toString()}
-                                    odds={p.odd || match.odds?.[p.schoolId] || null}
-                                    matchId={match.id}
-                                    matchLabel={matchLabel}
-                                    marketName="Match Winner"
-                                    showLabel={true}
-                                    onClick={onOddsClick}
-                                    isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
-                                    isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                    sportType={match.sportType}
-                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                />
+                            <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
+                                <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
+                                    {p.name.split(' ').pop()}
+                                </span>
+                                <span className={cn(
+                                    "text-sm font-black font-mono tabular-nums leading-none",
+                                    isSimulating ? "text-red-500" : "text-slate-300"
+                                )}>
+                                    {currentScores ? currentScores[idx] : 0}
+                                </span>
                             </div>
                         ))}
-                        {(match.sportType === "football" || match.sportType === "handball") && (
-                            <div key="draw" className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                <OddsButton
-                                    label="X"
-                                    odds={match.odds?.["X"] || 3.20}
-                                    matchId={match.id}
-                                    matchLabel={matchLabel}
-                                    marketName="Match Winner"
-                                    showLabel={true}
-                                    onClick={onOddsClick}
-                                    isSelected={checkSelected(`${match.id}-Match Winner-X`)}
-                                    isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                    sportType={match.sportType}
-                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                />
+                        {isFinished && (
+                            <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
+                                <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                    SETTLED
+                                </div>
                             </div>
                         )}
-                    </>
-                )}
-
-                {activeMarket === 'total_points' && (
-                    <div className="flex items-center">
-                        {/* Selector */}
-                        <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                <span className="text-[7px] uppercase opacity-50">LINE</span>
-                                <div className="flex items-center gap-0.5">
-                                    {selectedTotalLine || "---"}
-                                    <ChevronDown className="h-2 w-2 opacity-50" />
-                                </div>
-                            </button>
-                            {isDropdownOpen && (
-                                <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md">
-                                    {Object.keys(match.extendedOdds?.totalPoints || {})
-                                        .map(k => k.split(" ")[1])
-                                        .filter((v, i, a) => a.indexOf(v) === i)
-                                        .sort((a, b) => parseFloat(a) - parseFloat(b))
-                                        .map(line => (
-                                            <button
-                                                key={line}
-                                                onClick={() => {
-                                                    setSelectedTotalLine(line);
-                                                    setIsDropdownOpen(false);
-                                                }}
-                                                className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
-                                            >
-                                                {line}
-                                            </button>
-                                        ))
-                                    }
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Odds for Selected Line */}
-                        {selectedTotalLine ? (
-                            <>
-                                <div className="w-12 sm:w-14 flex items-center justify-center">
-                                    <OddsButton
-                                        label={`O`}
-                                        odds={match.extendedOdds?.totalPoints?.[`Over ${selectedTotalLine}`] ?? null}
-                                        matchId={match.id}
-                                        marketName="Total Points"
-                                        matchLabel={matchLabel}
-                                        onClick={(sel) => onOddsClick({ ...sel, label: `Over ${selectedTotalLine}` })}
-                                        id={`${match.id}-Total Points-Over ${selectedTotalLine}`}
-                                        isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
-                                        isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
-                                        sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                    />
-                                </div>
-                                <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
-                                    <OddsButton
-                                        label={`U`}
-                                        odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
-                                        matchId={match.id}
-                                        marketName="Total Points"
-                                        matchLabel={matchLabel}
-                                        onClick={(sel) => onOddsClick({ ...sel, label: `Under ${selectedTotalLine}` })}
-                                        id={`${match.id}-Total Points-Under ${selectedTotalLine}`}
-                                        isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
-                                        isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
-                                        sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                    />
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-12 sm:w-14 flex items-center justify-center">
-                                    <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
-                                </div>
-                                <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
-                                    <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
-                                </div>
-                            </>
-                        )}
                     </div>
-                )}
-
-                {activeMarket === 'round_winner' && (
-                    <div className="flex items-center">
-                        {/* Round Selector */}
-                        <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                <span className="text-[7px] uppercase opacity-50">ROUND</span>
-                                <div className="flex items-center gap-0.5">
-                                    {selectedRound.replace("Round ", "R")}
-                                    <ChevronDown className="h-2 w-2 opacity-50" />
-                                </div>
-                            </button>
-                            {isDropdownOpen && (
-                                <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md">
-                                    {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map(r => (
-                                        <button
-                                            key={r}
-                                            onClick={() => {
-                                                setSelectedRound(r);
-                                                setIsDropdownOpen(false);
-                                            }}
-                                            className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
-                                        >
-                                            {r}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {/* Only render odds if a round is selected */}
-                        {/* Map "Round 1" -> "round1Winner" key safely */}
-                        {renderSchoolOdds(selectedRound.toLowerCase().replace(" ", "") + "Winner", selectedRound + " Winner")}
-                    </div>
-                )}
-
-
-                {activeMarket === 'winning_margin' && (
+                ) : (
                     <>
-                        <div className="w-12 sm:w-14 flex items-center justify-center">
-                            <OddsButton
-                                label="1-10"
-                                odds={match.extendedOdds?.winningMargin?.["1-10"] ?? 2.15}
-                                matchId={match.id}
-                                marketName="Winning Margin"
-                                matchLabel={matchLabel}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Winning Margin-1-10`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
-                                sportType={match.sportType}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
-                        <div className="w-12 sm:w-14 flex items-center justify-center">
-                            <OddsButton
-                                label="11-25"
-                                odds={match.extendedOdds?.winningMargin?.["11-25"] ?? 3.50}
-                                matchId={match.id}
-                                marketName="Winning Margin"
-                                matchLabel={matchLabel}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Winning Margin-11-25`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
-                                sportType={match.sportType}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
-                        <div className="w-12 sm:w-14 flex items-center justify-center">
-                            <OddsButton
-                                label="26+"
-                                odds={match.extendedOdds?.winningMargin?.["26+"] ?? 5.80}
-                                matchId={match.id}
-                                marketName="Winning Margin"
-                                matchLabel={matchLabel}
-                                onClick={onOddsClick}
-                                isSelected={checkSelected(`${match.id}-Winning Margin-26+`)}
-                                isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
-                                sportType={match.sportType}
-                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                            />
-                        </div>
-                    </>
-                )}
-
-                {/* Generic Prop Rendering for simple Yes/No or 3-way */}
-                {[
-                    'highest_scoring_round', 'perfect_round', 'shutout_round', 'comeback_win', 'lead_changes',
-                ].includes(activeMarket) && (
-                        activeMarket === 'highest_scoring_round' ? (
+                        {/* Lock Overlay */}
+                        {isLocked && (
+                            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <Lock className="h-3 w-3 text-slate-500" />
+                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
+                                </div>
+                            </div>
+                        )}
+                        {activeMarket === 'winner' && (
                             <>
-                                <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                    <OddsButton label="R1" odds={match.extendedOdds?.highestScoringRound?.["Round 1"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Round 1`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
-                                </div>
-                                <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                    <OddsButton label="R2&3" odds={match.extendedOdds?.highestScoringRound?.["Rounds 2 & 3"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 2 & 3`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
-                                </div>
-                                <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                    <OddsButton label="R4&5" odds={match.extendedOdds?.highestScoringRound?.["Rounds 4 & 5"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 4 & 5`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
-                                </div>
-                            </>
-                        ) : (
-                            // Default fallback for Yes/No props or generic single-row
-                            match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] ? (
-                                Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
-                                    <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                {participants.map((p, idx) => (
+                                    <div key={p.schoolId} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
                                         <OddsButton
-                                            label={key}
-                                            odds={odd as number}
+                                            label={(idx + 1).toString()}
+                                            odds={p.odd || match.odds?.[p.schoolId] || null}
                                             matchId={match.id}
-                                            marketName={normalizeMarketName(activeMarket)} // Safe Title Case
                                             matchLabel={matchLabel}
+                                            marketName="Match Winner"
                                             showLabel={true}
                                             onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
-                                            isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
+                                            isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
+                                            isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             sportType={match.sportType}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                         />
                                     </div>
-                                ))
-                            ) : (
-                                <>
-                                    <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                        <OddsButton label="Yes" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
+                                ))}
+                                {(match.sportType === "football" || match.sportType === "handball") && (
+                                    <div key="draw" className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                        <OddsButton
+                                            label="X"
+                                            odds={match.odds?.["X"] || 3.20}
+                                            matchId={match.id}
+                                            matchLabel={matchLabel}
+                                            marketName="Match Winner"
+                                            showLabel={true}
+                                            onClick={onOddsClick}
+                                            isSelected={checkSelected(`${match.id}-Match Winner-X`)}
+                                            isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                            sportType={match.sportType}
+                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                        />
                                     </div>
-                                    <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                        <OddsButton label="No" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
-                                    </div>
-                                </>
-                            )
-                        )
-                    )}
+                                )}
+                            </>
+                        )}
 
-                {/* School-based props */}
-                {['first_bonus', 'late_surge', 'comeback_team'].includes(activeMarket) &&
-                    renderSchoolOdds(activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase()), activeMarket.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()))
-                }
+                        {activeMarket === 'total_points' && (
+                            <div className="flex items-center">
+                                {/* Selector */}
+                                <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
+                                    <button
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="text-[7px] uppercase opacity-50">LINE</span>
+                                        <div className="flex items-center gap-0.5" >
+                                            {selectedTotalLine || "---"}
+                                            <ChevronDown className="h-2 w-2 opacity-50" />
+                                        </div>
+                                    </button>
+                                    {isDropdownOpen && (
+                                        <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md" >
+                                            {
+                                                Object.keys(match.extendedOdds?.totalPoints || {})
+                                                    .map(k => k.split(" ")[1])
+                                                    .filter((v, i, a) => a.indexOf(v) === i)
+                                                    .sort((a, b) => parseFloat(a) - parseFloat(b))
+                                                    .map(line => (
+                                                        <button
+                                                            key={line}
+                                                            onClick={() => {
+                                                                setSelectedTotalLine(line);
+                                                                setIsDropdownOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
+                                                        >
+                                                            {line}
+                                                        </button>
+                                                    ))
+                                            }
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Odds for Selected Line */}
+                                {selectedTotalLine ? (
+                                    <>
+                                        <div className="w-12 sm:w-14 flex items-center justify-center">
+                                            <OddsButton
+                                                label={`O`}
+                                                odds={match.extendedOdds?.totalPoints?.[`Over ${selectedTotalLine}`] ?? null}
+                                                matchId={match.id}
+                                                marketName="Total Points"
+                                                matchLabel={matchLabel}
+                                                onClick={(sel) => onOddsClick({ ...sel, label: `Over ${selectedTotalLine}` })}
+                                                id={`${match.id}-Total Points-Over ${selectedTotalLine}`}
+                                                isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                sportType={match.sportType}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            />
+                                        </div>
+                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
+                                            <OddsButton
+                                                label={`U`}
+                                                odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
+                                                matchId={match.id}
+                                                marketName="Total Points"
+                                                matchLabel={matchLabel}
+                                                onClick={(sel) => onOddsClick({ ...sel, label: `Under ${selectedTotalLine}` })}
+                                                id={`${match.id}-Total Points-Under ${selectedTotalLine}`}
+                                                isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                sportType={match.sportType}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-12 sm:w-14 flex items-center justify-center">
+                                            <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
+                                        </div>
+                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5" >
+                                            <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {activeMarket === 'round_winner' && (
+                            <div className="flex items-center">
+                                {/* Round Selector */}
+                                <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
+                                    <button
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="text-[7px] uppercase opacity-50">ROUND</span>
+                                        <div className="flex items-center gap-0.5">
+                                            {selectedRound.replace("Round ", "R")}
+                                            <ChevronDown className="h-2 w-2 opacity-50" />
+                                        </div>
+                                    </button>
+                                    {isDropdownOpen && (
+                                        <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md">
+                                            {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map(r => (
+                                                <button
+                                                    key={r}
+                                                    onClick={() => {
+                                                        setSelectedRound(r);
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
+                                                >
+                                                    {r}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Only render odds if a round is selected */}
+                                {/* Map "Round 1" -> "round1Winner" key safely */}
+                                {renderSchoolOdds(selectedRound.toLowerCase().replace(" ", "") + "Winner", selectedRound + " Winner")}
+                            </div>
+                        )}
+
+
+                        {activeMarket === 'winning_margin' && (
+                            <>
+                                <div className="w-12 sm:w-14 flex items-center justify-center">
+                                    <OddsButton
+                                        label="1-10"
+                                        odds={match.extendedOdds?.winningMargin?.["1-10"] ?? 2.15}
+                                        matchId={match.id}
+                                        marketName="Winning Margin"
+                                        matchLabel={matchLabel}
+                                        onClick={onOddsClick}
+                                        isSelected={checkSelected(`${match.id}-Winning Margin-1-10`)}
+                                        isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                        sportType={match.sportType}
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                    />
+                                </div>
+                                <div className="w-12 sm:w-14 flex items-center justify-center">
+                                    <OddsButton
+                                        label="11-25"
+                                        odds={match.extendedOdds?.winningMargin?.["11-25"] ?? 3.50}
+                                        matchId={match.id}
+                                        marketName="Winning Margin"
+                                        matchLabel={matchLabel}
+                                        onClick={onOddsClick}
+                                        isSelected={checkSelected(`${match.id}-Winning Margin-11-25`)}
+                                        isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                        sportType={match.sportType}
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                    />
+                                </div>
+                                <div className="w-12 sm:w-14 flex items-center justify-center">
+                                    <OddsButton
+                                        label="26+"
+                                        odds={match.extendedOdds?.winningMargin?.["26+"] ?? 5.80}
+                                        matchId={match.id}
+                                        marketName="Winning Margin"
+                                        matchLabel={matchLabel}
+                                        onClick={onOddsClick}
+                                        isSelected={checkSelected(`${match.id}-Winning Margin-26+`)}
+                                        isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                        sportType={match.sportType}
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Generic Prop Rendering for simple Yes/No or 3-way */}
+                        {[
+                            'highest_scoring_round', 'perfect_round', 'shutout_round', 'comeback_win', 'lead_changes',
+                        ].includes(activeMarket) && (
+                                activeMarket === 'highest_scoring_round' ? (
+                                    <>
+                                        <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                            <OddsButton label="R1" odds={match.extendedOdds?.highestScoringRound?.["Round 1"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Round 1`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
+                                        </div>
+                                        <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                            <OddsButton label="R2&3" odds={match.extendedOdds?.highestScoringRound?.["Rounds 2 & 3"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 2 & 3`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
+                                        </div>
+                                        <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                            <OddsButton label="R4&5" odds={match.extendedOdds?.highestScoringRound?.["Rounds 4 & 5"] ?? null} matchId={match.id} marketName="Highest Scoring Round" matchLabel={matchLabel} showLabel onClick={onOddsClick} isSelected={checkSelected(`${match.id}-Highest Scoring Round-Rounds 4 & 5`)} isCorrelated={checkIsCorrelated?.(match.id, "Highest Scoring Round")} sportType={match.sportType} className="h-full w-full bg-transparent border-0" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    // Default fallback for Yes/No props or generic single-row
+                                    match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] ? (
+                                        Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
+                                            <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                                <OddsButton
+                                                    label={key}
+                                                    odds={odd as number}
+                                                    matchId={match.id}
+                                                    marketName={normalizeMarketName(activeMarket)} // Safe Title Case
+                                                    matchLabel={matchLabel}
+                                                    showLabel={true}
+                                                    onClick={onOddsClick}
+                                                    isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
+                                                    isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
+                                                    sportType={match.sportType}
+                                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                                <OddsButton label="Yes" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
+                                            </div>
+                                            <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                                <OddsButton label="No" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
+                                            </div>
+                                        </>
+                                    )
+                                )
+                            )}
+
+                        {/* School-based props */}
+                        {['first_bonus', 'late_surge', 'comeback_team'].includes(activeMarket) &&
+                            renderSchoolOdds(activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase()), activeMarket.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()))
+                        }
+                    </>
+                )}
 
                 {/* More Button */}
                 <button
