@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star } from "lucide-react"
+import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
@@ -32,7 +32,7 @@ export function Header() {
     return (
         <>
             <header className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-                <div className="container flex h-14 items-center px-4 md:px-6 justify-between">
+                <div className="container mx-auto flex h-14 items-center px-4 md:px-6 justify-between">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsMenuOpen(true)}
@@ -73,7 +73,7 @@ export function Header() {
                     <div className="flex items-center space-x-2 md:space-x-4">
                         {isLoggedIn ? (
                             <>
-                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
+                                <div className="hidden xs:flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
                                     <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
                                     <span className="text-xs md:text-sm font-mono font-black text-foreground">
                                         GHS {balance !== null ? balance.toFixed(2) : "..."}
@@ -84,8 +84,91 @@ export function Header() {
                                     className="bg-primary hover:bg-primary/90 text-white font-black px-4 py-2 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
                                 >
                                     <Zap className="h-3 w-3" />
-                                    DEPOSIT
+                                    <span className="hidden sm:inline">DEPOSIT</span>
+                                    <span className="sm:hidden">TOP UP</span>
                                 </Link>
+
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                        className={cn(
+                                            "h-9 w-9 rounded-full bg-slate-800 border flex items-center justify-center transition-all",
+                                            isProfileOpen ? "border-primary ring-2 ring-primary/20" : "border-white/10 hover:border-white/30"
+                                        )}
+                                    >
+                                        <User className="h-4 w-4 text-slate-300" />
+                                    </button>
+
+                                    {isProfileOpen && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setIsProfileOpen(false)}
+                                            />
+                                            <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Account User</p>
+                                                    <p className="text-xs font-black text-white truncate">{session?.user?.email || session?.user?.name || "Member"}</p>
+                                                </div>
+
+                                                <div className="p-2 space-y-1">
+                                                    <Link
+                                                        href="/account/profile"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                    >
+                                                        <User className="h-4 w-4" /> My Profile
+                                                    </Link>
+                                                    <Link
+                                                        href="/account/bets"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                    >
+                                                        <Trophy className="h-4 w-4" /> My Bets
+                                                    </Link>
+
+                                                    <div className="h-px bg-white/5 my-2 mx-2" />
+
+                                                    <Link
+                                                        href="/help"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                    >
+                                                        <HelpCircle className="h-4 w-4" /> Help Center
+                                                    </Link>
+                                                    <Link
+                                                        href="/how-to-play"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                    >
+                                                        <BookOpen className="h-4 w-4" /> How to Play
+                                                    </Link>
+                                                    <a
+                                                        href="https://wa.me/233276019798"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 hover:bg-emerald-500/10 transition-all font-black"
+                                                    >
+                                                        <MessageSquare className="h-4 w-4" /> Support (WhatsApp)
+                                                    </a>
+
+                                                    <div className="h-px bg-white/5 my-2 mx-2" />
+
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsProfileOpen(false)
+                                                            signOut()
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black text-red-400 hover:bg-red-500/10 transition-all"
+                                                    >
+                                                        <LogOut className="h-4 w-4" /> SECURE LOGOUT
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </>
                         ) : (
                             <div className="flex items-center gap-2">
@@ -151,6 +234,46 @@ export function Header() {
                                     </Link>
                                 )
                             })}
+
+                            {isLoggedIn && (
+                                <div className="pt-4 border-t border-white/5 mt-4 space-y-2">
+                                    <Link
+                                        href="/account/profile"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                    >
+                                        <User className="h-4 w-4" /> My Profile
+                                    </Link>
+                                    <Link
+                                        href="/account/bets"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                    >
+                                        <Trophy className="h-4 w-4" /> My Bets
+                                    </Link>
+                                    <Link
+                                        href="/how-to-play"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                    >
+                                        <BookOpen className="h-4 w-4" /> How to Play
+                                    </Link>
+                                    <a
+                                        href="https://wa.me/233276019798"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                    >
+                                        <MessageSquare className="h-4 w-4" /> Support (WhatsApp)
+                                    </a>
+                                    <button
+                                        onClick={() => signOut()}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black text-red-500 hover:bg-red-500/10 transition-all"
+                                    >
+                                        <LogOut className="h-4 w-4" /> LOGOUT
+                                    </button>
+                                </div>
+                            )}
 
                             {!isLoggedIn && (
                                 <div className="pt-8 space-y-3">
