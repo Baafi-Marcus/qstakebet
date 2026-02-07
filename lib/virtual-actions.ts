@@ -138,8 +138,8 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         const { outcomes } = generateVirtualMatches(8, [], roundId, {}, userSeed)
 
         // 3. Evaluate Results
-        const MAX_PROFIT_VIRTUAL = 5000
-        const MAX_GAME_PAYOUT = 10000
+        const MAX_PROFIT_VIRTUAL = 1500
+        const MAX_GAME_PAYOUT = 3000
         const selections = bet.selections as any[]
         const isMulti = bet.status === 'pending' && selections.length > 1 && !bet.id.includes('single') // Simplified mode check or use potential payout logic
 
@@ -160,7 +160,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             const gameReturns: Record<string, number> = {}
 
             selections.forEach(s => {
-                const outcome = outcomes.find(o => o.id === s.matchId)
+                const outcome = outcomes.find(o => o.id === s.matchId) as any
                 if (outcome) {
                     const match = { sportType: 'football', participants: [] } as any // Dummy for helper
                     const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, match, outcome)
@@ -190,7 +190,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             // MULTI Mode logic (or 1 selection)
             let allWon = true
             selections.forEach(s => {
-                const outcome = outcomes.find(o => o.id === s.matchId)
+                const outcome = outcomes.find(o => o.id === s.matchId) as any
                 if (!outcome) {
                     allWon = false
                     return

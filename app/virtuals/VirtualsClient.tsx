@@ -34,8 +34,8 @@ interface VirtualsClientProps {
 }
 
 const MAX_STAKE = 5000;
-const MAX_PROFIT_VIRTUAL = 5000; // GHS 5,000 cap (Updated for higher payout allowance)
-const MAX_GAME_PAYOUT = 10000; // GHS 10,000 aggregate cap per match
+const MAX_PROFIT_VIRTUAL = 1500; // GHS 1,500 cap (Business Safety)
+const MAX_GAME_PAYOUT = 3000; // GHS 3,000 aggregate cap per match
 
 // Dynamic Stake Limits - Fix 6
 const STAKE_LIMITS = {
