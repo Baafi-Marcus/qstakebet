@@ -17,6 +17,7 @@ import {
 import { updateSchoolStats, getAIStrengths, getPlayableSchools, settleVirtualBet } from "@/lib/virtual-actions" // Added for AI stats and Real Schools
 import { placeBet } from "@/lib/bet-actions"
 import { Match } from "@/lib/types"
+import { MULTI_BONUS } from "@/lib/constants"
 import {
     Zap, ShieldAlert,
     ChevronRight,
@@ -34,7 +35,6 @@ interface VirtualsClientProps {
 }
 
 const MAX_STAKE = 5000;
-const MAX_PROFIT_VIRTUAL = 1500; // GHS 1,500 cap (Business Safety)
 const MAX_GAME_PAYOUT = 3000; // GHS 3,000 aggregate cap per match
 
 // Dynamic Stake Limits - Fix 6
@@ -555,20 +555,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                 // 🎰 10x STAKE SAFETY CAP for Systems
                 const totalStake = slip.totalStake || ((slip.stakePerCombo || 0) * (slip.combinations || []).length);
-                const maxAllowedReturn = totalStake * 10;
-                let totalReturns = Math.min(rawTotalReturns, maxAllowedReturn);
+                const maxAllowedReturn = totalStake * 3000; // Just use a high safety cap
+                const totalReturns = Math.min(rawTotalReturns, maxAllowedReturn);
 
-                // 🛑 Fix 5: Aggregate Payout Cap (per match)
-                // In system bets, combinations span matches. This is complex to cap per game 
-                // but we can cap the total return for the slip at MAX_GAME_PAYOUT if it's mostly one game,
-                // however most systems involve unique games. For safety, apply a general sanity check.
-                // Actually, let's keep it simple: small business cap already handles most 1,500 cases.
-
-                // Small Book Cap
-                const profit = totalReturns - totalStake;
-                if (profit > MAX_PROFIT_VIRTUAL) {
-                    totalReturns = MAX_PROFIT_VIRTUAL + totalStake;
-                }
+                // Small Book Cap removed as requested
                 const allResults = Array.from(new Set(resolvedCombinations.flatMap(c => c.selections)));
                 return { ...slip, combinations: resolvedCombinations, results: allResults, totalReturns, status: totalReturns > 0 ? 'WON' : 'LOST' } as ResolvedSlip
             }
@@ -595,17 +585,26 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 const multiOdds = calculateTotalOdds(results)
                 const rawReturn = allWon ? (multiOdds * slip.totalStake) : 0
 
-                // 🎰 10x STAKE SAFETY CAP (Profit capped at 9x Stake, or Total Return capped at 10x Stake?)
-                // User said "Max Win = Stake * 10". In betting, Win often means Total Return.
-                // Let's cap Total Return at 10x Stake.
-                const maxAllowedReturn = slip.totalStake * 10;
-                totalReturns = Math.min(rawReturn, maxAllowedReturn);
+                // Match SportyBet Logic: Base Win + Bonus (Capped at 250)
+                // No artificial 10x stake cap.
 
-                // Additional safety: Small Book Cap
-                const profit = totalReturns - slip.totalStake;
-                if (profit > MAX_PROFIT_VIRTUAL) {
-                    totalReturns = MAX_PROFIT_VIRTUAL + slip.totalStake;
+                let bonusAmount = 0;
+                if (slip.selections.length >= MULTI_BONUS.MIN_SELECTIONS) {
+                    let bonusPct = 0;
+                    Object.entries(MULTI_BONUS.SCALING)
+                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                        .some(([threshold, percent]) => {
+                            if (slip.selections.length >= Number(threshold)) {
+                                bonusPct = Number(percent);
+                                return true;
+                            }
+                            return false;
+                        });
+                    bonusAmount = Math.min(rawReturn * (bonusPct / 100), MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
                 }
+
+                totalReturns = rawReturn + bonusAmount;
+
 
                 isWon = allWon && totalReturns > 0
             } else {
@@ -629,15 +628,9 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                 const cappedReturn = Object.values(gameReturns).reduce((a: number, b: number) => a + b, 0);
 
-                // 🎰 10x STAKE SAFETY CAP for Singles
-                const maxAllowedReturn = slip.totalStake * 10;
-                totalReturns = Math.min(cappedReturn, maxAllowedReturn);
+                // No 10x cap for singles. Just sum the returns.
+                totalReturns = cappedReturn;
 
-                // Small Book Cap
-                const profit = totalReturns - slip.totalStake;
-                if (profit > MAX_PROFIT_VIRTUAL) {
-                    totalReturns = MAX_PROFIT_VIRTUAL + slip.totalStake;
-                }
 
                 isWon = totalReturns > 0
             }
@@ -854,9 +847,26 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
             if (result.success) {
                 const totalOdds = calculateTotalOdds(finalSelections);
-                const potPayout = betMode === 'single'
-                    ? finalSelections.reduce((acc, s) => acc + (globalStake * (s.odds || 1)), 0)
+                const baseWin = betMode === 'single'
+                    ? finalSelections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * (s.odds || 1)), 0)
                     : totalStakeUsed * totalOdds;
+
+                let bonusAmount = 0;
+                if (betMode === 'multi' && finalSelections.length >= MULTI_BONUS.MIN_SELECTIONS) {
+                    let bonusPct = 0;
+                    Object.entries(MULTI_BONUS.SCALING)
+                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                        .some(([threshold, percent]) => {
+                            if (finalSelections.length >= Number(threshold)) {
+                                bonusPct = Number(percent);
+                                return true;
+                            }
+                            return false;
+                        });
+                    bonusAmount = Math.min(baseWin * (bonusPct / 100), MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+                }
+
+                const potPayout = baseWin + bonusAmount;
 
                 const newSlip: VirtualBet = {
                     id: result.betId || `slip-${Date.now()}`,
@@ -1506,30 +1516,76 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <span>Max. Business Payout</span>
-                                                    <div className="text-slate-300 font-mono text-sm">
-                                                        GHS {MAX_PROFIT_VIRTUAL.toFixed(2)}
-                                                    </div>
-                                                </div>
+                                                {(() => {
+                                                    const baseWin = (betMode === 'single'
+                                                        ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
+                                                        : calculateTotalOdds(selections) * globalStake
+                                                    );
+                                                    const count = selections.length;
+
+                                                    if (betMode !== 'multi' || count < MULTI_BONUS.MIN_SELECTIONS) return null;
+
+                                                    let bonusPct = 0;
+                                                    Object.entries(MULTI_BONUS.SCALING)
+                                                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                                                        .some(([threshold, percent]) => {
+                                                            if (count >= Number(threshold)) {
+                                                                bonusPct = Number(percent);
+                                                                return true;
+                                                            }
+                                                            return false;
+                                                        });
+
+                                                    const bonusAmount = baseWin * (bonusPct / 100);
+                                                    const cappedBonus = Math.min(bonusAmount, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+
+                                                    if (cappedBonus <= 0) return null;
+
+                                                    return (
+                                                        <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                            <span className="flex items-center gap-1.5 text-purple-400">
+                                                                <Trophy className="h-3 w-3" />
+                                                                Max Bonus ({bonusPct}%)
+                                                            </span>
+                                                            <div className="text-purple-400 font-mono text-sm">
+                                                                + GHS {cappedBonus.toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
 
                                                 <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
                                                     <span>Potential Return</span>
                                                     <div className="text-green-400 font-mono text-right flex flex-col items-end">
                                                         <span className="text-sm">
                                                             GHS {(() => {
-                                                                const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
-                                                                const potential = betMode === 'single'
-                                                                    ? selections.reduce((acc, s) => acc + (globalStake * s.odds), 0)
+                                                                const totalStake = betMode === 'single'
+                                                                    ? selections.reduce((acc, s) => acc + (s.stakeUsed || globalStake), 0)
+                                                                    : globalStake;
+                                                                const baseWin = betMode === 'single'
+                                                                    ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
                                                                     : calculateTotalOdds(selections) * globalStake;
 
-                                                                // NO 10x CAP (Align with Real Sports)
-                                                                // Only Absolute Profit Cap (Business Safety)
-                                                                const cap2 = totalStake + MAX_PROFIT_VIRTUAL;
-                                                                const totalWin = Math.min(potential, cap2);
+                                                                // Calculate Bonus (Sporty Style)
+                                                                let bonusAmount = 0;
+                                                                if (betMode === 'multi' && selections.length >= MULTI_BONUS.MIN_SELECTIONS) {
+                                                                    let bonusPct = 0;
+                                                                    Object.entries(MULTI_BONUS.SCALING)
+                                                                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                                                                        .some(([threshold, percent]) => {
+                                                                            if (selections.length >= Number(threshold)) {
+                                                                                bonusPct = Number(percent);
+                                                                                return true;
+                                                                            }
+                                                                            return false;
+                                                                        });
+                                                                    bonusAmount = Math.min(baseWin * (bonusPct / 100), MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+                                                                }
+
+                                                                const totalPotential = baseWin + bonusAmount;
 
                                                                 // GIFT RULE: Deduct stake from winnings
-                                                                const payoutDisplay = (balanceType === 'gift' ? Math.max(0, totalWin - totalStake) : totalWin).toFixed(2);
+                                                                const payoutDisplay = (balanceType === 'gift' ? Math.max(0, totalPotential - totalStake) : totalPotential).toFixed(2);
                                                                 return payoutDisplay;
                                                             })()}
                                                         </span>
