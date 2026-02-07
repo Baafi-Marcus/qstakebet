@@ -38,7 +38,7 @@ export function Footer() {
                             <li><Link href="/" className="text-slate-500 hover:text-white text-sm font-bold transition-colors">Sports Betting</Link></li>
                             <li><Link href="/live" className="text-slate-500 hover:text-white text-sm font-bold transition-colors">Live Predictions</Link></li>
                             <li><Link href="/virtuals" className="text-slate-500 hover:text-white text-sm font-bold transition-colors">Instant Virtuals</Link></li>
-                            <li><Link href="/results" className="text-slate-500 hover:text-white text-sm font-bold transition-colors">Match Results</Link></li>
+
                         </ul>
                     </div>
 
