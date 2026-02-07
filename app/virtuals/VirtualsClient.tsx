@@ -14,6 +14,7 @@ import {
     DEFAULT_SCHOOLS // Added for AI strength fetching
 } from "@/lib/virtuals"
 import { updateSchoolStats, getAIStrengths, getPlayableSchools } from "@/lib/virtual-actions" // Added for AI stats and Real Schools
+import { placeBet } from "@/lib/bet-actions"
 import { Match } from "@/lib/types"
 import {
     Zap, ShieldAlert,
@@ -26,7 +27,7 @@ import {
 
 interface VirtualsClientProps {
     user?: { id: string; email: string };
-    profile?: { balance: number; currency: string };
+    profile?: { balance: number; currency: string; bonusBalance?: number };
     schools: VirtualSchool[];
 }
 
@@ -261,6 +262,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
     const [countdown, setCountdown] = useState<'READY' | '3' | '2' | '1' | 'START' | null>(null)
+    const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const isSimulatingRef = useRef(false)
 
 
@@ -335,6 +337,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
         setIsSimulating(true)
         isSimulatingRef.current = true
         setSimulationProgress(0)
+        setShowSlip(false) // Auto-hide slip on kickoff
 
         if (matches.length > 0) {
             // Priority 1: Match from a pending slip
@@ -793,7 +796,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
         }
     }, [hasConflicts, betMode])
 
-    const addToSlip = () => {
+    const addToSlip = async () => {
         if (selections.length === 0) return
 
         let totalStakeUsed = 0;
@@ -807,31 +810,59 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
             totalStakeUsed = globalStake
         }
 
-        if (totalStakeUsed > MAX_STAKE) {
-            alert(`Maximum stake is GHS ${MAX_STAKE}`);
+        if (totalStakeUsed > (balanceType === 'cash' ? (profile?.balance || 0) : (profile?.bonusBalance || 0))) {
+            alert(`Insufficient ${balanceType} balance.`);
             return;
         }
 
-        const newSlip: VirtualBet = {
-            id: `slip-${Date.now()}`,
-            selections: finalSelections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (globalStake / selections.length) })),
-            mode: betMode,
-            totalStake: totalStakeUsed,
-            totalOdds: totalOdds,
-            combinations: combinations,
-            stakePerCombo: stakePerCombo,
-            time: new Date().toLocaleTimeString(),
-            status: 'PENDING',
-            stake: totalStakeUsed,
-            potentialPayout: totalStakeUsed * totalOdds,
-            timestamp: Date.now(),
-            roundId: currentRound
-        }
+        const serverSelections = finalSelections.map(s => ({
+            matchId: s.matchId,
+            selectionId: s.selectionId,
+            label: s.label,
+            odds: s.odds,
+            marketName: s.marketName,
+            matchLabel: s.matchLabel
+        }));
 
-        setPendingSlips(prev => [...prev, newSlip])
-        setSelections([])
-        setSlipTab('pending') // Automate switch to My Bets
-        // Keep slip open so user sees the pending bet
+        try {
+            // Place real bet via server action
+            const result = await placeBet(
+                totalStakeUsed,
+                serverSelections,
+                undefined,
+                balanceType === 'gift' ? totalStakeUsed : 0
+            ) as { success: true; betId: string } | { success: false; error: string };
+
+            if (result.success) {
+                const newSlip: VirtualBet = {
+                    id: result.betId || `slip-${Date.now()}`,
+                    selections: finalSelections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (globalStake / selections.length) })),
+                    mode: betMode,
+                    totalStake: totalStakeUsed,
+                    totalOdds: totalOdds,
+                    combinations: combinations,
+                    stakePerCombo: stakePerCombo,
+                    time: new Date().toLocaleTimeString(),
+                    status: 'PENDING',
+                    stake: totalStakeUsed,
+                    potentialPayout: totalStakeUsed * totalOdds,
+                    timestamp: Date.now(),
+                    roundId: currentRound
+                }
+
+                setPendingSlips(prev => [...prev, newSlip])
+                setSelections([])
+                setSlipTab('pending')
+                // refresh profile or wait for next round to refresh balance if needed
+                // For now, local UI update will follow round end or we can trigger a router refresh
+                router.refresh();
+            } else {
+                alert(result.error || "Failed to place bet");
+            }
+        } catch (e) {
+            console.error("Bet placement failed:", e);
+            alert("An error occurred while placing your bet.");
+        }
     }
 
 
@@ -873,12 +904,30 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                     </div>
                 </div>
 
-                {/* Right: Balance & History */}
                 <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
-                    <div className="flex items-center gap-2 bg-slate-950/50 rounded-full px-3 py-1.5 border border-white/5">
-                        <Wallet className="h-3 w-3 text-green-500" />
-                        <span className="text-xs font-black text-white font-mono">
+                    <div
+                        onClick={() => setBalanceType('cash')}
+                        className={cn(
+                            "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
+                            balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
+                        )}
+                    >
+                        <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-400")} />
+                        <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
                             {(profile?.balance || 0).toFixed(2)}
+                        </span>
+                    </div>
+
+                    <div
+                        onClick={() => setBalanceType('gift')}
+                        className={cn(
+                            "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
+                            balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
+                        )}
+                    >
+                        <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                        <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                            {(profile?.bonusBalance || 0).toFixed(2)}
                         </span>
                     </div>
 
@@ -934,9 +983,14 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                     </div>
 
                                     <div className="relative z-10 p-4 flex flex-col items-center justify-center flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                            <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em]">{match.stage} • Matchday {parseInt(match.id.split("-")[1])}</span>
+                                        <div className="flex flex-col items-center gap-1 mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em]">{match.stage} • Matchday {parseInt(match.id.split("-")[1])}</span>
+                                            </div>
+                                            <div className="px-2 py-0.5 bg-white/10 rounded text-[8px] font-black text-white/40 uppercase tracking-widest">
+                                                Round {currentRoundIdx + 1}
+                                            </div>
                                             <button
                                                 onClick={() => setActiveLiveMatch(null)}
                                                 className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
@@ -964,10 +1018,10 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                                 <div key={rIdx} className={cn(
                                                     "flex flex-col items-center p-1 rounded border transition-all duration-300",
                                                     rIdx === currentRoundIdx ? "bg-white/20 border-white/40 scale-110 shadow-lg" :
-                                                        rIdx < currentRoundIdx ? "bg-white/5 border-white/5 opacity-50" : "bg-black/20 border-white/5 opacity-20"
+                                                        "bg-black/20 border-white/5 opacity-10" // Fade out finished or future rounds
                                                 )}>
-                                                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
-                                                        <div className={cn("h-full bg-emerald-400", rIdx <= currentRoundIdx ? "w-full" : "w-0")} />
+                                                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                                                        <div className={cn("h-full", rIdx === currentRoundIdx ? "bg-emerald-400 w-full" : "w-0")} />
                                                     </div>
                                                 </div>
                                             ))}
@@ -1041,9 +1095,18 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                         checkIsCorrelated={() => false}
                                         onMoreClick={(m) => setSelectedMatchForDetails(m)}
                                         isSimulating={isSimulating}
+                                        isFinished={!isSimulating && lastOutcome?.roundId === currentRound}
                                         currentRoundIdx={Math.min(4, Math.floor((simulationProgress / 60) * 5))}
                                         currentScores={(() => {
-                                            if (!isSimulating) return undefined;
+                                            if (!isSimulating && lastOutcome?.roundId !== currentRound) return undefined;
+
+                                            // If finished, show final scores from lastOutcome
+                                            if (!isSimulating && lastOutcome?.roundId === currentRound) {
+                                                const matchOutcome = lastOutcome.allRoundResults.find(r => r.id === match.id);
+                                                return matchOutcome?.totalScores as [number, number, number];
+                                            }
+
+                                            // If simulating, current progress scores
                                             const parts = match.id.split("-");
                                             const stage = parts[3] === "Regional Qualifier" ? "regional" : "national";
                                             const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, stage);
@@ -1212,6 +1275,40 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
 
                                     {slipTab === 'selections' ? (
                                         <>
+                                            {/* Balance Selector in Slip */}
+                                            <div className="flex gap-2 mb-4">
+                                                <button
+                                                    onClick={() => setBalanceType('cash')}
+                                                    className={cn(
+                                                        "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                        balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
+                                                    </div>
+                                                    <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                                                        {(profile?.balance || 0).toFixed(2)}
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setBalanceType('gift')}
+                                                    className={cn(
+                                                        "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                        balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
+                                                    </div>
+                                                    <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                                                        {(profile?.bonusBalance || 0).toFixed(2)}
+                                                    </span>
+                                                </button>
+                                            </div>
+
                                             {/* Singles/Multi/System Toggle */}
                                             <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-4 max-w-[200px] shadow-inner">
                                                 {(['single', 'multi'] as const).map((mode) => (
@@ -1361,9 +1458,15 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                                                 const cap1 = totalStake * 10;
                                                                 // Cap 2: Absolute Profit
                                                                 const cap2 = totalStake + MAX_PROFIT_VIRTUAL;
-                                                                return Math.min(potential, cap1, cap2).toFixed(2);
+                                                                const totalWin = Math.min(potential, cap1, cap2);
+
+                                                                // GIFT RULE: Deduct stake from winnings
+                                                                return (balanceType === 'gift' ? Math.max(0, totalWin - totalStake) : totalWin).toFixed(2);
                                                             })()}
                                                         </span>
+                                                        {balanceType === 'gift' && (
+                                                            <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Stake deducted from win</span>
+                                                        )}
                                                     </div>
                                                 </div>
 

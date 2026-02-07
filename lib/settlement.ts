@@ -163,7 +163,12 @@ export async function settleMatch(matchId: string) {
                 }
             }
 
-            const payoutAmount = (newStatus === "won") ? bet.potentialPayout : 0
+            let payoutAmount = (newStatus === "won") ? bet.potentialPayout : 0
+
+            // GIFT RULE: If won, deduct stake from winnings
+            if (newStatus === "won" && bet.isBonusBet) {
+                payoutAmount = Math.max(0, payoutAmount - bet.stake);
+            }
 
             // Update Bet Status
             await db.update(bets)

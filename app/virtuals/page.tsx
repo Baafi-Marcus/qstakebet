@@ -16,11 +16,15 @@ export default async function VirtualsPage() {
     }))
 
     const session = await auth()
-    let profile = { balance: 0, currency: "GHS" }
+    let profile: { balance: number; bonusBalance?: number; currency: string } = { balance: 0, bonusBalance: 0, currency: "GHS" }
 
     if (session?.user) {
         const wallet = await getUserWalletBalance()
-        profile = { balance: wallet.balance, currency: "GHS" }
+        profile = {
+            balance: wallet.balance,
+            bonusBalance: wallet.bonusBalance,
+            currency: "GHS"
+        }
     }
 
     return <VirtualsClient schools={schools} profile={profile} />
