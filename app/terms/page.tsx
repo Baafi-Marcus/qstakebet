@@ -61,7 +61,7 @@ export default function TermsOfService() {
                     <section>
                         <h2 className="text-xl font-bold text-white mb-4">5. Disclaimer</h2>
                         <p className="text-slate-400 leading-relaxed">
-                            Our services are provided "AS IS" and "AS AVAILABLE". QSTAKEbet disclaims all warranties, express or implied, regarding the service.
+                            Our services are provided &quot;AS IS&quot; and &quot;AS AVAILABLE&quot;. QSTAKEbet disclaims all warranties, express or implied, regarding the service.
                         </p>
                     </section>
 
