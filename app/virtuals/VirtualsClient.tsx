@@ -1009,7 +1009,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                         key={m.id}
                                         onClick={() => setActiveMarket(m.id as typeof activeMarket)}
                                         className={cn(
-                                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                                            "px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] transition-all border whitespace-nowrap",
                                             activeMarket === m.id
                                                 ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
                                                 : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
@@ -1233,9 +1233,22 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                             {/* Selections List - Ultra Compact */}
                                             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
                                                 {selections.map((sel) => (
-                                                    <div key={sel.selectionId} className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3">
+                                                    <div
+                                                        key={sel.selectionId}
+                                                        onClick={() => {
+                                                            const match = matches.find(m => m.id === sel.matchId);
+                                                            if (match) {
+                                                                setSelectedMatchForDetails(match);
+                                                                setShowSlip(false);
+                                                            }
+                                                        }}
+                                                        className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3 cursor-pointer active:scale-[0.98]"
+                                                    >
                                                         <button
-                                                            onClick={() => toggleSelection(sel)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleSelection(sel);
+                                                            }}
                                                             className="absolute top-1 left-1 text-slate-500 hover:text-red-400 transition-colors"
                                                         >
                                                             <X className="h-3 w-3" />

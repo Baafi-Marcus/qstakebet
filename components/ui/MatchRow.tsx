@@ -104,7 +104,10 @@ export function MatchRow({
     );
 
     return (
-        <div className="flex items-center border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group">
+        <div
+            onClick={() => onMoreClick?.(match)}
+            className="flex items-center border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group cursor-pointer"
+        >
             {/* Left side: Teams & Info */}
             <div className="flex-1 py-1.5 px-3 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">

@@ -48,7 +48,8 @@ export function OddsButton({
 
     const isSelected = manualSelected !== undefined ? manualSelected : selections.some((s) => s.selectionId === selectionId)
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
         if (!odds || odds === 0) return;
         const selection = {
             matchId,
