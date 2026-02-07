@@ -321,7 +321,11 @@ export function BetSlipSidebar() {
                             )}
 
                             {selections.map((item) => (
-                                <div key={item.selectionId} className="py-3 border-b border-white/5 relative group last:border-0">
+                                <div
+                                    key={item.selectionId}
+                                    onClick={() => context?.setSelectedMatchId(item.matchId)}
+                                    className="py-3 border-b border-white/5 relative group last:border-0 cursor-pointer hover:bg-white/[0.02] transition-colors px-1 -mx-1 rounded-lg"
+                                >
                                     <div className="flex items-start gap-2.5">
                                         {/* Dynamic Sport Icon - Smaller */}
                                         <div className="w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/5">

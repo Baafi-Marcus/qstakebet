@@ -231,7 +231,7 @@ export function MatchRow({
                         </div>
 
                         {/* Odds for Selected Line */}
-                        {selectedTotalLine && (
+                        {selectedTotalLine ? (
                             <>
                                 <div className="w-12 sm:w-14 flex items-center justify-center">
                                     <OddsButton
@@ -262,6 +262,15 @@ export function MatchRow({
                                         sportType={match.sportType}
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-12 sm:w-14 flex items-center justify-center">
+                                    <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
+                                </div>
+                                <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
+                                    <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
                                 </div>
                             </>
                         )}
@@ -371,23 +380,34 @@ export function MatchRow({
                             </>
                         ) : (
                             // Default fallback for Yes/No props or generic single-row
-                            Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
-                                <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                    <OddsButton
-                                        label={key}
-                                        odds={odd as number}
-                                        matchId={match.id}
-                                        marketName={normalizeMarketName(activeMarket)} // Safe Title Case
-                                        matchLabel={matchLabel}
-                                        showLabel={true}
-                                        onClick={onOddsClick}
-                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
-                                        isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
-                                        sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                    />
-                                </div>
-                            ))
+                            match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] ? (
+                                Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
+                                    <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                        <OddsButton
+                                            label={key}
+                                            odds={odd as number}
+                                            matchId={match.id}
+                                            marketName={normalizeMarketName(activeMarket)} // Safe Title Case
+                                            matchLabel={matchLabel}
+                                            showLabel={true}
+                                            onClick={onOddsClick}
+                                            isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
+                                            isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
+                                            sportType={match.sportType}
+                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <>
+                                    <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                        <OddsButton label="Yes" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
+                                    </div>
+                                    <div className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                        <OddsButton label="No" odds={null} matchId={match.id} marketName={normalizeMarketName(activeMarket)} matchLabel={matchLabel} className="h-full w-full border-0" />
+                                    </div>
+                                </>
+                            )
                         )
                     )}
 

@@ -9,6 +9,12 @@ import { Header } from "./Header"
 import { SubNavBar } from "./SubNavBar"
 import { Footer } from "./Footer"
 import { SessionProvider } from "next-auth/react"
+import React, { useEffect, useState, useContext } from "react"
+import { BetSlipContext } from "@/lib/store/context"
+import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
+import { getMatchById } from "@/lib/data"
+import { Match } from "@/lib/types"
+import { useBetSlip } from "@/lib/store/useBetSlip"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -54,10 +60,38 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                             <BetSlipSidebar />
                             <FloatingBetSlipButton />
                             <BottomNav />
+                            <GlobalMatchDetails />
                         </>
                     )}
                 </div>
             </BetSlipProvider>
         </SessionProvider>
+    )
+}
+
+function GlobalMatchDetails() {
+    const context = useContext(BetSlipContext)
+    const { addSelection, checkSelected } = useBetSlip()
+    const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+
+    useEffect(() => {
+        if (context?.selectedMatchId) {
+            getMatchById(context.selectedMatchId).then(match => {
+                if (match) setSelectedMatch(match)
+            })
+        } else {
+            setSelectedMatch(null)
+        }
+    }, [context?.selectedMatchId])
+
+    if (!selectedMatch) return null
+
+    return (
+        <MatchDetailsModal
+            match={selectedMatch}
+            onClose={() => context?.setSelectedMatchId(null)}
+            onOddsClick={addSelection}
+            checkSelected={checkSelected}
+        />
     )
 }
