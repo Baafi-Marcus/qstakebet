@@ -6,6 +6,7 @@ import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
 import { verifyOTP } from "@/lib/verification-actions"
+import { vynfy } from "@/lib/vynfy-client"
 
 export async function registerUser(data: {
     email: string
@@ -80,6 +81,15 @@ export async function registerUser(data: {
             status: "active",
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
         })
+
+        // Send welcome SMS
+        try {
+            const welcomeMessage = `Welcome to QSTAKEbet! Your account has been created successfully. You've received 5 GHS bonus to start betting. Good luck!`;
+            await vynfy.sendSMS([data.phone], welcomeMessage);
+        } catch (smsError) {
+            console.error("Failed to send welcome SMS:", smsError);
+            // Don't fail registration if SMS fails
+        }
 
         // Auto sign in
         await signIn("credentials", {

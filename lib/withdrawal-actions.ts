@@ -1,221 +1,220 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { wallets, withdrawalRequests, transactions, users } from "@/lib/db/schema"
-import { eq, sql, and, desc } from "drizzle-orm"
+import { users, wallets, withdrawalRequests, transactions } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
-import { FINANCE_LIMITS } from "@/lib/constants"
+import { paystackClient } from "@/lib/paystack-client"
+import { detectPaymentMethod, formatPhoneNumber } from "@/lib/phone-utils"
+
+const MIN_WITHDRAWAL = 1; // 1 GHS
+const MAX_WITHDRAWAL = 1000; // 1000 GHS
 
 /**
- * Creates a new withdrawal request
- * Enforces turnover rules and balance checks
+ * Initiates a withdrawal request with Paystack automated transfer
  */
-export async function createWithdrawalRequest(data: {
-    amount: number
-    paymentMethod: string
-    accountNumber: string
-    accountName?: string
-}): Promise<{ success: true; requestId: string } | { success: false; error: string }> {
-    const session = await auth()
+export async function requestWithdrawal(amount: number) {
+    const session = await auth();
     if (!session?.user?.id) {
-        return { success: false, error: "Unauthorized" }
+        return { success: false, error: "Unauthorized" };
     }
 
-    const userId = session.user.id
-
     try {
-        // Enforce withdrawal ONLY to the registered phone number
-        const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1)
-        if (!userRecords.length) throw new Error("User not found")
-        const registeredPhone = userRecords[0].phone
+        const userId = session.user.id;
 
-        if (data.accountNumber.replace(/\s+/g, "") !== registeredPhone.replace(/\s+/g, "")) {
-            return { success: false, error: "Withdrawals are only allowed to your registered phone number." }
+        // Validate amount
+        if (amount < MIN_WITHDRAWAL) {
+            return { success: false, error: `Minimum withdrawal is ${MIN_WITHDRAWAL} GHS` };
         }
 
-        return await db.transaction(async (tx) => {
-            // 1. Get wallet
-            const userWallets = await tx.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-            if (!userWallets.length) {
-                throw new Error("Wallet not found")
-            }
-            const wallet = userWallets[0]
+        if (amount > MAX_WITHDRAWAL) {
+            return { success: false, error: `Maximum withdrawal is ${MAX_WITHDRAWAL} GHS` };
+        }
 
-            // 2. Turnover Check (Anti-Fraud)
-            // SportyBet Style: Must wager at least 1x deposit amount
-            if (wallet.turnoverWagered < 1) {
-                // Note: In a real system, you'd track total deposits and total wagers.
-                // For this implementation, we check if the user has wagered at least once or some minimum threshold.
-                // We'll assume turnoverWagered tracks the amount wagered since last successful withdrawal/deposit.
-            }
+        // Get user and wallet
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId)
+        });
 
-            // 3. Balance Check
-            if (wallet.balance < data.amount) {
-                throw new Error("Insufficient cash balance for withdrawal")
-            }
+        if (!user) {
+            return { success: false, error: "User not found" };
+        }
 
-            // 4. Limits Check
-            if (data.amount < FINANCE_LIMITS.WITHDRAWAL.MIN) {
-                throw new Error(`Minimum withdrawal is GHS ${FINANCE_LIMITS.WITHDRAWAL.MIN}`)
-            }
-            if (data.amount > FINANCE_LIMITS.WITHDRAWAL.MAX) {
-                throw new Error(`Maximum per transaction is GHS ${FINANCE_LIMITS.WITHDRAWAL.MAX}`)
-            }
+        if (!user.phoneVerified) {
+            return { success: false, error: "Please verify your phone number first" };
+        }
 
-            // 5. Daily Limit Check (GHS 10,000)
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const todaysWithdrawals = await tx.select({
-                sum: sql<number>`sum(${withdrawalRequests.amount})`
-            }).from(withdrawalRequests).where(
-                and(
-                    eq(withdrawalRequests.userId, userId),
-                    sql`${withdrawalRequests.createdAt} >= ${today}`,
-                    sql`${withdrawalRequests.status} != 'rejected'`
-                )
+        const wallet = await db.query.wallets.findFirst({
+            where: eq(wallets.userId, userId)
+        });
+
+        if (!wallet) {
+            return { success: false, error: "Wallet not found" };
+        }
+
+        // Check if user has sufficient balance
+        if (wallet.balance < amount) {
+            return { success: false, error: "Insufficient balance" };
+        }
+
+        // Check for pending withdrawals
+        const pendingWithdrawals = await db.query.withdrawalRequests.findMany({
+            where: and(
+                eq(withdrawalRequests.userId, userId),
+                eq(withdrawalRequests.status, "pending")
             )
+        });
 
-            const totalToday = todaysWithdrawals[0]?.sum || 0
-            if (totalToday + data.amount > 10000) {
-                throw new Error("Daily withdrawal limit (GHS 10,000) exceeded")
-            }
+        if (pendingWithdrawals.length > 0) {
+            return { success: false, error: "You have a pending withdrawal. Please wait for it to complete." };
+        }
 
-            // 6. Deduct from Main Balance and move to Locked Balance
-            // This prevents the user from betting with funds already "requested" for withdrawal
-            await tx.update(wallets)
-                .set({
-                    balance: sql`${wallets.balance} - ${data.amount}`,
-                    lockedBalance: sql`${wallets.lockedBalance} + ${data.amount}`,
-                    updatedAt: new Date()
-                })
-                .where(eq(wallets.id, wallet.id))
+        // Detect payment method from phone
+        const paymentMethod = detectPaymentMethod(user.phone);
+        if (!paymentMethod) {
+            return { success: false, error: "Could not detect mobile money provider from your phone number" };
+        }
 
-            // 7. Create Withdrawal Request
-            const requestId = `wrq-${Math.random().toString(36).substr(2, 9)}`
-            await tx.insert(withdrawalRequests).values({
-                id: requestId,
-                userId,
-                amount: data.amount,
-                status: "pending",
-                paymentMethod: data.paymentMethod,
-                accountNumber: data.accountNumber,
-                accountName: data.accountName,
+        const formattedPhone = formatPhoneNumber(user.phone);
+
+        // Lock funds immediately
+        await db.update(wallets)
+            .set({
+                balance: wallet.balance - amount,
+                lockedBalance: wallet.lockedBalance + amount,
+                updatedAt: new Date()
             })
+            .where(eq(wallets.id, wallet.id));
 
-            // 8. Log Transaction
-            await tx.insert(transactions).values({
-                id: `txn-${Math.random().toString(36).substr(2, 9)}`,
-                userId,
-                walletId: wallet.id,
-                type: "withdrawal_requested",
-                amount: data.amount,
-                balanceBefore: wallet.balance,
-                balanceAfter: wallet.balance - data.amount,
-                paymentStatus: "pending",
-                description: `Withdrawal request for GHS ${data.amount.toFixed(2)}`
-            })
+        // Create withdrawal request
+        const withdrawalId = `wrq-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        await db.insert(withdrawalRequests).values({
+            id: withdrawalId,
+            userId: userId,
+            amount: amount,
+            status: "pending",
+            paymentMethod: paymentMethod,
+            accountNumber: formattedPhone,
+            accountName: user.name || "User"
+        });
 
-            return { success: true as const, requestId }
-        })
-    } catch (error: any) {
-        console.error("Withdrawal request error:", error)
-        return { success: false as const, error: error.message || "Failed to submit withdrawal request" }
+        // Create transaction record
+        const txnId = `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        await db.insert(transactions).values({
+            id: txnId,
+            userId: userId,
+            walletId: wallet.id,
+            type: "withdrawal",
+            amount: -amount,
+            balanceBefore: wallet.balance,
+            balanceAfter: wallet.balance - amount,
+            reference: withdrawalId,
+            description: `Withdrawal to ${paymentMethod}`,
+            paymentProvider: "paystack",
+            paymentStatus: "pending"
+        });
+
+        // Process with Paystack in background
+        processPaystackWithdrawal(withdrawalId, user.name || "User", formattedPhone, paymentMethod, amount).catch(err => {
+            console.error("Paystack withdrawal processing error:", err);
+        });
+
+        return {
+            success: true,
+            message: "Withdrawal request submitted. Processing...",
+            withdrawalId
+        };
+
+    } catch (error) {
+        console.error("Withdrawal request error:", error);
+        return { success: false, error: "Failed to process withdrawal" };
     }
 }
 
 /**
- * Admin action to approve and mark a withdrawal as paid
+ * Processes withdrawal with Paystack (runs in background)
  */
-export async function adminProcessWithdrawal(requestId: string, status: 'approved' | 'rejected' | 'paid', notes?: string) {
-    const session = await auth()
-    // Simple admin check - you should ideally have a more robust role check
-    if (!session || session.user?.role !== 'admin') {
-        return { success: false, error: "Unauthorized: Admin access required" }
-    }
-
-    const adminId = session.user.id
-
+async function processPaystackWithdrawal(
+    withdrawalId: string,
+    userName: string,
+    phone: string,
+    provider: string,
+    amount: number
+) {
     try {
-        return await db.transaction(async (tx) => {
-            const requests = await tx.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, requestId)).limit(1)
-            if (!requests.length) throw new Error("Request not found")
-            const request = requests[0]
+        // Step 1: Create transfer recipient
+        const recipientResult = await paystackClient.createRecipient(userName, phone, provider);
 
-            if (request.status === 'paid' || request.status === 'rejected') {
-                throw new Error(`Request is already in ${request.status} status`)
-            }
+        if (!recipientResult.success || !recipientResult.recipientCode) {
+            await handleWithdrawalFailure(withdrawalId, recipientResult.error || "Failed to create recipient");
+            return;
+        }
 
-            const userWallets = await tx.select().from(wallets).where(eq(wallets.userId, request.userId)).limit(1)
-            const wallet = userWallets[0]
+        // Step 2: Initiate transfer
+        const transferResult = await paystackClient.initiateTransfer(
+            recipientResult.recipientCode,
+            amount,
+            withdrawalId,
+            "Withdrawal from QSTAKEbet"
+        );
 
-            if (status === 'paid') {
-                // Remove from Locked Balance permanently
-                await tx.update(wallets)
-                    .set({
-                        lockedBalance: sql`${wallets.lockedBalance} - ${request.amount}`,
-                        lastWithdrawalAt: new Date(),
-                        updatedAt: new Date()
-                    })
-                    .where(eq(wallets.id, wallet.id))
-            } else if (status === 'rejected') {
-                // Return to Main Balance
-                await tx.update(wallets)
-                    .set({
-                        balance: sql`${wallets.balance} + ${request.amount}`,
-                        lockedBalance: sql`${wallets.lockedBalance} - ${request.amount}`,
-                        updatedAt: new Date()
-                    })
-                    .where(eq(wallets.id, wallet.id))
-            }
+        if (!transferResult.status) {
+            await handleWithdrawalFailure(withdrawalId, transferResult.message);
+            return;
+        }
 
-            await tx.update(withdrawalRequests)
-                .set({
-                    status,
-                    adminId,
-                    adminNotes: notes,
-                    updatedAt: new Date()
-                })
-                .where(eq(withdrawalRequests.id, requestId))
+        // Step 3: Update status to processing
+        await db.update(withdrawalRequests)
+            .set({
+                status: "approved", // Approved by Paystack
+                updatedAt: new Date()
+            })
+            .where(eq(withdrawalRequests.id, withdrawalId));
 
-            return { success: true as const }
-        })
-    } catch (error: any) {
-        return { success: false as const, error: error.message }
+        // Note: Webhook will handle final completion
+
+    } catch (error) {
+        console.error("Paystack processing error:", error);
+        await handleWithdrawalFailure(withdrawalId, "Processing error");
     }
-}
-
-export async function getUserWithdrawalRequests() {
-    const session = await auth()
-    if (!session?.user?.id) return []
-
-    return await db.select()
-        .from(withdrawalRequests)
-        .where(eq(withdrawalRequests.userId, session.user.id))
-        .orderBy(desc(withdrawalRequests.createdAt))
 }
 
 /**
- * Admin action to fetch all withdrawal requests
+ * Handles withdrawal failure by refunding user
  */
-export async function getAllWithdrawalRequests() {
-    const session = await auth()
-    if (!session || session.user?.role !== 'admin') {
-        throw new Error("Unauthorized")
-    }
+async function handleWithdrawalFailure(withdrawalId: string, reason: string) {
+    try {
+        const withdrawal = await db.query.withdrawalRequests.findFirst({
+            where: eq(withdrawalRequests.id, withdrawalId)
+        });
 
-    return await db.select({
-        id: withdrawalRequests.id,
-        amount: withdrawalRequests.amount,
-        status: withdrawalRequests.status,
-        paymentMethod: withdrawalRequests.paymentMethod,
-        accountNumber: withdrawalRequests.accountNumber,
-        accountName: withdrawalRequests.accountName,
-        createdAt: withdrawalRequests.createdAt,
-        userName: users.name,
-        userPhone: users.phone,
-        userEmail: users.email
-    })
-        .from(withdrawalRequests)
-        .innerJoin(users, eq(withdrawalRequests.userId, users.id))
-        .orderBy(desc(withdrawalRequests.createdAt))
+        if (!withdrawal) return;
+
+        // Refund locked balance
+        const wallet = await db.query.wallets.findFirst({
+            where: eq(wallets.userId, withdrawal.userId)
+        });
+
+        if (wallet) {
+            await db.update(wallets)
+                .set({
+                    balance: wallet.balance + withdrawal.amount,
+                    lockedBalance: wallet.lockedBalance - withdrawal.amount,
+                    updatedAt: new Date()
+                })
+                .where(eq(wallets.id, wallet.id));
+        }
+
+        // Update withdrawal status
+        await db.update(withdrawalRequests)
+            .set({
+                status: "rejected",
+                adminNotes: reason,
+                updatedAt: new Date()
+            })
+            .where(eq(withdrawalRequests.id, withdrawalId));
+
+    } catch (error) {
+        console.error("Refund error:", error);
+    }
 }
