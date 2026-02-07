@@ -5,6 +5,7 @@ import { users, wallets, bonuses } from "@/lib/db/schema"
 import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
+import { verifyOTP } from "@/lib/verification-actions"
 
 export async function registerUser(data: {
     email: string
@@ -12,8 +13,19 @@ export async function registerUser(data: {
     name: string
     phone: string
     referredBy?: string
+    otp?: string
 }) {
     try {
+        // Verify OTP first
+        if (!data.otp) {
+            return { success: false, error: "OTP verification required" }
+        }
+
+        const verification = await verifyOTP(data.phone, data.otp)
+        if (!verification.success) {
+            return { success: false, error: verification.error || "Invalid OTP" }
+        }
+
         // Check if user already exists (email or phone)
         const existingUser = await db.select().from(users)
             .where(or(eq(users.email, data.email), eq(users.phone, data.phone)))
@@ -37,6 +49,7 @@ export async function registerUser(data: {
             passwordHash,
             name: data.name,
             phone: data.phone,
+            phoneVerified: new Date(),
             referralCode,
             referredBy: data.referredBy || null,
             role: data.phone === process.env.ADMIN_PHONE ? "admin" : "user",

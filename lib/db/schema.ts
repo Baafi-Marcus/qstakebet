@@ -70,6 +70,7 @@ export const users = pgTable("users", {
     passwordHash: text("password_hash").notNull(),
     name: text("name"),
     phone: text("phone").notNull().unique(),
+    phoneVerified: timestamp("phone_verified"),
     role: text("role").default("user").notNull(), // "user", "admin"
     status: text("status").default("active").notNull(), // "active", "suspended", "banned"
     referralCode: text("referral_code").unique(), // User's unique referral code
@@ -258,7 +259,15 @@ export const walletsRelations = relations(wallets, ({ one }) => ({
     }),
 }));
 
-// Type exports
+
+export const verificationCodes = pgTable("verification_codes", {
+    id: text("id").primaryKey(), // vc-xxxxx
+    phone: text("phone").notNull(),
+    code: text("code").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;
@@ -275,3 +284,4 @@ export type VirtualSchoolStat = typeof virtualSchoolStats.$inferSelect;
 export type RealSchoolStat = typeof realSchoolStats.$inferSelect;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 export type NewWithdrawalRequest = typeof withdrawalRequests.$inferInsert;
+export type VerificationCode = typeof verificationCodes.$inferSelect;

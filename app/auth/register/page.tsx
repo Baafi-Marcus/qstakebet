@@ -8,6 +8,7 @@ import { registerUser } from "@/lib/auth-actions"
 
 export default function RegisterPage() {
     const router = useRouter()
+
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -16,8 +17,38 @@ export default function RegisterPage() {
         phone: "",
         referredBy: ""
     })
+    const [otp, setOtp] = useState("")
+    const [otpSent, setOtpSent] = useState(false)
+    const [sendingOtp, setSendingOtp] = useState(false)
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
+
+    // Send OTP Handler
+    const handleSendOtp = async () => {
+        if (!formData.phone || formData.phone.length < 10) {
+            setError("Please enter a valid phone number first")
+            return
+        }
+
+        setSendingOtp(true)
+        setError("")
+
+        try {
+            const { generateAndSendOTP } = await import("@/lib/verification-actions")
+            const result = await generateAndSendOTP(formData.phone)
+
+            if (result.success) {
+                setOtpSent(true)
+                // Optional: Start generic success message or toast
+            } else {
+                setError(result.error || "Failed to send SMS")
+            }
+        } catch (e) {
+            setError("Error sending OTP")
+        } finally {
+            setSendingOtp(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -39,6 +70,11 @@ export default function RegisterPage() {
             return
         }
 
+        if (!otp) {
+            setError("Please verify your phone number with the OTP code")
+            return
+        }
+
         setLoading(true)
 
         try {
@@ -47,7 +83,8 @@ export default function RegisterPage() {
                 password: formData.password,
                 name: formData.name,
                 phone: formData.phone,
-                referredBy: formData.referredBy || undefined
+                referredBy: formData.referredBy || undefined,
+                otp // Pass OTP for server-side verification
             })
 
             if (!result.success) {
@@ -56,8 +93,6 @@ export default function RegisterPage() {
                 return
             }
 
-            // Redirect to home page
-            router.push("/")
             // Redirect to home page
             router.push("/")
             router.refresh()
@@ -124,7 +159,7 @@ export default function RegisterPage() {
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                     placeholder="John Doe"
                                 />
                             </div>
@@ -142,29 +177,63 @@ export default function RegisterPage() {
                                     required
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                     placeholder="you@example.com"
                                 />
                             </div>
                         </div>
 
-                        {/* Phone Field (Required) */}
+                        {/* Phone Field (Required) & OTP */}
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
                                 Phone Number
                             </label>
-                            <div className="relative">
-                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
-                                <input
-                                    type="tel"
-                                    required
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                    placeholder="024XXXXXXX"
-                                />
+                            <div className="relative flex gap-2">
+                                <div className="relative w-full">
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                        placeholder="024XXXXXXX"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSendOtp}
+                                    disabled={sendingOtp || otpSent || !formData.phone}
+                                    className="px-4 py-2 bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/40 text-purple-400 text-sm font-semibold rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
+                                >
+                                    {sendingOtp ? "Sending..." : otpSent ? "Sent" : "Send Code"}
+                                </button>
                             </div>
                         </div>
+
+                        {/* OTP Field (Visible after sending) */}
+                        {otpSent && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Enter Verification Code
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-500 font-bold text-xs border border-slate-500 rounded">#</div>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all tracking-widest text-lg verified-inputs"
+                                        placeholder="123456"
+                                        maxLength={6}
+                                    />
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2">
+                                    Enter the 6-digit code sent to your phone.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Password Field */}
                         <div>
@@ -178,7 +247,7 @@ export default function RegisterPage() {
                                     required
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -196,7 +265,7 @@ export default function RegisterPage() {
                                     required
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -213,7 +282,7 @@ export default function RegisterPage() {
                                     type="text"
                                     value={formData.referredBy}
                                     onChange={(e) => setFormData({ ...formData, referredBy: e.target.value.toUpperCase() })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all uppercase"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all uppercase verified-inputs"
                                     placeholder="ABC123XYZ"
                                 />
                             </div>
