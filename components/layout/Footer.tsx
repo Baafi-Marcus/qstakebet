@@ -58,24 +58,7 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Partners/Affiliates */}
-                    <div>
-                        <h3 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-6">Powered By</h3>
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                                    <Trophy className="h-6 w-6 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-white font-black text-sm uppercase">NSMQ Official</p>
-                                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Partner Platform</p>
-                                </div>
-                            </div>
-                            <p className="text-slate-500 text-[10px] uppercase font-bold leading-relaxed">
-                                Join the community of academic enthusiasts and support your favorite schools.
-                            </p>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Bottom Bar */}
