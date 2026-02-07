@@ -229,7 +229,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
 
 
     const { matches, outcomes } = useMemo(() => {
-        return generateVirtualMatches(15, activeSchools, currentRound, aiStrengths)
+        return generateVirtualMatches(6, activeSchools, currentRound, aiStrengths)
     }, [currentRound, activeSchools, aiStrengths])
 
     // Keep outcomes in a ref for access during simulation without triggering re-renders
