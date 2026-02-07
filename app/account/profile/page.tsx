@@ -12,7 +12,10 @@ import {
     Gift,
     Loader2,
     ArrowUpFromLine,
-    LogOut
+    LogOut,
+    HelpCircle,
+    BookOpen,
+    MessageSquare
 } from "lucide-react"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import Link from "next/link"
@@ -119,7 +122,7 @@ export default function ProfilePage() {
 
             {/* Navigation Grid */}
             <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
-                <div className="grid grid-cols-3 py-10 px-2">
+                <div className="grid grid-cols-3 gap-y-8 py-8 px-2">
                     <NavButton
                         href="/account/bets"
                         icon={History}
@@ -135,10 +138,34 @@ export default function ProfilePage() {
                         icon={Gift}
                         label={`Gifts (${bonusCount})`}
                     />
+
+                    <NavButton
+                        href="/help"
+                        icon={HelpCircle}
+                        label="Help Center"
+                    />
+                    <NavButton
+                        href="/how-to-play"
+                        icon={BookOpen}
+                        label="How to Play"
+                    />
+                    <a
+                        href="https://wa.me/233276019798"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center gap-3 group px-2"
+                    >
+                        <div className="h-10 w-10 flex items-center justify-center text-emerald-400 group-hover:text-emerald-300 transition-colors bg-emerald-500/10 rounded-full">
+                            <MessageSquare className="h-5 w-5" />
+                        </div>
+                        <span className="text-[11px] font-bold text-emerald-100 text-center leading-tight uppercase tracking-tight">
+                            Support
+                        </span>
+                    </a>
                 </div>
 
                 {/* Logout Button */}
-                <div className="px-6 mt-4">
+                <div className="px-6 mt-2">
                     <button
                         onClick={() => import("next-auth/react").then(m => m.signOut({ callbackUrl: "/" }))}
                         className="w-full flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-4 rounded-2xl transition-all border border-red-500/10 font-black text-xs uppercase tracking-widest group"

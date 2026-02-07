@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, History, Wallet, Gift, Settings, LogOut, ChevronRight } from "lucide-react"
+import { User, History, Wallet, Gift, Settings, LogOut, ChevronRight, HelpCircle, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import { useEffect, useState } from "react"
@@ -24,6 +24,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         { href: "/account/bets", label: "My Bets", icon: History },
         { href: "/account/wallet", label: "Wallet & Balance", icon: Wallet },
         { href: "/account/bonuses", label: "Offers & Bonuses", icon: Gift },
+        { href: "/help", label: "Help Center", icon: HelpCircle },
+        { href: "/how-to-play", label: "How to Play", icon: BookOpen },
         { href: "/account/settings", label: "Settings", icon: Settings },
     ]
 

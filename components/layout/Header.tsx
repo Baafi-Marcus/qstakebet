@@ -73,7 +73,7 @@ export function Header() {
                     <div className="flex items-center space-x-2 md:space-x-4">
                         {isLoggedIn ? (
                             <>
-                                <div className="hidden xs:flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
+                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
                                     <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
                                     <span className="text-xs md:text-sm font-mono font-black text-foreground">
                                         GHS {balance !== null ? balance.toFixed(2) : "..."}
@@ -81,14 +81,13 @@ export function Header() {
                                 </div>
                                 <Link
                                     href="/account/deposit"
-                                    className="bg-primary hover:bg-primary/90 text-white font-black px-4 py-2 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
+                                    className="bg-primary hover:bg-primary/90 text-white font-black px-3 py-2 md:px-4 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
                                 >
                                     <Zap className="h-3 w-3" />
                                     <span className="hidden sm:inline">DEPOSIT</span>
-                                    <span className="sm:hidden">TOP UP</span>
                                 </Link>
 
-                                <div className="relative">
+                                <div className="relative hidden md:block">
                                     <button
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                                         className={cn(
