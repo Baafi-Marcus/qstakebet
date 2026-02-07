@@ -125,6 +125,13 @@ export function Header() {
                                                     >
                                                         <Trophy className="h-4 w-4" /> My Bets
                                                     </Link>
+                                                    <Link
+                                                        href="/account/settings"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                    >
+                                                        <User className="h-4 w-4" /> Settings
+                                                    </Link>
 
                                                     <div className="h-px bg-white/5 my-2 mx-2" />
 
