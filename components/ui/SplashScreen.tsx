@@ -9,15 +9,20 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
     const [animate, setAnimate] = useState(false)
 
     useEffect(() => {
-        // Start animation immediately
-        setAnimate(true)
+        // Start animation after a brief delay to avoid synchronous setState warning
+        const animationTimer = setTimeout(() => {
+            setAnimate(true)
+        }, 100)
 
         // Hide splash screen after delay
         const timer = setTimeout(() => {
             setShow(false)
         }, 3000) // 3 seconds total duration
 
-        return () => clearTimeout(timer)
+        return () => {
+            clearTimeout(animationTimer)
+            clearTimeout(timer)
+        }
     }, [])
 
     if (!show) return <>{children}</>
