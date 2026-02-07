@@ -57,6 +57,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                         </Link>
                                     )
                                 })}
+                            </nav>
                         </div>
                     </div>
 
