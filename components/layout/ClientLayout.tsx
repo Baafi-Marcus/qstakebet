@@ -75,16 +75,17 @@ function GlobalMatchDetails() {
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
 
     useEffect(() => {
+        let active = true;
         if (context?.selectedMatchId) {
             getMatchById(context.selectedMatchId).then(match => {
-                if (match) setSelectedMatch(match)
+                if (active && match) setSelectedMatch(match)
             })
-        } else {
-            setSelectedMatch(null)
         }
+        return () => { active = false }
     }, [context?.selectedMatchId])
 
-    if (!selectedMatch) return null
+    const isMatchLoaded = selectedMatch && context?.selectedMatchId === selectedMatch.id;
+    if (!context?.selectedMatchId || !isMatchLoaded) return null
 
     return (
         <MatchDetailsModal

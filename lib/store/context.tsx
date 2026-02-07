@@ -33,6 +33,7 @@ export interface BetSlipContextType {
     closeSlip: () => void
     selectedMatchId: string | null
     setSelectedMatchId: (id: string | null) => void
+    checkSelected: (selectionId: string) => boolean
 }
 
 export const BetSlipContext = React.createContext<BetSlipContextType | undefined>(undefined)
@@ -45,6 +46,10 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     const [bonusId, setBonusId] = React.useState<string | undefined>(undefined)
     const [bonusAmount, setBonusAmount] = React.useState(0)
     const [selectedMatchId, setSelectedMatchId] = React.useState<string | null>(null)
+
+    const checkSelected = (selectionId: string) => {
+        return selections.some(s => s.selectionId === selectionId)
+    }
 
     const toggleSlip = () => setIsOpen(prev => !prev)
     const openSlip = () => setIsOpen(true)
@@ -99,7 +104,8 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
         openSlip,
         closeSlip,
         selectedMatchId,
-        setSelectedMatchId
+        setSelectedMatchId,
+        checkSelected
     }
 
     return (
