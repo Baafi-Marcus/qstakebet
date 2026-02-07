@@ -16,7 +16,7 @@ export function Footer() {
                             </span>
                         </Link>
                         <p className="text-slate-500 text-sm font-medium leading-relaxed">
-                            The ultimate prediction platform for science and math competitions. Experience the thrill of academic rivalry like never before.
+                            The ultimate premium prediction platform for Sports, Virtuals, and Competitions. Experience the thrill of winning like never before.
                         </p>
                         <div className="flex items-center gap-4">
                             <button className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all">
