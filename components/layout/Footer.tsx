@@ -11,7 +11,7 @@ export function Footer() {
                     {/* Brand Section */}
                     <div className="space-y-6">
                         <Link href="/" className="flex items-center space-x-2">
-                            <span className="font-display font-black text-2xl text-primary uppercase tracking-tight">
+                            <span className="font-display font-black text-2xl text-primary tracking-tight">
                                 QSTAKE<span className="text-white">bet</span>
                             </span>
                         </Link>

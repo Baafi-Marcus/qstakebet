@@ -42,7 +42,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                         {/* Background Glow */}
                         <div className="absolute inset-0 bg-purple-500/20 blur-[100px] rounded-full animate-pulse" />
 
-                        <h1 className="relative text-5xl md:text-8xl tracking-tight text-white font-russo uppercase">
+                        <h1 className="relative text-5xl md:text-8xl tracking-tight text-white font-russo">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 animate-gradient-x">QSTAKE</span>
                             <span className="text-white">bet</span>
                         </h1>

@@ -43,7 +43,7 @@ export function Header() {
                         </button>
 
                         <Link href="/" className="flex items-center space-x-2">
-                            <span className="font-display font-medium text-xl text-primary font-black uppercase tracking-tight">
+                            <span className="font-display font-medium text-xl text-primary font-black tracking-tight">
                                 QSTAKE<span className="text-foreground">bet</span>
                             </span>
                         </Link>
