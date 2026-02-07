@@ -214,7 +214,7 @@ export default function SettingsPage() {
                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                         <p className="text-xs text-amber-400 font-bold">
-                            Changing your phone number will update your withdrawal account. Make sure it's a valid MoMo number.
+                            Changing your phone number will update your withdrawal account. Make sure it&apos;s a valid MoMo number.
                         </p>
                     </div>
                 </div>
