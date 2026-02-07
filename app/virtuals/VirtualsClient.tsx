@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import {
     generateVirtualMatches,
     simulateMatch,
+    getRecentVirtualResults,
     VirtualMatchOutcome,
     VirtualSchool,
     DEFAULT_SCHOOLS // Added for AI strength fetching
