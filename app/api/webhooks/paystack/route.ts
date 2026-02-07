@@ -73,7 +73,6 @@ async function handleTransferSuccess(data: any) {
         await db.update(withdrawalRequests)
             .set({
                 status: "paid",
-                processedAt: new Date(),
                 updatedAt: new Date()
             })
             .where(eq(withdrawalRequests.id, reference));
