@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn, normalizeMarketName } from "@/lib/utils"
 // import { useBetSlip, type Selection } from "@/lib/store/useBetSlip"
 import React from "react"
 import { BetSlipContext } from "@/lib/store/context"
@@ -44,7 +44,8 @@ export function OddsButton({
     const addSelection = context?.addSelection || (() => { })
 
     // Construct a unique ID for this specific option
-    const selectionId = explicitId || `${matchId}-${marketName}-${label}` // e.g. "match123-Match Winner-School A"
+    const normalizedMarket = normalizeMarketName(marketName)
+    const selectionId = explicitId || `${matchId}-${normalizedMarket}-${label}` // e.g. "match123-Match Winner-School A"
 
     const isSelected = manualSelected !== undefined ? manualSelected : selections.some((s) => s.selectionId === selectionId)
 

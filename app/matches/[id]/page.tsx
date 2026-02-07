@@ -2,6 +2,7 @@ import React from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OddsButton } from "@/components/ui/OddsButton";
+import { normalizeMarketName } from "@/lib/utils";
 import { getMatchById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, MapPin, Trophy } from "lucide-react";
@@ -117,7 +118,7 @@ export default async function MatchDetailPage({ params }: Props) {
                                                 odds={odds}
                                                 matchId={match.id}
                                                 matchLabel={matchLabel}
-                                                marketName={marketName.replace(/([A-Z])/g, ' $1').trim()}
+                                                marketName={normalizeMarketName(marketName)}
                                             />
                                         ))}
                                     </div>

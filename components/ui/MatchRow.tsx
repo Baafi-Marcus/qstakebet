@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Zap, ChevronDown, Lock } from "lucide-react"
 import { OddsButton } from "./OddsButton"
+import { normalizeMarketName } from "@/lib/utils"
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
@@ -50,14 +51,6 @@ export function MatchRow({
     // NEW: Calculate lock status
     const lockStatus = getMatchLockStatus(match)
     const isLocked = lockStatus.isLocked
-
-    // Helper to format market name to Title Case
-    const formatMarketName = (market: string) => {
-        return market
-            .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
 
     // State for selectors
     const [selectedTotalLine, setSelectedTotalLine] = useState<string>("")
@@ -384,12 +377,12 @@ export function MatchRow({
                                         label={key}
                                         odds={odd as number}
                                         matchId={match.id}
-                                        marketName={formatMarketName(activeMarket)} // Safe Title Case
+                                        marketName={normalizeMarketName(activeMarket)} // Safe Title Case
                                         matchLabel={matchLabel}
                                         showLabel={true}
                                         onClick={onOddsClick}
-                                        isSelected={checkSelected(`${match.id}-${formatMarketName(activeMarket)}-${key}`)} // Consistent ID
-                                        isCorrelated={checkIsCorrelated?.(match.id, formatMarketName(activeMarket))}
+                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
+                                        isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
                                         sportType={match.sportType}
                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                     />

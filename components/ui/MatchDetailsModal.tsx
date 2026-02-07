@@ -2,8 +2,8 @@ import React, { useState } from "react"
 import { Match } from "@/lib/types"
 import { X, Trophy, Zap, Target, BarChart3, HelpCircle } from "lucide-react"
 import { OddsButton } from "./OddsButton"
-import { cn } from "@/lib/utils"
-import { Selection } from "@/lib/store/useBetSlip"
+import { cn, normalizeMarketName } from "@/lib/utils"
+import { Selection } from "@/lib/store/context"
 
 interface MatchDetailsModalProps {
     match: Match;
@@ -219,7 +219,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         matchLabel={matchLabel}
                                                         showLabel={true}
                                                         onClick={onOddsClick}
-                                                        isSelected={checkSelected(`${match.id}-${round} Winner-${sIdx + 1}`)}
+                                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(`${round} Winner`)}-${sIdx + 1}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, `${round} Winner`)}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
                                                     />
@@ -252,7 +252,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             matchLabel={matchLabel}
                                             showLabel={true}
                                             onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-Winning Margin-${opt.label}`)}
+                                            isSelected={checkSelected(`${match.id}-${normalizeMarketName("Winning Margin")}-${opt.label}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                         />
@@ -275,7 +275,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 matchLabel={matchLabel}
                                                 showLabel={true}
                                                 onClick={onOddsClick}
-                                                isSelected={checkSelected(`${match.id}-Comeback Win-${val}`)}
+                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Win")}-${val}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Win")}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
@@ -296,7 +296,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 matchLabel={matchLabel}
                                                 showLabel={true}
                                                 onClick={onOddsClick}
-                                                isSelected={checkSelected(`${match.id}-Comeback Team-${sIdx + 1}`)}
+                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Team")}-${sIdx + 1}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Team")}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
@@ -327,7 +327,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         matchLabel={matchLabel}
                                                         showLabel={true}
                                                         onClick={onOddsClick}
-                                                        isSelected={checkSelected(`${match.id}-${prop.name}-${opt}`)}
+                                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(prop.name)}-${opt}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, prop.name)}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
@@ -355,7 +355,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                     matchLabel={matchLabel}
                                                     showLabel
                                                     onClick={onOddsClick}
-                                                    isSelected={checkSelected(`${match.id}-${propName}-${sIdx + 1}`)}
+                                                    isSelected={checkSelected(`${match.id}-${normalizeMarketName(propName)}-${sIdx + 1}`)}
                                                     isCorrelated={checkIsCorrelated?.(match.id, propName)}
                                                     className="h-full w-full bg-transparent border-0 rounded-none hover:bg-white/[0.03]"
                                                 />
