@@ -29,6 +29,7 @@ interface VirtualsClientProps {
     user?: { id: string; email: string };
     profile?: { balance: number; currency: string; bonusBalance?: number };
     schools: VirtualSchool[];
+    userSeed?: number; // Unique per user
 }
 
 const MAX_STAKE = 5000;
@@ -171,8 +172,10 @@ const normalizeSchoolName = (name: string) => {
         .trim();
 }
 
-export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
+export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClientProps) {
     const router = useRouter()
+
+    // Core Game State
     const [activeTab, setActiveTab] = useState<'all' | 'regional' | 'national'>('all')
     const [activeMarket, setActiveMarket] = useState<
         'winner' |
@@ -194,7 +197,6 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     const [currentRound, setCurrentRound] = useState(() => {
         const now = Date.now()
         const cycleTime = 60000 // 1 minute
-        return Math.floor(now / cycleTime)
         return Math.floor(now / cycleTime)
     })
 
@@ -229,9 +231,13 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     }, [currentRound, activeSchools]) // Re-run if schools change
 
 
+    const recentResults = useMemo(() => {
+        return getRecentVirtualResults(6, schools, currentRound, userSeed)
+    }, [currentRound, schools, userSeed])
+
     const { matches, outcomes } = useMemo(() => {
-        return generateVirtualMatches(6, activeSchools, currentRound, aiStrengths)
-    }, [currentRound, activeSchools, aiStrengths])
+        return generateVirtualMatches(8, schools, currentRound, aiStrengths, userSeed);
+    }, [currentRound, schools, aiStrengths, userSeed])
 
     // Keep outcomes in a ref for access during simulation without triggering re-renders
     const outcomesRef = useRef<VirtualMatchOutcome[]>(outcomes)
@@ -265,6 +271,11 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const isSimulatingRef = useRef(false)
 
+
+    const activeOutcome = useMemo(() => {
+        if (!activeLiveMatch) return null;
+        return simulateMatch(currentRound, matches.findIndex(m => m.id === activeLiveMatch), schools, activeLiveMatch.includes('regional') ? 'regional' : 'national', aiStrengths, userSeed);
+    }, [activeLiveMatch, currentRound, matches, schools, aiStrengths, userSeed])
 
     const filteredMatches = useMemo(() => {
         if (activeTab === 'all') return matches
@@ -1440,7 +1451,9 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                                     <div className="text-slate-300 font-mono text-sm">
                                                         GHS {(() => {
                                                             const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
-                                                            const potential = calculateTotalOdds(selections) * totalStake;
+                                                            const potential = betMode === 'single'
+                                                                ? selections.reduce((acc, s) => acc + (globalStake * s.odds), 0)
+                                                                : calculateTotalOdds(selections) * globalStake;
                                                             const cappedWin = Math.min(potential, totalStake * 10, totalStake + MAX_PROFIT_VIRTUAL);
                                                             return Math.max(0, cappedWin - totalStake).toFixed(2);
                                                         })()}
@@ -1453,7 +1466,10 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                                         <span className="text-sm">
                                                             GHS {(() => {
                                                                 const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
-                                                                const potential = calculateTotalOdds(selections) * totalStake;
+                                                                const potential = betMode === 'single'
+                                                                    ? selections.reduce((acc, s) => acc + (globalStake * s.odds), 0)
+                                                                    : calculateTotalOdds(selections) * globalStake;
+
                                                                 // Cap 1: 10x Stake
                                                                 const cap1 = totalStake * 10;
                                                                 // Cap 2: Absolute Profit
@@ -1465,7 +1481,7 @@ export function VirtualsClient({ schools, profile }: VirtualsClientProps) {
                                                             })()}
                                                         </span>
                                                         {balanceType === 'gift' && (
-                                                            <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Stake deducted from win</span>
+                                                            <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Profit only credited (Stake deducted)</span>
                                                         )}
                                                     </div>
                                                 </div>

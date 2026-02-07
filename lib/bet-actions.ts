@@ -38,6 +38,11 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
     const { getMatchLockStatus } = await import("@/lib/match-utils")
 
     for (const selection of selections) {
+        // Skip DB check for virtual matches as they are ephemeral
+        if (selection.matchId.startsWith('vmt-')) {
+            continue;
+        }
+
         const matchData = await db.select().from(matches)
             .where(eq(matches.id, selection.matchId))
             .limit(1)

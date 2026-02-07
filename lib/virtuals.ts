@@ -67,9 +67,10 @@ export function simulateMatch(
     index: number,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     category: 'regional' | 'national' = 'national',
-    aiStrengths: Record<string, number> = {} // New Param for AI Memory
+    aiStrengths: Record<string, number> = {}, // New Param for AI Memory
+    userSeed: number = 0 // New Param for Uniqueness per User
 ): VirtualMatchOutcome {
-    const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000);
+    const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000) + userSeed;
 
     let selectedSchools: VirtualSchool[] = [];
 
@@ -549,7 +550,8 @@ export function generateVirtualMatches(
     count: number = 8,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     roundId: number,
-    aiStrengths: Record<string, number> = {} // Added AI param
+    aiStrengths: Record<string, number> = {}, // Added AI param
+    userSeed: number = 0 // New Param
 ): { matches: Match[], outcomes: VirtualMatchOutcome[] } { // Changed Return Type
     const matches: Match[] = [];
     const outcomes: VirtualMatchOutcome[] = [];
@@ -557,7 +559,7 @@ export function generateVirtualMatches(
 
     for (let i = 0; i < count; i++) {
         const category = i < count / 2 ? 'regional' : 'national';
-        const outcome = simulateMatch(roundId, i, schoolsList, category, aiStrengths);
+        const outcome = simulateMatch(roundId, i, schoolsList, category, aiStrengths, userSeed);
         matches.push(mapOutcomeToMatch(outcome, roundId * cycleTime));
         outcomes.push(outcome);
     }
@@ -565,7 +567,7 @@ export function generateVirtualMatches(
     return { matches, outcomes };
 }
 
-export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS): Match | undefined {
+export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS, userSeed: number = 0): Match | undefined {
     if (!id.startsWith("vmt-")) return undefined;
     const parts = id.split("-");
     if (parts.length < 3) return undefined;
@@ -575,18 +577,18 @@ export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = D
     const category = (parts[3] as 'regional' | 'national') || 'national';
     const cycleTime = 60000;
 
-    const outcome = simulateMatch(roundId, index, schoolsList, category);
+    const outcome = simulateMatch(roundId, index, schoolsList, category, {}, userSeed);
     return mapOutcomeToMatch(outcome, roundId * cycleTime);
 }
 
-export function getRecentVirtualResults(count: number = 3, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS, roundId: number): VirtualResult[] {
+export function getRecentVirtualResults(count: number = 3, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS, roundId: number, userSeed: number = 0): VirtualResult[] {
     const results: VirtualResult[] = [];
     const cycleTime = 60000;
 
     for (let i = 1; i <= count; i++) {
         const id = roundId - i;
         (['regional', 'national'] as const).forEach(cat => {
-            const outcome = simulateMatch(id, 0, schoolsList, cat);
+            const outcome = simulateMatch(id, 0, schoolsList, cat, {}, userSeed);
 
             results.push({
                 id: `vr-${id}-${cat}`,

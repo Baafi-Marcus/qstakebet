@@ -17,6 +17,7 @@ export default async function VirtualsPage() {
 
     const session = await auth()
     let profile: { balance: number; bonusBalance?: number; currency: string } = { balance: 0, bonusBalance: 0, currency: "GHS" }
+    let userSeed = 0
 
     if (session?.user) {
         const wallet = await getUserWalletBalance()
@@ -25,7 +26,11 @@ export default async function VirtualsPage() {
             bonusBalance: wallet.bonusBalance,
             currency: "GHS"
         }
+
+        // Simple numeric seed from user ID
+        const userId = session.user.id || "0"
+        userSeed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
     }
 
-    return <VirtualsClient schools={schools} profile={profile} />
+    return <VirtualsClient schools={schools} profile={profile} userSeed={userSeed} />
 }
