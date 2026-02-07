@@ -674,6 +674,11 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     console.error("Failed to settle slip:", slip.id, e)
                 }
             })
+
+            // REFRESH BALANCE: Small delay to allow DB settlement to commit
+            setTimeout(() => {
+                router.refresh()
+            }, 1000)
         }
 
         setLastOutcome({ allRoundResults, roundId: currentRound, resolvedSlips, results: flattenedResults })
@@ -1075,42 +1080,86 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                     )}
                                 </div>
 
-                                {/* LIVE OTHER RESULTS STRIP */}
+                                {/* LIVE OTHER RESULTS STRIP (Vertical REDESIGN) */}
                                 {isSimulating && (
-                                    <div className="bg-slate-900/50 border-t border-white/5 py-2 px-4 overflow-x-auto no-scrollbar flex items-center gap-6 animate-in slide-in-from-bottom duration-500">
+                                    <div className="bg-slate-900 border-t border-white/5 animate-in slide-in-from-bottom duration-500 max-h-[300px] overflow-y-auto no-scrollbar">
+                                        <div className="px-4 py-2 sticky top-0 bg-slate-900/95 backdrop-blur z-20 border-b border-white/5 flex items-center justify-between shadow-lg">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Matches</span>
+                                            </div>
+                                        </div>
                                         {matches.map(m => {
                                             if (m.id === activeLiveMatch) return null;
-                                            const stage = m.id.split("-")[3] as 'regional' | 'national';
-                                            const outcome = simulateMatch(parseInt(m.id.split("-")[1]), parseInt(m.id.split("-")[2]), schools, stage, aiStrengths);
-                                            const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
-                                            const scores = outcome.rounds[currentRoundIdx]?.scores || [0, 0, 0];
 
-                                            // Show Slips Status if user bet on this
-                                            const userBetOnThis = pendingSlips.some(s => s.selections.some(sel => sel.matchId === m.id));
+                                            const stage = m.id.split("-")[3] as 'regional' | 'national';
+                                            // Ensure same AI/Seed consistent outcomes
+                                            const outcome = simulateMatch(parseInt(m.id.split("-")[1]), parseInt(m.id.split("-")[2]), schools, stage, aiStrengths);
+
+                                            // Current progress index (0-4)
+                                            const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+
+                                            // Calculate TOTAL scores up to current round
+                                            const roundsSoFar = outcome.rounds.slice(0, currentRoundIdx + 1);
+                                            const totalScoreA = roundsSoFar.reduce((acc, r) => acc + r.scores[0], 0);
+                                            const totalScoreB = roundsSoFar.reduce((acc, r) => acc + r.scores[1], 0);
 
                                             return (
-                                                <div key={m.id} className="flex flex-col items-center gap-1.5 min-w-[100px] border-r border-white/5 last:border-0 px-3 relative h-full justify-center">
-                                                    <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-                                                        {m.participants.map((p, pIdx) => (
-                                                            <React.Fragment key={p.schoolId}>
-                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                                                                    {getSchoolAcronym(p.name, m.participants.map(part => part.name))}
+                                                <div key={m.id} className="relative p-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
+                                                    {/* Row Content */}
+                                                    <div className="flex items-center justify-between gap-4">
+
+                                                        {/* Team Names & Total Scores */}
+                                                        <div className="flex-1 flex flex-col gap-1.5">
+                                                            {/* Team A */}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className={cn(
+                                                                    "text-xs font-bold uppercase truncate max-w-[150px]",
+                                                                    totalScoreA > totalScoreB ? "text-white" : "text-slate-400"
+                                                                )}>
+                                                                    {m.participants[0].name}
                                                                 </span>
-                                                                {pIdx < 2 && <span className="text-[6px] text-white/20 font-bold mx-0.5">.</span>}
-                                                            </React.Fragment>
-                                                        ))}
+                                                                <span className="text-sm font-black text-white tabular-nums">{totalScoreA}</span>
+                                                            </div>
+
+                                                            {/* Team B */}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className={cn(
+                                                                    "text-xs font-bold uppercase truncate max-w-[150px]",
+                                                                    totalScoreB > totalScoreA ? "text-white" : "text-slate-400"
+                                                                )}>
+                                                                    {m.participants[1].name}
+                                                                </span>
+                                                                <span className="text-sm font-black text-white tabular-nums">{totalScoreB}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Per-Round Scores (Small) */}
+                                                        <div className="flex flex-col items-end gap-0.5 min-w-[60px]">
+                                                            <span className="text-[8px] font-black uppercase text-slate-600 tracking-wider mb-0.5">Rounds</span>
+                                                            <div className="flex gap-1">
+                                                                {roundsSoFar.map((r, idx) => (
+                                                                    <div key={idx} className="flex flex-col items-center">
+                                                                        <span className={cn(
+                                                                            "text-[9px] font-mono leading-none",
+                                                                            idx === currentRoundIdx ? "text-emerald-400 animate-pulse" : "text-slate-500"
+                                                                        )}>
+                                                                            {r.scores[0]}
+                                                                        </span>
+                                                                        <span className={cn(
+                                                                            "text-[9px] font-mono leading-none",
+                                                                            idx === currentRoundIdx ? "text-emerald-400 animate-pulse" : "text-slate-500"
+                                                                        )}>
+                                                                            {r.scores[1]}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
                                                     </div>
-                                                    <div className="flex items-center justify-center gap-3 bg-black/40 px-2 py-0.5 rounded border border-white/5">
-                                                        {m.participants.map((p, pIdx) => (
-                                                            <span key={p.schoolId} className={cn(
-                                                                "text-[10px] font-black font-mono tabular-nums",
-                                                                scores[pIdx] === Math.max(...scores) ? "text-emerald-400 font-bold" : "text-slate-500"
-                                                            )}>
-                                                                {scores[pIdx]}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                    {userBetOnThis && (
+                                                    {/* Show Slips Status if user bet on this */}
+                                                    {pendingSlips.some(s => s.selections.some(sel => sel.matchId === m.id)) && (
                                                         <div className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
                                                     )}
                                                 </div>
