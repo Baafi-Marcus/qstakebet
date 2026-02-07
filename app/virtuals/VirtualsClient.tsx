@@ -853,9 +853,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
             ) as { success: true; betId: string } | { success: false; error: string };
 
             if (result.success) {
+                const totalOdds = calculateTotalOdds(finalSelections);
+                const potPayout = betMode === 'single'
+                    ? finalSelections.reduce((acc, s) => acc + (globalStake * (s.odds || 1)), 0)
+                    : totalStakeUsed * totalOdds;
+
                 const newSlip: VirtualBet = {
                     id: result.betId || `slip-${Date.now()}`,
-                    selections: finalSelections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (globalStake / selections.length) })),
+                    selections: finalSelections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (totalStakeUsed / selections.length) })),
                     mode: betMode,
                     totalStake: totalStakeUsed,
                     totalOdds: totalOdds,
@@ -864,7 +869,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     time: new Date().toLocaleTimeString(),
                     status: 'PENDING',
                     stake: totalStakeUsed,
-                    potentialPayout: totalStakeUsed * totalOdds,
+                    potentialPayout: potPayout,
                     timestamp: Date.now(),
                     roundId: currentRound
                 }
@@ -1010,12 +1015,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                             <div className="px-2 py-0.5 bg-white/10 rounded text-[8px] font-black text-white/40 uppercase tracking-widest">
                                                 Round {currentRoundIdx + 1}
                                             </div>
-                                            <button
-                                                onClick={() => setActiveLiveMatch(null)}
-                                                className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
-                                            >
-                                                <ArrowLeft className="h-4 w-4" />
-                                            </button>
+                                            {!isSimulating && (
+                                                <button
+                                                    onClick={() => setActiveLiveMatch(null)}
+                                                    className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
+                                                >
+                                                    <ArrowLeft className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center gap-4 md:gap-10 w-full max-w-xl justify-center mb-4">
@@ -1050,13 +1057,57 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                     {/* Skip Button - Compact inside player */}
                                     {!((simulationProgress >= 60)) && (
                                         <button
-                                            onClick={skipToResult}
+                                            onClick={kickoff}
                                             className="absolute bottom-4 right-4 bg-black/40 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
                                         >
                                             Skip
                                         </button>
                                     )}
                                 </div>
+
+                                {/* LIVE OTHER RESULTS STRIP */}
+                                {isSimulating && (
+                                    <div className="bg-slate-900/50 border-t border-white/5 py-2 px-4 overflow-x-auto no-scrollbar flex items-center gap-6 animate-in slide-in-from-bottom duration-500">
+                                        {matches.map(m => {
+                                            if (m.id === activeLiveMatch) return null;
+                                            const stage = m.id.split("-")[3] as 'regional' | 'national';
+                                            const outcome = simulateMatch(parseInt(m.id.split("-")[1]), parseInt(m.id.split("-")[2]), schools, stage, aiStrengths);
+                                            const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+                                            const scores = outcome.rounds[currentRoundIdx]?.scores || [0, 0, 0];
+
+                                            // Show Slips Status if user bet on this
+                                            const userBetOnThis = pendingSlips.some(s => s.selections.some(sel => sel.matchId === m.id));
+
+                                            return (
+                                                <div key={m.id} className="flex flex-col items-center gap-1.5 min-w-[100px] border-r border-white/5 last:border-0 px-3 relative h-full justify-center">
+                                                    <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
+                                                        {m.participants.map((p, pIdx) => (
+                                                            <React.Fragment key={p.schoolId}>
+                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+                                                                    {getSchoolAcronym(p.name, m.participants.map(part => part.name))}
+                                                                </span>
+                                                                {pIdx < 2 && <span className="text-[6px] text-white/20 font-bold mx-0.5">.</span>}
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex items-center justify-center gap-3 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                                                        {m.participants.map((p, pIdx) => (
+                                                            <span key={p.schoolId} className={cn(
+                                                                "text-[10px] font-black font-mono tabular-nums",
+                                                                scores[pIdx] === Math.max(...scores) ? "text-emerald-400 font-bold" : "text-slate-500"
+                                                            )}>
+                                                                {scores[pIdx]}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    {userBetOnThis && (
+                                                        <div className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}
@@ -1112,7 +1163,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                         onOddsClick={toggleSelection}
                                         checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
                                         checkIsCorrelated={() => false}
-                                        onMoreClick={(m) => setSelectedMatchForDetails(m)}
+                                        onMoreClick={(m) => !isSimulating && setSelectedMatchForDetails(m)}
                                         isSimulating={isSimulating}
                                         isFinished={!isSimulating && lastOutcome?.roundId === currentRound}
                                         currentRoundIdx={Math.min(4, Math.floor((simulationProgress / 60) * 5))}
@@ -1352,6 +1403,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                     <div
                                                         key={sel.selectionId}
                                                         onClick={() => {
+                                                            if (isSimulating) return;
                                                             const match = matches.find(m => m.id === sel.matchId);
                                                             if (match) {
                                                                 setSelectedMatchForDetails(match);
@@ -1455,21 +1507,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                 </div>
 
                                                 <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <span>Max Profit</span>
+                                                    <span>Max. Business Payout</span>
                                                     <div className="text-slate-300 font-mono text-sm">
-                                                        GHS {(() => {
-                                                            const totalStake = betMode === 'single' ? (globalStake * selections.length) : globalStake;
-                                                            const potential = betMode === 'single'
-                                                                ? selections.reduce((acc, s) => acc + (globalStake * s.odds), 0)
-                                                                : calculateTotalOdds(selections) * globalStake;
-                                                            const cappedWin = Math.min(potential, totalStake * 10, totalStake + MAX_PROFIT_VIRTUAL);
-                                                            return Math.max(0, cappedWin - totalStake).toFixed(2);
-                                                        })()}
+                                                        GHS {MAX_PROFIT_VIRTUAL.toFixed(2)}
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <span>Potential Win</span>
+                                                    <span>Potential Return</span>
                                                     <div className="text-green-400 font-mono text-right flex flex-col items-end">
                                                         <span className="text-sm">
                                                             GHS {(() => {
@@ -1478,19 +1523,20 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                                     ? selections.reduce((acc, s) => acc + (globalStake * s.odds), 0)
                                                                     : calculateTotalOdds(selections) * globalStake;
 
-                                                                // Cap 1: 10x Stake
-                                                                const cap1 = totalStake * 10;
-                                                                // Cap 2: Absolute Profit
+                                                                // NO 10x CAP (Align with Real Sports)
+                                                                // Only Absolute Profit Cap (Business Safety)
                                                                 const cap2 = totalStake + MAX_PROFIT_VIRTUAL;
-                                                                const totalWin = Math.min(potential, cap1, cap2);
+                                                                const totalWin = Math.min(potential, cap2);
 
                                                                 // GIFT RULE: Deduct stake from winnings
                                                                 const payoutDisplay = (balanceType === 'gift' ? Math.max(0, totalWin - totalStake) : totalWin).toFixed(2);
                                                                 return payoutDisplay;
                                                             })()}
                                                         </span>
-                                                        {balanceType === 'gift' && (
+                                                        {balanceType === 'gift' ? (
                                                             <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Profit only credited (Stake deducted)</span>
+                                                        ) : (
+                                                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-tighter">Total Payout (Stake + Profit)</span>
                                                         )}
                                                     </div>
                                                 </div>

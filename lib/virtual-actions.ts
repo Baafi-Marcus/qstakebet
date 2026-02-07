@@ -176,9 +176,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
                 if (gameReturns[matchId] > MAX_GAME_PAYOUT) gameReturns[matchId] = MAX_GAME_PAYOUT
             })
 
-            const cappedReturn = Object.values(gameReturns).reduce((a, b) => a + b, 0)
-            const maxAllowedReturn = bet.stake * 10
-            totalReturns = Math.min(cappedReturn, maxAllowedReturn)
+            totalReturns = Object.values(gameReturns).reduce((a, b) => a + b, 0)
 
             // Small Book Cap
             const profit = totalReturns - bet.stake
@@ -201,9 +199,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             })
 
             if (allWon) {
-                const rawReturn = bet.potentialPayout
-                const maxAllowedReturn = bet.stake * 10
-                totalReturns = Math.min(rawReturn, maxAllowedReturn)
+                totalReturns = bet.potentialPayout
 
                 const profit = totalReturns - bet.stake
                 if (profit > MAX_PROFIT_VIRTUAL) {
