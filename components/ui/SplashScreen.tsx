@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Trophy } from "lucide-react"
 
 export function SplashScreen({ children }: { children: React.ReactNode }) {
     const [show, setShow] = useState(true)
@@ -31,33 +30,26 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
         <>
             <div className={cn(
                 "fixed inset-0 z-[9999] bg-[#0f1115] flex items-center justify-center transition-opacity duration-700 ease-out",
-                animate ? "opacity-100" : "opacity-0" // Fades out at the end if controlled from parent, but here we unmount. 
-                // We need a separate state for 'fading out' if we want a smooth exit, 
-                // but standard opacity transition on unmount requires AnimatePresence or simpler CSS handling.
-                // For simplicity, we just unmount after delay. 
-                // To improve, we can add a 'fading' state.
+                animate ? "opacity-100" : "opacity-0"
             )}>
-                {/* We can use a CSS animation for the fade out if we want, but for now let's focus on the entry zoom */}
-
                 <div className={cn(
-                    "flex items-center gap-4 transition-all duration-[2000ms] cubic-bezier(0.16, 1, 0.3, 1) transform",
+                    "flex flex-col items-center justify-center transition-all duration-[2000ms] cubic-bezier(0.16, 1, 0.3, 1) transform",
                     animate ? "scale-100 opacity-100" : "scale-50 opacity-0"
                 )}>
-                    {/* Small Design Logo (Icon) */}
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-purple-500/30 blur-xl rounded-full animate-pulse" />
-                        <div className="relative h-14 w-14 md:h-16 md:w-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3">
-                            <Trophy className="h-7 w-7 md:h-8 md:w-8 text-white drop-shadow-md" />
-                        </div>
-                    </div>
 
-                    {/* Full Text Branding */}
-                    <div className="flex flex-col">
-                        <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white">
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">QSTAKE</span>
+                    {/* Full Text Branding - No Icon */}
+                    <div className="flex flex-col items-center relative">
+                        {/* Background Glow */}
+                        <div className="absolute inset-0 bg-purple-500/20 blur-[100px] rounded-full animate-pulse" />
+
+                        <h1 className="relative text-5xl md:text-8xl tracking-tight text-white font-russo uppercase">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 animate-gradient-x">QSTAKE</span>
                             <span className="text-white">bet</span>
                         </h1>
-                        <div className="h-1 w-full bg-gradient-to-r from-purple-600 to-transparent rounded-full mt-1 animate-[width_2s_ease-out]" />
+
+                        <p className="relative text-slate-500 text-xs md:text-sm font-bold uppercase tracking-[0.5em] mt-4 animate-pulse">
+                            Premium Prediction Platform
+                        </p>
                     </div>
                 </div>
             </div>
