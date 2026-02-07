@@ -77,48 +77,7 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Balance Card */}
-            <div className="px-6 pb-8">
-                <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl p-6 border border-white/10 shadow-lg relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-10 -mt-10" />
 
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <p className="text-purple-200 text-xs font-bold uppercase tracking-widest mb-1">Total Balance</p>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-3xl font-black text-white tracking-tight">
-                                        {showBalance ? `GHS ${balance.toFixed(2)}` : '••••••'}
-                                    </h2>
-                                    <button
-                                        onClick={() => setShowBalance(!showBalance)}
-                                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-purple-200"
-                                    >
-                                        {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link
-                                href="/account/deposit"
-                                className="flex items-center justify-center gap-2 bg-white text-purple-900 py-3 rounded-xl font-black text-sm uppercase hover:bg-slate-200 transition-colors shadow-lg shadow-black/20"
-                            >
-                                <Wallet className="h-4 w-4" />
-                                Deposit
-                            </Link>
-                            <Link
-                                href="/account/withdraw"
-                                className="flex items-center justify-center gap-2 bg-purple-800/50 text-white border border-purple-400/30 py-3 rounded-xl font-black text-sm uppercase hover:bg-purple-800 transition-colors"
-                            >
-                                <ArrowUpFromLine className="h-4 w-4" />
-                                Withdraw
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Navigation Grid */}
             <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
