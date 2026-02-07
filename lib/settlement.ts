@@ -220,7 +220,7 @@ export async function settleMatch(matchId: string) {
 /**
  * Intelligent Market Settlement Logic
  */
-function isSelectionWinner(
+export function isSelectionWinner(
     selectionId: string,
     marketName: string,
     label: string,

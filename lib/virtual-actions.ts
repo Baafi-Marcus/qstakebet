@@ -113,3 +113,152 @@ export async function getAIStrengths(schoolNames: string[]) {
         return [];
     }
 }
+export async function settleVirtualBet(betId: string, roundId: number, userSeed: number) {
+    try {
+        const { auth } = await import("@/lib/auth")
+        const session = await auth()
+        if (!session?.user?.id) {
+            return { success: false, error: "Unauthorized" }
+        }
+
+        const { bets, wallets, transactions } = await import("@/lib/db/schema")
+        const { sql } = await import("drizzle-orm")
+        const { generateVirtualMatches } = await import("@/lib/virtuals")
+        const { isSelectionWinner } = await import("@/lib/settlement")
+
+        // 1. Fetch Bet
+        const betData = await db.select().from(bets).where(eq(bets.id, betId)).limit(1)
+        if (betData.length === 0) return { success: false, error: "Bet not found" }
+
+        const bet = betData[0]
+        if (bet.status !== 'pending') return { success: true, message: "Already settled" }
+        if (bet.userId !== session.user.id) return { success: false, error: "Forbidden" }
+
+        // 2. Regenerate Outcomes
+        const { outcomes } = generateVirtualMatches(8, [], roundId, {}, userSeed)
+
+        // 3. Evaluate Results
+        const MAX_PROFIT_VIRTUAL = 5000
+        const MAX_GAME_PAYOUT = 10000
+        const selections = bet.selections as any[]
+        const isMulti = bet.status === 'pending' && selections.length > 1 && !bet.id.includes('single') // Simplified mode check or use potential payout logic
+
+        // We need to know if it was 'single' or 'multi' mode. 
+        // In VirtualsClient we use betMode. If we didn't save it in DB, we can infer from payout logic.
+        // Actually, let's assume if potentialPayout == stake * totalOdds (ignoring bonus) it's multi.
+        // But since we updated placeBet to take 'mode', let's check if we can add 'mode' to the bets table?
+        // For now, we can check if it's a multi based on selections length and potential payout.
+        const totalOdds = selections.reduce((acc, s) => acc * s.odds, 1)
+        const inferredMulti = Math.abs(bet.potentialPayout - (bet.stake * totalOdds)) < 0.01
+
+        let isWon = false
+        let totalReturns = 0
+
+        if (!inferredMulti && selections.length > 1) {
+            // SINGLE Mode logic
+            const stakePerSelection = bet.stake / selections.length
+            const gameReturns: Record<string, number> = {}
+
+            selections.forEach(s => {
+                const outcome = outcomes.find(o => o.id === s.matchId)
+                if (outcome) {
+                    const match = { sportType: 'football', participants: [] } as any // Dummy for helper
+                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, match, outcome)
+                    if (winner) {
+                        const amount = s.odds * stakePerSelection
+                        gameReturns[s.matchId] = (gameReturns[s.matchId] || 0) + amount
+                    }
+                }
+            })
+
+            // Aggregate Payout Cap (per match)
+            Object.keys(gameReturns).forEach(matchId => {
+                if (gameReturns[matchId] > MAX_GAME_PAYOUT) gameReturns[matchId] = MAX_GAME_PAYOUT
+            })
+
+            const cappedReturn = Object.values(gameReturns).reduce((a, b) => a + b, 0)
+            const maxAllowedReturn = bet.stake * 10
+            totalReturns = Math.min(cappedReturn, maxAllowedReturn)
+
+            // Small Book Cap
+            const profit = totalReturns - bet.stake
+            if (profit > MAX_PROFIT_VIRTUAL) {
+                totalReturns = MAX_PROFIT_VIRTUAL + bet.stake
+            }
+            isWon = totalReturns > 0
+        } else {
+            // MULTI Mode logic (or 1 selection)
+            let allWon = true
+            selections.forEach(s => {
+                const outcome = outcomes.find(o => o.id === s.matchId)
+                if (!outcome) {
+                    allWon = false
+                    return
+                }
+                const match = { sportType: 'football', participants: [] } as any
+                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, match, outcome)
+                if (!winner) allWon = false
+            })
+
+            if (allWon) {
+                const rawReturn = bet.potentialPayout
+                const maxAllowedReturn = bet.stake * 10
+                totalReturns = Math.min(rawReturn, maxAllowedReturn)
+
+                const profit = totalReturns - bet.stake
+                if (profit > MAX_PROFIT_VIRTUAL) {
+                    totalReturns = MAX_PROFIT_VIRTUAL + bet.stake
+                }
+            }
+            isWon = allWon && totalReturns > 0
+        }
+
+        // 4. Update Database
+        const finalStatus = isWon ? 'won' : 'lost'
+        let payoutAmount = isWon ? totalReturns : 0
+
+        // GIFT RULE: Deduct stake from winnings
+        if (isWon && bet.isBonusBet) {
+            payoutAmount = Math.max(0, payoutAmount - bet.stake)
+        }
+
+        return await db.transaction(async (tx) => {
+            await tx.update(bets).set({
+                status: finalStatus,
+                settledAt: new Date(),
+                updatedAt: new Date()
+            }).where(eq(bets.id, betId))
+
+            if (isWon && payoutAmount > 0) {
+                const walletData = await tx.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                if (walletData.length > 0) {
+                    const wallet = walletData[0]
+                    const isBonusWin = bet.isBonusBet
+
+                    await tx.update(wallets).set({
+                        balance: isBonusWin ? wallet.balance : sql`${wallets.balance} + ${payoutAmount}`,
+                        lockedBalance: isBonusWin ? sql`${wallets.lockedBalance} + ${payoutAmount}` : wallet.lockedBalance,
+                        updatedAt: new Date()
+                    }).where(eq(wallets.userId, bet.userId))
+
+                    await tx.insert(transactions).values({
+                        id: `txn-v-${Math.random().toString(36).substr(2, 9)}`,
+                        userId: bet.userId,
+                        walletId: wallet.id,
+                        amount: payoutAmount,
+                        type: "bet_payout",
+                        balanceBefore: isBonusWin ? wallet.lockedBalance : wallet.balance,
+                        balanceAfter: isBonusWin ? Number(wallet.lockedBalance) + payoutAmount : Number(wallet.balance) + payoutAmount,
+                        reference: bet.id,
+                        description: `Virtual Winnings: ${betId}`
+                    })
+                }
+            }
+            return { success: true, status: finalStatus, payout: payoutAmount }
+        })
+
+    } catch (error) {
+        console.error("Virtual settlement error:", error)
+        return { success: false, error: "Failed to settle virtual bet" }
+    }
+}

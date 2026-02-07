@@ -143,24 +143,28 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             })
 
             // 4. Deduct balances
-            if (bonusId) {
-                const { bonuses } = await import("@/lib/db/schema")
-                const bonusData = await tx.select().from(bonuses).where(eq(bonuses.id, bonusId)).limit(1)
+            if (bonusAmount > 0) {
+                // If a specific bonus voucher was used, update its individual record
+                if (bonusId) {
+                    const { bonuses } = await import("@/lib/db/schema")
+                    const bonusData = await tx.select().from(bonuses).where(eq(bonuses.id, bonusId)).limit(1)
 
-                if (bonusData.length > 0) {
-                    const currentBonus = bonusData[0]
-                    const newBonusAmount = Math.max(0, currentBonus.amount - bonusAmount)
+                    if (bonusData.length > 0) {
+                        const currentBonus = bonusData[0]
+                        const newBonusAmount = Math.max(0, currentBonus.amount - bonusAmount)
 
-                    await tx.update(bonuses)
-                        .set({
-                            amount: newBonusAmount,
-                            status: newBonusAmount <= 0 ? "used" : "active",
-                            usedAt: new Date(),
-                            betId: betId
-                        })
-                        .where(eq(bonuses.id, bonusId))
+                        await tx.update(bonuses)
+                            .set({
+                                amount: newBonusAmount,
+                                status: newBonusAmount <= 0 ? "used" : "active",
+                                usedAt: new Date(),
+                                betId: betId
+                            })
+                            .where(eq(bonuses.id, bonusId))
+                    }
                 }
 
+                // ALWAYS deduct from the wallet's cumulative bonusBalance if bonusAmount > 0
                 await tx.update(wallets)
                     .set({
                         bonusBalance: sql`${wallets.bonusBalance} - ${bonusAmount}`,
