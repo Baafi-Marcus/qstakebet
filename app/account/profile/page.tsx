@@ -78,6 +78,31 @@ export default function ProfilePage() {
             </div>
 
 
+            {/* Balance Card */}
+            <div className="px-6 mb-6">
+                <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Available Balance</p>
+                        <p className="text-3xl font-black text-white tracking-tighter">GHS {balance.toFixed(2)}</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Link
+                            href="/account/deposit"
+                            className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95"
+                        >
+                            <ArrowUpFromLine className="h-4 w-4" />
+                            Deposit
+                        </Link>
+                        <Link
+                            href="/account/withdraw"
+                            className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95"
+                        >
+                            <ArrowRightLeft className="h-4 w-4" />
+                            Withdraw
+                        </Link>
+                    </div>
+                </div>
+            </div>
 
             {/* Navigation Grid */}
             <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
