@@ -176,8 +176,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             selections.forEach(s => {
                 const outcome = outcomes.find(o => o.id === s.matchId) as any
                 if (outcome) {
-                    const match = { sportType: 'football', participants: [] } as any // Dummy for helper
-                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, match, outcome)
+                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz' } as any, outcome)
                     if (winner) {
                         const amount = s.odds * stakePerSelection
                         gameReturns[s.matchId] = (gameReturns[s.matchId] || 0) + amount
@@ -201,8 +200,7 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
                     allWon = false
                     return
                 }
-                const match = { sportType: 'football', participants: [] } as any
-                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, match, outcome)
+                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz' } as any, outcome)
                 if (!winner) allWon = false
             })
 
@@ -232,11 +230,10 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
                 const walletData = await tx.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
                 if (walletData.length > 0) {
                     const wallet = walletData[0]
-                    const isBonusWin = bet.isBonusBet
 
+                    // Unified Balance Update: Winnings always go to main balance
                     await tx.update(wallets).set({
-                        balance: isBonusWin ? wallet.balance : sql`${wallets.balance} + ${payoutAmount}`,
-                        lockedBalance: isBonusWin ? sql`${wallets.lockedBalance} + ${payoutAmount}` : wallet.lockedBalance,
+                        balance: sql`${wallets.balance} + ${payoutAmount}`,
                         updatedAt: new Date()
                     }).where(eq(wallets.userId, bet.userId))
 
@@ -246,8 +243,8 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
                         walletId: wallet.id,
                         amount: payoutAmount,
                         type: "bet_payout",
-                        balanceBefore: isBonusWin ? wallet.lockedBalance : wallet.balance,
-                        balanceAfter: isBonusWin ? Number(wallet.lockedBalance) + payoutAmount : Number(wallet.balance) + payoutAmount,
+                        balanceBefore: wallet.balance,
+                        balanceAfter: Number(wallet.balance) + payoutAmount,
                         reference: bet.id,
                         description: `Virtual Winnings: ${betId}`
                     })

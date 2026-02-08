@@ -170,6 +170,142 @@ const normalizeSchoolName = (name: string) => {
         .trim();
 }
 
+// Helper for checking wins across all 14 markets
+const checkSelectionWin = (selection: VirtualSelection, outcome: VirtualMatchOutcome) => {
+    if (!outcome) return false;
+
+    const { marketName, label } = selection;
+
+    if (marketName === "Match Winner") {
+        const winner = outcome.schools[outcome.winnerIndex];
+        // Map "1", "2", "3" to the actual school name
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(winner);
+    }
+
+    if (marketName === "Total Points") {
+        const total = outcome.totalScores.reduce((a, b) => a + b, 0);
+        const line = parseFloat(label.split(' ')[1]);
+        const type = label.split(' ')[0];
+        return type === "Over" ? total > line : total < line;
+    }
+
+    if (marketName === "Winning Margin") {
+        const sorted = [...outcome.totalScores].sort((a, b) => b - a);
+        const margin = sorted[0] - sorted[1];
+        if (label === "1-10") return margin >= 1 && margin <= 10;
+        if (label === "11-25") return margin >= 11 && margin <= 25;
+        if (label === "26+") return margin >= 26;
+    }
+
+
+    if (marketName === "Perfect Round") {
+        // Any round perfect
+        const isPerfect = outcome.stats.perfectRound.some(p => p);
+        return label === "Yes" ? isPerfect : !isPerfect;
+    }
+
+    // Handle Per-Round Perfect Markets
+    if (marketName.startsWith("Perfect Round ")) {
+        const roundNum = parseInt(marketName.split(" ")[2]); // "Perfect Round 1" -> 1
+        if (!isNaN(roundNum)) {
+            const roundIndex = roundNum - 1;
+            const isPerfect = outcome.stats.perfectRound[roundIndex];
+            return label === "Yes" ? isPerfect : !isPerfect;
+        }
+    }
+
+    if (marketName === "Shutout Round") {
+        const isShutout = outcome.stats.shutoutRound.some(s => s);
+        return label === "Yes" ? isShutout : !isShutout;
+    }
+
+    if (marketName.includes("Winner")) {
+        // "Round 1 Winner" -> "Round 1"
+        const roundNum = parseInt(marketName.split(" ")[1]);
+        const roundIndex = roundNum - 1;
+        const roundScores = outcome.rounds[roundIndex].scores;
+        const maxScore = Math.max(...roundScores);
+        const winnerIdx = roundScores.indexOf(maxScore);
+
+        // Check for draw in round
+        const winnersCount = roundScores.filter(s => s === maxScore).length;
+        if (winnersCount > 1) return false; // Draw = Lost for now
+
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[winnerIdx]);
+    }
+
+    if (marketName === "First Bonus") {
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
+    }
+
+    if (marketName === "Fastest Buzz") {
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
+    }
+
+    if (marketName === "Comeback Win") {
+        const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
+        return label === "Yes" ? isComeback : !isComeback;
+    }
+
+    if (marketName === "Comeback Team") {
+        const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
+        const comebackWinner = isComeback ? outcome.schools[outcome.winnerIndex] : "None";
+        return normalizeSchoolName(label) === normalizeSchoolName(comebackWinner);
+    }
+
+    if (marketName === "Lead Changes") {
+        const line = 2.5;
+        const changes = outcome.stats.leadChanges;
+        const type = label.split(' ')[0];
+        return type === "Over" ? changes > line : changes < line;
+    }
+
+    if (marketName === "Late Surge") {
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.lateSurgeIndex]);
+    }
+
+    if (marketName === "Strong Start") {
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.strongStartIndex]);
+    }
+
+    if (marketName === "Highest Points") {
+        // Total winner
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.winnerIndex]);
+    }
+
+    if (marketName === "Leader After Round 1") {
+        // Check scores after R1
+        const r1Scores = outcome.rounds[0].scores;
+        const max = Math.max(...r1Scores);
+        const winnerIdx = r1Scores.indexOf(max);
+        // Handle draw?
+        const winnersCount = r1Scores.filter(s => s === max).length;
+        if (winnersCount > 1) return false;
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[winnerIdx]);
+    }
+
+
+    return false;
+}
+
 export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClientProps) {
     const router = useRouter()
 
@@ -270,8 +406,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                         totalOdds: bet.totalOdds,
                         potentialPayout: bet.potentialPayout,
                         status: bet.status,
+                        roundId: bet.selections?.[0]?.matchId ? parseInt(bet.selections[0].matchId.split('-')[1]) : 0,
                         results: [], // Results are in selections
                         totalReturns: bet.status === 'won' ? bet.potentialPayout : 0,
+                        totalStake: bet.stake,
                         isGift: bet.isBonusBet
                     }))
                     setBetHistory(virtualBets)
@@ -298,6 +436,54 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
+
+    // NEW: Hydrate history ticket with simulation results when viewed
+    useEffect(() => {
+        if (!viewedHistoryTicket || (viewedHistoryTicket.results && viewedHistoryTicket.results.length > 0)) return;
+
+        const hydrateTicket = () => {
+            // We need to re-simulate the outcomes for this ticket
+            const selections = viewedHistoryTicket.selections;
+            if (!selections || selections.length === 0) return;
+
+            // Extract roundId, category, region from the first selection ID format: vmt-{roundId}-{idx}-{cat}-{reg}
+            const firstId = selections[0].matchId;
+            if (!firstId.startsWith('vmt-')) return;
+
+            const parts = firstId.split('-');
+            const rId = parseInt(parts[1]);
+            const cat = parts[3] as 'national' | 'regional';
+            const regSlug = parts[4];
+            const regName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regSlug)?.region;
+
+            // Generate matches for this round to get the outcomes
+            // We use a high count (15) to ensure we cover all potential match indices
+            const { outcomes } = generateVirtualMatches(15, schools, rId, cat, regName, {}, userSeed);
+
+            const resolvedResults: ResolvedSelection[] = selections.map(s => {
+                const outcome = outcomes.find(o => o.id === s.matchId);
+                if (!outcome) {
+                    return {
+                        ...s,
+                        won: false,
+                        outcome: null as any
+                    };
+                }
+
+                // Reuse the same win check logic
+                const won = checkSelectionWin(s, outcome);
+                return {
+                    ...s,
+                    won,
+                    outcome,
+                };
+            });
+
+            setViewedHistoryTicket(prev => prev ? { ...prev, results: resolvedResults } : null);
+        };
+
+        hydrateTicket();
+    }, [viewedHistoryTicket, schools, userSeed]);
     const [countdown, setCountdown] = useState<'READY' | '3' | '2' | '1' | 'START' | null>(null)
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const isSimulatingRef = useRef(false)
@@ -423,143 +609,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         // Fire and forget - don't await to avoid blocking UI
         updateSchoolStats(allRoundResults).catch(e => console.error("AI Learning Failed:", e));
 
-
-
-        // Helper for checking wins across all 14 markets
-        const checkSelectionWin = (selection: VirtualSelection, outcome: VirtualMatchOutcome) => {
-            if (!outcome) return false;
-
-            const { marketName, label } = selection;
-
-            if (marketName === "Match Winner") {
-                const winner = outcome.schools[outcome.winnerIndex];
-                // Map "1", "2", "3" to the actual school name
-                let predictedWinner = label;
-                if (label === "1") predictedWinner = outcome.schools[0];
-                if (label === "2") predictedWinner = outcome.schools[1];
-                if (label === "3") predictedWinner = outcome.schools[2];
-
-                return normalizeSchoolName(predictedWinner) === normalizeSchoolName(winner);
-            }
-
-            if (marketName === "Total Points") {
-                const total = outcome.totalScores.reduce((a, b) => a + b, 0);
-                const line = parseFloat(label.split(' ')[1]);
-                const type = label.split(' ')[0];
-                return type === "Over" ? total > line : total < line;
-            }
-
-            if (marketName === "Winning Margin") {
-                const sorted = [...outcome.totalScores].sort((a, b) => b - a);
-                const margin = sorted[0] - sorted[1];
-                if (label === "1-10") return margin >= 1 && margin <= 10;
-                if (label === "11-25") return margin >= 11 && margin <= 25;
-                if (label === "26+") return margin >= 26;
-            }
-
-
-            if (marketName === "Perfect Round") {
-                // Any round perfect
-                const isPerfect = outcome.stats.perfectRound.some(p => p);
-                return label === "Yes" ? isPerfect : !isPerfect;
-            }
-
-            // Handle Per-Round Perfect Markets
-            if (marketName.startsWith("Perfect Round ")) {
-                const roundNum = parseInt(marketName.split(" ")[2]); // "Perfect Round 1" -> 1
-                if (!isNaN(roundNum)) {
-                    const roundIndex = roundNum - 1;
-                    const isPerfect = outcome.stats.perfectRound[roundIndex];
-                    return label === "Yes" ? isPerfect : !isPerfect;
-                }
-            }
-
-            if (marketName === "Shutout Round") {
-                const isShutout = outcome.stats.shutoutRound.some(s => s);
-                return label === "Yes" ? isShutout : !isShutout;
-            }
-
-            if (marketName.includes("Winner")) {
-                // "Round 1 Winner" -> "Round 1"
-                const roundNum = parseInt(marketName.split(" ")[1]);
-                const roundIndex = roundNum - 1;
-                const roundScores = outcome.rounds[roundIndex].scores;
-                const maxScore = Math.max(...roundScores);
-                const winnerIdx = roundScores.indexOf(maxScore);
-
-                // Check for draw in round
-                const winnersCount = roundScores.filter(s => s === maxScore).length;
-                if (winnersCount > 1) return false; // Draw = Lost for now
-
-                let predictedWinner = label;
-                if (label === "1") predictedWinner = outcome.schools[0];
-                if (label === "2") predictedWinner = outcome.schools[1];
-                if (label === "3") predictedWinner = outcome.schools[2];
-
-                return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[winnerIdx]);
-            }
-
-            if (marketName === "First Bonus") {
-                let predictedWinner = label;
-                if (label === "1") predictedWinner = outcome.schools[0];
-                if (label === "2") predictedWinner = outcome.schools[1];
-                if (label === "3") predictedWinner = outcome.schools[2];
-                return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
-            }
-
-            if (marketName === "Fastest Buzz") {
-                let predictedWinner = label;
-                if (label === "1") predictedWinner = outcome.schools[0];
-                if (label === "2") predictedWinner = outcome.schools[1];
-                if (label === "3") predictedWinner = outcome.schools[2];
-                return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
-            }
-
-            if (marketName === "Comeback Win") {
-                const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
-                return label === "Yes" ? isComeback : !isComeback;
-            }
-
-            if (marketName === "Comeback Team") {
-                const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
-                const comebackWinner = isComeback ? outcome.schools[outcome.winnerIndex] : "None";
-                return normalizeSchoolName(label) === normalizeSchoolName(comebackWinner);
-            }
-
-            if (marketName === "Lead Changes") {
-                const line = 2.5;
-                const changes = outcome.stats.leadChanges;
-                const type = label.split(' ')[0];
-                return type === "Over" ? changes > line : changes < line;
-            }
-
-            if (marketName === "Late Surge") {
-                return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.lateSurgeIndex]);
-            }
-
-            if (marketName === "Strong Start") {
-                return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.strongStartIndex]);
-            }
-
-            if (marketName === "Highest Points") {
-                // Total winner
-                return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.winnerIndex]);
-            }
-
-            if (marketName === "Leader After Round 1") {
-                // Check scores after R1
-                const r1Scores = outcome.rounds[0].scores;
-                const max = Math.max(...r1Scores);
-                const winnerIdx = r1Scores.indexOf(max);
-                // Handle draw?
-                const winnersCount = r1Scores.filter(s => s === max).length;
-                if (winnersCount > 1) return false;
-                return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[winnerIdx]);
-            }
-
-
-            return false;
-        }
 
         const resolvedSlips: ResolvedSlip[] = pendingSlips.map(slip => {
             if (slip.mode === 'system') {
