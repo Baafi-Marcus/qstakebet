@@ -27,7 +27,7 @@ interface MatchRowProps {
     'late_surge'
     isSimulating?: boolean
     isFinished?: boolean
-    currentScores?: [number, number, number]
+    currentScores?: [number, number]
     currentRoundIdx?: number
     onOddsClick: (selection: Selection) => void
     checkSelected: (selectionId: string) => boolean

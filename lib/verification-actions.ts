@@ -14,9 +14,21 @@ export async function generateAndSendOTP(phone: string) {
         return { success: false, error: "Invalid phone number" }
     }
 
-    // Check if phone is already verified/registered?
-    // Depending on flow, we might want to check this. 
-    // For now, allow generating OTP for any number (e.g. forgot password flow too).
+    // Check if phone is already registered
+    try {
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.phone, phone)
+        })
+
+        if (existingUser) {
+            return { success: false, error: "Phone number is already associated with an account" }
+        }
+    } catch (e) {
+        console.error("Duplicate phone check error:", e)
+        // Proceed if DB check fails for some reason? Or fail safe? 
+        // Let's fail safe - we want to ensure uniqueness.
+        return { success: false, error: "Internal Error during verification" }
+    }
 
     try {
         // Generate 6-digit OTP

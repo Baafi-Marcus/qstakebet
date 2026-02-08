@@ -21,24 +21,24 @@ export const DEFAULT_SCHOOLS: VirtualSchool[] = [
 
 export interface RoundScores {
     roundName: string;
-    scores: [number, number, number];
+    scores: [number, number];
 }
 
 export interface VirtualMatchOutcome {
     id: string;
-    schools: [string, string, string];
+    schools: [string, string];
     rounds: RoundScores[];
-    totalScores: [number, number, number];
+    totalScores: [number, number];
     winnerIndex: number;
-    strengths: [number, number, number];
+    strengths: [number, number];
     category: 'regional' | 'national';
     // New Stats for Extended Markets
     stats: {
         leadChanges: number;
-        perfectRound: boolean[]; // [school1_perfect, school2_perfect, school3_perfect]
-        shutoutRound: boolean[]; // [school1_shutout, school2_shutout, school3_shutout]
-        firstBonusIndex: number; // 0, 1, 2
-        fastestBuzzIndex: number; // 0, 1, 2
+        perfectRound: boolean[]; // [school1_perfect, school2_perfect]
+        shutoutRound: boolean[]; // [school1_shutout, school2_shutout]
+        firstBonusIndex: number; // 0, 1
+        fastestBuzzIndex: number; // 0, 1
         lateSurgeIndex: number; // Winner of R4+R5
         strongStartIndex: number; // Winner of R1+R2
         highestRoundIndex: number; // 0=R1, 1=R2, ...
@@ -47,8 +47,8 @@ export interface VirtualMatchOutcome {
 
 export interface VirtualResult {
     id: string;
-    schools: [string, string, string];
-    scores: [number, number, number];
+    schools: [string, string];
+    scores: [number, number];
     winner: string;
     time: string;
     rounds: RoundScores[];
@@ -79,52 +79,50 @@ export function simulateMatch(
         const selectedRegion = regions[Math.floor(seededRandom(seed) * regions.length)];
         const regionalSchools = schoolsList.filter(s => s.region === selectedRegion);
 
-        if (regionalSchools.length >= 3) {
+        if (regionalSchools.length >= 2) {
             const shuffled = [...regionalSchools];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + i) * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-            selectedSchools = shuffled.slice(0, 3);
+            selectedSchools = shuffled.slice(0, 2);
         } else {
             category = 'national';
         }
     }
 
-    if (category === 'national' || selectedSchools.length < 3) {
+    if (category === 'national' || selectedSchools.length < 2) {
         const shuffled = [...schoolsList];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed + i) * (i + 1));
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        selectedSchools = shuffled.slice(0, 3);
+        selectedSchools = shuffled.slice(0, 2);
     }
 
-    const schoolNames = selectedSchools.map(s => s.name) as [string, string, string];
+    const schoolNames = selectedSchools.map(s => s.name) as [string, string];
     // Re-expanded strength variance: Check AI Memory first, else fallback to random
     const strengths = schoolNames.map((name, i) => {
         if (aiStrengths[name]) {
-            // Use stored AI strength + tiny random variation (0.1)
             const aiVal = aiStrengths[name];
             return aiVal + ((seededRandom(seed + i) * 0.2) - 0.1);
         }
-        // Fallback: 0.3 to 2.3 for clear paper favorites
         return 0.3 + (seededRandom(seed + i + 100) * 2.0);
-    }) as [number, number, number];
+    }) as [number, number];
 
     // Stats Tracking
     let leadChanges = 0;
     let currentLeaderIndex = -1;
-    const cumulativeScores: [number, number, number] = [0, 0, 0];
+    const cumulativeScores: [number, number] = [0, 0];
 
-    const perfectRound: boolean[] = [false, false, false]; // True if school had at least one perfect round
-    const shutoutRound: boolean[] = [false, false, false]; // True if school had at least one shutout round
+    const perfectRound: boolean[] = [false, false]; // True if school had at least one perfect round
+    const shutoutRound: boolean[] = [false, false]; // True if school had at least one shutout round
 
     // Simplified simulation for brevity but keeping the 5 rounds logic
     const roundNames = ["General", "Speed Race", "Problem of the Day", "True/False", "Riddles"];
 
     const finalRounds: RoundScores[] = roundNames.map((name, rIdx) => {
-        const scores: [number, number, number] = [0, 0, 0];
+        const scores: [number, number] = [0, 0];
         strengths.forEach((s, i) => {
             const rSeed = seed + i + rIdx * 100;
             const rand = seededRandom(rSeed);
@@ -209,7 +207,7 @@ export function simulateMatch(
         return { roundName: name, scores };
     });
 
-    const totalScores: [number, number, number] = [0, 0, 0];
+    const totalScores: [number, number] = [0, 0];
     finalRounds.forEach(r => {
         r.scores.forEach((s, i) => totalScores[i] += s);
     });
@@ -221,7 +219,7 @@ export function simulateMatch(
     if (tiedIndices.length > 1) {
         let attempts = 0;
         let uniqueWinnerFound = false;
-        const cumulativeTieBreakerScores: [number, number, number] = [0, 0, 0];
+        const cumulativeTieBreakerScores: [number, number] = [0, 0];
 
         while (!uniqueWinnerFound && attempts < 10) { // Limit attempts to avoid infinite loop (safety)
             tiedIndices.forEach(idx => {
@@ -251,12 +249,11 @@ export function simulateMatch(
     const winnerIndex = totalScores.indexOf(maxScore);
 
     // Calculate other props based on strengths/random for virtual determination
-    const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 3);
-    const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 3);
+    const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 2);
+    const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 2);
 
-    // Late Surge (R4 + R5) & Strong Start (R1 + R2)
-    const lateSurgeScores: [number, number, number] = [0, 0, 0];
-    const strongStartScores: [number, number, number] = [0, 0, 0];
+    const lateSurgeScores: [number, number] = [0, 0];
+    const strongStartScores: [number, number] = [0, 0];
 
     finalRounds.forEach((r, idx) => {
         if (idx < 2) { // R1 + R2
@@ -349,9 +346,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
 
     const probA = sharpenedStrengths[0] / totalSharpened;
     const probB = sharpenedStrengths[1] / totalSharpened;
-    const probC = sharpenedStrengths[2] / totalSharpened;
 
-    // Helper for prop odds
     const getPropOdds = (
         baseProb: number,
         volatility: number = 0.25,
@@ -368,7 +363,6 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const winnerMargin = 0.125;
     const oddsA = calculateOddsFromProbability(probA, winnerMargin, startTimeMs + 1, 1.10, 6.00, 0.12)!;
     const oddsB = calculateOddsFromProbability(probB, winnerMargin, startTimeMs + 2, 1.10, 6.00, 0.12)!;
-    const oddsC = calculateOddsFromProbability(probC, winnerMargin, startTimeMs + 3, 1.10, 6.00, 0.12)!;
 
     // Projected Total
     const projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 45;
@@ -435,20 +429,17 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         return {
             [outcome.schools[0]]: getPropOdds(probA * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
             [outcome.schools[1]]: getPropOdds(probB * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
-            [outcome.schools[2]]: getPropOdds(probC * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
         };
     };
 
     const firstBonusOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.4 + 0.2),
         [outcome.schools[1]]: getPropOdds(probB * 0.4 + 0.2),
-        [outcome.schools[2]]: getPropOdds(probC * 0.4 + 0.2)
     };
 
     const fastestBuzzOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.5 + 0.16),
         [outcome.schools[1]]: getPropOdds(probB * 0.5 + 0.16),
-        [outcome.schools[2]]: getPropOdds(probC * 0.5 + 0.16)
     };
 
     const comebackWinProb = 0.18 - (shiftFactor * 0.13);
@@ -462,31 +453,26 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const comebackTeamOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.3),
         [outcome.schools[1]]: getPropOdds(probB * 0.3),
-        [outcome.schools[2]]: getPropOdds(probC * 0.3),
     }
 
     const lateSurgeOdds = {
         [outcome.schools[0]]: getPropOdds(probA, 0.4),
         [outcome.schools[1]]: getPropOdds(probB, 0.4),
-        [outcome.schools[2]]: getPropOdds(probC, 0.4),
     };
 
     const strongStartOdds = {
         [outcome.schools[0]]: getPropOdds(probA, 0.1),
         [outcome.schools[1]]: getPropOdds(probB, 0.1),
-        [outcome.schools[2]]: getPropOdds(probC, 0.1),
     };
 
     const highestPointsOdds = {
         [outcome.schools[0]]: getPropOdds(probA),
         [outcome.schools[1]]: getPropOdds(probB),
-        [outcome.schools[2]]: getPropOdds(probC),
     };
 
     const leaderAfterRound1Odds = {
         [outcome.schools[0]]: getPropOdds(probA),
         [outcome.schools[1]]: getPropOdds(probB),
-        [outcome.schools[2]]: getPropOdds(probC),
     };
 
     const round1WinnerOdds = getRoundWinnerOdds(0);
@@ -526,7 +512,6 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         participants: [
             { schoolId: `v-${outcome.schools[0]}`, name: outcome.schools[0], odd: oddsA },
             { schoolId: `v-${outcome.schools[1]}`, name: outcome.schools[1], odd: oddsB },
-            { schoolId: `v-${outcome.schools[2]}`, name: outcome.schools[2], odd: oddsC },
         ],
         startTime: `Round ${Math.floor(startTimeMs / 60000)}`,
         isLive: false,
@@ -534,8 +519,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         stage: outcome.category === 'regional' ? "Regional Qualifier" : "National Championship",
         odds: {
             schoolA: oddsA,
-            schoolB: oddsB,
-            schoolC: oddsC
+            schoolB: oddsB
         },
         extendedOdds,
         sportType: "quiz",
