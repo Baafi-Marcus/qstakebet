@@ -6,8 +6,8 @@ export function detectPaymentMethod(phone: string): "mtn_momo" | "telecel_cash" 
     const formatted = formatPhoneNumber(phone);
     const prefix = formatted.slice(0, 3);
 
-    // MTN Mobile Money: 024, 053, 054, 055, 059
-    if (["024", "053", "054", "055", "059"].includes(prefix)) {
+    // MTN Mobile Money: 024, 025, 053, 054, 055, 059
+    if (["024", "025", "053", "054", "055", "059"].includes(prefix)) {
         return "mtn_momo";
     }
 

@@ -23,7 +23,8 @@ export default function WithdrawPage() {
     const [otpSent, setOtpSent] = useState(false)
     const [detectedProvider, setDetectedProvider] = useState<string>("")
     const [userPhone, setUserPhone] = useState<string>("")
-    const [isVerified, setIsVerified] = useState(true) // Initial assume verified, check on load
+    const [isVerified, setIsVerified] = useState(false) // Start as unverified until status is confirmed
+    const [statusLoaded, setStatusLoaded] = useState(false)
 
     useEffect(() => {
         // Initial verification check
@@ -37,17 +38,27 @@ export default function WithdrawPage() {
                 }
             } catch (err) {
                 console.error("Failed to check verification status", err);
+            } finally {
+                setStatusLoaded(true)
             }
         }
         checkVerification();
     }, []);
 
     useEffect(() => {
-        const phoneToUse = userPhone || session?.user?.phone;
-        if (phoneToUse) {
-            const method = detectPaymentMethod(phoneToUse);
+        if (userPhone) {
+            const method = detectPaymentMethod(userPhone);
             if (method) {
                 setDetectedProvider(getProviderName(method));
+            } else {
+                setDetectedProvider("Unknown Provider");
+            }
+        } else if (session?.user?.phone) {
+            const method = detectPaymentMethod(session.user.phone);
+            if (method) {
+                setDetectedProvider(getProviderName(method));
+            } else {
+                setDetectedProvider("Unknown Provider");
             }
         }
     }, [session, userPhone])
@@ -248,15 +259,17 @@ export default function WithdrawPage() {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">Provider</p>
-                                <p className="text-white font-black mt-1">{detectedProvider || "Detecting..."}</p>
+                                <p className="text-white font-black mt-1">{detectedProvider || (statusLoaded ? "Not Detected" : "Detecting...")}</p>
                             </div>
                             <div>
                                 <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">Account</p>
-                                <p className="text-white font-black mt-1">{userPhone || session?.user?.phone || "N/A"}</p>
+                                <p className="text-white font-black mt-1">{userPhone || session?.user?.phone || (statusLoaded ? "N/A" : "Loading...")}</p>
                             </div>
                         </div>
                         <p className="text-[9px] text-purple-400/80 font-bold uppercase tracking-widest">
-                            {isVerified ? "✓ Using your verified phone number" : "✗ Phone number not verified"}
+                            {statusLoaded ? (
+                                isVerified ? "✓ Using your verified phone number" : "✗ Phone number not verified"
+                            ) : "Checking status..."}
                         </p>
 
                         {!isVerified && !showOTP && (
