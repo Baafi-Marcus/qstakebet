@@ -2,14 +2,12 @@
  * Detects the Mobile Money provider from a Ghanaian phone number
  */
 export function detectPaymentMethod(phone: string): "mtn_momo" | "telecel_cash" | "at_money" | null {
-    // Remove any spaces, dashes, or country code
-    const cleaned = phone.replace(/[\s\-+]/g, "");
+    // Standardize to 0XXXXXXXXX format
+    const formatted = formatPhoneNumber(phone);
+    const prefix = formatted.slice(0, 3);
 
-    // Get the prefix (first 3 digits after potential 233)
-    const prefix = cleaned.startsWith("233") ? cleaned.slice(3, 6) : cleaned.slice(0, 3);
-
-    // MTN Mobile Money: 024, 053, 054, 055
-    if (["024", "053", "054", "055"].includes(prefix)) {
+    // MTN Mobile Money: 024, 053, 054, 055, 059
+    if (["024", "053", "054", "055", "059"].includes(prefix)) {
         return "mtn_momo";
     }
 
