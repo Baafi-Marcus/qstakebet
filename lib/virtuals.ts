@@ -6,6 +6,18 @@ export interface VirtualSchool {
     region: string;
 }
 
+export const BEST_27_SCHOOLS = [
+    "PRESEC Legon", "Prempeh College", "St. Peter's SHS", "Opoku Ware School",
+    "Mfantsipim School", "St. Augustine's College", "Adisadel College",
+    "Achimota School", "Accra Academy", "Koforidua Sec Tech (KSTS)",
+    "Bishop Herman College", "Mawuli School", "Kumasi Academy",
+    "St. James Sem. & SHS", "Archbishop Porter Girls'", "Wesley Girls' High School",
+    "Holy Child School", "Aburi Girls' SHS", "St. Rose's SHS",
+    "Mfantsiman Girls' SHS", "Tamale SHS", "Ghana National College",
+    "University Practice SHS", "Pope John SHS", "Winneba SHS",
+    "GSTS", "Kumasi High School"
+];
+
 export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Mfantsipim School", region: "Central" },
     { name: "St. Augustine's College", region: "Central" },
@@ -15,30 +27,71 @@ export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Prempeh College", region: "Ashanti" },
     { name: "Accra Academy", region: "Greater Accra" },
     { name: "Adisadel College", region: "Central" },
-    { name: "St. Peter's SHS", region: "Eastern" }
+    { name: "St. Peter's SHS", region: "Eastern" },
+    // Expanded Regional Schools
+    { name: "Kumasi High School", region: "Ashanti" },
+    { name: "Kumasi Academy", region: "Ashanti" },
+    { name: "Yaa Asantewaa Girls", region: "Ashanti" },
+    { name: "St. Louis SHS", region: "Ashanti" },
+    { name: "Tepa SHS", region: "Ashanti" },
+    { name: "Toase SHS", region: "Ashanti" },
+    { name: "Konongo Odumase SHS", region: "Ashanti" },
+    { name: "Wesley Girls' High", region: "Central" },
+    { name: "Holy Child School", region: "Central" },
+    { name: "Mfantsiman Girls", region: "Central" },
+    { name: "Ghana National College", region: "Central" },
+    { name: "University Practice", region: "Central" },
+    { name: "Winneba SHS", region: "Central" },
+    { name: "Aburi Girls' SHS", region: "Eastern" },
+    { name: "Pope John SHS", region: "Eastern" },
+    { name: "Koforidua Sec Tech", region: "Eastern" },
+    { name: "St. Rose's SHS", region: "Eastern" },
+    { name: "Ofori Panin SHS", region: "Eastern" },
+    { name: "St. Thomas Aquinas", region: "Greater Accra" },
+    { name: "West Africa SHS", region: "Greater Accra" },
+    { name: "Labone SHS", region: "Greater Accra" },
+    { name: "Odorgonno SHS", region: "Greater Accra" },
+    { name: "St. Mary's SHS", region: "Greater Accra" },
+    { name: "Mawuli School", region: "Volta" },
+    { name: "Bishop Herman College", region: "Volta" },
+    { name: "Ola Girls SHS", region: "Volta" },
+    { name: "Keta SHTS", region: "Volta" },
+    { name: "Sogakope SHS", region: "Volta" },
+    { name: "GSTS", region: "Western" },
+    { name: "Archbishop Porter Girls", region: "Western" },
+    { name: "St. John's School", region: "Western" },
+    { name: "Fijai SHS", region: "Western" },
+    { name: "Tamale SHS", region: "Northern" },
+    { name: "Ghana Senior High", region: "Northern" },
+    { name: "Northern School of Biz", region: "Northern" },
+    { name: "St. Francis Xavier", region: "Upper West" },
+    { name: "Notre Dame Sem", region: "Upper East" },
+    { name: "St. James Sem.", region: "Bono" },
+    { name: "Sunyani SHS", region: "Bono" }
 ];
 
 
 export interface RoundScores {
     roundName: string;
-    scores: [number, number];
+    scores: [number, number, number];
 }
 
 export interface VirtualMatchOutcome {
     id: string;
-    schools: [string, string];
+    schools: [string, string, string];
     rounds: RoundScores[];
-    totalScores: [number, number];
+    totalScores: [number, number, number];
     winnerIndex: number;
-    strengths: [number, number];
+    strengths: [number, number, number];
     category: 'regional' | 'national';
+    queryRegion?: string;
     // New Stats for Extended Markets
     stats: {
         leadChanges: number;
-        perfectRound: boolean[]; // [school1_perfect, school2_perfect]
-        shutoutRound: boolean[]; // [school1_shutout, school2_shutout]
-        firstBonusIndex: number; // 0, 1
-        fastestBuzzIndex: number; // 0, 1
+        perfectRound: boolean[]; // [school1_perfect, school2_perfect, school3_perfect]
+        shutoutRound: boolean[]; // [school1_shutout, school2_shutout, school3_shutout]
+        firstBonusIndex: number; // 0, 1, 2
+        fastestBuzzIndex: number; // 0, 1, 2
         lateSurgeIndex: number; // Winner of R4+R5
         strongStartIndex: number; // Winner of R1+R2
         highestRoundIndex: number; // 0=R1, 1=R2, ...
@@ -47,12 +100,13 @@ export interface VirtualMatchOutcome {
 
 export interface VirtualResult {
     id: string;
-    schools: [string, string];
-    scores: [number, number];
+    schools: [string, string, string];
+    scores: [number, number, number];
     winner: string;
     time: string;
     rounds: RoundScores[];
     category: 'regional' | 'national';
+    region?: string;
     roundId: number;
 }
 
@@ -67,40 +121,49 @@ export function simulateMatch(
     index: number,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     category: 'regional' | 'national' = 'national',
+    queryRegion?: string,
     aiStrengths: Record<string, number> = {}, // New Param for AI Memory
     userSeed: number = 0 // New Param for Uniqueness per User
 ): VirtualMatchOutcome {
-    const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000) + userSeed;
+    const regionSlug = queryRegion ? queryRegion.toLowerCase().replace(/\s+/g, '-') : 'all';
+    const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000) + userSeed + (queryRegion ? regionSlug.length : 0);
 
     let selectedSchools: VirtualSchool[] = [];
 
-    if (category === 'regional') {
-        const regions = [...new Set(schoolsList.map(s => s.region))];
-        const selectedRegion = regions[Math.floor(seededRandom(seed) * regions.length)];
-        const regionalSchools = schoolsList.filter(s => s.region === selectedRegion);
+    if (category === 'regional' && queryRegion) {
+        const regionalSchools = schoolsList.filter(s => s.region.toLowerCase() === queryRegion.toLowerCase());
 
-        if (regionalSchools.length >= 2) {
+        // If regional schools is too small, fallback slightly or use a broader pool
+        if (regionalSchools.length < 3) {
+            // Fallback: If region is small, maybe include schools from "historically successful" list to fill?
+            // User said: "fix the region schools is too small then add them to a different region"
+            // Let's just fallback to national but keep the 'regional' tag for UI consistency if needed?
+            // Actually, let's just use national schools if region is empty.
+            selectedSchools = [];
+        } else {
             const shuffled = [...regionalSchools];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + i) * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-            selectedSchools = shuffled.slice(0, 2);
-        } else {
-            category = 'national';
+            selectedSchools = shuffled.slice(0, 3);
         }
     }
 
-    if (category === 'national' || selectedSchools.length < 2) {
-        const shuffled = [...schoolsList];
+    if (category === 'national' || selectedSchools.length < 3) {
+        // Pick from BEST_27_SCHOOLS
+        const bestSchools = schoolsList.filter(s => BEST_27_SCHOOLS.includes(s.name));
+        const pool = bestSchools.length >= 3 ? bestSchools : schoolsList;
+
+        const shuffled = [...pool];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed + i) * (i + 1));
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        selectedSchools = shuffled.slice(0, 2);
+        selectedSchools = shuffled.slice(0, 3);
     }
 
-    const schoolNames = selectedSchools.map(s => s.name) as [string, string];
+    const schoolNames = selectedSchools.map(s => s.name) as [string, string, string];
     // Re-expanded strength variance: Check AI Memory first, else fallback to random
     const strengths = schoolNames.map((name, i) => {
         if (aiStrengths[name]) {
@@ -108,21 +171,21 @@ export function simulateMatch(
             return aiVal + ((seededRandom(seed + i) * 0.2) - 0.1);
         }
         return 0.3 + (seededRandom(seed + i + 100) * 2.0);
-    }) as [number, number];
+    }) as [number, number, number];
 
     // Stats Tracking
     let leadChanges = 0;
     let currentLeaderIndex = -1;
-    const cumulativeScores: [number, number] = [0, 0];
+    const cumulativeScores: [number, number, number] = [0, 0, 0];
 
-    const perfectRound: boolean[] = [false, false]; // True if school had at least one perfect round
-    const shutoutRound: boolean[] = [false, false]; // True if school had at least one shutout round
+    const perfectRound: boolean[] = [false, false, false]; // True if school had at least one perfect round
+    const shutoutRound: boolean[] = [false, false, false]; // True if school had at least one shutout round
 
     // Simplified simulation for brevity but keeping the 5 rounds logic
     const roundNames = ["General", "Speed Race", "Problem of the Day", "True/False", "Riddles"];
 
     const finalRounds: RoundScores[] = roundNames.map((name, rIdx) => {
-        const scores: [number, number] = [0, 0];
+        const scores: [number, number, number] = [0, 0, 0];
         strengths.forEach((s, i) => {
             const rSeed = seed + i + rIdx * 100;
             const rand = seededRandom(rSeed);
@@ -207,7 +270,7 @@ export function simulateMatch(
         return { roundName: name, scores };
     });
 
-    const totalScores: [number, number] = [0, 0];
+    const totalScores: [number, number, number] = [0, 0, 0];
     finalRounds.forEach(r => {
         r.scores.forEach((s, i) => totalScores[i] += s);
     });
@@ -219,7 +282,7 @@ export function simulateMatch(
     if (tiedIndices.length > 1) {
         let attempts = 0;
         let uniqueWinnerFound = false;
-        const cumulativeTieBreakerScores: [number, number] = [0, 0];
+        const cumulativeTieBreakerScores: [number, number, number] = [0, 0, 0];
 
         while (!uniqueWinnerFound && attempts < 10) { // Limit attempts to avoid infinite loop (safety)
             tiedIndices.forEach(idx => {
@@ -249,11 +312,11 @@ export function simulateMatch(
     const winnerIndex = totalScores.indexOf(maxScore);
 
     // Calculate other props based on strengths/random for virtual determination
-    const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 2);
-    const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 2);
+    const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 3);
+    const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 3);
 
-    const lateSurgeScores: [number, number] = [0, 0];
-    const strongStartScores: [number, number] = [0, 0];
+    const lateSurgeScores: [number, number, number] = [0, 0, 0];
+    const strongStartScores: [number, number, number] = [0, 0, 0];
 
     finalRounds.forEach((r, idx) => {
         if (idx < 2) { // R1 + R2
@@ -272,13 +335,14 @@ export function simulateMatch(
     const highestRoundIndex = roundSums.indexOf(Math.max(...roundSums));
 
     return {
-        id: `vmt-${roundId}-${index}-${category}`,
+        id: `vmt-${roundId}-${index}-${category}-${regionSlug}`,
         schools: schoolNames,
         rounds: finalRounds,
         totalScores,
         winnerIndex,
         strengths,
         category,
+        queryRegion,
         stats: {
             leadChanges,
             perfectRound,
@@ -346,6 +410,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
 
     const probA = sharpenedStrengths[0] / totalSharpened;
     const probB = sharpenedStrengths[1] / totalSharpened;
+    const probC = sharpenedStrengths[2] / totalSharpened;
 
     const getPropOdds = (
         baseProb: number,
@@ -363,6 +428,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const winnerMargin = 0.125;
     const oddsA = calculateOddsFromProbability(probA, winnerMargin, startTimeMs + 1, 1.10, 6.00, 0.12)!;
     const oddsB = calculateOddsFromProbability(probB, winnerMargin, startTimeMs + 2, 1.10, 6.00, 0.12)!;
+    const oddsC = calculateOddsFromProbability(probC, winnerMargin, startTimeMs + 3, 1.10, 6.00, 0.12)!;
 
     // Projected Total
     const projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 45;
@@ -429,17 +495,20 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         return {
             [outcome.schools[0]]: getPropOdds(probA * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
             [outcome.schools[1]]: getPropOdds(probB * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
+            [outcome.schools[2]]: getPropOdds(probC * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
         };
     };
 
     const firstBonusOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.4 + 0.2),
         [outcome.schools[1]]: getPropOdds(probB * 0.4 + 0.2),
+        [outcome.schools[2]]: getPropOdds(probC * 0.4 + 0.2),
     };
 
     const fastestBuzzOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.5 + 0.16),
         [outcome.schools[1]]: getPropOdds(probB * 0.5 + 0.16),
+        [outcome.schools[2]]: getPropOdds(probC * 0.5 + 0.16),
     };
 
     const comebackWinProb = 0.18 - (shiftFactor * 0.13);
@@ -453,26 +522,31 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const comebackTeamOdds = {
         [outcome.schools[0]]: getPropOdds(probA * 0.3),
         [outcome.schools[1]]: getPropOdds(probB * 0.3),
+        [outcome.schools[2]]: getPropOdds(probC * 0.3),
     }
 
     const lateSurgeOdds = {
         [outcome.schools[0]]: getPropOdds(probA, 0.4),
         [outcome.schools[1]]: getPropOdds(probB, 0.4),
+        [outcome.schools[2]]: getPropOdds(probC, 0.4),
     };
 
     const strongStartOdds = {
         [outcome.schools[0]]: getPropOdds(probA, 0.1),
         [outcome.schools[1]]: getPropOdds(probB, 0.1),
+        [outcome.schools[2]]: getPropOdds(probC, 0.1),
     };
 
     const highestPointsOdds = {
         [outcome.schools[0]]: getPropOdds(probA),
         [outcome.schools[1]]: getPropOdds(probB),
+        [outcome.schools[2]]: getPropOdds(probC),
     };
 
     const leaderAfterRound1Odds = {
         [outcome.schools[0]]: getPropOdds(probA),
         [outcome.schools[1]]: getPropOdds(probB),
+        [outcome.schools[2]]: getPropOdds(probC),
     };
 
     const round1WinnerOdds = getRoundWinnerOdds(0);
@@ -512,6 +586,7 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         participants: [
             { schoolId: `v-${outcome.schools[0]}`, name: outcome.schools[0], odd: oddsA },
             { schoolId: `v-${outcome.schools[1]}`, name: outcome.schools[1], odd: oddsB },
+            { schoolId: `v-${outcome.schools[2]}`, name: outcome.schools[2], odd: oddsC },
         ],
         startTime: `Round ${Math.floor(startTimeMs / 60000)}`,
         isLive: false,
@@ -519,7 +594,8 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         stage: outcome.category === 'regional' ? "Regional Qualifier" : "National Championship",
         odds: {
             schoolA: oddsA,
-            schoolB: oddsB
+            schoolB: oddsB,
+            schoolC: oddsC
         },
         extendedOdds,
         sportType: "quiz",
@@ -534,16 +610,25 @@ export function generateVirtualMatches(
     count: number = 8,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     roundId: number,
-    aiStrengths: Record<string, number> = {}, // Added AI param
-    userSeed: number = 0 // New Param
-): { matches: Match[], outcomes: VirtualMatchOutcome[] } { // Changed Return Type
+    category: 'regional' | 'national' = 'national',
+    queryRegion?: string,
+    aiStrengths: Record<string, number> = {},
+    userSeed: number = 0
+): { matches: Match[], outcomes: VirtualMatchOutcome[] } {
     const matches: Match[] = [];
     const outcomes: VirtualMatchOutcome[] = [];
-    const cycleTime = 60000; // 1 minute cycle
+    const cycleTime = 60000;
 
     for (let i = 0; i < count; i++) {
-        const category = i < count / 2 ? 'regional' : 'national';
-        const outcome = simulateMatch(roundId, i, schoolsList, category, aiStrengths, userSeed);
+        const outcome = simulateMatch(
+            roundId,
+            i,
+            schoolsList,
+            category as 'regional' | 'national',
+            queryRegion,
+            aiStrengths as Record<string, number>,
+            userSeed
+        );
         matches.push(mapOutcomeToMatch(outcome, roundId * cycleTime));
         outcomes.push(outcome);
     }
@@ -559,32 +644,60 @@ export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = D
     const roundId = parseInt(parts[1]);
     const index = parseInt(parts[2]);
     const category = (parts[3] as 'regional' | 'national') || 'national';
+    const regionSlug = parts[4] || 'all';
+
+    // Find regional name from slug (Reverse mapping or just pass slug if handled)
+    const schoolsInThisRegion = schoolsList.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
+    const regionName = schoolsInThisRegion?.region;
+
     const cycleTime = 60000;
 
-    const outcome = simulateMatch(roundId, index, schoolsList, category, {}, userSeed);
+    const outcome = simulateMatch(
+        roundId,
+        index,
+        schoolsList,
+        category as 'regional' | 'national',
+        regionName,
+        {} as Record<string, number>,
+        userSeed
+    );
     return mapOutcomeToMatch(outcome, roundId * cycleTime);
 }
 
-export function getRecentVirtualResults(count: number = 3, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS, roundId: number, userSeed: number = 0): VirtualResult[] {
+export function getRecentVirtualResults(
+    count: number = 3,
+    schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
+    roundId: number,
+    category: 'regional' | 'national' = 'national',
+    queryRegion?: string,
+    userSeed: number = 0
+): VirtualResult[] {
     const results: VirtualResult[] = [];
     const cycleTime = 60000;
 
     for (let i = 1; i <= count; i++) {
         const id = roundId - i;
-        (['regional', 'national'] as const).forEach(cat => {
-            const outcome = simulateMatch(id, 0, schoolsList, cat, {}, userSeed);
+        const outcome = simulateMatch(
+            id,
+            0,
+            schoolsList,
+            category as 'regional' | 'national',
+            queryRegion,
+            {} as Record<string, number>,
+            userSeed
+        );
 
-            results.push({
-                id: `vr-${id}-${cat}`,
-                schools: outcome.schools,
-                scores: outcome.totalScores,
-                winner: outcome.schools[outcome.winnerIndex],
-                time: new Date(id * cycleTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                rounds: outcome.rounds,
-                category: outcome.category,
-                roundId: id
-            });
-        })
+        results.push({
+            id: `vr-${id}-${category}-${queryRegion || 'all'}`,
+            schools: outcome.schools,
+            scores: outcome.totalScores,
+            winner: outcome.schools[outcome.winnerIndex],
+            time: new Date(id * cycleTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            rounds: outcome.rounds,
+            category: outcome.category,
+            region: queryRegion,
+            roundId: id
+        });
     }
 
     return results;

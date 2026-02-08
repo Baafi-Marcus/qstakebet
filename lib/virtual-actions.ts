@@ -135,11 +135,26 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         if (bet.userId !== session.user.id) return { success: false, error: "Forbidden" }
 
         // 2. Regenerate Outcomes
-        const { outcomes } = generateVirtualMatches(8, [], roundId, {}, userSeed)
-
-        // 3. Evaluate Results
-        const MAX_GAME_PAYOUT = 3000
+        // We need to determine category and region from the selections
+        let category: 'national' | 'regional' = 'national'
+        let queryRegion: string | undefined = undefined
         const selections = bet.selections as any[]
+        const firstSelection = selections[0]
+        if (firstSelection?.matchId.startsWith('vmt-')) {
+            const parts = firstSelection.matchId.split('-')
+            category = (parts[3] as 'national' | 'regional') || 'national'
+            const regionSlug = parts[4]
+            if (regionSlug && regionSlug !== 'all') {
+                // Approximate region name from slug or just use it if allowed
+                const schoolsData = await import("@/lib/virtuals").then(m => m.DEFAULT_SCHOOLS)
+                const schoolsInThisRegion = schoolsData.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
+                queryRegion = schoolsInThisRegion?.region;
+            }
+        }
+
+        const { outcomes } = generateVirtualMatches(15, [], roundId, category, queryRegion, {}, userSeed)
+
+        const MAX_GAME_PAYOUT = 3000
         const isMulti = bet.status === 'pending' && selections.length > 1 && !bet.id.includes('single') // Simplified mode check or use potential payout logic
 
         // We need to know if it was 'single' or 'multi' mode. 

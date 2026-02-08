@@ -77,6 +77,7 @@ interface VirtualSelection {
     matchLabel: string;
     schoolA: string;
     schoolB: string;
+    schoolC: string;
     stakeUsed?: number; // Fix 6
 }
 
@@ -188,6 +189,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         'lead_changes' |
         'late_surge'
     >('winner')
+    // REAL SCHOOLS: Fetch from DB
+    const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
+    const [selectedCategory, setSelectedCategory] = useState<'national' | 'regional'>('national')
+    const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+    const availableRegions = useMemo(() => {
+        return [...new Set(activeSchools.map(s => s.region))].sort()
+    }, [activeSchools])
     // const [historyTab, setHistoryTab] = useState<'results' | 'bets'>('results') // Unused
     const [betMode, setBetMode] = useState<'single' | 'multi'>('single')
     const [showSlip, setShowSlip] = useState(false)
@@ -196,9 +204,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         const cycleTime = 60000 // 1 minute
         return Math.floor(now / cycleTime)
     })
-
-    // REAL SCHOOLS: Fetch from DB
-    const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
 
     useEffect(() => {
         const loadSchools = async () => {
@@ -229,12 +234,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
 
     const recentResults = useMemo(() => {
-        return getRecentVirtualResults(6, schools, currentRound, userSeed)
-    }, [currentRound, schools, userSeed])
+        return getRecentVirtualResults(6, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, userSeed)
+    }, [currentRound, activeSchools, userSeed, selectedCategory, selectedRegion])
 
     const { matches, outcomes } = useMemo(() => {
-        return generateVirtualMatches(8, schools, currentRound, aiStrengths, userSeed);
-    }, [currentRound, schools, aiStrengths, userSeed])
+        const count = selectedCategory === 'regional' ? 15 : 8
+        return generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed);
+    }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion])
 
     // Keep outcomes in a ref for access during simulation without triggering re-renders
     const outcomesRef = useRef<VirtualMatchOutcome[]>(outcomes)
@@ -299,7 +305,9 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
     const activeOutcome = useMemo(() => {
         if (!activeLiveMatch) return null;
-        return simulateMatch(currentRound, matches.findIndex(m => m.id === activeLiveMatch), schools, activeLiveMatch.includes('regional') ? 'regional' : 'national', aiStrengths, userSeed);
+        const regionSlug = activeLiveMatch.split('-')[4] || 'all';
+        const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
+        return simulateMatch(currentRound, matches.findIndex(m => m.id === activeLiveMatch), schools, activeLiveMatch.includes('regional') ? 'regional' : 'national', regionName, aiStrengths, userSeed);
     }, [activeLiveMatch, currentRound, matches, schools, aiStrengths, userSeed])
 
     const filteredMatches = useMemo(() => {
@@ -429,6 +437,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 let predictedWinner = label;
                 if (label === "1") predictedWinner = outcome.schools[0];
                 if (label === "2") predictedWinner = outcome.schools[1];
+                if (label === "3") predictedWinner = outcome.schools[2];
 
                 return normalizeSchoolName(predictedWinner) === normalizeSchoolName(winner);
             }
@@ -485,6 +494,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 let predictedWinner = label;
                 if (label === "1") predictedWinner = outcome.schools[0];
                 if (label === "2") predictedWinner = outcome.schools[1];
+                if (label === "3") predictedWinner = outcome.schools[2];
 
                 return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[winnerIdx]);
             }
@@ -493,6 +503,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 let predictedWinner = label;
                 if (label === "1") predictedWinner = outcome.schools[0];
                 if (label === "2") predictedWinner = outcome.schools[1];
+                if (label === "3") predictedWinner = outcome.schools[2];
                 return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
             }
 
@@ -500,6 +511,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 let predictedWinner = label;
                 if (label === "1") predictedWinner = outcome.schools[0];
                 if (label === "2") predictedWinner = outcome.schools[1];
+                if (label === "3") predictedWinner = outcome.schools[2];
                 return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
             }
 
@@ -557,11 +569,9 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                         const rId = parseInt(parts[1])
                         const mIdx = parseInt(parts[2])
                         const cat = parts[3] as 'regional' | 'national'
-
-                        // Regenerate outcome specifically for this match to ensure correctness across rounds
-                        // Ideally we should use the stored outcomes, but for slip resolution of past/different rounds we might need re-simulation.
-                        // Important: Pass aiStrengths to maintain consistency with how it was generated!
-                        const outcome = simulateMatch(rId, mIdx, schools, cat, aiStrengths);
+                        const regionSlug = parts[4] || 'all'
+                        const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
+                        const outcome = simulateMatch(rId, mIdx, schools, cat, regionName, aiStrengths, userSeed);
 
                         const won = checkSelectionWin(sel, outcome);
 
@@ -591,9 +601,11 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 const rId = parseInt(parts[1])
                 const mIdx = parseInt(parts[2])
                 const cat = parts[3] as 'regional' | 'national'
+                const regionSlug = parts[4] || 'all'
+                const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
 
                 // Regenerate outcome specifically for this match to ensure correctness across rounds
-                const outcome = simulateMatch(rId, mIdx, schools, cat, aiStrengths);
+                const outcome = simulateMatch(rId, mIdx, schools, cat, regionName, aiStrengths, userSeed);
 
                 const won = checkSelectionWin(sel, outcome);
 
@@ -762,7 +774,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         const virtualSelection: VirtualSelection = {
             ...selection,
             schoolA: match.participants[0]?.name || "",
-            schoolB: match.participants[1]?.name || ""
+            schoolB: match.participants[1]?.name || "",
+            schoolC: match.participants[2]?.name || ""
         }
 
         setSelections(prev => {
@@ -930,7 +943,9 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         const match = matches.find(m => m.id === activeLiveMatch);
         if (!match) return null;
         const stage = match.id.split("-")[3] as 'regional' | 'national';
-        const outcome = simulateMatch(parseInt(match.id.split("-")[1]), parseInt(match.id.split("-")[2]), schools, stage, aiStrengths);
+        const regionSlug = match.id.split("-")[4] || 'all';
+        const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
+        const outcome = simulateMatch(parseInt(match.id.split("-")[1]), parseInt(match.id.split("-")[2]), schools, stage, regionName, aiStrengths, userSeed);
         const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
         const displayScores = outcome.rounds[currentRoundIdx]?.scores || [0, 0];
         const isFullTime = simulationProgress >= 60;
@@ -989,7 +1004,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                         </div>
                                         <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest text-center truncate w-full max-w-[100px]">{school}</span>
                                     </div>
-                                    {sIdx === 0 && <div className="text-white/20 font-black italic text-xs mb-6 px-4">VS</div>}
+                                    {sIdx < 2 && <div className="text-white/20 font-black italic text-xs mb-6 px-4">VS</div>}
                                 </React.Fragment>
                             ))}
                         </div>
@@ -1037,26 +1052,38 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                 <div className="h-6 w-px bg-white/10 shrink-0" />
 
-                {/* Middle: Scrollable Filters */}
+                {/* Middle: Category Selector */}
                 <div className="flex-1 overflow-x-auto no-scrollbar">
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setActiveTab('all')}
-                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'all' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
+                            onClick={() => {
+                                setSelectedCategory('national');
+                                setSelectedRegion(null);
+                            }}
+                            className={cn(
+                                "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
+                                selectedCategory === 'national'
+                                    ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                            )}
                         >
-                            All Matches
+                            Best of Best
                         </button>
                         <button
-                            onClick={() => setActiveTab('regional')}
-                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'regional' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
+                            onClick={() => {
+                                setSelectedCategory('regional');
+                                if (!selectedRegion && availableRegions.length > 0) {
+                                    setSelectedRegion(availableRegions[0]);
+                                }
+                            }}
+                            className={cn(
+                                "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
+                                selectedCategory === 'regional'
+                                    ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                            )}
                         >
                             Regional
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('national')}
-                            className={cn("text-xs font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg whitespace-nowrap", activeTab === 'national' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" : "text-slate-500 hover:text-slate-300")}
-                        >
-                            National
                         </button>
                     </div>
                 </div>
@@ -1107,6 +1134,26 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     {activeLiveMatch && renderSimulationPlayer()}
 
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-44 md:pb-32">
+                        {/* Region Scroller (Only if Regional selected) */}
+                        {selectedCategory === 'regional' && (
+                            <div className="flex bg-slate-950/40 p-2 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar mb-4 gap-2">
+                                {availableRegions.map(region => (
+                                    <button
+                                        key={region}
+                                        onClick={() => setSelectedRegion(region)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                                            selectedRegion === region
+                                                ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20"
+                                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                        )}
+                                    >
+                                        {region}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Market Scroller */}
                         <div className="flex bg-slate-950/80 border-b border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 mb-4">
                             <div className="flex items-center gap-4 min-w-max">
@@ -1167,16 +1214,18 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                             // If finished, show final scores from lastOutcome
                                             if (!isSimulating && lastOutcome?.roundId === currentRound) {
                                                 const matchOutcome = lastOutcome.allRoundResults.find(r => r.id === match.id);
-                                                return matchOutcome?.totalScores as [number, number];
+                                                return matchOutcome?.totalScores as [number, number, number];
                                             }
 
                                             // If simulating, current progress scores
                                             const parts = match.id.split("-");
-                                            const stage = parts[3] === "Regional Qualifier" ? "regional" : "national";
-                                            const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, stage);
+                                            const category = parts[3] as 'regional' | 'national';
+                                            const regionSlug = parts[4] || 'all';
+                                            const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
+                                            const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, category, regionName, aiStrengths, userSeed);
                                             const cRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
                                             const roundsToShow = outcome.rounds.slice(0, cRoundIdx + 1);
-                                            return [0, 1].map(sIdx => roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)) as [number, number];
+                                            return [0, 1, 2].map(sIdx => roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)) as [number, number, number];
                                         })()}
                                     />
                                     {isSimulating && (
@@ -1811,7 +1860,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className="text-[10px] font-bold text-slate-400">FT Score:</span>
                                                     <span className="text-[10px] font-black text-white">
-                                                        {r.outcome.totalScores[0]} : {r.outcome.totalScores[1]}
+                                                        {r.outcome.totalScores[0]} : {r.outcome.totalScores[1]} : {r.outcome.totalScores[2]}
                                                     </span>
                                                     <div className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/10 rounded flex-shrink-0">
                                                         <Zap className="h-2.5 w-2.5 text-green-500 fill-current" />
@@ -2077,7 +2126,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                     <span className="text-[10px] font-bold text-slate-400">FT Score:</span>
                                                     <span className="text-[10px] font-black text-white">
                                                         {r.outcome ? (
-                                                            `${r.outcome.totalScores[0]} : ${r.outcome.totalScores[1]} `
+                                                            `${r.outcome.totalScores[0]} : ${r.outcome.totalScores[1]} : ${r.outcome.totalScores[2]} `
                                                         ) : (
                                                             <span className="text-green-400">Cashed Out</span>
                                                         )}
