@@ -22,6 +22,7 @@ export default function WithdrawPage() {
     const [verifying, setVerifying] = useState(false)
     const [otpSent, setOtpSent] = useState(false)
     const [detectedProvider, setDetectedProvider] = useState<string>("")
+    const [userPhone, setUserPhone] = useState<string>("")
     const [isVerified, setIsVerified] = useState(true) // Initial assume verified, check on load
 
     useEffect(() => {
@@ -30,7 +31,9 @@ export default function WithdrawPage() {
             try {
                 const response = await getUserProfileSummary();
                 if (response.success && response.user) {
-                    setIsVerified(!!(response.user as any).phoneVerified);
+                    const freshUser = response.user as any;
+                    setIsVerified(!!freshUser.phoneVerified);
+                    setUserPhone(freshUser.phone || "");
                 }
             } catch (err) {
                 console.error("Failed to check verification status", err);
@@ -40,13 +43,14 @@ export default function WithdrawPage() {
     }, []);
 
     useEffect(() => {
-        if (session?.user?.phone) {
-            const method = detectPaymentMethod(session.user.phone);
+        const phoneToUse = userPhone || session?.user?.phone;
+        if (phoneToUse) {
+            const method = detectPaymentMethod(phoneToUse);
             if (method) {
                 setDetectedProvider(getProviderName(method));
             }
         }
-    }, [session])
+    }, [session, userPhone])
 
     const handleSendOTP = async () => {
         setVerifying(true)
@@ -91,6 +95,7 @@ export default function WithdrawPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
+        setLoading(true)
 
         if (!isVerified) {
             setError("Your phone number is not verified. Please verify it first.")
@@ -171,7 +176,7 @@ export default function WithdrawPage() {
                             <Smartphone className="h-8 w-8 text-purple-500" />
                         </div>
                         <h3 className="text-xl font-black text-white">Phone Verification Required</h3>
-                        <p className="text-slate-400 text-sm font-medium">Enter the 6-digit code sent to {session?.user?.phone}</p>
+                        <p className="text-slate-400 text-sm font-medium">Enter the 6-digit code sent to {userPhone || session?.user?.phone}</p>
                     </div>
 
                     <div className="relative group">
@@ -247,7 +252,7 @@ export default function WithdrawPage() {
                             </div>
                             <div>
                                 <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">Account</p>
-                                <p className="text-white font-black mt-1">{session?.user?.phone || "N/A"}</p>
+                                <p className="text-white font-black mt-1">{userPhone || session?.user?.phone || "N/A"}</p>
                             </div>
                         </div>
                         <p className="text-[9px] text-purple-400/80 font-bold uppercase tracking-widest">
