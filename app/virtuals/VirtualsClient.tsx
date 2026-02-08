@@ -306,6 +306,13 @@ const checkSelectionWin = (selection: VirtualSelection, outcome: VirtualMatchOut
     return false;
 }
 
+// Helper function to generate consistent Ticket IDs across all views
+const getTicketId = (betId: string | number | undefined) => {
+    if (!betId) return '801XXXXXX';
+    const idStr = betId.toString();
+    return '801' + idStr.slice(-6).toUpperCase();
+};
+
 export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClientProps) {
     const router = useRouter()
 
@@ -1843,7 +1850,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                 <div className="p-4 border-b border-white/5 bg-slate-900/50">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: 801{lastOutcome?.roundId}</span>
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: {getTicketId(lastOutcome?.roundId)}</span>
                                             <h3 className="text-lg font-black text-white">{betMode === 'multi' ? 'Multiple' : 'Single'}</h3>
                                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Return</span>
                                         </div>
@@ -2072,7 +2079,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                                                 <div className="px-4 py-2 border-t border-white/5 bg-black/20 flex justify-between items-center">
                                                     <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">QuickGame</span>
-                                                    <span className="text-[8px] font-bold text-slate-500">Ticket ID: {h.id.includes('-') ? h.id.split('-')[1].slice(-6) : h.id.slice(-6)}</span>
+                                                    <span className="text-[8px] font-bold text-slate-500">Ticket ID: {getTicketId(h.id)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2117,7 +2124,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                 <div className="p-4 border-b border-white/5 bg-slate-900/50">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: 801{viewedHistoryTicket.id?.toString().slice(-4) || 'XXXX'}</span>
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: {getTicketId(viewedHistoryTicket.id)}</span>
                                             <h3 className="text-lg font-black text-white">{viewedHistoryTicket.mode === 'multi' ? 'Multiple' : 'Single'}</h3>
                                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Return</span>
                                         </div>
