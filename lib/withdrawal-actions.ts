@@ -159,6 +159,23 @@ async function processPaystackWithdrawal(
         );
 
         if (!transferResult.status) {
+            // Check if failure is due to Starter account limitation
+            const isStarterError =
+                transferResult.message?.toLowerCase().includes("starter") ||
+                transferResult.message?.toLowerCase().includes("business payout") ||
+                transferResult.message?.toLowerCase().includes("transfer")
+
+            if (isStarterError) {
+                // Keep as pending but add note for manual processing
+                await db.update(withdrawalRequests)
+                    .set({
+                        adminNotes: `Manual processing required: ${transferResult.message}`,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(withdrawalRequests.id, withdrawalId));
+                return;
+            }
+
             await handleWithdrawalFailure(withdrawalId, transferResult.message);
             return;
         }
