@@ -5,29 +5,30 @@ import { verificationCodes, users } from "@/lib/db/schema"
 import { eq, and, gt } from "drizzle-orm"
 import { vynfy } from "@/lib/vynfy-client"
 import { randomBytes } from "crypto"
+import { auth } from "@/lib/auth"
 
 /**
  * Generates a 6-digit OTP, stores it in DB, and sends it via SMS.
  */
-export async function generateAndSendOTP(phone: string) {
+export async function generateAndSendOTP(phone: string, isExistingUser = false) {
     if (!phone || phone.length < 10) {
         return { success: false, error: "Invalid phone number" }
     }
 
-    // Check if phone is already registered
-    try {
-        const existingUser = await db.query.users.findFirst({
-            where: eq(users.phone, phone)
-        })
+    // Check if phone is already registered (only for signup flow)
+    if (!isExistingUser) {
+        try {
+            const existingUser = await db.query.users.findFirst({
+                where: eq(users.phone, phone)
+            })
 
-        if (existingUser) {
-            return { success: false, error: "Phone number is already associated with an account" }
+            if (existingUser) {
+                return { success: false, error: "Phone number is already associated with an account" }
+            }
+        } catch (e) {
+            console.error("Duplicate phone check error:", e)
+            return { success: false, error: "Internal Error during verification" }
         }
-    } catch (e) {
-        console.error("Duplicate phone check error:", e)
-        // Proceed if DB check fails for some reason? Or fail safe? 
-        // Let's fail safe - we want to ensure uniqueness.
-        return { success: false, error: "Internal Error during verification" }
     }
 
     try {
@@ -92,4 +93,46 @@ export async function verifyOTP(phone: string, code: string) {
         console.error("Verify OTP Error:", error)
         return { success: false, error: "Internal Error" }
     }
+}
+
+/**
+ * Specifically for logged-in users who need to verify their current number.
+ */
+export async function sendVerificationOTP() {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id)
+    });
+
+    if (!user) return { success: false, error: "User not found" };
+
+    return generateAndSendOTP(user.phone, true);
+}
+
+/**
+ * Verifies OTP and marks the user as verified in the DB.
+ */
+export async function verifyAndMarkUser(code: string) {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id)
+    });
+
+    if (!user) return { success: false, error: "User not found" };
+
+    const result = await verifyOTP(user.phone, code);
+
+    if (result.success) {
+        await db.update(users)
+            .set({ phoneVerified: new Date() })
+            .where(eq(users.id, user.id));
+
+        return { success: true, message: "Phone verified successfully!" };
+    }
+
+    return result;
 }

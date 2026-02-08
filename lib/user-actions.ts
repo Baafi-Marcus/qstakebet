@@ -16,7 +16,7 @@ export async function getUserProfileSummary() {
         const userId = session.user.id
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
-            columns: { name: true, phone: true, createdAt: true, email: true }
+            columns: { name: true, phone: true, createdAt: true, email: true, phoneVerified: true }
         })
 
         const wallet = await db.query.wallets.findFirst({
