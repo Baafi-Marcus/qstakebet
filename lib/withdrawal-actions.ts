@@ -231,6 +231,14 @@ async function handleWithdrawalFailure(withdrawalId: string, reason: string) {
             })
             .where(eq(withdrawalRequests.id, withdrawalId));
 
+        // Update transaction status
+        await db.update(transactions)
+            .set({
+                paymentStatus: "failed",
+                updatedAt: new Date()
+            })
+            .where(eq(transactions.reference, withdrawalId));
+
     } catch (error) {
         console.error("Refund error:", error);
     }

@@ -169,9 +169,17 @@ export default function WithdrawalManagementClient({ initialRequests }: { initia
                                                 </button>
                                             </div>
                                         ) : (
-                                            <span className="text-[9px] font-bold text-slate-700 uppercase tracking-widest italic">
-                                                Processed
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className={cn(
+                                                    "text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded inline-block w-fit",
+                                                    req.status === 'paid' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                                                )}>
+                                                    {req.status === 'paid' ? 'Completed' : 'Rejected'}
+                                                </span>
+                                                <span className="text-[8px] font-bold text-slate-700 uppercase tracking-widest italic px-1">
+                                                    Action Logged
+                                                </span>
+                                            </div>
                                         )}
                                     </td>
                                 </tr>
