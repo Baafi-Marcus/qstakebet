@@ -129,9 +129,6 @@ export function MatchRow({
                     {participants.map((p, idx) => (
                         <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 50}ms` }}>
                             <span className="text-[9px] sm:text-[10px] font-bold text-white truncate max-w-[120px] md:max-w-none uppercase tracking-tighter">{p.name}</span>
-                            {isSimulating && currentScores && (
-                                <span className="text-[10px] sm:text-xs font-black font-mono text-red-500 ml-1.5">{currentScores[idx]}</span>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -155,7 +152,7 @@ export function MatchRow({
                         {participants.map((p, idx) => (
                             <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
                                 <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
-                                    {p.name.split(' ').pop()}
+                                    {(idx + 1)}
                                 </span>
                                 <span className={cn(
                                     "text-sm font-black font-mono tabular-nums leading-none",

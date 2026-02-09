@@ -806,7 +806,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
     const skipToResult = () => {
         isSimulatingRef.current = false
-        setIsSimulating(false)
+        // Don't set isSimulating(false) here, let the kickoff loop finish or jump
         setSimulationProgress(60)
     }
 
@@ -1126,7 +1126,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                         : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
                                 )}
                             >
-                                Best of Best
+                                National
                             </button>
                             <button
                                 onClick={() => {
@@ -1148,6 +1148,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
+                        {/* Balance Display */}
                         <div
                             onClick={() => setBalanceType('cash')}
                             className={cn(
@@ -1195,7 +1196,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-44 md:pb-32">
                         {/* Region Scroller (Only if Regional selected) */}
-                        {selectedCategory === 'regional' && (
+                        {!isSimulationActive && selectedCategory === 'regional' && (
                             <div className="flex bg-slate-950/40 p-2 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar mb-4 gap-2">
                                 {availableRegions.map(region => (
                                     <button
@@ -1214,45 +1215,39 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                             </div>
                         )}
 
-                        {/* Market Scroller */}
-                        <div className="flex bg-slate-950/80 border-b border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 mb-4">
-                            <div className="flex items-center gap-4 min-w-max">
-                                {[
-                                    { id: 'winner', label: 'Match Winner' },
-                                    { id: 'total_points', label: 'Total Points' },
-                                    { id: 'winning_margin', label: 'Winning Margin' },
-                                    { id: 'round_winner', label: 'Round Winners' },
-                                    { id: 'perfect_round', label: 'Perfect Round' },
-                                    { id: 'shutout_round', label: 'Shutout Round' },
-                                    { id: 'first_bonus', label: 'First Bonus' },
-                                    { id: 'comeback_win', label: 'Comeback Win' },
-                                    { id: 'comeback_team', label: 'Comeback Team' },
-                                    { id: 'lead_changes', label: 'Lead Changes' },
-                                    { id: 'late_surge', label: 'Late Surge' },
-                                ].map((m) => (
-                                    <button
-                                        key={m.id}
-                                        onClick={() => setActiveMarket(m.id as typeof activeMarket)}
-                                        className={cn(
-                                            "px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] transition-all border whitespace-nowrap",
-                                            activeMarket === m.id
-                                                ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                                        )}
-                                    >
-                                        {m.label.toUpperCase()}
-                                    </button>
-                                ))}
+                        {/* Market Selection & Groups */}
+                        {!isSimulationActive && (
+                            <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md -mx-4 md:-mx-8 px-4 md:px-8 py-4 mb-4 space-y-4 border-b border-white/5">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                                    {[
+                                        { id: 'winner', label: 'Match Winner' },
+                                        { id: 'total_points', label: 'Total Points' },
+                                        { id: 'winning_margin', label: 'Winning Margin' },
+                                        { id: 'round_winner', label: 'Round Winners' },
+                                        { id: 'perfect_round', label: 'Perfect Round' },
+                                        { id: 'shutout_round', label: 'Shutout Round' },
+                                        { id: 'first_bonus', label: 'First Bonus' },
+                                        { id: 'comeback_win', label: 'Comeback Win' },
+                                        { id: 'comeback_team', label: 'Comeback Team' },
+                                        { id: 'lead_changes', label: 'Lead Changes' },
+                                        { id: 'late_surge', label: 'Late Surge' },
+                                    ].map((m) => (
+                                        <button
+                                            key={m.id}
+                                            onClick={() => setActiveMarket(m.id as typeof activeMarket)}
+                                            className={cn(
+                                                "px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] transition-all border whitespace-nowrap",
+                                                activeMarket === m.id
+                                                    ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                            )}
+                                        >
+                                            {m.label.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Match List Header */}
-                        <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-y border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            <span className="flex-1">Match / Contestants</span>
-                            <div className="flex gap-4 md:gap-8 pr-12 min-w-[200px] justify-end">
-                                <span>{activeMarket === 'winner' ? '1 - 2 - 3' : 'Selections'}</span>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Match List */}
                         <div className="flex flex-col mb-12 bg-slate-950/20 rounded-b-2xl border-x border-b border-white/5">
@@ -1288,108 +1283,66 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                             return [0, 1, 2].map(sIdx => roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)) as [number, number, number];
                                         })()}
                                     />
-                                    {isSimulating && (
-                                        <button
-                                            onClick={() => setActiveLiveMatch(match.id)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-lg shadow-red-600/20 z-10"
-                                        >
-                                            View Live
-                                        </button>
-                                    )}
                                 </div>
                             ))}
                             {filteredMatches.length === 0 && (
-                                <div className="py-20 text-center">
-                                    <p className="text-slate-500 font-bold uppercase tracking-widest">No matches in Round {currentRound}</p>
+                                <div className="p-20 text-center opacity-20">
+                                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mx-auto mb-4">
+                                        <Zap className="h-8 w-8" />
+                                    </div>
+                                    <p className="font-black uppercase tracking-widest text-xs">No matches found</p>
                                 </div>
                             )}
                         </div>
-
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                Pending Slips
-                            </h2>
-                        </div>
-
-                        {/* Pending list removed from here as it moves inside Betslip modal */}
                     </div>
                 </main>
             </div>
 
             {/* Fixed Bottom Navigation - SportyBet Style Tab Bar */}
             {!isSimulationActive && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#121212]/95 backdrop-blur-xl border-t border-white/10 px-2 flex flex-col justify-center pb-[env(safe-area-inset-bottom,16px)] pt-2">
-                    <div className="max-w-[1400px] mx-auto w-full flex items-stretch h-[56px] md:h-[64px] gap-2">
-                        {/* Left Section: Contextual Actions */}
-                        <div className="flex-1 flex items-center gap-2">
-                            <button
-                                onClick={nextRound}
-                                disabled={isSimulating}
-                                className="h-full px-4 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl border border-white/5 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Next
-                            </button>
-
-                            {isSimulating && (
-                                <div className="hidden sm:flex flex-1 h-full bg-slate-950 rounded-xl border border-white/5 overflow-hidden flex-col justify-center px-4">
-                                    <div className="flex justify-between text-[8px] font-black uppercase tracking-tighter mb-1">
-                                        <span className="text-red-500 animate-pulse">LIVE</span>
-                                        <span className="text-white">{Math.round((simulationProgress / 60) * 100)}%</span>
-                                    </div>
-                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-red-600 transition-all duration-1000"
-                                            style={{ width: `${(simulationProgress / 60) * 100}%` }}
-                                        />
-                                    </div>
+                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none">
+                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pointer-events-auto">
+                        {/* Left Side: Active Slips Counter or History Trigger */}
+                        <div className="flex -space-x-3">
+                            {pendingSlips.slice(0, 3).map((slip, i) => (
+                                <div key={slip.id} className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center shadow-xl animate-in fade-in slide-in-from-left-4 duration-300" style={{ transitionDelay: `${i * 100}ms` }}>
+                                    <Ticket className="h-4 w-4 text-purple-400" />
                                 </div>
-                            )}
+                            ))}
                         </div>
 
-                        {/* Center Section: The Betslip Tab (Sporty Style) */}
-                        <button
-                            onClick={() => setShowSlip(!showSlip)}
-                            className={cn(
-                                "flex-1 max-w-[140px] h-full relative flex flex-col items-center justify-center transition-all duration-300 active:scale-95",
-                                selections.length > 0
-                                    ? "bg-red-600 text-white shadow-[0_-4px_15px_rgba(220,38,38,0.3)] rounded-t-xl translate-y-[-4px]"
-                                    : "text-slate-500 hover:text-slate-300"
-                            )}
-                        >
-                            <Zap className={cn("h-5 w-5 mb-1", selections.length > 0 ? "fill-white" : "fill-current animate-pulse")} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.1em]">Betslip</span>
-
-                            {selections.length > 0 && (
-                                <div className="absolute top-1 right-3 w-6 h-6 bg-white text-red-600 rounded-full flex items-center justify-center text-[11px] font-black shadow-lg animate-in zoom-in duration-300">
-                                    {selections.length}
-                                </div>
-                            )}
-
-                            {pendingSlips.length > 0 && selections.length === 0 && (
-                                <div className="absolute top-1 right-3 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-[#121212] shadow-lg">
-                                    {pendingSlips.length}
-                                </div>
-                            )}
-                        </button>
-
-                        {/* Right Section: Kickoff Action */}
-                        <div className="flex-1 flex items-center justify-end gap-2">
+                        {/* Center: Main Betting CTA */}
+                        <div className="flex-1 flex items-center gap-2">
                             <button
-                                onClick={kickoff}
+                                onClick={() => kickoff()}
                                 disabled={isSimulating || pendingSlips.length === 0}
                                 className={cn(
-                                    "h-full px-6 font-black uppercase text-[11px] tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2",
-                                    isSimulating ? "bg-slate-800 text-slate-500" :
-                                        pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
-                                            "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                                    "flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5",
+                                    isSimulating ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50" :
+                                        pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5" :
+                                            "bg-red-600 hover:bg-red-500 text-white shadow-red-600/20"
                                 )}
                             >
-                                {isSimulating ? "LIVE" : "KICKOFF"}
+                                <span className="text-xs">{isSimulating ? "SIMULATING..." : "KICKOFF"}</span>
                                 {!isSimulating && pendingSlips.length > 0 && (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                    <span className="text-[8px] opacity-70">{pendingSlips.length} SLIPS PENDING</span>
                                 )}
+                            </button>
+
+                            <button
+                                onClick={() => setShowSlip(true)}
+                                className={cn(
+                                    "h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95",
+                                    selections.length > 0 ? "bg-purple-600 text-white shadow-purple-600/20" : "bg-slate-800 text-slate-500 border border-white/5"
+                                )}
+                            >
+                                <Zap className={cn("h-5 w-5", selections.length > 0 ? "fill-current" : "")} />
+                                {selections.length > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
+                                        {selections.length}
+                                    </span>
+                                )}
+                                <span className="text-[7px] font-black uppercase tracking-widest mt-0.5">SLIP</span>
                             </button>
                         </div>
                     </div>
@@ -1955,9 +1908,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                                         <span className="w-14 text-slate-500 font-bold flex-shrink-0">Outcome:</span>
                                                         <span className="font-bold text-slate-300">
                                                             {(() => {
+                                                                const schoolsArr = [r.schoolA, r.schoolB, r.schoolC].filter(Boolean);
                                                                 const market = r.marketName;
                                                                 const outcome = r.outcome;
-                                                                if (market === "Match Winner") return getSchoolAcronym(outcome.schools[outcome.winnerIndex], outcome.schools);
+                                                                if (market === "Match Winner") return getSchoolAcronym(outcome.schools[outcome.winnerIndex], schoolsArr);
                                                                 if (market === "Total Points") return `Total ${outcome.totalScores.reduce((a: number, b: number) => a + b, 0)} pts`;
                                                                 if (market === "Winning Margin") {
                                                                     const sorted = [...outcome.totalScores].sort((a: number, b: number) => b - a);
@@ -2181,7 +2135,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-[10px] text-slate-500 font-bold mb-1">Match Detail</div>
                                                 <div className="text-sm font-bold text-white mb-2 truncate">
-                                                    {[r.schoolA, r.schoolB].map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB])).join(' vs ')}
+                                                    {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC].filter(Boolean))).join(' vs ')}
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mb-3">
@@ -2288,15 +2242,17 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 )
             }
             {/* Match Details Modal */}
-            {selectedMatchForDetails && (
-                <MatchDetailsModal
-                    match={selectedMatchForDetails}
-                    onClose={() => setSelectedMatchForDetails(null)}
-                    onOddsClick={toggleSelection}
-                    checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
-                    checkIsCorrelated={checkIsCorrelated}
-                />
-            )}
-        </div>
+            {
+                selectedMatchForDetails && (
+                    <MatchDetailsModal
+                        match={selectedMatchForDetails}
+                        onClose={() => setSelectedMatchForDetails(null)}
+                        onOddsClick={toggleSelection}
+                        checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
+                        checkIsCorrelated={checkIsCorrelated}
+                    />
+                )
+            }
+        </div >
     );
 }
