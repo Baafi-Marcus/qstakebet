@@ -35,12 +35,32 @@ export default function WithdrawalManagementClient({ initialRequests }: { initia
     const [requests, setRequests] = useState(initialRequests)
     const [loading, setLoading] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
+    const [activeTab, setActiveTab] = useState<'pending' | 'paid' | 'rejected'>('pending')
 
-    const filteredRequests = requests.filter(req =>
-        req.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.accountNumber.includes(searchTerm) ||
-        req.id.includes(searchTerm)
-    )
+    const counts = {
+        pending: requests.filter(r => r.status === 'pending' || r.status === 'approved').length,
+        paid: requests.filter(r => r.status === 'paid').length,
+        rejected: requests.filter(r => r.status === 'rejected').length
+    }
+
+    const filteredRequests = requests.filter(req => {
+        // Status filter
+        const statusMatch =
+            activeTab === 'pending' ? (req.status === 'pending' || req.status === 'approved') :
+                activeTab === 'paid' ? (req.status === 'paid') :
+                    (req.status === 'rejected')
+
+        if (!statusMatch) return false
+
+        // Search filter
+        if (!searchTerm) return true
+
+        return (
+            req.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            req.accountNumber.includes(searchTerm) ||
+            req.id.includes(searchTerm)
+        )
+    })
 
     const handleApprove = async (id: string) => {
         if (!confirm("Are you sure you have manually sent the funds to this user? This will finalize the transaction.")) return
@@ -73,6 +93,35 @@ export default function WithdrawalManagementClient({ initialRequests }: { initia
 
     return (
         <div className="space-y-6">
+            {/* Tabs */}
+            <div className="flex items-center gap-2 border-b border-white/5 pb-1 overflow-x-auto scroller-hidden">
+                {[
+                    { id: 'pending', label: 'Pending Payouts', count: counts.pending, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                    { id: 'paid', label: 'Paid / Confirmed', count: counts.paid, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                    { id: 'rejected', label: 'Rejected', count: counts.rejected, color: 'text-red-400', bg: 'bg-red-400/10' },
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={cn(
+                            "px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative flex items-center gap-3 whitespace-nowrap",
+                            activeTab === tab.id ? "text-white" : "text-slate-500 hover:text-slate-300"
+                        )}
+                    >
+                        {tab.label}
+                        <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-black tracking-normal",
+                            activeTab === tab.id ? tab.bg + " " + tab.color : "bg-slate-800 text-slate-600"
+                        )}>
+                            {tab.count}
+                        </span>
+                        {activeTab === tab.id && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600 rounded-full" />
+                        )}
+                    </button>
+                ))}
+            </div>
+
             {/* Search Bar */}
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
