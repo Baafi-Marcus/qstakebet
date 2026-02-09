@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { bets, transactions, users, matches, wallets } from "@/lib/db/schema"
+import { bets, transactions, users, matches, wallets, withdrawalRequests, tournaments, schools } from "@/lib/db/schema"
 import { eq, sum, count, desc, sql, and, gte } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
@@ -36,11 +36,14 @@ export async function getAdminAnalytics() {
         // 3. User Stats
         const userStats = await db.select({ count: count() }).from(users)
 
-        // 4. Match Stats
         const matchStats = await db.select({
             status: matches.status,
             count: count()
         }).from(matches).groupBy(matches.status)
+
+        // 4b. Tournament & School counts
+        const tournamentCount = await db.select({ count: count() }).from(tournaments)
+        const schoolCount = await db.select({ count: count() }).from(schools)
 
         // 5. Recent 24h Activity
         const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -48,8 +51,10 @@ export async function getAdminAnalytics() {
             volume: sum(bets.stake)
         }).from(bets).where(gte(bets.createdAt, dayAgo))
 
-        // 6. Top Winning Schools (by payout) - logic for insight
-        // This is complex in JSON, skipping for now for speed
+        // 6. Pending Withdrawals
+        const pendingWithdrawals = await db.select({ count: count() })
+            .from(withdrawalRequests)
+            .where(eq(withdrawalRequests.status, "pending"))
 
         return {
             success: true,
@@ -58,9 +63,12 @@ export async function getAdminAnalytics() {
                 totalPayout: totalPayout,
                 estimatedProfit: platformProfit,
                 totalUsers: Number(userStats[0]?.count || 0),
+                totalTournaments: Number(tournamentCount[0]?.count || 0),
+                totalSchools: Number(schoolCount[0]?.count || 0),
                 totalBets: Number(bettingStats[0]?.betCount || 0),
                 last24hVolume: Number(last24hVolume[0]?.volume || 0),
-                payoutRatio: totalStaked > 0 ? (totalPayout / totalStaked) * 100 : 0
+                payoutRatio: totalStaked > 0 ? (totalPayout / totalStaked) * 100 : 0,
+                pendingWithdrawals: Number(pendingWithdrawals[0]?.count || 0)
             },
             matchBreakdown: matchStats.map(s => ({
                 status: s.status,

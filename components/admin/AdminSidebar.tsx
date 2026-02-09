@@ -12,13 +12,15 @@ import {
     Settings,
     Activity,
     LineChart,
-    Monitor
+    Monitor,
+    CreditCard
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
     { name: "Intelligence", href: "/admin", icon: LayoutDashboard },
     { name: "User Registry", href: "/admin/users", icon: Users },
+    { name: "Payouts", href: "/admin/withdrawals", icon: CreditCard },
     { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Tournaments", href: "/admin/tournaments", icon: Trophy },
     { name: "Institutions", href: "/admin/schools", icon: School },

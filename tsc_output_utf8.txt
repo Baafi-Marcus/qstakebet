@@ -1,3 +1,0 @@
-﻿lib/virtual-actions.ts(166,99): error TS2559: Type 'VirtualMatchOutcome' has no properties in common with type '{ winner?: string | undefined; scores?: Record<string, number> | undefined; metadata?: Record<string, unknown> | undefined; }'.
-lib/virtual-actions.ts(199,95): error TS2559: Type 'VirtualMatchOutcome' has no properties in common with type '{ winner?: string | undefined; scores?: Record<string, number> | undefined; metadata?: Record<string, unknown> | undefined; }'.
-
