@@ -1083,7 +1083,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     {/* Skip Button - Compact inside player */}
                     {isSimulating && simulationProgress < 60 && (
                         <button
-                            onClick={kickoff}
+                            onClick={skipToResult}
                             className="absolute bottom-4 right-4 bg-black/40 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
                         >
                             Skip
@@ -1094,98 +1094,102 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         );
     };
 
+    const isSimulationActive = isSimulating || (countdown !== null);
+
     return (
         <div className="min-h-screen bg-background flex flex-col">
             {/* Custom Virtuals Navbar */}
-            <div className="flex items-center bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 py-3 px-4 gap-4">
-                {/* Left: Back Button */}
-                <button
-                    onClick={() => router.push('/')}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors shrink-0"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                </button>
-
-                <div className="h-6 w-px bg-white/10 shrink-0" />
-
-                {/* Middle: Category Selector */}
-                <div className="flex-1 overflow-x-auto no-scrollbar">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => {
-                                setSelectedCategory('national');
-                                setSelectedRegion(null);
-                            }}
-                            className={cn(
-                                "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
-                                selectedCategory === 'national'
-                                    ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                            )}
-                        >
-                            Best of Best
-                        </button>
-                        <button
-                            onClick={() => {
-                                setSelectedCategory('regional');
-                                if (!selectedRegion && availableRegions.length > 0) {
-                                    setSelectedRegion(availableRegions[0]);
-                                }
-                            }}
-                            className={cn(
-                                "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
-                                selectedCategory === 'regional'
-                                    ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                            )}
-                        >
-                            Regional
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
-                    <div
-                        onClick={() => setBalanceType('cash')}
-                        className={cn(
-                            "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
-                            balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
-                        )}
-                    >
-                        <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-400")} />
-                        <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
-                            {(profile?.balance || 0).toFixed(2)}
-                        </span>
-                    </div>
-
-                    <div
-                        onClick={() => setBalanceType('gift')}
-                        className={cn(
-                            "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
-                            balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
-                        )}
-                    >
-                        <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
-                        <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
-                            {(profile?.bonusBalance || 0).toFixed(2)}
-                        </span>
-                    </div>
-
+            {!isSimulationActive && (
+                <div className="flex items-center bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 py-3 px-4 gap-4">
+                    {/* Left: Back Button */}
                     <button
-                        onClick={() => setShowHistoryModal(true)}
-                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors relative"
+                        onClick={() => router.push('/')}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors shrink-0"
                     >
-                        <Ticket className="h-4 w-4" />
-                        {/* Dot indicator if active bets exist? */}
-                        {betHistory.some(b => b.status === "PENDING") && (
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
-                        )}
+                        <ArrowLeft className="h-4 w-4" />
                     </button>
+
+                    <div className="h-6 w-px bg-white/10 shrink-0" />
+
+                    {/* Middle: Category Selector */}
+                    <div className="flex-1 overflow-x-auto no-scrollbar">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    setSelectedCategory('national');
+                                    setSelectedRegion(null);
+                                }}
+                                className={cn(
+                                    "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
+                                    selectedCategory === 'national'
+                                        ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                Best of Best
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setSelectedCategory('regional');
+                                    if (!selectedRegion && availableRegions.length > 0) {
+                                        setSelectedRegion(availableRegions[0]);
+                                    }
+                                }}
+                                className={cn(
+                                    "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
+                                    selectedCategory === 'regional'
+                                        ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                Regional
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
+                        <div
+                            onClick={() => setBalanceType('cash')}
+                            className={cn(
+                                "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
+                                balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
+                            )}
+                        >
+                            <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-400")} />
+                            <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                                {(profile?.balance || 0).toFixed(2)}
+                            </span>
+                        </div>
+
+                        <div
+                            onClick={() => setBalanceType('gift')}
+                            className={cn(
+                                "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
+                                balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
+                            )}
+                        >
+                            <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                            <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                                {(profile?.bonusBalance || 0).toFixed(2)}
+                            </span>
+                        </div>
+
+                        <button
+                            onClick={() => setShowHistoryModal(true)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors relative"
+                        >
+                            <Ticket className="h-4 w-4" />
+                            {/* Dot indicator if active bets exist? */}
+                            {betHistory.some(b => b.status === "PENDING") && (
+                                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
+                            )}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex flex-1 overflow-hidden">
-                <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+                <main className="flex-1 flex flex-col overflow-hidden relative">
                     {/* PLAYER VIEW */}
                     {activeLiveMatch && renderSimulationPlayer()}
 
@@ -1310,513 +1314,515 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                         {/* Pending list removed from here as it moves inside Betslip modal */}
                     </div>
+                </main>
+            </div>
 
-                    {/* Fixed Bottom Navigation - SportyBet Style Tab Bar */}
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#121212]/95 backdrop-blur-xl border-t border-white/10 px-2 flex flex-col justify-center pb-[env(safe-area-inset-bottom,16px)] pt-2">
-                        <div className="max-w-[1400px] mx-auto w-full flex items-stretch h-[56px] md:h-[64px] gap-2">
-                            {/* Left Section: Contextual Actions */}
-                            <div className="flex-1 flex items-center gap-2">
-                                <button
-                                    onClick={nextRound}
-                                    disabled={isSimulating}
-                                    className="h-full px-4 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl border border-white/5 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
-                                >
-                                    <ChevronLeft className="h-4 w-4 mr-1" />
-                                    Next
-                                </button>
-
-                                {isSimulating && (
-                                    <div className="hidden sm:flex flex-1 h-full bg-slate-950 rounded-xl border border-white/5 overflow-hidden flex-col justify-center px-4">
-                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-tighter mb-1">
-                                            <span className="text-red-500 animate-pulse">LIVE</span>
-                                            <span className="text-white">{Math.round((simulationProgress / 60) * 100)}%</span>
-                                        </div>
-                                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-red-600 transition-all duration-1000"
-                                                style={{ width: `${(simulationProgress / 60) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Center Section: The Betslip Tab (Sporty Style) */}
+            {/* Fixed Bottom Navigation - SportyBet Style Tab Bar */}
+            {!isSimulationActive && (
+                <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#121212]/95 backdrop-blur-xl border-t border-white/10 px-2 flex flex-col justify-center pb-[env(safe-area-inset-bottom,16px)] pt-2">
+                    <div className="max-w-[1400px] mx-auto w-full flex items-stretch h-[56px] md:h-[64px] gap-2">
+                        {/* Left Section: Contextual Actions */}
+                        <div className="flex-1 flex items-center gap-2">
                             <button
-                                onClick={() => setShowSlip(!showSlip)}
-                                className={cn(
-                                    "flex-1 max-w-[140px] h-full relative flex flex-col items-center justify-center transition-all duration-300 active:scale-95",
-                                    selections.length > 0
-                                        ? "bg-red-600 text-white shadow-[0_-4px_15px_rgba(220,38,38,0.3)] rounded-t-xl translate-y-[-4px]"
-                                        : "text-slate-500 hover:text-slate-300"
-                                )}
+                                onClick={nextRound}
+                                disabled={isSimulating}
+                                className="h-full px-4 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl border border-white/5 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
                             >
-                                <Zap className={cn("h-5 w-5 mb-1", selections.length > 0 ? "fill-white" : "fill-current animate-pulse")} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.1em]">Betslip</span>
-
-                                {selections.length > 0 && (
-                                    <div className="absolute top-1 right-3 w-6 h-6 bg-white text-red-600 rounded-full flex items-center justify-center text-[11px] font-black shadow-lg animate-in zoom-in duration-300">
-                                        {selections.length}
-                                    </div>
-                                )}
-
-                                {pendingSlips.length > 0 && selections.length === 0 && (
-                                    <div className="absolute top-1 right-3 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-[#121212] shadow-lg">
-                                        {pendingSlips.length}
-                                    </div>
-                                )}
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Next
                             </button>
 
-                            {/* Right Section: Kickoff Action */}
-                            <div className="flex-1 flex items-center justify-end gap-2">
+                            {isSimulating && (
+                                <div className="hidden sm:flex flex-1 h-full bg-slate-950 rounded-xl border border-white/5 overflow-hidden flex-col justify-center px-4">
+                                    <div className="flex justify-between text-[8px] font-black uppercase tracking-tighter mb-1">
+                                        <span className="text-red-500 animate-pulse">LIVE</span>
+                                        <span className="text-white">{Math.round((simulationProgress / 60) * 100)}%</span>
+                                    </div>
+                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-red-600 transition-all duration-1000"
+                                            style={{ width: `${(simulationProgress / 60) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Center Section: The Betslip Tab (Sporty Style) */}
+                        <button
+                            onClick={() => setShowSlip(!showSlip)}
+                            className={cn(
+                                "flex-1 max-w-[140px] h-full relative flex flex-col items-center justify-center transition-all duration-300 active:scale-95",
+                                selections.length > 0
+                                    ? "bg-red-600 text-white shadow-[0_-4px_15px_rgba(220,38,38,0.3)] rounded-t-xl translate-y-[-4px]"
+                                    : "text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            <Zap className={cn("h-5 w-5 mb-1", selections.length > 0 ? "fill-white" : "fill-current animate-pulse")} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.1em]">Betslip</span>
+
+                            {selections.length > 0 && (
+                                <div className="absolute top-1 right-3 w-6 h-6 bg-white text-red-600 rounded-full flex items-center justify-center text-[11px] font-black shadow-lg animate-in zoom-in duration-300">
+                                    {selections.length}
+                                </div>
+                            )}
+
+                            {pendingSlips.length > 0 && selections.length === 0 && (
+                                <div className="absolute top-1 right-3 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-[#121212] shadow-lg">
+                                    {pendingSlips.length}
+                                </div>
+                            )}
+                        </button>
+
+                        {/* Right Section: Kickoff Action */}
+                        <div className="flex-1 flex items-center justify-end gap-2">
+                            <button
+                                onClick={kickoff}
+                                disabled={isSimulating || pendingSlips.length === 0}
+                                className={cn(
+                                    "h-full px-6 font-black uppercase text-[11px] tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2",
+                                    isSimulating ? "bg-slate-800 text-slate-500" :
+                                        pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
+                                            "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                                )}
+                            >
+                                {isSimulating ? "LIVE" : "KICKOFF"}
+                                {!isSimulating && pendingSlips.length > 0 && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Fullscreen Modal Bet Slip */}
+            {
+                showSlip && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+                            onClick={() => setShowSlip(false)}
+                        />
+
+                        {/* Fullscreen Modal Content */}
+                        <div className="relative w-full h-full bg-slate-900 flex flex-col animate-in fade-in duration-200">
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                                <div className="flex items-center gap-3">
+                                    <Zap className="h-5 w-5 text-purple-400" />
+                                    <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
+                                </div>
+                                <button onClick={() => setShowSlip(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400">
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            {/* Selections / My Bets Tabs */}
+                            <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5">
                                 <button
-                                    onClick={kickoff}
-                                    disabled={isSimulating || pendingSlips.length === 0}
+                                    onClick={() => setSlipTab('selections')}
                                     className={cn(
-                                        "h-full px-6 font-black uppercase text-[11px] tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2",
-                                        isSimulating ? "bg-slate-800 text-slate-500" :
-                                            pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
-                                                "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                                        "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
+                                        slipTab === 'selections' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
                                     )}
                                 >
-                                    {isSimulating ? "LIVE" : "KICKOFF"}
-                                    {!isSimulating && pendingSlips.length > 0 && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                    Selections
+                                    {selections.length > 0 && (
+                                        <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                            {selections.length}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setSlipTab('pending')}
+                                    className={cn(
+                                        "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
+                                        slipTab === 'pending' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
+                                    )}
+                                >
+                                    My Bets
+                                    {pendingSlips.length > 0 && (
+                                        <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                            {pendingSlips.length}
+                                        </span>
                                     )}
                                 </button>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Fullscreen Modal Bet Slip */}
-                    {
-                        showSlip && (
-                            <div className="fixed inset-0 z-[60] flex items-center justify-center">
-                                {/* Backdrop */}
-                                <div
-                                    className="absolute inset-0 bg-black/90 backdrop-blur-sm"
-                                    onClick={() => setShowSlip(false)}
-                                />
-
-                                {/* Fullscreen Modal Content */}
-                                <div className="relative w-full h-full bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
-                                        <div className="flex items-center gap-3">
-                                            <Zap className="h-5 w-5 text-purple-400" />
-                                            <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
-                                        </div>
-                                        <button onClick={() => setShowSlip(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400">
-                                            <X className="h-5 w-5" />
+                            {slipTab === 'selections' ? (
+                                <>
+                                    {/* Balance Selector in Slip */}
+                                    <div className="flex gap-2 mb-4">
+                                        <button
+                                            onClick={() => setBalanceType('cash')}
+                                            className={cn(
+                                                "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
+                                            </div>
+                                            <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                                                {(profile?.balance || 0).toFixed(2)}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setBalanceType('gift')}
+                                            className={cn(
+                                                "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
+                                            </div>
+                                            <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                                                {(profile?.bonusBalance || 0).toFixed(2)}
+                                            </span>
                                         </button>
                                     </div>
 
-                                    {/* Selections / My Bets Tabs */}
-                                    <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5">
+                                    {/* Singles/Multi/System Toggle */}
+                                    <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-4 max-w-[200px] shadow-inner">
+                                        {(['single', 'multi'] as const).map((mode) => (
+                                            <button
+                                                key={mode}
+                                                onClick={() => setBetMode(mode)}
+                                                className={cn(
+                                                    "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all",
+                                                    betMode === mode
+                                                        ? "bg-purple-600 text-white shadow-lg shadow-purple-900/50"
+                                                        : "text-slate-500 hover:text-slate-300"
+                                                )}
+                                            >
+                                                {mode}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Selections List - Ultra Compact */}
+                                    <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
+                                        {selections.map((sel) => (
+                                            <div
+                                                key={sel.selectionId}
+                                                onClick={() => {
+                                                    if (isSimulating) return;
+                                                    const match = matches.find(m => m.id === sel.matchId);
+                                                    if (match) {
+                                                        setSelectedMatchForDetails(match);
+                                                        setShowSlip(false);
+                                                    }
+                                                }}
+                                                className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3 cursor-pointer active:scale-[0.98]"
+                                            >
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleSelection(sel);
+                                                    }}
+                                                    className="absolute top-1 left-1 text-slate-500 hover:text-red-400 transition-colors"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+
+                                                {/* Compact single row layout */}
+                                                <div className="flex items-center justify-between gap-3 pl-5">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-[9px] font-bold text-white leading-tight truncate">
+                                                            {sel.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')}
+                                                        </div>
+                                                        <div className="text-[8px] text-slate-400 leading-tight truncate mt-0.5">
+                                                            {sel.matchLabel.split(' vs ').map(name => getSchoolAcronym(name, [sel.schoolA, sel.schoolB])).join(' vs ')}
+                                                        </div>
+                                                        <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-0.5">
+                                                            {sel.marketName}
+                                                        </div>
+                                                        {/* Individual Leg Stake (Singles Mode Overlay) */}
+                                                        {betMode === 'single' && (
+                                                            <div className="mt-2 pt-1 border-t border-white/5 flex items-center justify-between">
+                                                                <span className="text-[7px] font-black text-slate-500 uppercase italic">MAX {sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS}</span>
+                                                                <div className="flex items-center gap-1 bg-black/40 rounded p-1 border border-white/10">
+                                                                    <span className="text-[7px] text-slate-500 font-bold">GHS</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={sel.stakeUsed || ""}
+                                                                        onChange={(e) => {
+                                                                            const val = parseFloat(e.target.value);
+                                                                            const limit = sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS;
+                                                                            const cappedVal = isNaN(val) ? 0 : Math.min(val, limit);
+
+                                                                            setSelections(prev => prev.map(s =>
+                                                                                s.selectionId === sel.selectionId ? { ...s, stakeUsed: cappedVal } : s
+                                                                            ));
+                                                                        }}
+                                                                        className="w-10 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
+                                                                        placeholder="0.00"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <div className="text-sm font-black text-accent font-mono">{sel.odds.toFixed(2)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2">
+                                        {/* Alerts at bottom for visibility */}
+                                        {hasConflicts && (
+                                            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
+                                                <ShieldAlert className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
+                                                <p className="text-[7px] font-bold text-red-400 leading-tight">Multiple markets from same match = Singles only</p>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                            <div className="flex flex-col">
+                                                <span>Total Stake</span>
+                                                <span className="text-[7px] text-slate-500 lowercase leading-none mt-0.5">limit {STAKE_LIMITS.TOTAL_SLIP}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 bg-black/40 rounded p-1.5 border border-white/10">
+                                                <span className="text-[8px] text-slate-500 font-bold">GHS</span>
+                                                <input
+                                                    type="number"
+                                                    value={globalStake || ""}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (val > STAKE_LIMITS.TOTAL_SLIP) {
+                                                            setGlobalStake(STAKE_LIMITS.TOTAL_SLIP);
+                                                        } else {
+                                                            setGlobalStake(isNaN(val) ? 0 : val);
+                                                        }
+                                                    }}
+                                                    className="w-12 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                            <span>Total Odds</span>
+                                            <div className="text-white font-mono text-sm">
+                                                {calculateTotalOdds(selections).toFixed(2)}
+                                            </div>
+                                        </div>
+
+                                        {(() => {
+                                            const baseWin = (betMode === 'single'
+                                                ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
+                                                : calculateTotalOdds(selections) * globalStake
+                                            );
+                                            const count = selections.length;
+
+                                            if (betMode !== 'multi' || count < MULTI_BONUS.MIN_SELECTIONS) return null;
+
+                                            let bonusPct = 0;
+                                            Object.entries(MULTI_BONUS.SCALING)
+                                                .sort((a, b) => Number(b[0]) - Number(a[0]))
+                                                .some(([threshold, percent]) => {
+                                                    if (count >= Number(threshold)) {
+                                                        bonusPct = Number(percent);
+                                                        return true;
+                                                    }
+                                                    return false;
+                                                });
+
+                                            const bonusAmount = baseWin * (bonusPct / 100);
+                                            const cappedBonus = Math.min(bonusAmount, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+
+                                            if (cappedBonus <= 0) return null;
+
+                                            return (
+                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                                    <span className="flex items-center gap-1.5 text-purple-400">
+                                                        <Trophy className="h-3 w-3" />
+                                                        Max Bonus ({bonusPct}%)
+                                                    </span>
+                                                    <div className="text-purple-400 font-mono text-sm">
+                                                        + GHS {cappedBonus.toFixed(2)}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+                                            <span>Potential Return</span>
+                                            <div className="text-green-400 font-mono text-right flex flex-col items-end">
+                                                <span className="text-sm">
+                                                    GHS {(() => {
+                                                        const totalStake = betMode === 'single'
+                                                            ? selections.reduce((acc, s) => acc + (s.stakeUsed || globalStake), 0)
+                                                            : globalStake;
+                                                        const baseWin = betMode === 'single'
+                                                            ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
+                                                            : calculateTotalOdds(selections) * globalStake;
+
+                                                        // Calculate Bonus (Sporty Style)
+                                                        let bonusAmount = 0;
+                                                        if (betMode === 'multi' && selections.length >= MULTI_BONUS.MIN_SELECTIONS) {
+                                                            let bonusPct = 0;
+                                                            Object.entries(MULTI_BONUS.SCALING)
+                                                                .sort((a, b) => Number(b[0]) - Number(a[0]))
+                                                                .some(([threshold, percent]) => {
+                                                                    if (selections.length >= Number(threshold)) {
+                                                                        bonusPct = Number(percent);
+                                                                        return true;
+                                                                    }
+                                                                    return false;
+                                                                });
+                                                            bonusAmount = Math.min(baseWin * (bonusPct / 100), MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
+                                                        }
+
+                                                        const totalPotential = baseWin + bonusAmount;
+
+                                                        // GIFT RULE: Deduct stake from winnings
+                                                        const payoutDisplay = (balanceType === 'gift' ? Math.max(0, totalPotential - totalStake) : totalPotential).toFixed(2);
+                                                        return payoutDisplay;
+                                                    })()}
+                                                </span>
+                                                {balanceType === 'gift' ? (
+                                                    <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Profit only credited (Stake deducted)</span>
+                                                ) : (
+                                                    <span className="text-[7px] text-slate-500 font-bold uppercase tracking-tighter">Total Payout (Stake + Profit)</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={addToSlip}
+                                            disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
+                                            className={cn(
+                                                "w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-[10px] shadow-lg transition-all active:scale-95",
+                                                (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
+                                                    ? "bg-red-600 hover:bg-red-500 text-white"
+                                                    : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                                            )}
+                                        >
+                                            Place Bet
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex-1 flex flex-col h-full bg-slate-900">
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                        {pendingSlips.map((slip) => (
+                                            <div key={slip.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center">
+                                                            <Ticket className="h-4 w-4 text-red-500" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{slip.time}</span>
+                                                            <span className="text-[10px] font-black text-white">{slip.selections.length} Legs • {slip.mode}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <div className="text-xs font-black text-accent">GHS {slip.totalStake.toFixed(2)}</div>
+                                                        {slip.cashedOut && (
+                                                            <span className="px-1.5 py-0.5 bg-green-500/10 text-green-500 text-[7px] font-black uppercase rounded border border-green-500/20 animate-pulse">
+                                                                Cashed Out
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {slip.cashedOut ? (
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-black uppercase rounded border border-green-500/20 animate-pulse whitespace-nowrap">
+                                                            Cashed Out
+                                                        </span>
+                                                        <span className="text-[7px] text-slate-500 font-bold">Ref: {slip.totalStake.toFixed(2)}</span>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setConfirmCashoutSlipId(slip.id)}
+                                                        disabled={isSimulating}
+                                                        className={cn(
+                                                            "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 text-slate-500 hover:text-white bg-white/5",
+                                                            isSimulating ? "opacity-30 cursor-not-allowed" : "hover:bg-red-500/20 hover:text-red-400"
+                                                        )}
+                                                    >
+                                                        <Banknote className="h-4 w-4" />
+                                                        <span className="text-[7px] font-black uppercase">Cashout</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {pendingSlips.length === 0 && (
+                                            <div className="flex flex-col items-center justify-center h-full opacity-30 py-20 text-center">
+                                                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center mb-4">
+                                                    <Ticket className="h-8 w-8" />
+                                                </div>
+                                                <p className="text-xs font-bold uppercase tracking-widest leading-loose">No active bets.<br />Add selections to get started!</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-4 border-t border-white/10 bg-slate-900 flex gap-3">
                                         <button
                                             onClick={() => setSlipTab('selections')}
-                                            className={cn(
-                                                "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
-                                                slipTab === 'selections' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
-                                            )}
+                                            className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black uppercase tracking-wider text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
                                         >
-                                            Selections
-                                            {selections.length > 0 && (
-                                                <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
-                                                    {selections.length}
-                                                </span>
-                                            )}
+                                            <ChevronLeft className="h-4 w-4" />
+                                            Add More
                                         </button>
                                         <button
-                                            onClick={() => setSlipTab('pending')}
+                                            onClick={kickoff}
+                                            disabled={isSimulating || pendingSlips.length === 0}
                                             className={cn(
-                                                "py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all relative flex items-center justify-center gap-2",
-                                                slipTab === 'pending' ? "bg-slate-800 text-white shadow-xl" : "text-slate-500"
+                                                "flex-[2] py-3.5 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2",
+                                                isSimulating ? "bg-slate-800 text-slate-500" :
+                                                    pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
+                                                        "bg-red-600 text-white shadow-red-600/30"
                                             )}
                                         >
-                                            My Bets
-                                            {pendingSlips.length > 0 && (
-                                                <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
-                                                    {pendingSlips.length}
-                                                </span>
-                                            )}
+                                            {isSimulating ? "LIVE" : "KICKOFF"}
                                         </button>
                                     </div>
 
-                                    {slipTab === 'selections' ? (
-                                        <>
-                                            {/* Balance Selector in Slip */}
-                                            <div className="flex gap-2 mb-4">
-                                                <button
-                                                    onClick={() => setBalanceType('cash')}
-                                                    className={cn(
-                                                        "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
-                                                        balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
-                                                    </div>
-                                                    <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
-                                                        {(profile?.balance || 0).toFixed(2)}
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setBalanceType('gift')}
-                                                    className={cn(
-                                                        "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
-                                                        balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
-                                                    </div>
-                                                    <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
-                                                        {(profile?.bonusBalance || 0).toFixed(2)}
-                                                    </span>
-                                                </button>
-                                            </div>
-
-                                            {/* Singles/Multi/System Toggle */}
-                                            <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-4 max-w-[200px] shadow-inner">
-                                                {(['single', 'multi'] as const).map((mode) => (
+                                    {/* Confirmation Modal Overlay */}
+                                    {confirmCashoutSlipId && (
+                                        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                                            <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col items-center text-center space-y-4">
+                                                <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 mb-2">
+                                                    <Banknote className="h-6 w-6" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-white font-black uppercase tracking-wider text-sm mb-1">Confirm Cashout</h3>
+                                                    <p className="text-slate-400 text-xs">
+                                                        Refund <span className="text-white font-bold">GHS {pendingSlips.find(s => s.id === confirmCashoutSlipId)?.totalStake.toFixed(2)}</span>?
+                                                        <br />This will cancel the bet.
+                                                    </p>
+                                                </div>
+                                                <div className="flex w-full gap-2">
                                                     <button
-                                                        key={mode}
-                                                        onClick={() => setBetMode(mode)}
-                                                        className={cn(
-                                                            "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all",
-                                                            betMode === mode
-                                                                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/50"
-                                                                : "text-slate-500 hover:text-slate-300"
-                                                        )}
+                                                        onClick={() => setConfirmCashoutSlipId(null)}
+                                                        className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold uppercase tracking-wider"
                                                     >
-                                                        {mode}
+                                                        Cancel
                                                     </button>
-                                                ))}
-                                            </div>
-
-                                            {/* Selections List - Ultra Compact */}
-                                            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                                                {selections.map((sel) => (
-                                                    <div
-                                                        key={sel.selectionId}
-                                                        onClick={() => {
-                                                            if (isSimulating) return;
-                                                            const match = matches.find(m => m.id === sel.matchId);
-                                                            if (match) {
-                                                                setSelectedMatchForDetails(match);
-                                                                setShowSlip(false);
-                                                            }
-                                                        }}
-                                                        className="bg-slate-800/40 rounded border border-slate-700/40 relative group hover:border-purple-500/30 transition-all py-2 px-3 cursor-pointer active:scale-[0.98]"
+                                                    <button
+                                                        onClick={handleConfirmCashout}
+                                                        className="flex-1 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20"
                                                     >
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleSelection(sel);
-                                                            }}
-                                                            className="absolute top-1 left-1 text-slate-500 hover:text-red-400 transition-colors"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-
-                                                        {/* Compact single row layout */}
-                                                        <div className="flex items-center justify-between gap-3 pl-5">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="text-[9px] font-bold text-white leading-tight truncate">
-                                                                    {sel.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')}
-                                                                </div>
-                                                                <div className="text-[8px] text-slate-400 leading-tight truncate mt-0.5">
-                                                                    {sel.matchLabel.split(' vs ').map(name => getSchoolAcronym(name, [sel.schoolA, sel.schoolB])).join(' vs ')}
-                                                                </div>
-                                                                <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-0.5">
-                                                                    {sel.marketName}
-                                                                </div>
-                                                                {/* Individual Leg Stake (Singles Mode Overlay) */}
-                                                                {betMode === 'single' && (
-                                                                    <div className="mt-2 pt-1 border-t border-white/5 flex items-center justify-between">
-                                                                        <span className="text-[7px] font-black text-slate-500 uppercase italic">MAX {sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS}</span>
-                                                                        <div className="flex items-center gap-1 bg-black/40 rounded p-1 border border-white/10">
-                                                                            <span className="text-[7px] text-slate-500 font-bold">GHS</span>
-                                                                            <input
-                                                                                type="number"
-                                                                                value={sel.stakeUsed || ""}
-                                                                                onChange={(e) => {
-                                                                                    const val = parseFloat(e.target.value);
-                                                                                    const limit = sel.marketName === "Match Winner" ? STAKE_LIMITS.MATCH_WINNER : STAKE_LIMITS.PROPS;
-                                                                                    const cappedVal = isNaN(val) ? 0 : Math.min(val, limit);
-
-                                                                                    setSelections(prev => prev.map(s =>
-                                                                                        s.selectionId === sel.selectionId ? { ...s, stakeUsed: cappedVal } : s
-                                                                                    ));
-                                                                                }}
-                                                                                className="w-10 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
-                                                                                placeholder="0.00"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-right flex-shrink-0">
-                                                                <div className="text-sm font-black text-accent font-mono">{sel.odds.toFixed(2)}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2">
-                                                {/* Alerts at bottom for visibility */}
-                                                {hasConflicts && (
-                                                    <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
-                                                        <ShieldAlert className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
-                                                        <p className="text-[7px] font-bold text-red-400 leading-tight">Multiple markets from same match = Singles only</p>
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <div className="flex flex-col">
-                                                        <span>Total Stake</span>
-                                                        <span className="text-[7px] text-slate-500 lowercase leading-none mt-0.5">limit {STAKE_LIMITS.TOTAL_SLIP}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 bg-black/40 rounded p-1.5 border border-white/10">
-                                                        <span className="text-[8px] text-slate-500 font-bold">GHS</span>
-                                                        <input
-                                                            type="number"
-                                                            value={globalStake || ""}
-                                                            onChange={(e) => {
-                                                                const val = parseFloat(e.target.value);
-                                                                if (val > STAKE_LIMITS.TOTAL_SLIP) {
-                                                                    setGlobalStake(STAKE_LIMITS.TOTAL_SLIP);
-                                                                } else {
-                                                                    setGlobalStake(isNaN(val) ? 0 : val);
-                                                                }
-                                                            }}
-                                                            className="w-12 bg-transparent text-right focus:outline-none text-white font-mono text-[9px]"
-                                                        />
-                                                    </div>
+                                                        Confirm
+                                                    </button>
                                                 </div>
-
-                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <span>Total Odds</span>
-                                                    <div className="text-white font-mono text-sm">
-                                                        {calculateTotalOdds(selections).toFixed(2)}
-                                                    </div>
-                                                </div>
-
-                                                {(() => {
-                                                    const baseWin = (betMode === 'single'
-                                                        ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
-                                                        : calculateTotalOdds(selections) * globalStake
-                                                    );
-                                                    const count = selections.length;
-
-                                                    if (betMode !== 'multi' || count < MULTI_BONUS.MIN_SELECTIONS) return null;
-
-                                                    let bonusPct = 0;
-                                                    Object.entries(MULTI_BONUS.SCALING)
-                                                        .sort((a, b) => Number(b[0]) - Number(a[0]))
-                                                        .some(([threshold, percent]) => {
-                                                            if (count >= Number(threshold)) {
-                                                                bonusPct = Number(percent);
-                                                                return true;
-                                                            }
-                                                            return false;
-                                                        });
-
-                                                    const bonusAmount = baseWin * (bonusPct / 100);
-                                                    const cappedBonus = Math.min(bonusAmount, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
-
-                                                    if (cappedBonus <= 0) return null;
-
-                                                    return (
-                                                        <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                            <span className="flex items-center gap-1.5 text-purple-400">
-                                                                <Trophy className="h-3 w-3" />
-                                                                Max Bonus ({bonusPct}%)
-                                                            </span>
-                                                            <div className="text-purple-400 font-mono text-sm">
-                                                                + GHS {cappedBonus.toFixed(2)}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
-
-                                                <div className="flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
-                                                    <span>Potential Return</span>
-                                                    <div className="text-green-400 font-mono text-right flex flex-col items-end">
-                                                        <span className="text-sm">
-                                                            GHS {(() => {
-                                                                const totalStake = betMode === 'single'
-                                                                    ? selections.reduce((acc, s) => acc + (s.stakeUsed || globalStake), 0)
-                                                                    : globalStake;
-                                                                const baseWin = betMode === 'single'
-                                                                    ? selections.reduce((acc, s) => acc + ((s.stakeUsed || globalStake) * s.odds), 0)
-                                                                    : calculateTotalOdds(selections) * globalStake;
-
-                                                                // Calculate Bonus (Sporty Style)
-                                                                let bonusAmount = 0;
-                                                                if (betMode === 'multi' && selections.length >= MULTI_BONUS.MIN_SELECTIONS) {
-                                                                    let bonusPct = 0;
-                                                                    Object.entries(MULTI_BONUS.SCALING)
-                                                                        .sort((a, b) => Number(b[0]) - Number(a[0]))
-                                                                        .some(([threshold, percent]) => {
-                                                                            if (selections.length >= Number(threshold)) {
-                                                                                bonusPct = Number(percent);
-                                                                                return true;
-                                                                            }
-                                                                            return false;
-                                                                        });
-                                                                    bonusAmount = Math.min(baseWin * (bonusPct / 100), MULTI_BONUS.MAX_BONUS_AMOUNT_CAP);
-                                                                }
-
-                                                                const totalPotential = baseWin + bonusAmount;
-
-                                                                // GIFT RULE: Deduct stake from winnings
-                                                                const payoutDisplay = (balanceType === 'gift' ? Math.max(0, totalPotential - totalStake) : totalPotential).toFixed(2);
-                                                                return payoutDisplay;
-                                                            })()}
-                                                        </span>
-                                                        {balanceType === 'gift' ? (
-                                                            <span className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter">Profit only credited (Stake deducted)</span>
-                                                        ) : (
-                                                            <span className="text-[7px] text-slate-500 font-bold uppercase tracking-tighter">Total Payout (Stake + Profit)</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    onClick={addToSlip}
-                                                    disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
-                                                    className={cn(
-                                                        "w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-[10px] shadow-lg transition-all active:scale-95",
-                                                        (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
-                                                            ? "bg-red-600 hover:bg-red-500 text-white"
-                                                            : "bg-slate-700 text-slate-500 cursor-not-allowed"
-                                                    )}
-                                                >
-                                                    Place Bet
-                                                </button>
                                             </div>
-                                        </>
-                                    ) : (
-                                        <div className="flex-1 flex flex-col h-full bg-slate-900">
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                                {pendingSlips.map((slip) => (
-                                                    <div key={slip.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center">
-                                                                    <Ticket className="h-4 w-4 text-red-500" />
-                                                                </div>
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{slip.time}</span>
-                                                                    <span className="text-[10px] font-black text-white">{slip.selections.length} Legs • {slip.mode}</span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <div className="text-xs font-black text-accent">GHS {slip.totalStake.toFixed(2)}</div>
-                                                                {slip.cashedOut && (
-                                                                    <span className="px-1.5 py-0.5 bg-green-500/10 text-green-500 text-[7px] font-black uppercase rounded border border-green-500/20 animate-pulse">
-                                                                        Cashed Out
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        {slip.cashedOut ? (
-                                                            <div className="flex flex-col items-end gap-1">
-                                                                <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-black uppercase rounded border border-green-500/20 animate-pulse whitespace-nowrap">
-                                                                    Cashed Out
-                                                                </span>
-                                                                <span className="text-[7px] text-slate-500 font-bold">Ref: {slip.totalStake.toFixed(2)}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmCashoutSlipId(slip.id)}
-                                                                disabled={isSimulating}
-                                                                className={cn(
-                                                                    "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 text-slate-500 hover:text-white bg-white/5",
-                                                                    isSimulating ? "opacity-30 cursor-not-allowed" : "hover:bg-red-500/20 hover:text-red-400"
-                                                                )}
-                                                            >
-                                                                <Banknote className="h-4 w-4" />
-                                                                <span className="text-[7px] font-black uppercase">Cashout</span>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {pendingSlips.length === 0 && (
-                                                    <div className="flex flex-col items-center justify-center h-full opacity-30 py-20 text-center">
-                                                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center mb-4">
-                                                            <Ticket className="h-8 w-8" />
-                                                        </div>
-                                                        <p className="text-xs font-bold uppercase tracking-widest leading-loose">No active bets.<br />Add selections to get started!</p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="p-4 border-t border-white/10 bg-slate-900 flex gap-3">
-                                                <button
-                                                    onClick={() => setSlipTab('selections')}
-                                                    className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black uppercase tracking-wider text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                    Add More
-                                                </button>
-                                                <button
-                                                    onClick={kickoff}
-                                                    disabled={isSimulating || pendingSlips.length === 0}
-                                                    className={cn(
-                                                        "flex-[2] py-3.5 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2",
-                                                        isSimulating ? "bg-slate-800 text-slate-500" :
-                                                            pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
-                                                                "bg-red-600 text-white shadow-red-600/30"
-                                                    )}
-                                                >
-                                                    {isSimulating ? "LIVE" : "KICKOFF"}
-                                                </button>
-                                            </div>
-
-                                            {/* Confirmation Modal Overlay */}
-                                            {confirmCashoutSlipId && (
-                                                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                                                    <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col items-center text-center space-y-4">
-                                                        <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 mb-2">
-                                                            <Banknote className="h-6 w-6" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-white font-black uppercase tracking-wider text-sm mb-1">Confirm Cashout</h3>
-                                                            <p className="text-slate-400 text-xs">
-                                                                Refund <span className="text-white font-bold">GHS {pendingSlips.find(s => s.id === confirmCashoutSlipId)?.totalStake.toFixed(2)}</span>?
-                                                                <br />This will cancel the bet.
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex w-full gap-2">
-                                                            <button
-                                                                onClick={() => setConfirmCashoutSlipId(null)}
-                                                                className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold uppercase tracking-wider"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                            <button
-                                                                onClick={handleConfirmCashout}
-                                                                className="flex-1 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20"
-                                                            >
-                                                                Confirm
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        )
-                    }
-                </main >
-            </div >
+                            )}
+                        </div>
+                    </div>
+                )
+            }
 
             {/* Modal for Results - SportyBet Style */}
             {
@@ -2281,21 +2287,16 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     </div>
                 )
             }
-
             {/* Match Details Modal */}
-            {
-                selectedMatchForDetails && (
-                    <MatchDetailsModal
-                        match={selectedMatchForDetails}
-                        onClose={() => setSelectedMatchForDetails(null)}
-                        onOddsClick={toggleSelection}
-                        checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
-                        checkIsCorrelated={checkIsCorrelated}
-                    />
-                )
-            }
-
-            {/* Live Match Progress View - REMOVED (Moved to Top) */}
-        </div >
-    )
+            {selectedMatchForDetails && (
+                <MatchDetailsModal
+                    match={selectedMatchForDetails}
+                    onClose={() => setSelectedMatchForDetails(null)}
+                    onOddsClick={toggleSelection}
+                    checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
+                    checkIsCorrelated={checkIsCorrelated}
+                />
+            )}
+        </div>
+    );
 }
