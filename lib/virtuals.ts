@@ -126,27 +126,34 @@ export function simulateMatch(
     userSeed: number = 0 // New Param for Uniqueness per User
 ): VirtualMatchOutcome {
     const regionSlug = queryRegion ? queryRegion.toLowerCase().replace(/\s+/g, '-') : 'all';
-    const seed = (roundId * 100) + index + (category === 'regional' ? 10000 : 20000) + userSeed + (queryRegion ? regionSlug.length : 0);
+    // Base seed for school selection (same for all matches in a round)
+    const schoolSelectionSeed = (roundId * 1000) + (category === 'regional' ? 10000 : 20000) + userSeed + (queryRegion ? regionSlug.length : 0);
+    // Unique seed for match results (unique per match index)
+    const seed = schoolSelectionSeed + index;
 
     let selectedSchools: VirtualSchool[] = [];
 
     if (category === 'regional' && queryRegion) {
         const regionalSchools = schoolsList.filter(s => s.region.toLowerCase() === queryRegion.toLowerCase());
 
-        // If regional schools is too small, fallback slightly or use a broader pool
         if (regionalSchools.length < 3) {
-            // Fallback: If region is small, maybe include schools from "historically successful" list to fill?
-            // User said: "fix the region schools is too small then add them to a different region"
-            // Let's just fallback to national but keep the 'regional' tag for UI consistency if needed?
-            // Actually, let's just use national schools if region is empty.
             selectedSchools = [];
         } else {
             const shuffled = [...regionalSchools];
             for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(seededRandom(seed + i) * (i + 1));
+                const j = Math.floor(seededRandom(schoolSelectionSeed + i) * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-            selectedSchools = shuffled.slice(0, 3);
+            // Partition: pick 3 schools starting from index * 3
+            const startIdx = (index * 3) % (shuffled.length - (shuffled.length % 3 === 0 ? 0 : 2));
+            // Better partition logic for small pools:
+            const actualStart = (index * 3) % (Math.floor(shuffled.length / 3) * 3 || 3);
+            selectedSchools = shuffled.slice(actualStart, actualStart + 3);
+
+            // If wrap around happens or odd size, ensure we always have 3
+            if (selectedSchools.length < 3) {
+                selectedSchools = shuffled.slice(0, 3);
+            }
         }
     }
 
@@ -157,10 +164,18 @@ export function simulateMatch(
 
         const shuffled = [...pool];
         for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(seededRandom(seed + i) * (i + 1));
+            const j = Math.floor(seededRandom(schoolSelectionSeed + i) * (i + 1));
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        selectedSchools = shuffled.slice(0, 3);
+
+        // Strategy: Partition the pool into unique triplets
+        // For 27 schools, we have 9 unique triplets.
+        const poolSize = shuffled.length;
+        const tripletCount = Math.floor(poolSize / 3);
+        const tripletIndex = index % tripletCount;
+        const startIdx = tripletIndex * 3;
+
+        selectedSchools = shuffled.slice(startIdx, startIdx + 3);
     }
 
     const schoolNames = selectedSchools.map(s => s.name) as [string, string, string];

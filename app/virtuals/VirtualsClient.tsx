@@ -381,7 +381,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     }, [currentRound, activeSchools, userSeed, selectedCategory, selectedRegion])
 
     const { matches, outcomes } = useMemo(() => {
-        const count = selectedCategory === 'regional' ? 15 : 8
+        const count = selectedCategory === 'regional' ? 15 : 9
         return generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed);
     }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion])
 
