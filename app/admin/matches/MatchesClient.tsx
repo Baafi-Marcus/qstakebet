@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
-import { createMatch, startMatches } from "@/lib/admin-actions"
+import { createMatch, startMatches, lockMatches } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
+import { Lock } from "lucide-react"
 
 export function MatchesClient({
     initialMatches,
@@ -27,9 +28,10 @@ export function MatchesClient({
     const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
 
-    // Bulk Start State
+    // Bulk Start/Lock State
     const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([])
     const [isBulkStarting, setIsBulkStarting] = useState(false)
+    const [isBulkLocking, setIsBulkLocking] = useState(false)
 
     const toggleMatchSelection = (id: string) => {
         if (selectedMatchIds.includes(id)) {
@@ -44,7 +46,7 @@ export function MatchesClient({
         setIsBulkStarting(true)
         try {
             await startMatches(selectedMatchIds)
-            // Update local state optimistically or wait for refresh
+            // Update local state optimistically
             setMatches(prev => prev.map(m => selectedMatchIds.includes(m.id) ? { ...m, status: 'live', isLive: true } : m))
             setSelectedMatchIds([])
             router.refresh()
@@ -53,6 +55,23 @@ export function MatchesClient({
             alert("Failed to start matches")
         } finally {
             setIsBulkStarting(false)
+        }
+    }
+
+    const handleBulkLock = async () => {
+        if (!confirm(`Are you sure you want to LOCK betting for ${selectedMatchIds.length} matches?`)) return;
+        setIsBulkLocking(true)
+        try {
+            await lockMatches(selectedMatchIds)
+            // Update local state optimistically
+            setMatches(prev => prev.map(m => selectedMatchIds.includes(m.id) ? { ...m, status: 'locked' } : m))
+            setSelectedMatchIds([])
+            router.refresh()
+        } catch (e) {
+            console.error(e)
+            alert("Failed to lock matches")
+        } finally {
+            setIsBulkLocking(false)
         }
     }
 
@@ -183,13 +202,24 @@ export function MatchesClient({
                         <div className="text-white font-bold text-sm">
                             <span className="text-purple-400">{selectedMatchIds.length}</span> Selected
                         </div>
-                        <button
-                            onClick={handleBulkStart}
-                            disabled={isBulkStarting}
-                            className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
-                        >
-                            {isBulkStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Set Live (Lock Bets)"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleBulkLock}
+                                disabled={isBulkLocking || isBulkStarting}
+                                className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                            >
+                                {isBulkLocking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                                Lock Bets
+                            </button>
+                            <button
+                                onClick={handleBulkStart}
+                                disabled={isBulkStarting || isBulkLocking}
+                                className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                            >
+                                {isBulkStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+                                Set Live
+                            </button>
+                        </div>
                         <button onClick={() => setSelectedMatchIds([])} className="text-slate-500 hover:text-white">
                             <X className="h-5 w-5" />
                         </button>
@@ -221,7 +251,8 @@ export function MatchesClient({
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${match.status === 'live' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                                                 match.status === 'finished' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
                                                     match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
-                                                        'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                        match.status === 'locked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                                 }`}>
                                                 {match.status}
                                             </span>

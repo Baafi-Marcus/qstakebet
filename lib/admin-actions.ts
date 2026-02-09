@@ -524,3 +524,20 @@ export async function startMatches(matchIds: string[]) {
         return { success: false, error: "Failed to start matches" }
     }
 }
+/**
+ * Bulk Lock Matches (Disable Betting)
+ */
+export async function lockMatches(matchIds: string[]) {
+    try {
+        await db.update(matches)
+            .set({
+                status: "locked",
+            })
+            .where(inArray(matches.id, matchIds))
+
+        return { success: true, count: matchIds.length }
+    } catch (error) {
+        console.error("Bulk lock error:", error)
+        return { success: false, error: "Failed to lock matches" }
+    }
+}

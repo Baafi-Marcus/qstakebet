@@ -15,6 +15,7 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
         id: m.id as string,
         tournamentId: m.tournamentId as string | null,
         startTime: m.startTime as string,
+        status: m.status as string | undefined,
         isLive: m.isLive as boolean,
         isVirtual: m.isVirtual as boolean,
         stage: m.stage as string,
