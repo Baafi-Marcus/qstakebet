@@ -81,9 +81,14 @@ interface VirtualSelection {
     stakeUsed?: number; // Fix 6
 }
 
-interface VirtualBet {
+interface ResolvedSelection extends VirtualSelection {
+    won: boolean;
+    outcome: VirtualMatchOutcome;
+}
+
+interface ClientVirtualBet {
     id: string;
-    selections: VirtualSelection[];
+    selections: (VirtualSelection | ResolvedSelection)[];
     stake: number;
     potentialPayout: number;
     status: string;
@@ -100,12 +105,7 @@ interface VirtualBet {
     results?: ResolvedSelection[];
 }
 
-interface ResolvedSelection extends VirtualSelection {
-    won: boolean;
-    outcome: VirtualMatchOutcome;
-}
-
-interface ResolvedSlip extends VirtualBet {
+interface ResolvedSlip extends ClientVirtualBet {
     combinations?: {
         selections: ResolvedSelection[];
         won: boolean;
@@ -257,7 +257,7 @@ const checkSelectionWin = (selection: VirtualSelection, outcome: VirtualMatchOut
         if (label === "1") predictedWinner = outcome.schools[0];
         if (label === "2") predictedWinner = outcome.schools[1];
         if (label === "3") predictedWinner = outcome.schools[2];
-        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.fastestBuzzIndex]);
     }
 
     if (marketName === "Comeback Win") {
@@ -317,7 +317,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const router = useRouter()
 
     // Core Game State
-    const [activeTab, setActiveTab] = useState<'all' | 'regional' | 'national'>('all')
     const [activeMarket, setActiveMarket] = useState<
         'winner' |
         'total_points' |
@@ -334,7 +333,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     >('winner')
     // REAL SCHOOLS: Fetch from DB
     const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
-    const [selectedCategory, setSelectedCategory] = useState<'national' | 'regional'>('national')
+    const [selectedCategory, setSelectedCategory] = useState<'all' | 'regional' | 'national'>('national')
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
     const availableRegions = useMemo(() => {
         return [...new Set(activeSchools.map(s => s.region))].sort()
@@ -377,12 +376,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
 
     const recentResults = useMemo(() => {
-        return getRecentVirtualResults(6, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, userSeed)
+        const cat = selectedCategory === 'all' ? 'national' : selectedCategory;
+        return getRecentVirtualResults(6, activeSchools, currentRound, cat, selectedRegion || undefined, userSeed)
     }, [currentRound, activeSchools, userSeed, selectedCategory, selectedRegion])
 
     const { matches, outcomes } = useMemo(() => {
-        const count = selectedCategory === 'regional' ? 15 : 9
-        return generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed);
+        const cat = selectedCategory === 'all' ? 'national' : selectedCategory;
+        const count = cat === 'regional' ? 15 : 9
+        return generateVirtualMatches(count, activeSchools, currentRound, cat, selectedRegion || undefined, aiStrengths, userSeed);
     }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion])
 
     // Keep outcomes in a ref for access during simulation without triggering re-renders
@@ -395,7 +396,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const [globalStake, setGlobalStake] = useState(0)
 
     // Split history: betHistory for user bets, validHistory for past results if needed (though user only wants bet history corrected)
-    const [betHistory, setBetHistory] = useState<VirtualBet[]>([])
+    const [betHistory, setBetHistory] = useState<ClientVirtualBet[]>([])
     const [slipTab, setSlipTab] = useState<'selections' | 'pending'>('selections')
 
     // Load bet history from database on mount
@@ -406,7 +407,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 if (response.ok) {
                     const data = await response.json()
                     // Transform database bets to VirtualBet format
-                    const virtualBets = data.bets.map((bet: any) => ({
+                    const virtualBets: ClientVirtualBet[] = data.bets.map((bet: any) => ({
                         id: bet.id,
                         selections: bet.selections,
                         stake: bet.stake,
@@ -417,7 +418,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                         results: [], // Results are in selections
                         totalReturns: bet.status === 'won' ? bet.potentialPayout : 0,
                         totalStake: bet.stake,
-                        isGift: bet.isBonusBet
+                        timestamp: new Date(bet.createdAt).getTime(),
+                        mode: bet.mode || 'single'
                     }))
                     setBetHistory(virtualBets)
                 }
@@ -430,7 +432,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
     const [isSimulating, setIsSimulating] = useState(false)
     const [simulationProgress, setSimulationProgress] = useState(0)
-    const [pendingSlips, setPendingSlips] = useState<VirtualBet[]>([])
+    const [pendingSlips, setPendingSlips] = useState<ClientVirtualBet[]>([])
     const [lastOutcome, setLastOutcome] = useState<{
         allRoundResults: VirtualMatchOutcome[];
         roundId: number;
@@ -441,56 +443,67 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [activeLiveMatch, setActiveLiveMatch] = useState<string | null>(null)
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
-    const [viewedHistoryTicket, setViewedHistoryTicket] = useState<VirtualBet | null>(null)
+    const [viewedHistoryTicket, setViewedHistoryTicket] = useState<ClientVirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
+    const [currentCommentary, setCurrentCommentary] = useState<string>("Ready for kickoff!")
+    const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
 
-    // NEW: Hydrate history ticket with simulation results when viewed
+    // Hydrate history ticket with simulation results when viewed
+    // Hydrate history ticket with simulation results when viewed
+    const hydratedHistoryTicket = useMemo(() => {
+        if (!viewedHistoryTicket || schools.length === 0) return viewedHistoryTicket;
+
+        const updatedSelections = viewedHistoryTicket.selections.map(sel => {
+            if ((sel as any).outcome && (sel as any).outcome.rounds && (sel as any).outcome.rounds.length > 0) return sel;
+            // Re-simulate if results are missing
+            const [mIdx, sId, roundStr, stage, region] = sel.matchId.split('-');
+            const roundId = parseInt(roundStr);
+            const sIdx = parseInt(sId);
+            const outcome = simulateMatch(
+                roundId,
+                sIdx,
+                schools,
+                stage as 'regional' | 'national',
+                region || undefined,
+                aiStrengths,
+                userSeed
+            );
+            return { ...sel, outcome };
+        });
+
+        return { ...viewedHistoryTicket, selections: updatedSelections };
+    }, [viewedHistoryTicket, schools, userSeed, aiStrengths]);
+
+    // Auto-advance round countdown logic
+    const nextRound = () => {
+        setCurrentRound(prev => prev + 1)
+        setSelections([])
+        setSimulationProgress(0)
+        setIsSimulating(false)
+    }
+
     useEffect(() => {
-        if (!viewedHistoryTicket || (viewedHistoryTicket.results && viewedHistoryTicket.results.length > 0)) return;
+        if (autoNextRoundCountdown === null || !showResultsModal) {
+            return;
+        }
 
-        const hydrateTicket = () => {
-            // We need to re-simulate the outcomes for this ticket
-            const selections = viewedHistoryTicket.selections;
-            if (!selections || selections.length === 0) return;
+        if (autoNextRoundCountdown <= 0) {
+            // Defer state updates to avoid synchronous setState in effect
+            setTimeout(() => {
+                setShowResultsModal(false);
+                nextRound();
+                setAutoNextRoundCountdown(null);
+            }, 0);
+            return;
+        }
 
-            // Extract roundId, category, region from the first selection ID format: vmt-{roundId}-{idx}-{cat}-{reg}
-            const firstId = selections[0].matchId;
-            if (!firstId.startsWith('vmt-')) return;
+        const timer = setInterval(() => {
+            setAutoNextRoundCountdown(prev => (prev !== null && prev > 0) ? prev - 1 : 0);
+        }, 1000);
 
-            const parts = firstId.split('-');
-            const rId = parseInt(parts[1]);
-            const cat = parts[3] as 'national' | 'regional';
-            const regSlug = parts[4];
-            const regName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regSlug)?.region;
+        return () => clearInterval(timer);
+    }, [autoNextRoundCountdown, showResultsModal]);
 
-            // Generate matches for this round to get the outcomes
-            // We use a high count (15) to ensure we cover all potential match indices
-            const { outcomes } = generateVirtualMatches(15, schools, rId, cat, regName, {}, userSeed);
-
-            const resolvedResults: ResolvedSelection[] = selections.map(s => {
-                const outcome = outcomes.find(o => o.id === s.matchId);
-                if (!outcome) {
-                    return {
-                        ...s,
-                        won: false,
-                        outcome: null as any
-                    };
-                }
-
-                // Reuse the same win check logic
-                const won = checkSelectionWin(s, outcome);
-                return {
-                    ...s,
-                    won,
-                    outcome,
-                };
-            });
-
-            setViewedHistoryTicket(prev => prev ? { ...prev, results: resolvedResults } : null);
-        };
-
-        hydrateTicket();
-    }, [viewedHistoryTicket, schools, userSeed]);
     const [countdown, setCountdown] = useState<'READY' | '3' | '2' | '1' | 'START' | null>(null)
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const isSimulatingRef = useRef(false)
@@ -504,13 +517,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     }, [activeLiveMatch, currentRound, matches, schools, aiStrengths, userSeed])
 
     const filteredMatches = useMemo(() => {
-        if (activeTab === 'all') return matches
+        if (selectedCategory === 'all') return matches
         return matches.filter(m => {
-            if (activeTab === 'regional') return m.stage === "Regional Qualifier"
-            if (activeTab === 'national') return m.stage === "National Championship"
+            if (selectedCategory === 'regional') return m.stage === "Regional Qualifier"
+            if (selectedCategory === 'national') return m.stage === "National Championship"
             return true
         })
-    }, [matches, activeTab])
+    }, [matches, selectedCategory])
 
     // Handle browser back button when results modal is open
     useEffect(() => {
@@ -533,12 +546,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         }
     }, [showResultsModal]);
 
-    const nextRound = () => {
-        setCurrentRound(prev => prev + 1)
-        setSelections([])
-        setSimulationProgress(0)
-        setIsSimulating(false)
-    }
+
 
     // Handle browser back button to advance to next round
     useEffect(() => {
@@ -603,9 +611,22 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         const step = duration / intervals
 
         for (let i = 1; i <= intervals; i++) {
-            if (!isSimulatingRef.current) break; // Use ref to handle closure/skip
+            if (!isSimulatingRef.current) break;
             await new Promise(r => setTimeout(r, step))
-            setSimulationProgress(prev => Math.min(60, prev + 1))
+            const newProgress = i;
+            setSimulationProgress(newProgress)
+
+            // Update Commentary if available for this progress/time
+            if (outcomesRef.current.length > 0) {
+                // Find outcome for active match
+                const activeOutcome = outcomesRef.current.find(o => o.id === activeLiveMatch);
+                if (activeOutcome?.commentary) {
+                    const latest = activeOutcome.commentary
+                        .filter(c => c.time <= newProgress)
+                        .sort((a, b) => b.time - a.time)[0];
+                    if (latest) setCurrentCommentary(latest.text);
+                }
+            }
         }
 
         // Finalize results
@@ -779,6 +800,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         setShowResultsModal(true)
         setPendingSlips([])
         setActiveLiveMatch(null)
+        setAutoNextRoundCountdown(15) // Start 15s countdown for next round
     }
 
     const handleConfirmCashout = () => {
@@ -964,7 +986,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                 const potPayout = baseWin + bonusAmount;
 
-                const newSlip: VirtualBet = {
+                const newSlip: ClientVirtualBet = {
                     id: result.betId || `slip-${Date.now()}`,
                     selections: finalSelections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (totalStakeUsed / selections.length) })),
                     mode: betMode,
@@ -1041,55 +1063,63 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                             <div className="px-2 py-0.5 bg-white/10 rounded text-[8px] font-black text-white/40 uppercase tracking-widest">
                                 Round {currentRoundIdx + 1}
                             </div>
-                            {!isSimulating && (
-                                <button
-                                    onClick={() => setActiveLiveMatch(null)}
-                                    className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
-                                </button>
-                            )}
                         </div>
 
-                        <div className="flex items-center gap-4 md:gap-10 w-full max-w-xl justify-center mb-4">
-                            {outcome.schools.map((school: string, sIdx: number) => (
-                                <React.Fragment key={sIdx}>
-                                    <div className="flex flex-col items-center gap-2 flex-1">
-                                        <div className="text-5xl font-black italic text-white drop-shadow-lg tabular-nums">
-                                            {displayScores[sIdx]}
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest text-center truncate w-full max-w-[100px]">{school}</span>
-                                    </div>
-                                    {sIdx < 2 && <div className="text-white/20 font-black italic text-xs mb-6 px-4">VS</div>}
-                                </React.Fragment>
-                            ))}
+                        {/* Live Commentary Ticker */}
+                        <div className="w-full max-w-lg mb-4 h-6 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/80 via-transparent to-emerald-950/80 z-10" />
+                            <div className="flex items-center justify-center h-full">
+                                <span key={currentCommentary} className="text-[10px] font-bold text-emerald-400/90 italic tracking-wide animate-in slide-in-from-bottom-2 duration-300">
+                                    {currentCommentary}
+                                </span>
+                            </div>
                         </div>
-
-                        <div className="w-full max-w-xs grid grid-cols-5 gap-1">
-                            {outcome.rounds.slice(0, 5).map((r, rIdx) => (
-                                <div key={rIdx} className={cn(
-                                    "flex flex-col items-center p-1 rounded border transition-all duration-300",
-                                    rIdx === currentRoundIdx ? "bg-white/20 border-white/40 scale-110 shadow-lg" :
-                                        "bg-black/20 border-white/5 opacity-10"
-                                )}>
-                                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                                        <div className={cn("h-full", rIdx === currentRoundIdx ? "bg-emerald-400 w-full" : "w-0")} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <button
+                            onClick={() => setActiveLiveMatch(null)}
+                            className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    {/* Skip Button - Compact inside player */}
-                    {isSimulating && simulationProgress < 60 && (
-                        <button
-                            onClick={skipToResult}
-                            className="absolute bottom-4 right-4 bg-black/40 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
-                        >
-                            Skip
-                        </button>
-                    )}
+                    <div className="flex items-center gap-4 md:gap-10 w-full max-w-xl justify-center mb-4">
+                        {outcome.schools.map((school: string, sIdx: number) => (
+                            <React.Fragment key={sIdx}>
+                                <div className="flex flex-col items-center gap-2 flex-1">
+                                    <div className="text-5xl font-black italic text-white drop-shadow-lg tabular-nums">
+                                        {displayScores[sIdx]}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest text-center truncate w-full max-w-[100px]">{school}</span>
+                                </div>
+                                {sIdx < 2 && <div className="text-white/20 font-black italic text-xs mb-6 px-4">VS</div>}
+                            </React.Fragment>
+                        ))}
+                    </div>
+
+                    <div className="w-full max-w-xs grid grid-cols-5 gap-1">
+                        {outcome.rounds.slice(0, 5).map((r, rIdx) => (
+                            <div key={rIdx} className={cn(
+                                "flex flex-col items-center p-1 rounded border transition-all duration-300",
+                                rIdx === currentRoundIdx ? "bg-white/20 border-white/40 scale-110 shadow-lg" :
+                                    "bg-black/20 border-white/5 opacity-10"
+                            )}>
+                                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                                    <div className={cn("h-full", rIdx === currentRoundIdx ? "bg-emerald-400 w-full" : "w-0")} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
+
+                {/* Skip Button - Compact inside player */}
+                {isSimulating && simulationProgress < 60 && (
+                    <button
+                        onClick={skipToResult}
+                        className="absolute bottom-4 right-4 bg-black/40 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                    >
+                        Skip
+                    </button>
+                )}
             </div>
         );
     };
@@ -1114,6 +1144,20 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     {/* Middle: Category Selector */}
                     <div className="flex-1 overflow-x-auto no-scrollbar">
                         <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    setSelectedCategory('all');
+                                    setSelectedRegion(null);
+                                }}
+                                className={cn(
+                                    "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
+                                    selectedCategory === 'all'
+                                        ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
+                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                All
+                            </button>
                             <button
                                 onClick={() => {
                                     setSelectedCategory('national');
@@ -1867,19 +1911,37 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
                                             {/* Selection Content */}
                                             <div className="flex-1 min-w-0">
-                                                <div className="text-[10px] text-slate-500 font-bold mb-1">23/10 16:45</div>
+                                                <div className="text-[10px] text-slate-500 font-bold mb-1">
+                                                    Round {r.matchId.split('-')[1]} • {r.outcome.category}
+                                                </div>
                                                 <div className="text-sm font-bold text-white mb-2 truncate">
-                                                    {[r.schoolA, r.schoolB].map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB])).join(' vs ')}
+                                                    {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC])).join(' vs ')}
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <span className="text-[10px] font-bold text-slate-400">FT Score:</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">Total Score:</span>
                                                     <span className="text-[10px] font-black text-white">
-                                                        {r.outcome.totalScores[0]} : {r.outcome.totalScores[1]} : {r.outcome.totalScores[2]}
+                                                        {r.outcome.totalScores.join(' : ')}
                                                     </span>
-                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/10 rounded flex-shrink-0">
-                                                        <Zap className="h-2.5 w-2.5 text-green-500 fill-current" />
-                                                        <span className="text-[8px] font-bold text-green-500 uppercase">Tracker</span>
+                                                </div>
+
+                                                {/* Round Breakdown Table */}
+                                                <div className="bg-black/20 rounded-lg overflow-hidden border border-white/5 mb-3">
+                                                    <div className="grid grid-cols-4 gap-px bg-white/5 text-[7px] font-black uppercase text-slate-500 text-center py-1">
+                                                        <div>Round</div>
+                                                        {r.outcome.schools.map((s, i) => (
+                                                            <div key={i} className="truncate px-0.5">{getSchoolAcronym(s, r.outcome.schools)}</div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="divide-y divide-white/5">
+                                                        {r.outcome.rounds.slice(0, 5).map((rd, ridx) => (
+                                                            <div key={ridx} className="grid grid-cols-4 gap-px text-center py-1 bg-white/[0.01]">
+                                                                <div className="text-[7px] font-bold text-slate-600">R{ridx + 1}</div>
+                                                                {rd.scores.map((s, si) => (
+                                                                    <div key={si} className="text-[9px] font-mono text-white/80">{s}</div>
+                                                                ))}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
 
@@ -1968,10 +2030,15 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                             {/* Fixed Footer Action */}
                             <div className="p-4 bg-slate-900 border-t border-white/5">
                                 <button
-                                    onClick={() => { setShowResultsModal(false); nextRound(); }}
-                                    className="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase tracking-wider text-sm shadow-xl shadow-red-600/20 transition-all active:scale-95"
+                                    onClick={() => { setShowResultsModal(false); nextRound(); setAutoNextRoundCountdown(null); }}
+                                    className="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase tracking-wider text-sm shadow-xl shadow-red-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                                 >
-                                    Continue to Next Round
+                                    <span>Continue to Next Round</span>
+                                    {autoNextRoundCountdown !== null && (
+                                        <span className="w-6 h-6 rounded-full bg-black/20 flex items-center justify-center text-[10px] tabular-nums">
+                                            {autoNextRoundCountdown}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2061,7 +2128,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
             {/* Ticket Details View Modal (From History) */}
             {
-                viewedHistoryTicket && (
+                hydratedHistoryTicket && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center">
                         <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setViewedHistoryTicket(null)} />
                         <div className="relative bg-[#1a1b1e] w-full max-w-lg h-full md:h-[90vh] md:rounded-b-2xl overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-300 border border-white/10">
@@ -2084,21 +2151,21 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                 <div className="p-4 border-b border-white/5 bg-slate-900/50">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: {getTicketId(viewedHistoryTicket.id)}</span>
-                                            <h3 className="text-lg font-black text-white">{viewedHistoryTicket.mode === 'multi' ? 'Multiple' : 'Single'}</h3>
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: {getTicketId(hydratedHistoryTicket.id)}</span>
+                                            <h3 className="text-lg font-black text-white">{hydratedHistoryTicket.mode === 'multi' ? 'Multiple' : 'Single'}</h3>
                                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Return</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-[10px] text-slate-500 font-bold block mb-1">Ticket Settled</span>
                                             <span className={cn(
                                                 "font-black",
-                                                (viewedHistoryTicket.totalReturns ?? 0) > viewedHistoryTicket.totalStake ? "text-emerald-500" :
-                                                    (viewedHistoryTicket.totalReturns ?? 0) > 0 ? "text-yellow-500" : "text-white/20"
+                                                (hydratedHistoryTicket.totalReturns ?? 0) > hydratedHistoryTicket.totalStake ? "text-emerald-500" :
+                                                    (hydratedHistoryTicket.totalReturns ?? 0) > 0 ? "text-yellow-500" : "text-white/20"
                                             )}>
-                                                {(viewedHistoryTicket.totalReturns ?? 0) > 0 ? `+ GHS ${(viewedHistoryTicket.totalReturns ?? 0).toFixed(2)} ` : 'GHS 0.00'}
+                                                {(hydratedHistoryTicket.totalReturns ?? 0) > 0 ? `+ GHS ${(hydratedHistoryTicket.totalReturns ?? 0).toFixed(2)} ` : 'GHS 0.00'}
                                             </span>
                                             <div className="text-2xl font-black text-white mt-1">
-                                                {(viewedHistoryTicket.totalReturns ?? 0).toFixed(2)}
+                                                {(hydratedHistoryTicket.totalReturns ?? 0).toFixed(2)}
                                             </div>
                                         </div>
                                     </div>
@@ -2107,18 +2174,18 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                                         <div>
                                             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Stake</div>
                                             <div className="text-sm font-black text-white">
-                                                {viewedHistoryTicket.totalStake.toFixed(2)}
+                                                {hydratedHistoryTicket.totalStake.toFixed(2)}
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Status</div>
-                                            <div className="text-sm font-black text-white uppercase tracking-widest">{viewedHistoryTicket.status}</div>
+                                            <div className="text-sm font-black text-white uppercase tracking-widest">{hydratedHistoryTicket.status}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    {(viewedHistoryTicket.results || []).map((r: ResolvedSelection, idx: number) => (
+                                    {(hydratedHistoryTicket.results || []).map((r: ResolvedSelection, idx: number) => (
                                         <div key={idx} className="p-4 flex gap-4 transition-colors hover:bg-white/[0.02]">
                                             <div className="mt-1 flex-shrink-0">
                                                 {r.won ? (
@@ -2253,6 +2320,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                     />
                 )
             }
-        </div >
+        </div>
     );
 }

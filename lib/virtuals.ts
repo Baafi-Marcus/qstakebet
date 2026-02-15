@@ -95,7 +95,8 @@ export interface VirtualMatchOutcome {
         lateSurgeIndex: number; // Winner of R4+R5
         strongStartIndex: number; // Winner of R1+R2
         highestRoundIndex: number; // 0=R1, 1=R2, ...
-    }
+    };
+    commentary: { time: number; text: string }[];
 }
 
 export interface VirtualResult {
@@ -134,7 +135,26 @@ export function simulateMatch(
     let selectedSchools: VirtualSchool[] = [];
 
     if (category === 'regional' && queryRegion) {
-        const regionalSchools = schoolsList.filter(s => s.region.toLowerCase() === queryRegion.toLowerCase());
+        let regionalSchools = schoolsList.filter(s => s.region.toLowerCase() === queryRegion.toLowerCase());
+
+        // If regional schools is too small, fallback to neighbors
+        if (regionalSchools.length < 3) {
+            const NEIGHBOR_REGIONS: Record<string, string[]> = {
+                'central': ['Western', 'Greater Accra', 'Ashanti'],
+                'ashanti': ['Central', 'Bono', 'Eastern'],
+                'greater accra': ['Central', 'Eastern', 'Volta'],
+                'eastern': ['Greater Accra', 'Ashanti', 'Volta'],
+                'volta': ['Greater Accra', 'Eastern', 'Northern'],
+                'western': ['Central', 'Ashanti'],
+                'northern': ['Volta', 'Bono', 'Upper East', 'Upper West'],
+                'upper west': ['Northern'],
+                'upper east': ['Northern'],
+                'bono': ['Ashanti', 'Northern']
+            };
+            const neighbors = NEIGHBOR_REGIONS[queryRegion.toLowerCase()] || [];
+            const neighborSchools = schoolsList.filter(s => neighbors.includes(s.region));
+            regionalSchools = [...regionalSchools, ...neighborSchools];
+        }
 
         if (regionalSchools.length < 3) {
             selectedSchools = [];
@@ -145,8 +165,6 @@ export function simulateMatch(
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
             // Partition: pick 3 schools starting from index * 3
-            const startIdx = (index * 3) % (shuffled.length - (shuffled.length % 3 === 0 ? 0 : 2));
-            // Better partition logic for small pools:
             const actualStart = (index * 3) % (Math.floor(shuffled.length / 3) * 3 || 3);
             selectedSchools = shuffled.slice(actualStart, actualStart + 3);
 
@@ -330,6 +348,10 @@ export function simulateMatch(
     const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 3);
     const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 3);
 
+    // Award bonus points to totalScores
+    totalScores[firstBonusIndex] += 3;
+    totalScores[fastestBuzzIndex] += 5;
+
     const lateSurgeScores: [number, number, number] = [0, 0, 0];
     const strongStartScores: [number, number, number] = [0, 0, 0];
 
@@ -349,6 +371,41 @@ export function simulateMatch(
     const roundSums = finalRounds.slice(0, 5).map(r => r.scores.reduce((a, b) => a + b, 0)); // Only consider main 5 rounds
     const highestRoundIndex = roundSums.indexOf(Math.max(...roundSums));
 
+    // Generate Commentary Sequence
+    const commentary: { time: number; text: string }[] = [];
+    commentary.push({ time: 0, text: `Game Start! ${schoolNames[0]}, ${schoolNames[1]} and ${schoolNames[2]} take the stage.` });
+
+    finalRounds.forEach((r, idx) => {
+        if (idx >= 5) return; // Skip tie breaker in basic timeline
+        const time = (idx + 1) * 10; // Events at 10, 20, 30, 40, 50s
+        const roundMax = Math.max(...r.scores);
+        const winners = r.scores.map((s, i) => s === roundMax ? i : -1).filter(i => i !== -1);
+
+        if (winners.length === 1) {
+            const school = schoolNames[winners[0]];
+            const messages = [
+                `${school} is on fire in ${r.roundName}!`,
+                `Incredible performance by ${school} in the ${r.roundName} round.`,
+                `${school} takes a decisive lead in ${r.roundName}.`,
+                `${school} is showing pure class right now!`
+            ];
+            commentary.push({ time, text: messages[seededRandom(seed + idx) * messages.length | 0] });
+        } else {
+            commentary.push({ time, text: `It's a tight race in ${r.roundName}! Points shared.` });
+        }
+
+        // Add lead change commentary if it happened
+        if (idx > 0 && idx < 5) {
+            // We can check if leader changed here if we tracked it per round, but simple enough to just add variance
+            if (seededRandom(seed + idx + 500) > 0.7) {
+                commentary.push({ time: time + 5, text: "The crowd is going wild! What a match!" });
+            }
+        }
+    });
+
+    commentary.push({ time: 55, text: "We're in the final seconds! Every point counts!" });
+    commentary.push({ time: 60, text: `Full Time! ${schoolNames[winnerIndex]} are the champions!` });
+
     return {
         id: `vmt-${roundId}-${index}-${category}-${regionSlug}`,
         schools: schoolNames,
@@ -367,7 +424,8 @@ export function simulateMatch(
             lateSurgeIndex,
             strongStartIndex,
             highestRoundIndex
-        }
+        },
+        commentary
     };
 }
 
