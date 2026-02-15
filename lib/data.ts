@@ -25,6 +25,8 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
         odds: m.odds as Match['odds'],
         extendedOdds: m.extendedOdds as Match['extendedOdds'],
         margin: typeof m.margin === 'number' ? m.margin : 0.1,
+        currentRound: typeof m.currentRound === 'number' ? m.currentRound : 0,
+        liveMetadata: m.liveMetadata,
     }
 }
 
@@ -36,7 +38,8 @@ export async function getAllMatches(): Promise<Match[]> {
 export async function getAllMatchesWithTournaments() {
     const results = await db.select({
         match: matches,
-        region: tournaments.region
+        region: tournaments.region,
+        level: tournaments.level
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
@@ -44,7 +47,8 @@ export async function getAllMatchesWithTournaments() {
 
     return results.map(r => ({
         ...mapDbMatchToMatch(r.match),
-        region: r.region
+        region: r.region,
+        level: r.level
     }))
 }
 

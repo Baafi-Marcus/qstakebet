@@ -48,14 +48,41 @@ function getDateGroupLabel(date: Date): string {
 
 export function HomeClient({ initialMatches }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
+    const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
+    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming'>('today')
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
 
-    const filteredMatches = initialMatches.filter(m =>
-        m.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.participants.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    const filteredMatches = initialMatches.filter(m => {
+        const matchesLevel = m.level === activeLevel
+        const matchesSearch = m.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            m.participants.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+        // Date Tabs Logic
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const afterTomorrow = new Date(tomorrow);
+        afterTomorrow.setDate(tomorrow.getDate() + 1);
+
+        const matchDate = m.scheduledAt ? new Date(m.scheduledAt) : null;
+        if (matchDate) {
+            matchDate.setHours(0, 0, 0, 0);
+        }
+
+        let dateMatch = false;
+        if (activeDateTab === 'today') {
+            dateMatch = !matchDate || matchDate.getTime() === today.getTime() || m.isLive;
+        } else if (activeDateTab === 'tomorrow') {
+            dateMatch = matchDate?.getTime() === tomorrow.getTime();
+        } else if (activeDateTab === 'upcoming') {
+            dateMatch = matchDate ? matchDate.getTime() >= afterTomorrow.getTime() : false;
+        }
+
+        return matchesLevel && matchesSearch && dateMatch
+    })
 
     // Group matches by date
     const groupedMatches = useMemo(() => {
@@ -136,6 +163,52 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
     return (
         <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">
+            {/* Level Switcher */}
+            <div className="flex justify-center mb-2">
+                <div className="flex p-1 bg-slate-950/50 border border-white/5 rounded-2xl">
+                    {[
+                        { id: 'shs', label: 'SHS Games' },
+                        { id: 'university', label: 'University' }
+                    ].map((level) => (
+                        <button
+                            key={level.id}
+                            onClick={() => setActiveLevel(level.id as any)}
+                            className={cn(
+                                "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                activeLevel === level.id
+                                    ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40"
+                                    : "text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            {level.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Date Tabs */}
+            <div className="flex justify-center -mt-4">
+                <div className="flex gap-2 p-1 bg-slate-900/40 border border-white/5 rounded-xl">
+                    {[
+                        { id: 'today', label: 'Today' },
+                        { id: 'tomorrow', label: 'Tomorrow' },
+                        { id: 'upcoming', label: 'Upcoming' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveDateTab(tab.id as any)}
+                            className={cn(
+                                "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                                activeDateTab === tab.id
+                                    ? "bg-slate-800 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-400"
+                            )}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
 
             {/* Market Controls */}

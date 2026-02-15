@@ -1,0 +1,92 @@
+[
+  {
+    "table_name": "school_strengths",
+    "column_name": "school_id",
+    "foreign_table_name": "schools",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "matches",
+    "column_name": "tournament_id",
+    "foreign_table_name": "tournaments",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "bets",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "bonuses",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "bonuses",
+    "column_name": "bet_id",
+    "foreign_table_name": "bets",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "referrals",
+    "column_name": "referrer_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "referrals",
+    "column_name": "referred_user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "sessions",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "transactions",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "transactions",
+    "column_name": "wallet_id",
+    "foreign_table_name": "wallets",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "wallets",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "real_school_stats",
+    "column_name": "school_id",
+    "foreign_table_name": "schools",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "virtual_school_stats",
+    "column_name": "school_id",
+    "foreign_table_name": "schools",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "withdrawal_requests",
+    "column_name": "user_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "withdrawal_requests",
+    "column_name": "admin_id",
+    "foreign_table_name": "users",
+    "foreign_column_name": "id"
+  }
+]

@@ -27,11 +27,12 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
                 sportType: "football",
                 gender: "male",
                 year: "2026",
+                level: "shs",
                 status: "active"
             })
             setSchools([
-                { id: "s1", name: "Prempeh College", region: "Ashanti" },
-                { id: "s2", name: "Opoku Ware School", region: "Ashanti" },
+                { id: "s1", name: "Prempeh College", region: "Ashanti", level: "shs" },
+                { id: "s2", name: "Opoku Ware School", region: "Ashanti", level: "shs" },
             ])
             // Mock matches for this tournament
             setMatches([

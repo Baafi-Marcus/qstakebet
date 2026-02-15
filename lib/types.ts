@@ -29,6 +29,9 @@ export interface Match {
     sportType: string
     gender: string
     margin: number
+    currentRound?: number
+    liveMetadata?: any
+    level?: string
     createdAt?: Date | null
 }
 
@@ -39,6 +42,7 @@ export interface Tournament {
     sportType: string
     gender: string
     year: string
+    level: string
     status: string
     createdAt?: Date | null
 }
@@ -49,6 +53,7 @@ export interface School {
     region: string
     district?: string | null
     category?: string | null
+    level: string
     location?: string | null
     createdAt?: Date | null
 }

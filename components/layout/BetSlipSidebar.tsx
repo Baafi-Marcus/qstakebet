@@ -310,15 +310,6 @@ export function BetSlipSidebar() {
                 ) : (
                     <>
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50 relative">
-                            {/* Booking Success Modal (Centered) */}
-                            {bookedCodeResult && (
-                                <BookingSuccessModal
-                                    code={bookedCodeResult}
-                                    selections={selections}
-                                    totalOdds={totalOdds}
-                                    onClose={() => setBookedCodeResult(null)}
-                                />
-                            )}
 
                             {selections.map((item) => (
                                 <div
@@ -566,6 +557,16 @@ export function BetSlipSidebar() {
                     </>
                 )}
             </div>
+
+            {/* Booking Success Modal (Outside Sidebar to ignore transforms) */}
+            {bookedCodeResult && (
+                <BookingSuccessModal
+                    code={bookedCodeResult}
+                    selections={selections}
+                    totalOdds={totalOdds}
+                    onClose={() => setBookedCodeResult(null)}
+                />
+            )}
 
             {/* Gift Selection Modal */}
             {
