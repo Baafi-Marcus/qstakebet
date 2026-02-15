@@ -376,14 +376,12 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
 
     const recentResults = useMemo(() => {
-        const cat = selectedCategory === 'all' ? 'national' : selectedCategory;
-        return getRecentVirtualResults(6, activeSchools, currentRound, cat, selectedRegion || undefined, userSeed)
+        return getRecentVirtualResults(6, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, userSeed)
     }, [currentRound, activeSchools, userSeed, selectedCategory, selectedRegion])
 
     const { matches, outcomes } = useMemo(() => {
-        const cat = selectedCategory === 'all' ? 'national' : selectedCategory;
-        const count = cat === 'regional' ? 15 : 9
-        return generateVirtualMatches(count, activeSchools, currentRound, cat, selectedRegion || undefined, aiStrengths, userSeed);
+        const count = selectedCategory === 'regional' ? 15 : 9
+        return generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed);
     }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion])
 
     // Keep outcomes in a ref for access during simulation without triggering re-renders

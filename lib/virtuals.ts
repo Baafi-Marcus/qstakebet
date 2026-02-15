@@ -683,7 +683,7 @@ export function generateVirtualMatches(
     count: number = 8,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     roundId: number,
-    category: 'regional' | 'national' = 'national',
+    category: 'regional' | 'national' | 'all' = 'national',
     queryRegion?: string,
     aiStrengths: Record<string, number> = {},
     userSeed: number = 0
@@ -693,11 +693,17 @@ export function generateVirtualMatches(
     const cycleTime = 60000;
 
     for (let i = 0; i < count; i++) {
+        // If category is 'all', alternate between national and regional
+        // Logic: national, regional, national, regional...
+        const matchCategory: 'regional' | 'national' = category === 'all'
+            ? (i % 2 === 0 ? 'national' : 'regional')
+            : category;
+
         const outcome = simulateMatch(
             roundId,
             i,
             schoolsList,
-            category as 'regional' | 'national',
+            matchCategory,
             queryRegion,
             aiStrengths as Record<string, number>,
             userSeed
@@ -741,7 +747,7 @@ export function getRecentVirtualResults(
     count: number = 3,
     schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS,
     roundId: number,
-    category: 'regional' | 'national' = 'national',
+    category: 'regional' | 'national' | 'all' = 'national',
     queryRegion?: string,
     userSeed: number = 0
 ): VirtualResult[] {
@@ -750,18 +756,22 @@ export function getRecentVirtualResults(
 
     for (let i = 1; i <= count; i++) {
         const id = roundId - i;
+        const matchCategory: 'regional' | 'national' = category === 'all'
+            ? (i % 2 === 0 ? 'national' : 'regional')
+            : category;
+
         const outcome = simulateMatch(
             id,
             0,
             schoolsList,
-            category as 'regional' | 'national',
+            matchCategory,
             queryRegion,
             {} as Record<string, number>,
             userSeed
         );
 
         results.push({
-            id: `vr-${id}-${category}-${queryRegion || 'all'}`,
+            id: `vr-${id}-${matchCategory}-${queryRegion || 'all'}`,
             schools: outcome.schools,
             scores: outcome.totalScores,
             winner: outcome.schools[outcome.winnerIndex],
