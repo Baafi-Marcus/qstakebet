@@ -37,6 +37,25 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
         else setExpandedInfo(market);
     }
 
+    // AI Win Probabilities Calculation (Synced with MatchRow)
+    const winProbabilities = React.useMemo(() => {
+        const parts = match.participants || [];
+        if (!parts.length) return [];
+        let probs: number[] = [];
+        const internalScores = (match.result as any)?.totalScores;
+        const isLive = match.status === 'live';
+
+        if (isLive && internalScores) {
+            const currentTotal = internalScores.reduce((a: number, b: number) => a + b, 0) || 1;
+            probs = internalScores.map((s: number) => (s / currentTotal) * 100);
+        } else {
+            const inverseOdds = parts.map(p => 1 / (p.odd || match.odds?.[p.schoolId] || 2));
+            const totalInverse = inverseOdds.reduce((a, b) => a + b, 0);
+            probs = inverseOdds.map(io => (io / totalInverse) * 100);
+        }
+        return probs.map(p => Math.round(p));
+    }, [match.participants, match.status, match.result, match.odds]);
+
     const renderMarketSection = (title: string, icon: React.ReactNode, content: React.ReactNode, descriptionKey?: string, customKey?: string) => (
         <div key={customKey} className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="flex items-center justify-between mb-3 px-1">
@@ -94,12 +113,24 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
                             <span className="px-2 py-0.5 bg-red-600 rounded text-[9px] font-black text-white uppercase tracking-widest">{match.stage}</span>
-                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• LIVE UPDATES</span>
+                            {match.status === 'live' && (
+                                <span className="px-2 py-0.5 bg-red-600/20 border border-red-500/20 rounded text-[9px] font-black text-red-500 uppercase tracking-widest animate-pulse">
+                                    ROUND {match.currentRound !== undefined ? match.currentRound + 1 : 1}
+                                </span>
+                            )}
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• {match.status === 'live' ? 'LIVE UPDATES' : match.status === 'finished' ? 'FINISHED' : 'UPCOMING'}</span>
                         </div>
                         <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
                             {participants.map((p, idx) => (
                                 <React.Fragment key={p.schoolId}>
-                                    <span className="flex-shrink-0">{p.name}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex-shrink-0">{p.name}</span>
+                                        {(match.status === 'live' || match.status === 'finished') && (
+                                            <span className="text-xl md:text-2xl font-black text-purple-500 tabular-nums">
+                                                {(match.result as any)?.totalScores?.[idx] ?? 0}
+                                            </span>
+                                        )}
+                                    </div>
                                     {idx < participants.length - 1 && (
                                         <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
                                     )}
@@ -117,6 +148,39 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                 {/* Content Overlay grid */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+
+                    {/* AI Insights Bar */}
+                    <div className="lg:col-span-12 mb-4 bg-slate-900/40 border border-white/5 p-6 rounded-[2rem]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4 text-purple-500" />
+                                AI WIN PROBABILITY
+                            </h3>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Live Prediction</span>
+                        </div>
+                        <div className="flex h-3 w-full bg-white/5 rounded-full overflow-hidden mb-6 shadow-inner">
+                            {participants.map((p, idx) => (
+                                <div
+                                    key={p.schoolId}
+                                    className={cn(
+                                        "h-full transition-all duration-1000",
+                                        idx === 0 ? "bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)]" :
+                                            idx === 1 ? "bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.5)]" :
+                                                "bg-pink-600 shadow-[0_0_15px_rgba(219,39,119,0.5)]"
+                                    )}
+                                    style={{ width: `${winProbabilities[idx]}%` }}
+                                />
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {participants.map((p, idx) => (
+                                <div key={p.schoolId} className="space-y-1 text-center">
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter truncate px-2">{p.name}</div>
+                                    <div className="text-xl font-black text-white">{winProbabilities[idx]}%</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Left Column: Main Markets */}
                     <div className="lg:col-span-7 space-y-2">

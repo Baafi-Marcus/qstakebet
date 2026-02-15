@@ -39,7 +39,7 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
     return results;
 }
 
-export async function createSchoolAction(data: { name: string, region: string, district?: string, category?: string }) {
+export async function createSchoolAction(data: { name: string, region: string, district?: string, category?: string, level?: string }) {
     try {
         const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
         const [newSchool] = await db.insert(schools).values({
@@ -47,7 +47,8 @@ export async function createSchoolAction(data: { name: string, region: string, d
             name: data.name,
             region: data.region,
             district: data.district,
-            category: data.category
+            category: data.category,
+            level: data.level || 'shs'
         }).returning();
 
         // Initialize Virtual Stats
@@ -73,6 +74,7 @@ export async function updateSchoolAction(id: string, data: {
     region?: string,
     district?: string,
     category?: string,
+    level?: string,
     currentForm?: number,
     volatilityIndex?: number
 }) {
@@ -84,7 +86,8 @@ export async function updateSchoolAction(id: string, data: {
                     name: data.name,
                     region: data.region,
                     district: data.district,
-                    category: data.category
+                    category: data.category,
+                    level: data.level
                 }).where(eq(schools.id, id));
             }
 
@@ -136,12 +139,14 @@ export async function createTournament(data: {
     region: string,
     sportType: string,
     gender: string,
-    year: string
+    year: string,
+    level?: string
 }) {
     const id = `tmt-${Math.random().toString(36).substr(2, 9)}`;
     return await db.insert(tournaments).values({
         id,
         ...data,
+        level: data.level || 'shs',
         status: 'active'
     }).returning();
 }
@@ -150,7 +155,7 @@ export async function createMatch(data: {
     tournamentId: string,
     schoolIds: string[],
     stage: string,
-    startTime: string,
+    startTime?: string,
     sportType: string,
     gender: string
 }) {

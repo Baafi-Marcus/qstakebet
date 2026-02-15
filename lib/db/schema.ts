@@ -7,6 +7,7 @@ export const schools = pgTable("schools", {
     region: text("region").notNull(),
     district: text("district"),
     category: text("category"), // e.g. "A", "B", "C" or Group
+    level: text("level").default("shs").notNull(), // "shs", "university", etc.
     location: text("location"),
     createdAt: timestamp("created_at").defaultNow(),
 });
@@ -18,6 +19,7 @@ export const tournaments = pgTable("tournaments", {
     sportType: text("sport_type").notNull(), // e.g. "football", "athletics", "quiz"
     gender: text("gender").notNull(), // "male", "female", "mixed"
     year: text("year").notNull(),
+    level: text("level").default("shs").notNull(), // "shs", "university", etc.
     status: text("status").default("active").notNull(), // "active", "completed"
     createdAt: timestamp("created_at").defaultNow(),
 });
@@ -26,7 +28,7 @@ export const matches = pgTable("matches", {
     id: text("id").primaryKey(),
     tournamentId: text("tournament_id").references(() => tournaments.id),
     participants: jsonb("participants").notNull(), // Array of { schoolId, odd, name, result? }
-    startTime: text("start_time").notNull(), // Keep for backward compatibility
+    startTime: text("start_time"), // Keep for backward compatibility
     scheduledAt: timestamp("scheduled_at"), // Proper datetime for scheduling
     status: text("status").default("upcoming").notNull(), // "upcoming", "live", "finished", "cancelled"
     result: jsonb("result"), // { winner: schoolId, scores: { schoolId: number }, ... }
@@ -34,6 +36,11 @@ export const matches = pgTable("matches", {
     stage: text("stage").notNull(), // e.g. "Zone 1", "Quarter Final"
     odds: jsonb("odds").notNull(), // Maintain for backward compatibility or direct access
     extendedOdds: jsonb("extended_odds"),
+    baseOdds: jsonb("base_odds").$type<Record<string, number>>(), // Original odds before adjustment
+    lastRecalculatedAt: timestamp("last_recalculated_at"),
+    currentRound: integer("current_round").default(0).notNull(),
+    lastTickAt: timestamp("last_tick_at"),
+    liveMetadata: jsonb("live_metadata"), // Stores simulation results for global playback
     isVirtual: boolean("is_virtual").default(false).notNull(),
     sportType: text("sport_type").default("quiz").notNull(),
     gender: text("gender").default("male").notNull(),
@@ -45,8 +52,6 @@ export const matches = pgTable("matches", {
             lastUpdated: string
         }
     }>().default({}),
-    baseOdds: jsonb("base_odds").$type<Record<string, number>>(), // Original odds before adjustment
-    lastRecalculatedAt: timestamp("last_recalculated_at"),
     createdAt: timestamp("created_at").defaultNow(),
 });
 

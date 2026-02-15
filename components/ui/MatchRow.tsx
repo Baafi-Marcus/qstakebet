@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Zap, ChevronDown, Lock, ChevronRight } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Zap, ChevronDown, Lock, ChevronRight, Calendar } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { normalizeMarketName, cn } from "@/lib/utils"
 import { Match } from "@/lib/types"
@@ -53,6 +53,33 @@ export function MatchRow({
     // NEW: Calculate lock status
     const lockStatus = getMatchLockStatus(match)
     const isLocked = lockStatus.isLocked
+
+    // Internal resolution of live state for Global Engine matches
+    const internalIsLive = match.status === 'live' || isSimulating
+    const internalIsFinished = match.status === 'finished' || isFinished
+    const internalScores = currentScores || (match.result as any)?.totalScores
+    const internalRoundIdx = currentRoundIdx ?? match.currentRound
+
+    // AI Win Probabilities Calculation
+    const winProbabilities = useMemo(() => {
+        const parts = match.participants || [];
+        if (!parts.length) return [];
+
+        let probs: number[] = [];
+
+        if (internalIsLive && internalScores) {
+            // Live weighted logic: (Current Score / (Current Round + 1)) * Remaining Rounds factor
+            const currentTotal = internalScores.reduce((a: number, b: number) => a + b, 0) || 1;
+            probs = internalScores.map((s: number) => (s / currentTotal) * 100);
+        } else {
+            // Pre-match logic: Use odds (1/odd) normalized to 100
+            const inverseOdds = parts.map(p => 1 / (p.odd || match.odds?.[p.schoolId] || 2));
+            const totalInverse = inverseOdds.reduce((a, b) => a + b, 0);
+            probs = inverseOdds.map(io => (io / totalInverse) * 100);
+        }
+
+        return probs.map(p => Math.round(p));
+    }, [match.participants, internalIsLive, internalScores, match.odds]);
 
     // State for selectors
     const [selectedTotalLine, setSelectedTotalLine] = useState<string>("")
@@ -106,10 +133,10 @@ export function MatchRow({
             {/* Left side: Teams & Info */}
             <div className="flex-1 py-1.5 px-3 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                    {isSimulating ? (
+                    {internalIsLive ? (
                         <div className="flex items-center gap-1.5 bg-red-600/20 px-1.5 py-0.5 rounded text-[7px] font-black text-red-400 animate-pulse border border-red-500/20">
                             <div className="w-1 h-1 rounded-full bg-red-500" />
-                            LIVE • R{currentRoundIdx !== undefined ? currentRoundIdx + 1 : '?'}
+                            LIVE • R{internalRoundIdx !== undefined ? internalRoundIdx + 1 : '?'}
                         </div>
                     ) : (
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
@@ -121,14 +148,27 @@ export function MatchRow({
                             }
                         </span>
                     )}
-                    {match.isVirtual && !isSimulating && (
+                    {match.isVirtual && !internalIsLive && (
                         <Zap className="h-2 w-2 text-purple-400" />
                     )}
                 </div>
                 <div className="flex flex-col gap-0.5">
                     {participants.map((p, idx) => (
                         <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 50}ms` }}>
-                            <span className="text-[9px] sm:text-[10px] font-bold text-white truncate max-w-[120px] md:max-w-none uppercase tracking-tighter">{p.name}</span>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <span className="text-[9px] sm:text-[10px] font-bold text-white truncate uppercase tracking-tighter">{p.name}</span>
+                                {(!internalIsFinished && winProbabilities[idx] !== undefined) && (
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <div className="w-8 h-1 bg-white/5 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-all duration-1000"
+                                                style={{ width: `${winProbabilities[idx]}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-[7px] font-black text-purple-400 opacity-80">{winProbabilities[idx]}%</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -140,14 +180,24 @@ export function MatchRow({
                         LOCKING IN {Math.floor(lockStatus.timeUntilLock)}m
                     </div>
                 )}
+
+                {/* Start Time / TBD Info */}
+                {!internalIsLive && !internalIsFinished && (
+                    <div className="mt-1 flex items-center gap-2">
+                        <Calendar className="h-2 w-2 text-slate-500" />
+                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                            {match.startTime || "TBD"}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Right side: Odds Columns OR Live Scores OR Finished Results */}
             <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
-                {(isSimulating || isFinished) ? (
+                {(internalIsLive || internalIsFinished) ? (
                     <div className={cn(
                         "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        isSimulating ? "bg-red-600/5" : "bg-slate-900/50"
+                        internalIsLive ? "bg-red-600/5" : "bg-slate-900/50"
                     )}>
                         {participants.map((p, idx) => (
                             <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
@@ -156,13 +206,13 @@ export function MatchRow({
                                 </span>
                                 <span className={cn(
                                     "text-sm font-black font-mono tabular-nums leading-none",
-                                    isSimulating ? "text-red-500" : "text-slate-300"
+                                    internalIsLive ? "text-red-500" : "text-slate-300"
                                 )}>
-                                    {currentScores ? currentScores[idx] : 0}
+                                    {internalScores ? internalScores[idx] : 0}
                                 </span>
                             </div>
                         ))}
-                        {isFinished && (
+                        {internalIsFinished && (
                             <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
                                 <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                                     SETTLED
