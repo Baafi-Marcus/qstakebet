@@ -785,3 +785,264 @@ export function getRecentVirtualResults(
 
     return results;
 }
+
+export const getSchoolAcronym = (name: string, allParticipants: string[] = []) => {
+    if (!name || typeof name !== 'string') return "";
+
+    // Generate basic acronym
+    const base = name
+        .split(/[\s/-]+/)
+        .map(word => word[0]?.toUpperCase())
+        .join('');
+
+    if (allParticipants.length <= 1) return base;
+
+    // Check for collisions and identical names
+    const acronyms: string[] = [];
+    allParticipants.forEach((pName, pIdx) => {
+        const ac = pName.split(/[\s/-]+/).map(w => w[0]?.toUpperCase()).join('');
+
+        // Handle identical name collisions or acronym collisions
+        let suffix = 0;
+        let finalAc = ac;
+
+        // Check if this specific name has appeared before in this list
+        const occurrences = allParticipants.slice(0, pIdx).filter(n => n === pName).length;
+        if (occurrences > 0) {
+            suffix = occurrences;
+            finalAc = `${ac}${suffix}`;
+        }
+
+        // Also check if this acronym conflicts with a DIFFERENT school's acronym
+        while (acronyms.includes(finalAc)) {
+            suffix++;
+            finalAc = `${ac}${suffix}`;
+        }
+
+        acronyms.push(finalAc);
+    });
+
+    const myIndex = allParticipants.indexOf(name);
+    return acronyms[myIndex] || base;
+}
+
+export function calculateTotalOdds(selections: { odds: number }[]) {
+    if (selections.length === 0) return 0;
+    const raw = selections.reduce((acc, s) => acc * s.odds, 1);
+    return raw;
+}
+
+export interface VirtualSelection {
+    matchId: string;
+    selectionId: string;
+    label: string;
+    odds: number;
+    marketName: string;
+    matchLabel: string;
+    schoolA: string;
+    schoolB: string;
+    schoolC: string;
+    stakeUsed?: number;
+}
+
+export interface ResolvedSelection extends VirtualSelection {
+    won: boolean;
+    outcome: VirtualMatchOutcome;
+}
+
+export interface ClientVirtualBet {
+    id: string;
+    selections: (VirtualSelection | ResolvedSelection)[];
+    stake: number;
+    potentialPayout: number;
+    status: string;
+    timestamp: number;
+    roundId: number;
+    time?: string;
+    mode?: string; // 'single' | 'multi' | 'system'
+    totalStake: number;
+    totalOdds: number;
+    combinations?: { selections: VirtualSelection[]; odds: number }[];
+    stakePerCombo?: number;
+    cashedOut?: boolean;
+    totalReturns?: number;
+    results?: ResolvedSelection[];
+}
+
+export interface ResolvedSlip extends ClientVirtualBet {
+    combinations?: {
+        selections: ResolvedSelection[];
+        won: boolean;
+        return: number;
+        odds: number;
+    }[];
+    results: ResolvedSelection[];
+    totalReturns: number;
+}
+
+export const getTicketId = (id: string | number | undefined) => {
+    if (!id) return "---";
+    return `VR-${id.toString().slice(-6)}`;
+}
+
+export const normalizeSchoolName = (name: string) => {
+    return name.toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+}
+
+// Helper for checking wins across all 14 markets
+export const checkSelectionWin = (selection: VirtualSelection, outcome: VirtualMatchOutcome) => {
+    if (!outcome) return false;
+
+    const { marketName, label } = selection;
+
+    if (marketName === "Match Winner") {
+        const winner = outcome.schools[outcome.winnerIndex];
+        // Map "1", "2", "3" to the actual school name
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(winner);
+    }
+
+    if (marketName === "Total Points") {
+        const total = outcome.totalScores.reduce((a, b) => a + b, 0);
+        const line = parseFloat(label.split(' ')[1]);
+        const type = label.split(' ')[0];
+        return type === "Over" ? total > line : total < line;
+    }
+
+    if (marketName === "Winning Margin") {
+        const sorted = [...outcome.totalScores].sort((a, b) => b - a);
+        const margin = sorted[0] - sorted[1];
+        if (label === "1-10") return margin >= 1 && margin <= 10;
+        if (label === "11-25") return margin >= 11 && margin <= 25;
+        if (label === "26+") return margin >= 26;
+    }
+
+
+    if (marketName === "Perfect Round") {
+        // Any round perfect
+        const isPerfect = outcome.stats.perfectRound.some(p => p);
+        return label === "Yes" ? isPerfect : !isPerfect;
+    }
+
+    // Handle Per-Round Perfect Markets
+    if (marketName.startsWith("Perfect Round ")) {
+        const roundNum = parseInt(marketName.split(" ")[2]); // "Perfect Round 1" -> 1
+        if (!isNaN(roundNum)) {
+            const roundIndex = roundNum - 1;
+            const isPerfect = outcome.stats.perfectRound[roundIndex];
+            return label === "Yes" ? isPerfect : !isPerfect;
+        }
+    }
+
+    if (marketName === "Shutout Round") {
+        const isShutout = outcome.stats.shutoutRound.some(s => s);
+        return label === "Yes" ? isShutout : !isShutout;
+    }
+
+    if (marketName.includes("Winner")) {
+        // "Round 1 Winner" -> "Round 1"
+        const roundNum = parseInt(marketName.split(" ")[1]);
+        const roundIndex = roundNum - 1;
+        const roundScores = outcome.rounds[roundIndex].scores;
+        const maxScore = Math.max(...roundScores);
+        const winnerIdx = roundScores.indexOf(maxScore);
+
+        // Check for draw in round
+        const winnersCount = roundScores.filter(s => s === maxScore).length;
+        if (winnersCount > 1) return false; // Draw = Lost for now
+
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[winnerIdx]);
+    }
+
+    if (marketName === "First Bonus") {
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.firstBonusIndex]);
+    }
+
+    if (marketName === "Fastest Buzz") {
+        let predictedWinner = label;
+        if (label === "1") predictedWinner = outcome.schools[0];
+        if (label === "2") predictedWinner = outcome.schools[1];
+        if (label === "3") predictedWinner = outcome.schools[2];
+        return normalizeSchoolName(predictedWinner) === normalizeSchoolName(outcome.schools[outcome.stats.fastestBuzzIndex]);
+    }
+
+    if (marketName === "Comeback Win") {
+        const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
+        return label === "Yes" ? isComeback : !isComeback;
+    }
+
+    if (marketName === "Comeback Team") {
+        const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
+        const comebackWinner = isComeback ? outcome.schools[outcome.winnerIndex] : "None";
+        return normalizeSchoolName(label) === normalizeSchoolName(comebackWinner);
+    }
+
+    if (marketName === "Lead Changes") {
+        const line = 2.5;
+        const changes = outcome.stats.leadChanges;
+        const type = label.split(' ')[0];
+        return type === "Over" ? changes > line : changes < line;
+    }
+
+    if (marketName === "Late Surge") {
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.lateSurgeIndex]);
+    }
+
+    if (marketName === "Strong Start") {
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.stats.strongStartIndex]);
+    }
+
+    if (marketName === "Highest Points") {
+        // Total winner
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[outcome.winnerIndex]);
+    }
+
+    if (marketName === "Leader After Round 1") {
+        // Check scores after R1
+        const r1Scores = outcome.rounds[0].scores;
+        const max = Math.max(...r1Scores);
+        const winnerIdx = r1Scores.indexOf(max);
+        // Handle draw?
+        const winnersCount = r1Scores.filter(s => s === max).length;
+        if (winnersCount > 1) return false;
+
+        return normalizeSchoolName(label) === normalizeSchoolName(outcome.schools[winnerIdx]);
+    }
+
+    if (marketName === "Highest Scoring Round" || marketName === "Highest Round") {
+        // Label: "Round 1", "Rounds 2 & 3", "Rounds 4 & 5"
+        // Logic from manual implementation:
+        // Calculate phases
+        const rScore = (rIdx: number) => outcome.rounds[rIdx].scores.reduce((a, b) => a + b, 0);
+        const p1 = rScore(0);
+        const p2 = rScore(1) + rScore(2);
+        const p3 = rScore(3) + rScore(4);
+
+        const max = Math.max(p1, p2, p3);
+        let winningPhase = "Round 1";
+        if (p2 === max) winningPhase = "Rounds 2 & 3";
+        if (p3 === max) winningPhase = "Rounds 4 & 5";
+
+        // Handle ties? Prefer later rounds? Or "Draw"? 
+        // Existing logic in Client rendered "Round 1" fallback. 
+        // Let's assume strict equality on label.
+        return label === winningPhase;
+    }
+
+    return false;
+}
