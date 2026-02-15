@@ -2,15 +2,11 @@
 
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches } from "./db/schema"
+import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 
 // import { School, Tournament } from "./types" 
 
-/**
- * Smartly adds or updates schools in a bulk operation.
- * Helps prevent duplicates like "PRESEC" and "Presec Legon".
- */
 export async function smartUpsertSchools(schoolList: string[], region: string) {
     const results = [];
 
@@ -18,8 +14,6 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
         const cleanName = name.trim();
         if (!cleanName) continue;
 
-        // 1. Try to find existing school by exact name or similar name in same region
-        // This is a simple version; real smart upsert might use fuzzy matching
         const existing = await db.select().from(schools)
             .where(and(
                 eq(schools.region, region),
@@ -32,7 +26,6 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
             continue;
         }
 
-        // 2. If not found, create new
         const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
         const newSchool = await db.insert(schools).values({
             id,
@@ -44,6 +37,98 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
     }
 
     return results;
+}
+
+export async function createSchoolAction(data: { name: string, region: string, district?: string, category?: string }) {
+    try {
+        const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
+        const [newSchool] = await db.insert(schools).values({
+            id,
+            name: data.name,
+            region: data.region,
+            district: data.district,
+            category: data.category
+        }).returning();
+
+        // Initialize Virtual Stats
+        const vssId = `vss-${Math.random().toString(36).substr(2, 9)}`;
+        await db.insert(virtualSchoolStats).values({
+            id: vssId,
+            schoolId: id,
+            currentForm: 1.0,
+            volatilityIndex: 0.1,
+            matchesPlayed: 0,
+            wins: 0
+        });
+
+        return { success: true, school: newSchool };
+    } catch (error) {
+        console.error("Create school error:", error);
+        return { success: false, error: "Failed to create school" };
+    }
+}
+
+export async function updateSchoolAction(id: string, data: {
+    name?: string,
+    region?: string,
+    district?: string,
+    category?: string,
+    currentForm?: number,
+    volatilityIndex?: number
+}) {
+    try {
+        return await db.transaction(async (tx) => {
+            // Update Basic Info
+            if (data.name || data.region || data.district || data.category) {
+                await tx.update(schools).set({
+                    name: data.name,
+                    region: data.region,
+                    district: data.district,
+                    category: data.category
+                }).where(eq(schools.id, id));
+            }
+
+            // Update AI Stats
+            if (data.currentForm !== undefined || data.volatilityIndex !== undefined) {
+                const existing = await tx.select().from(virtualSchoolStats).where(eq(virtualSchoolStats.schoolId, id)).limit(1);
+                if (existing.length > 0) {
+                    await tx.update(virtualSchoolStats).set({
+                        currentForm: data.currentForm,
+                        volatilityIndex: data.volatilityIndex,
+                        lastUpdated: new Date()
+                    }).where(eq(virtualSchoolStats.schoolId, id));
+                } else {
+                    const vssId = `vss-${Math.random().toString(36).substr(2, 9)}`;
+                    await tx.insert(virtualSchoolStats).values({
+                        id: vssId,
+                        schoolId: id,
+                        currentForm: data.currentForm || 1.0,
+                        volatilityIndex: data.volatilityIndex || 0.1
+                    });
+                }
+            }
+
+            return { success: true };
+        });
+    } catch (error) {
+        console.error("Update school error:", error);
+        return { success: false, error: "Failed to update school" };
+    }
+}
+
+export async function deleteSchoolAction(id: string) {
+    try {
+        return await db.transaction(async (tx) => {
+            await tx.delete(virtualSchoolStats).where(eq(virtualSchoolStats.schoolId, id));
+            await tx.delete(realSchoolStats).where(eq(realSchoolStats.schoolId, id));
+            await tx.delete(schoolStrengths).where(eq(schoolStrengths.schoolId, id));
+            await tx.delete(schools).where(eq(schools.id, id));
+            return { success: true };
+        });
+    } catch (error) {
+        console.error("Delete school error:", error);
+        return { success: false, error: "Failed to delete school" };
+    }
 }
 
 export async function createTournament(data: {
@@ -238,8 +323,6 @@ export async function updateMatchResult(matchId: string, resultData: {
 }
 
 // Helper to update persistent cumulative stats
-import { realSchoolStats } from "./db/schema"
-
 async function updateRealSchoolStats(match: any, resultData: { scores: any, winner: any }) {
     try {
         const participants = match.participants as any[];
