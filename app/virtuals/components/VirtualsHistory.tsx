@@ -172,7 +172,7 @@ export function VirtualsHistory({
                     </div>
                     <div className="space-y-8">
                         {betHistory.map((h, i) => {
-                            const date = new Date(h.timestamp || Date.now()); // Fallback time
+                            const date = new Date(h.timestamp || 0); // Pure fallback
                             const day = date.getDate().toString().padStart(2, '0');
                             const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
                             const isWon = (h.totalReturns ?? 0) > 0;

@@ -26,6 +26,19 @@ export function VirtualsResults({
     autoNextRoundCountdown,
     betMode
 }: VirtualsResultsProps) {
+    const [currentTime, setCurrentTime] = React.useState<string>("");
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setCurrentTime(new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }));
+        }
+    }, [isOpen]);
+
     if (!isOpen || !lastOutcome) return null;
 
     return (
@@ -63,7 +76,7 @@ export function VirtualsResults({
                                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Return</span>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] text-slate-500 font-bold block mb-1">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] text-slate-500 font-bold block mb-1">{currentTime}</span>
                                 <div className={cn(
                                     "px-2 py-0.5 rounded-md text-[10px] font-black uppercase inline-block",
                                     (lastOutcome?.resolvedSlips || []).every((s: ResolvedSlip) => s.status === 'WON') ? "bg-green-500/20 text-green-400" :
