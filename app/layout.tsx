@@ -12,6 +12,9 @@ const russo = Russo_One({ weight: "400", subsets: ["latin"], variable: "--font-r
 export const metadata: Metadata = {
   title: "QSTAKEbet - NSMQ Prediction Platform",
   description: "Advanced betting platform for the National Science & Maths Quiz",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
