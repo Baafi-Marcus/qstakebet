@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Trophy, Map, Flag, Star, Zap, Timer } from "lucide-react"
+import { Trophy, Map, Flag, Star, Zap, Timer, Gift } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -9,6 +9,7 @@ const MAIN_MENU = [
     { label: "Featured", icon: Star, href: "/" },
     { label: "Live Matches", icon: Timer, href: "/live" },
     { label: "Instant Virtuals", icon: Zap, href: "/virtuals" },
+    { label: "Rewards", icon: Gift, href: "/rewards" },
 ]
 
 const REGIONS = [

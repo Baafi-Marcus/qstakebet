@@ -9,6 +9,7 @@ import Link from "next/link"
 export default function BetsPage() {
     const [loading, setLoading] = useState(true)
     const [bets, setBets] = useState<any[]>([])
+    const [activeTab, setActiveTab] = useState<'open' | 'history'>('open')
 
     useEffect(() => {
         getUserBets().then((res: any) => {
@@ -16,6 +17,11 @@ export default function BetsPage() {
             setLoading(false)
         })
     }, [])
+
+    const filteredBets = bets.filter(b => {
+        if (activeTab === 'open') return b.status === 'pending'
+        return ['won', 'lost'].includes(b.status)
+    })
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -30,20 +36,37 @@ export default function BetsPage() {
                     <ArrowLeft className="h-6 w-6" />
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-black tracking-tighter uppercase text-white mb-1">Betting History</h1>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Live & Settled Predictions</p>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase text-white mb-1">My Bets</h1>
+                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Track your predictions</p>
                 </div>
             </div>
 
             <div className="flex flex-col gap-6">
-                <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-white/5 rounded-full px-4 py-2 opacity-50 self-end">
-                    <Search className="h-3 w-3 text-slate-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Search History</span>
+                {/* Tabs */}
+                <div className="flex p-1 bg-slate-900 border border-white/5 rounded-2xl w-full max-w-md mx-auto mb-4">
+                    <button
+                        onClick={() => setActiveTab('open')}
+                        className={cn(
+                            "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all",
+                            activeTab === 'open' ? "bg-slate-800 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                        )}
+                    >
+                        Open Bets
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={cn(
+                            "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all",
+                            activeTab === 'history' ? "bg-slate-800 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                        )}
+                    >
+                        Bet History
+                    </button>
                 </div>
 
-                {bets.length > 0 ? (
+                {filteredBets.length > 0 ? (
                     <div className="space-y-4">
-                        {bets.map((bet) => (
+                        {filteredBets.map((bet) => (
                             <div key={bet.id} className="group bg-slate-900/40 border border-white/5 hover:border-white/10 p-6 rounded-3xl transition-all">
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                     <div className="space-y-3">
@@ -90,7 +113,9 @@ export default function BetsPage() {
                 ) : (
                     <div className="py-24 text-center border border-dashed border-white/5 rounded-[2.5rem]">
                         <History className="h-10 w-10 text-slate-800 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">No predictions found in your history.</p>
+                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                            {activeTab === 'open' ? 'No active bets.' : 'No betting history found.'}
+                        </p>
                     </div>
                 )}
             </div>

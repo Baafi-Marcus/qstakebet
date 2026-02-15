@@ -206,6 +206,12 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 await recordBetStake(selection.matchId, selection.selectionId, stake)
             }
 
+            // 7. Revalidate paths
+            const { revalidatePath } = await import("next/cache")
+            revalidatePath("/account/wallet")
+            revalidatePath("/account/bets")
+            revalidatePath("/")
+
             return { success: true, betId }
         })
     } catch (error: unknown) {

@@ -501,18 +501,42 @@ export function BetSlipSidebar() {
                                                     if (betMode === 'single') {
                                                         for (const sel of selections) {
                                                             if ((sel.stake || stake) >= FINANCE_LIMITS.BET.MIN_STAKE) {
-                                                                await placeBet(sel.stake || stake, [sel], bonusId, bonusAmount)
+                                                                await placeBet(sel.stake || stake, [sel], bonusId, bonusAmount, 'single')
+
+                                                                // Update local wallet for single bet
+                                                                if (wallet) {
+                                                                    const singleStake = sel.stake || stake
+                                                                    setWallet(prev => prev ? ({
+                                                                        ...prev,
+                                                                        balance: prev.balance - singleStake
+                                                                    }) : null)
+                                                                }
                                                             }
                                                         }
                                                         clearSlip()
                                                         closeSlip()
-                                                        window.location.reload()
                                                     } else {
                                                         const result = await placeBet(stake, selections, bonusId, bonusAmount)
                                                         if (result.success) {
+                                                            // Update local wallet state immediately for better UX
+                                                            if (wallet) {
+                                                                setWallet(prev => prev ? ({
+                                                                    ...prev,
+                                                                    balance: prev.balance - (stake - bonusAmount),
+                                                                    bonusBalance: prev.bonusBalance - bonusAmount
+                                                                }) : null)
+                                                            }
+
+                                                            // Soft refresh to update server components
+                                                            import("next/navigation").then(({ useRouter }) => {
+                                                                // We can't use hooks here, but we can trigger a router refresh if we had access to router
+                                                                // For now, revalidatePath on server does the heavy lifting
+                                                            })
+
+                                                            // Clear slip success
                                                             clearSlip()
                                                             closeSlip()
-                                                            window.location.reload()
+                                                            // Show success feedback (Toast or Modal could be added here)
                                                         } else {
                                                             const resultWithError = result as { success: false; error: string }
                                                             setError(resultWithError.error || "Failed to place bet")
@@ -556,17 +580,19 @@ export function BetSlipSidebar() {
                         </div>
                     </>
                 )}
-            </div>
+            </div >
 
             {/* Booking Success Modal (Outside Sidebar to ignore transforms) */}
-            {bookedCodeResult && (
-                <BookingSuccessModal
-                    code={bookedCodeResult}
-                    selections={selections}
-                    totalOdds={totalOdds}
-                    onClose={() => setBookedCodeResult(null)}
-                />
-            )}
+            {
+                bookedCodeResult && (
+                    <BookingSuccessModal
+                        code={bookedCodeResult}
+                        selections={selections}
+                        totalOdds={totalOdds}
+                        onClose={() => setBookedCodeResult(null)}
+                    />
+                )
+            }
 
             {/* Gift Selection Modal */}
             {

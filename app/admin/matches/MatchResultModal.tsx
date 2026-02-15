@@ -68,6 +68,13 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
     // --- AUTO CALCULATIONS ---
 
+    const [isLiveUpdate, setIsLiveUpdate] = useState(false)
+    const [timerData, setTimerData] = useState({ minute: 0, period: "1H" })
+
+    // ... (rest of state)
+
+    // --- AUTO CALCULATIONS ---
+    // (Existing calculations remain same) 
     const quizTotals = useMemo(() => {
         const totals: { [key: string]: number } = {}
         match.participants.forEach(p => {
@@ -112,8 +119,10 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         return { [p1]: w1, [p2]: w2 }
     }, [volleyballData, match.participants])
 
-    // --- AUTO WINNER SELECTION ---
+    // --- AUTO WINNER SELECTION (Only for Full Settlement) ---
     useEffect(() => {
+        if (isLiveUpdate) return; // Don't auto-set winner in live mode
+
         if (isQuiz) {
             const totals = Object.entries(quizTotals)
             const sorted = totals.sort((a, b) => b[1] - a[1])
@@ -141,28 +150,45 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
             const rank1 = Object.entries(athleticsData).find(([_, rank]) => rank === 1)
             if (rank1) setWinner(rank1[0])
         }
-    }, [quizTotals, footballData, basketballTotals, volleyballTotals, athleticsData, isQuiz, isFootball, isBasketball, isVolleyball, isAthletics, match.participants])
+    }, [quizTotals, footballData, basketballTotals, volleyballTotals, athleticsData, isQuiz, isFootball, isBasketball, isVolleyball, isAthletics, match.participants, isLiveUpdate])
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
-        if (!winner) { setError("Please select or confirm a winner"); return }
+
+        // Validation only for Final Settlement
+        if (!isLiveUpdate && !winner) { setError("Please select or confirm a winner"); return }
+
         setLoading(true)
 
         try {
             let finalScores = scores
-            let metadata: any = {}
+            let metadata: any = {
+                ...(match.sportType === 'football' ? { footballDetails: footballData } : {}),
+                ...(match.sportType === 'basketball' ? { basketballDetails: basketballData } : {}),
+                ...(match.sportType === 'volleyball' ? { volleyballDetails: volleyballData } : {}),
+                ...(match.sportType === 'quiz' ? { quizDetails: quizData } : {}),
+                ...(match.sportType === 'athletics' ? { athleticsDetails: athleticsData } : {}),
+            }
 
-            if (isQuiz) { finalScores = quizTotals; metadata = { quizDetails: quizData } }
-            if (isFootball) { finalScores = footballTotals; metadata = { footballDetails: footballData } }
-            if (isBasketball) { finalScores = basketballTotals; metadata = { basketballDetails: basketballData } }
-            if (isVolleyball) { finalScores = volleyballTotals; metadata = { volleyballDetails: volleyballData } }
-            if (isAthletics) { finalScores = athleticsData; metadata = { athleticsDetails: athleticsData } }
+            if (isQuiz) { finalScores = quizTotals; }
+            if (isFootball) { finalScores = footballTotals; }
+            if (isBasketball) { finalScores = basketballTotals; }
+            if (isVolleyball) { finalScores = volleyballTotals; }
+            if (isAthletics) { finalScores = athleticsData; }
+
+            // Add Time Metadata for Live Updates
+            if (isLiveUpdate && !isQuiz) {
+                metadata.currentMinute = timerData.minute
+                metadata.period = timerData.period
+                metadata.lastUpdated = new Date().toISOString()
+            }
 
             const result = await updateMatchResult(match.id, {
                 scores: finalScores,
-                winner,
-                status: "finished",
+                winner: isLiveUpdate ? "" : winner,
+                status: isLiveUpdate ? "live" : "finished",
                 metadata
             } as any)
 
@@ -175,24 +201,87 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className={`bg-slate-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden w-full ${isQuiz || isBasketball || isVolleyball ? 'max-w-4xl' : 'max-w-md'}`}>
-                {/* Header */}
-                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-purple-600/10 to-transparent">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/20 text-primary">
-                            {isQuiz ? <Brain /> : isFootball ? <Trophy /> : isBasketball ? <Zap /> : isVolleyball ? <Target /> : isAthletics ? <Sparkles /> : <Trophy />}
+                {/* Header with Toggle */}
+                <div className="p-8 border-b border-white/5 flex flex-col gap-4 bg-gradient-to-r from-purple-600/10 to-transparent">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/20 text-primary">
+                                {isQuiz ? <Brain /> : isFootball ? <Trophy /> : isBasketball ? <Zap /> : isVolleyball ? <Target /> : isAthletics ? <Sparkles /> : <Trophy />}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                                    {isLiveUpdate ? "LIVE UPDATE" : "SETTLE MATCH"}
+                                </h2>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
+                                    {isLiveUpdate ? "Update scores & time without finishing" : "Finalize results & pay out bets"}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">RESULT ENTRY: {match.sportType}</h2>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Precise resulting & auto-settlement</p>
-                        </div>
+                        <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-slate-400"><X className="h-5 w-5" /></button>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-slate-400"><X className="h-5 w-5" /></button>
+
+                    {/* Mode Toggle */}
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 self-start">
+                        <button
+                            type="button"
+                            onClick={() => setIsLiveUpdate(true)}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isLiveUpdate ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-slate-500 hover:text-slate-300"}`}
+                        >
+                            Live Update
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsLiveUpdate(false)}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isLiveUpdate ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "text-slate-500 hover:text-slate-300"}`}
+                        >
+                            Final Settle
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-8">
                     {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-black uppercase text-center">{error}</div>}
 
                     <form onSubmit={handleSubmit} className="space-y-8">
+
+                        {/* TIMER INPUT (Live Mode Only, Non-Quiz) */}
+                        {isLiveUpdate && !isQuiz && (
+                            <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-6 space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Match Timer</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">Period</label>
+                                        <select
+                                            value={timerData.period}
+                                            onChange={(e) => setTimerData({ ...timerData, period: e.target.value })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl h-10 px-3 text-white text-xs font-bold focus:outline-none focus:border-red-500/50"
+                                        >
+                                            <option value="1H">1st Half</option>
+                                            <option value="HT">Half Time</option>
+                                            <option value="2H">2nd Half</option>
+                                            <option value="ET">Extra Time</option>
+                                            <option value="P">Penalties</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">Minute</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={timerData.minute}
+                                                onChange={(e) => setTimerData({ ...timerData, minute: parseInt(e.target.value) || 0 })}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl h-10 pl-3 pr-8 text-white text-xs font-bold focus:outline-none focus:border-red-500/50"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">'</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* 1. SPORT SPECIFIC INPUTS */}
                         {isQuiz && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -283,51 +372,59 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                             </div>
                         )}
 
-                        {/* 2. WINNER OVERRIDE / SELECTION */}
-                        <div className="space-y-4 pt-4 border-t border-white/5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Decision Point (Select Winner)</label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {match.participants.map(p => (
-                                    <button key={p.schoolId} type="button" onClick={() => setWinner(p.schoolId)} className={`p-5 rounded-3xl border flex items-center gap-4 transition-all ${winner === p.schoolId ? "bg-primary text-slate-950 border-primary" : "bg-white/5 border-white/5 text-slate-400"}`}>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${winner === p.schoolId ? 'border-black/20' : 'border-slate-800'}`}>{winner === p.schoolId && <div className="w-2 h-2 bg-slate-950 rounded-full" />}</div>
-                                        <span className="text-[10px] font-black uppercase truncate">{p.name}</span>
-                                    </button>
-                                ))}
-                                {isFootball && (
-                                    <button type="button" onClick={() => setWinner("X")} className={`p-5 rounded-3xl border flex items-center gap-4 transition-all ${winner === "X" ? "bg-primary text-slate-950 border-primary" : "bg-white/5 border-white/5 text-slate-400"}`}>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${winner === "X" ? 'border-black/20' : 'border-slate-800'}`}>{winner === "X" && <div className="w-2 h-2 bg-slate-950 rounded-full" />}</div>
-                                        <span className="text-[10px] font-black uppercase truncate">Draw (X)</span>
-                                    </button>
-                                )}
+                        {/* 2. WINNER OVERRIDE / SELECTION (HIDDEN IN LIVE MODE) */}
+                        {!isLiveUpdate && (
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Decision Point (Select Winner)</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {match.participants.map(p => (
+                                        <button key={p.schoolId} type="button" onClick={() => setWinner(p.schoolId)} className={`p-5 rounded-3xl border flex items-center gap-4 transition-all ${winner === p.schoolId ? "bg-primary text-slate-950 border-primary" : "bg-white/5 border-white/5 text-slate-400"}`}>
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${winner === p.schoolId ? 'border-black/20' : 'border-slate-800'}`}>{winner === p.schoolId && <div className="w-2 h-2 bg-slate-950 rounded-full" />}</div>
+                                            <span className="text-[10px] font-black uppercase truncate">{p.name}</span>
+                                        </button>
+                                    ))}
+                                    {isFootball && (
+                                        <button type="button" onClick={() => setWinner("X")} className={`p-5 rounded-3xl border flex items-center gap-4 transition-all ${winner === "X" ? "bg-primary text-slate-950 border-primary" : "bg-white/5 border-white/5 text-slate-400"}`}>
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${winner === "X" ? 'border-black/20' : 'border-slate-800'}`}>{winner === "X" && <div className="w-2 h-2 bg-slate-950 rounded-full" />}</div>
+                                            <span className="text-[10px] font-black uppercase truncate">Draw (X)</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* 3. ACTIONS */}
                         <div className="flex flex-col sm:flex-row gap-4 pt-6">
                             <button type="button" onClick={onClose} className="h-16 px-8 rounded-3xl bg-white/5 border border-white/5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-white/10">Abort</button>
 
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
-                                    setLoading(true);
-                                    await updateMatchResult(match.id, {
-                                        scores: {},
-                                        winner: 'void',
-                                        status: 'cancelled',
-                                        metadata: { voided: true }
-                                    });
-                                    setLoading(false);
-                                    onSuccess();
-                                    onClose();
-                                }}
-                                className="h-16 px-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20"
-                            >
-                                Void Match
-                            </button>
+                            {!isLiveUpdate && (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
+                                        setLoading(true);
+                                        await updateMatchResult(match.id, {
+                                            scores: {},
+                                            winner: 'void',
+                                            status: 'cancelled',
+                                            metadata: { voided: true }
+                                        });
+                                        setLoading(false);
+                                        onSuccess();
+                                        onClose();
+                                    }}
+                                    className="h-16 px-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20"
+                                >
+                                    Void Match
+                                </button>
+                            )}
 
-                            <button type="submit" disabled={loading} className="flex-1 h-16 bg-primary text-slate-950 rounded-3xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] shadow-xl shadow-primary/20 disabled:opacity-50">
-                                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Settlement"}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={`flex-1 h-16 rounded-3xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] shadow-xl disabled:opacity-50 ${isLiveUpdate ? "bg-red-600 text-white shadow-red-900/20" : "bg-primary text-slate-950 shadow-primary/20"}`}
+                            >
+                                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : isLiveUpdate ? "Update Live Score" : "Authorize Settlement"}
                             </button>
                         </div>
                     </form>

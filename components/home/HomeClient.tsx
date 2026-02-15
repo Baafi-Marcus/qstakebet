@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Trophy, Search, Filter, Calendar } from "lucide-react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
@@ -49,7 +49,7 @@ function getDateGroupLabel(date: Date): string {
 export function HomeClient({ initialMatches }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
-    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming'>('today')
+    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
@@ -79,6 +79,8 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             dateMatch = matchDate?.getTime() === tomorrow.getTime();
         } else if (activeDateTab === 'upcoming') {
             dateMatch = matchDate ? matchDate.getTime() >= afterTomorrow.getTime() : false;
+        } else if (activeDateTab === 'all') {
+            dateMatch = true;
         }
 
         return matchesLevel && matchesSearch && dateMatch
@@ -138,7 +140,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         const markets = new Set<string>();
         markets.add('winner');
         markets.add('total_points');
-        initialMatches.forEach(m => {
+        filteredMatches.forEach(m => {
             if (m.extendedOdds) {
                 Object.keys(m.extendedOdds).forEach(k => {
                     // Map common keys to friendly IDs
@@ -159,7 +161,14 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                 m === 'total_points' ? 'Total Points' :
                     m.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
         }));
-    }, [initialMatches]);
+    }, [filteredMatches]);
+
+    // Reset active market if not available in current filtered matches
+    useEffect(() => {
+        if (availableMarkets.length > 0 && !availableMarkets.find(m => m.id === activeMarket)) {
+            setActiveMarket('winner');
+        }
+    }, [availableMarkets, activeMarket]);
 
     return (
         <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">
@@ -192,7 +201,8 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                     {[
                         { id: 'today', label: 'Today' },
                         { id: 'tomorrow', label: 'Tomorrow' },
-                        { id: 'upcoming', label: 'Upcoming' }
+                        { id: 'upcoming', label: 'Upcoming' },
+                        { id: 'all', label: 'All' }
                     ].map((tab) => (
                         <button
                             key={tab.id}

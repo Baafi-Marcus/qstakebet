@@ -9,6 +9,7 @@ import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
 import { Lock } from "lucide-react"
+import { MatchTimer } from "@/components/ui/MatchTimer"
 
 export function MatchesClient({
     initialMatches,
@@ -265,8 +266,14 @@ export function MatchesClient({
                             </div>
                             <div className="flex items-center gap-8 justify-between lg:justify-end">
                                 <div className="text-right">
-                                    <div className={`text-xs font-black uppercase tracking-widest ${match.isLive ? "text-red-500 animate-pulse" : "text-slate-500"}`}>
-                                        {match.startTime}
+                                    <div className={`text-xs font-black uppercase tracking-widest ${match.isLive ? "text-red-500" : "text-slate-500"}`}>
+                                        <MatchTimer
+                                            startTime={match.startTime}
+                                            status={match.status || 'upcoming'}
+                                            sportType={match.sportType}
+                                            metadata={match.liveMetadata}
+                                            isLive={match.isLive}
+                                        />
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">Start Schedule</div>
                                 </div>

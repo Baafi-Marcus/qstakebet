@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Trophy, User, Zap } from "lucide-react"
+import { Home, Trophy, User, Zap, ScrollText, Gift } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function BottomNav() {
@@ -13,13 +13,14 @@ export function BottomNav() {
     const navItems = [
         { label: "Home", icon: Home, href: "/" },
         { label: "Virtuals", icon: Zap, href: "/virtuals" },
-        { label: "Comps", icon: Trophy, href: "/competitions/regional" },
+        { label: "My Bets", icon: ScrollText, href: "/account/bets" },
+        { label: "Rewards", icon: Gift, href: "/rewards" },
         { label: "Me", icon: User, href: "/account/profile" },
     ]
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border h-16 pb-safe lg:hidden shadow-lg">
-            <div className="grid grid-cols-4 h-full">
+            <div className="grid grid-cols-5 h-full">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href
 
