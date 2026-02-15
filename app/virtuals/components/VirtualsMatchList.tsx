@@ -11,12 +11,12 @@ interface VirtualsMatchListProps {
     selectedRegion: string | null;
     setSelectedRegion: (region: string) => void;
     availableRegions: string[];
-    activeMarket: string;
-    setActiveMarket: (market: any) => void;
+    activeMarket: 'winner' | 'total_points' | 'winning_margin' | 'highest_scoring_round' | 'round_winner' | 'perfect_round' | 'shutout_round' | 'first_bonus' | 'comeback_win' | 'comeback_team' | 'lead_changes' | 'late_surge';
+    setActiveMarket: (market: 'winner' | 'total_points' | 'winning_margin' | 'highest_scoring_round' | 'round_winner' | 'perfect_round' | 'shutout_round' | 'first_bonus' | 'comeback_win' | 'comeback_team' | 'lead_changes' | 'late_surge') => void;
     filteredMatches: Match[];
     isSimulating: boolean;
     selections: VirtualSelection[];
-    toggleSelection: (selection: any) => void;
+    toggleSelection: (selection: VirtualSelection) => void;
     lastOutcome: { allRoundResults: VirtualMatchOutcome[], roundId: number } | null;
     currentRound: number;
     simulationProgress: number;
@@ -87,7 +87,7 @@ export function VirtualsMatchList({
                         ].map((m) => (
                             <button
                                 key={m.id}
-                                onClick={() => setActiveMarket(m.id)}
+                                onClick={() => setActiveMarket(m.id as any)}
                                 className={cn(
                                     "px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] transition-all border whitespace-nowrap",
                                     activeMarket === m.id
@@ -109,7 +109,7 @@ export function VirtualsMatchList({
                         <MatchRow
                             match={match}
                             activeMarket={activeMarket as any}
-                            onOddsClick={toggleSelection}
+                            onOddsClick={toggleSelection as any}
                             checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
                             checkIsCorrelated={() => false}
                             onMoreClick={(m) => !isSimulating && setSelectedMatchForDetails(m)}

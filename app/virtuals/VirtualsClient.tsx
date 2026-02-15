@@ -47,7 +47,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const router = useRouter()
 
     // Status / UI State
-    const [activeMarket, setActiveMarket] = useState<any>('winner')
+    const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points' | 'winning_margin' | 'highest_scoring_round' | 'round_winner' | 'perfect_round' | 'shutout_round' | 'first_bonus' | 'comeback_win' | 'comeback_team' | 'lead_changes' | 'late_surge'>('winner')
     const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
     const [selectedCategory, setSelectedCategory] = useState<'all' | 'regional' | 'national'>('national')
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
@@ -71,7 +71,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
     const [currentCommentary, setCurrentCommentary] = useState<string>("Ready for kickoff!")
     const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
-    const [countdown, setCountdown] = useState<any>(null)
+    const [countdown, setCountdown] = useState<string | null>(null)
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
 
     const isSimulatingRef = useRef(false)
@@ -223,6 +223,22 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
         setActiveLiveMatchId(null)
         setAutoNextRoundCountdown(15)
     }
+
+    // Auto-advance results
+    useEffect(() => {
+        if (autoNextRoundCountdown !== null) {
+            if (autoNextRoundCountdown <= 0) {
+                setAutoNextRoundCountdown(null);
+                nextRound();
+                setShowResultsModal(false);
+            } else {
+                const timer = setTimeout(() => {
+                    setAutoNextRoundCountdown(prev => prev !== null ? prev - 1 : null);
+                }, 1000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [autoNextRoundCountdown]);
 
     const handleConfirmCashout = () => {
         if (!confirmCashoutSlipId) return
