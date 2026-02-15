@@ -32,7 +32,8 @@ export interface Match {
     currentRound?: number
     liveMetadata?: any
     level?: string
-    createdAt?: Date | null
+    createdAt?: Date | string | null
+    lastTickAt?: Date | string | null
 }
 
 export interface Tournament {

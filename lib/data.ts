@@ -11,28 +11,41 @@ import { getVirtualMatchById } from "./virtuals"
 function mapDbMatchToMatch(dbMatch: unknown): Match {
     const m = dbMatch as Record<string, unknown>;
     return {
-        ...m,
         id: m.id as string,
-        tournamentId: m.tournamentId as string | null,
-        startTime: m.startTime as string,
-        status: m.status as string | undefined,
-        isLive: m.isLive as boolean,
-        isVirtual: m.isVirtual as boolean,
-        stage: m.stage as string,
-        sportType: m.sportType as string,
-        gender: m.gender as string,
-        participants: m.participants as Match['participants'],
-        odds: m.odds as Match['odds'],
-        extendedOdds: m.extendedOdds as Match['extendedOdds'],
+        tournamentId: (m.tournamentId as string) || null,
+        startTime: (m.startTime as string) || "",
+        scheduledAt: m.scheduledAt ? new Date(m.scheduledAt as string | Date).toISOString() : null,
+        status: (m.status as string) || "upcoming",
+        isLive: Boolean(m.isLive),
+        isVirtual: Boolean(m.isVirtual),
+        stage: (m.stage as string) || "",
+        sportType: (m.sportType as string) || "football",
+        gender: (m.gender as string) || "male",
+        participants: (m.participants as Match['participants']) || [],
+        odds: (m.odds as Match['odds']) || {},
+        extendedOdds: (m.extendedOdds as Match['extendedOdds']) || undefined,
         margin: typeof m.margin === 'number' ? m.margin : 0.1,
         currentRound: typeof m.currentRound === 'number' ? m.currentRound : 0,
-        liveMetadata: m.liveMetadata,
+        liveMetadata: m.liveMetadata || null,
+        // Do not spread ...m to avoid passing unserializable Dates like createdAt, lastTickAt
     }
 }
 
 export async function getAllMatches(): Promise<Match[]> {
-    const results = await db.select().from(matches).where(eq(matches.isVirtual, false))
-    return results.map(mapDbMatchToMatch)
+    const results = await db.select({
+        match: matches,
+        region: tournaments.region,
+        level: tournaments.level
+    })
+        .from(matches)
+        .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+        .where(eq(matches.isVirtual, false))
+
+    return results.map(r => ({
+        ...mapDbMatchToMatch(r.match),
+        region: r.region || undefined,
+        level: r.level || undefined
+    }))
 }
 
 export async function getAllMatchesWithTournaments() {
@@ -60,7 +73,9 @@ export async function getVirtualMatches(): Promise<Match[]> {
 export async function getFeaturedMatches(): Promise<Match[]> {
     const results = await db.select({
         match: matches,
-        tournamentName: tournaments.name
+        tournamentName: tournaments.name,
+        level: tournaments.level,
+        region: tournaments.region
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
@@ -70,7 +85,9 @@ export async function getFeaturedMatches(): Promise<Match[]> {
 
     return results.map(r => ({
         ...mapDbMatchToMatch(r.match),
-        tournamentName: r.tournamentName || null
+        tournamentName: r.tournamentName || null,
+        level: r.level || undefined,
+        region: r.region || undefined
     }))
 }
 
