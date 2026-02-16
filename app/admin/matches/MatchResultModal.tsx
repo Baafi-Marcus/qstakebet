@@ -164,7 +164,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
         try {
             let finalScores = scores
-            let metadata: any = {
+            const metadata: any = {
                 ...(match.sportType === 'football' ? { footballDetails: footballData } : {}),
                 ...(match.sportType === 'basketball' ? { basketballDetails: basketballData } : {}),
                 ...(match.sportType === 'volleyball' ? { volleyballDetails: volleyballData } : {}),
@@ -275,7 +275,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                 onChange={(e) => setTimerData({ ...timerData, minute: parseInt(e.target.value) || 0 })}
                                                 className="w-full bg-black/40 border border-white/10 rounded-xl h-10 pl-3 pr-8 text-white text-xs font-bold focus:outline-none focus:border-red-500/50"
                                             />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">'</span>
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">&apos;</span>
                                         </div>
                                     </div>
                                 </div>

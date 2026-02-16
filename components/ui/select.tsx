@@ -11,7 +11,7 @@ import { ChevronDown } from "lucide-react"
 const SelectContext = React.createContext<{
     value?: string
     defaultValue?: string
-    startTransition: (value: string) => void
+    setValue: (value: string) => void
 } | null>(null)
 
 // Note: This is an abstraction that actually renders a native select visually styled
@@ -24,9 +24,10 @@ interface SelectProps {
     onValueChange?: (value: string) => void
     defaultValue?: string
     name?: string
+    required?: boolean
 }
 
-export function Select({ children, onValueChange, defaultValue, name }: SelectProps) {
+export function Select({ children, onValueChange, defaultValue, name, required }: SelectProps) {
     const [open, setOpen] = React.useState(false)
     const [value, setValue] = React.useState(defaultValue || "")
 
@@ -35,7 +36,7 @@ export function Select({ children, onValueChange, defaultValue, name }: SelectPr
             open,
             setOpen,
             value,
-            setValue: (v) => {
+            setValue: (v: string) => {
                 setValue(v)
                 setOpen(false)
                 if (onValueChange) onValueChange(v)
@@ -43,7 +44,7 @@ export function Select({ children, onValueChange, defaultValue, name }: SelectPr
             name
         } as any}>
             <div className="relative">{children}</div>
-            {name && <input type="hidden" name={name} value={value} />}
+            {name && <input type="hidden" name={name} value={value} required={required} />}
         </SelectContext.Provider>
     )
 }

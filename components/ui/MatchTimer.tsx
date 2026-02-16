@@ -76,7 +76,7 @@ export function MatchTimer({ startTime, status, sportType, metadata, className, 
 
                         // Basic HT adjustment for football (approx 15min break after 45)
                         // This is very rough essentially, but better than nothing if no admin input
-                        let displayMin = diffInMinutes;
+                        const displayMin = diffInMinutes;
                         if (sportType === 'football' && diffInMinutes > 45) {
                             // If it's literally continuous time, 50 mins since start = 50'. 
                             // Realistically there's halftime.
@@ -102,6 +102,7 @@ export function MatchTimer({ startTime, status, sportType, metadata, className, 
 
         setTimeDisplay(status);
 
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startTime, status, sportType, metadata, isLive]);
 
     return (

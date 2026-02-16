@@ -15,7 +15,7 @@
 - [x] Award bonus points correctly in `totalScores` within `simulateMatch`
 - [x] Implement "All" category button in Virtuals Navbar
 
-## 3. Verification & Bug Fixes [/]
+## 3. Verification & Bug Fixes [x]
 - [x] Build verification (Braces/Parens balanced)
 - [x] Logic verification (Fastest Buzz and First Bonus points awarded)
 - [x] UI/UX verification (Countdown display, Results table, Hide Navbar during simulation)

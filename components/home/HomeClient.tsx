@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { Trophy, Search, Filter, Calendar } from "lucide-react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
+import { SplashScreen } from "@/components/ui/SplashScreen"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { useBetSlip } from "@/lib/store/useBetSlip"
 import { cn } from "@/lib/utils"
@@ -168,7 +169,8 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         if (availableMarkets.length > 0 && !availableMarkets.find(m => m.id === activeMarket)) {
             setActiveMarket('winner');
         }
-    }, [availableMarkets, activeMarket]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availableMarkets]);
 
     return (
         <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">

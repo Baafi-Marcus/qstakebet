@@ -32,9 +32,7 @@ export default function RootLayout({
           russo.variable
         )}
       >
-        <SplashScreen>
-          <ClientLayout>{children}</ClientLayout>
-        </SplashScreen>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
