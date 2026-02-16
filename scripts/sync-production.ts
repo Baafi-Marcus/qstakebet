@@ -1,3 +1,10 @@
+import * as dotenv from "dotenv"
+import { join } from "path"
+
+// Load environment variables
+dotenv.config({ path: join(process.cwd(), ".env.local") })
+dotenv.config({ path: join(process.cwd(), ".env") })
+
 import { db } from "../lib/db"
 import { sql } from "drizzle-orm"
 
@@ -7,6 +14,11 @@ import { sql } from "drizzle-orm"
  */
 
 async function sync() {
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("localhost")) {
+        console.error("❌ DATABASE_URL is missing or set to localhost. Please ensure .env.local has your Vercel/Neon DB URL.");
+        process.exit(1);
+    }
+
     console.log("🚀 Starting Production Schema Sync...");
 
     try {
