@@ -1,12 +1,9 @@
 import * as dotenv from "dotenv"
 import { join } from "path"
 
-// Load environment variables
+// Load environment variables IMMEDIATELY
 dotenv.config({ path: join(process.cwd(), ".env.local") })
 dotenv.config({ path: join(process.cwd(), ".env") })
-
-import { db } from "../lib/db"
-import { sql } from "drizzle-orm"
 
 /**
  * PRODUCTION SYNC SCRIPT
@@ -14,14 +11,18 @@ import { sql } from "drizzle-orm"
  */
 
 async function sync() {
-    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("localhost")) {
-        console.error("❌ DATABASE_URL is missing or set to localhost. Please ensure .env.local has your Vercel/Neon DB URL.");
+    if (!process.env.DATABASE_URL) {
+        console.error("❌ DATABASE_URL is missing. Please ensure .env or .env.local has your Vercel/Neon DB URL.");
         process.exit(1);
     }
 
     console.log("🚀 Starting Production Schema Sync...");
 
     try {
+        // Dynamic imports to ensure dotenv records are available to the database client
+        const { db } = await import("../lib/db")
+        const { sql } = await import("drizzle-orm")
+
         // 1. Add missing columns to matches table
         const matchesCols = [
             { name: "auto_end_at", type: "TIMESTAMP" },
