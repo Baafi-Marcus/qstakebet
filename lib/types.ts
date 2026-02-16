@@ -34,6 +34,7 @@ export interface Match {
     level?: string
     createdAt?: Date | string | null
     lastTickAt?: Date | string | null
+    autoEndAt?: Date | string | null
 }
 
 export interface Tournament {

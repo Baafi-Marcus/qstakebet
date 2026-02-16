@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Gift, Plus } from "lucide-react"
 import { IssueBonusModal } from "./IssueBonusModal"
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminBonusesPage() {
     const bonuses = await getAllBonuses()
 

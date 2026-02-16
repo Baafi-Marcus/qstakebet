@@ -40,6 +40,7 @@ export const matches = pgTable("matches", {
     lastRecalculatedAt: timestamp("last_recalculated_at"),
     currentRound: integer("current_round").default(0).notNull(),
     lastTickAt: timestamp("last_tick_at"),
+    autoEndAt: timestamp("auto_end_at"), // Optional specific time to auto-end match
     liveMetadata: jsonb("live_metadata"), // Stores simulation results for global playback
     isVirtual: boolean("is_virtual").default(false).notNull(),
     sportType: text("sport_type").default("quiz").notNull(),
@@ -265,6 +266,17 @@ export const walletsRelations = relations(wallets, ({ one }) => ({
 }));
 
 
+export const matchHistory = pgTable("match_history", {
+    id: text("id").primaryKey(), // mh-xxxxx
+    matchId: text("match_id").notNull().references(() => matches.id),
+    action: text("action").notNull(), // "score_update", "status_change", "period_change"
+    previousData: jsonb("previous_data"), // Previous scores/status
+    newData: jsonb("new_data"), // New scores/status
+    updatedBy: text("updated_by"), // Admin user ID or "system"
+    metadata: jsonb("metadata"), // Additional context (period, time, etc.)
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const verificationCodes = pgTable("verification_codes", {
     id: text("id").primaryKey(), // vc-xxxxx
     phone: text("phone").notNull(),
@@ -290,3 +302,5 @@ export type RealSchoolStat = typeof realSchoolStats.$inferSelect;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 export type NewWithdrawalRequest = typeof withdrawalRequests.$inferInsert;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
+export type MatchHistory = typeof matchHistory.$inferSelect;
+export type NewMatchHistory = typeof matchHistory.$inferInsert;

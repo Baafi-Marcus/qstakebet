@@ -48,7 +48,7 @@ export function MatchRow({
     currentScores,
     currentRoundIdx
 }: MatchRowProps) {
-    const participants = match.participants || []
+    const participants = useMemo(() => match.participants || [], [match.participants])
     const matchLabel = participants.map(p => p.name).join(' vs ')
 
     // NEW: Calculate lock status
@@ -58,7 +58,16 @@ export function MatchRow({
     // Internal resolution of live state for Global Engine matches
     const internalIsLive = match.status === 'live' || isSimulating
     const internalIsFinished = match.status === 'finished' || isFinished
-    const internalScores = currentScores || (match.result as any)?.totalScores
+    const internalIsPending = match.status === 'pending'
+    const internalScores = useMemo(() => {
+        if (currentScores) return currentScores;
+        if ((match.result as any)?.totalScores) return (match.result as any).totalScores;
+        if (match.result?.scores) {
+            // Map scores object to array based on participants order
+            return participants.map(p => match.result!.scores![p.schoolId] || 0);
+        }
+        return null;
+    }, [currentScores, match.result, participants]);
     const internalRoundIdx = currentRoundIdx ?? match.currentRound
 
     // AI Win Probabilities Calculation
@@ -197,32 +206,45 @@ export function MatchRow({
                 )}
             </div>
 
-            {/* Right side: Odds Columns OR Live Scores OR Finished Results */}
+            {/* Right side: Odds Columns OR Live Scores OR Finished Results OR Pending */}
             <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
-                {(internalIsLive || internalIsFinished) ? (
+                {(internalIsLive || internalIsFinished || internalIsPending) ? (
                     <div className={cn(
                         "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        internalIsLive ? "bg-red-600/5" : "bg-slate-900/50"
+                        internalIsLive ? "bg-red-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
                     )}>
-                        {participants.map((p, idx) => (
-                            <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
-                                <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
-                                    {(idx + 1)}
-                                </span>
-                                <span className={cn(
-                                    "text-sm font-black font-mono tabular-nums leading-none",
-                                    internalIsLive ? "text-red-500" : "text-slate-300"
-                                )}>
-                                    {internalScores ? internalScores[idx] : 0}
-                                </span>
-                            </div>
-                        ))}
-                        {internalIsFinished && (
-                            <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
-                                <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                    SETTLED
+                        {internalIsPending ? (
+                            <div className="flex flex-col items-center justify-center py-2">
+                                <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                    Full Time
+                                </div>
+                                <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                                    Awaiting Result
                                 </div>
                             </div>
+                        ) : (
+                            <>
+                                {participants.map((p, idx) => (
+                                    <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
+                                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
+                                            {(idx + 1)}
+                                        </span>
+                                        <span className={cn(
+                                            "text-sm font-black font-mono tabular-nums leading-none",
+                                            internalIsLive ? "text-red-500" : "text-slate-300"
+                                        )}>
+                                            {internalScores ? internalScores[idx] : 0}
+                                        </span>
+                                    </div>
+                                ))}
+                                {internalIsFinished && (
+                                    <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
+                                        <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                            SETTLED
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 ) : (

@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
-import { Lock } from "lucide-react"
+import { MatchHistoryModal } from "./MatchHistoryModal"
+import { Lock, History } from "lucide-react"
 import { MatchTimer } from "@/components/ui/MatchTimer"
 
 export function MatchesClient({
@@ -27,6 +28,7 @@ export function MatchesClient({
     const [isCreating, setIsCreating] = useState(false)
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
     const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
+    const [selectedMatchForHistory, setSelectedMatchForHistory] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
 
     // Bulk Start/Lock State
@@ -82,6 +84,7 @@ export function MatchesClient({
         schoolIds: [] as string[],
         stage: "Group Stage",
         startTime: "",
+        autoEndAt: "",
         sportType: "football",
         gender: "male"
     })
@@ -129,7 +132,7 @@ export function MatchesClient({
                 setMatches([created, ...matches])
                 setIsCreateModalOpen(false)
                 // Reset minimal form
-                setFormData(prev => ({ ...prev, schoolIds: [], startTime: "" }))
+                setFormData(prev => ({ ...prev, schoolIds: [], startTime: "", autoEndAt: "" }))
                 router.refresh()
             }
         } catch (error) {
@@ -297,6 +300,14 @@ export function MatchesClient({
                                             Enter Result
                                         </button>
                                     )}
+
+                                    <button
+                                        onClick={() => setSelectedMatchForHistory(match)}
+                                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-all border border-white/5"
+                                        title="View History"
+                                    >
+                                        <History className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -393,6 +404,16 @@ export function MatchesClient({
                                     />
                                     <p className="text-[10px] text-slate-600 mt-1 uppercase tracking-wide">Schedule for future or leave for immediate</p>
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Auto End Time (Recommended)</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none border-dashed"
+                                        value={formData.autoEndAt}
+                                        onChange={e => setFormData({ ...formData, autoEndAt: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-slate-600 mt-1 uppercase tracking-wide italic">Optional: Match will move to pending at this time</p>
+                                </div>
                             </div>
                         </div>
 
@@ -442,6 +463,15 @@ export function MatchesClient({
                         router.refresh()
                         setIsBulkModalOpen(false)
                     }}
+                />
+            )}
+
+            {/* History Modal */}
+            {selectedMatchForHistory && (
+                <MatchHistoryModal
+                    matchId={selectedMatchForHistory.id}
+                    matchName={`${getTournamentName(selectedMatchForHistory.tournamentId)}: ${selectedMatchForHistory.participants.map(p => p.name).join(" vs ")}`}
+                    onClose={() => setSelectedMatchForHistory(null)}
                 />
             )}
         </div>

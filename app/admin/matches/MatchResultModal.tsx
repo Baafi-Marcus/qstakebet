@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles } from "lucide-react"
+import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
 import { updateMatchResult } from "@/lib/admin-actions"
+import { validateScores } from "@/lib/match-utils"
 
 interface MatchResultModalProps {
     match: {
@@ -10,6 +11,7 @@ interface MatchResultModalProps {
             schoolId: string
             name: string
         }>
+        autoEndAt?: Date | string | null
     }
     onClose: () => void
     onSuccess: () => void
@@ -26,13 +28,19 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     const [winner, setWinner] = useState<string>("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [validationWarnings, setValidationWarnings] = useState<string[]>([])
+    const [autoEndAt, setAutoEndAt] = useState<string>(() => {
+        if (!match.autoEndAt) return ""
+        const date = new Date(match.autoEndAt)
+        return isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 16)
+    })
 
     // Quiz Data
     const [quizData, setQuizData] = useState<{
         [schoolId: string]: { r1: number, r2: number, r3: number, r4: number, r5: number }
     }>(() => {
         const initial: any = {}
-        match.participants.forEach(p => { initial[p.schoolId] = { r1: 0, r2: 0, r3: 0, r4: 0, r5: 0 } })
+        match.participants.forEach(p => { initial[p.schoolId] = { r1: NaN, r2: NaN, r3: NaN, r4: NaN, r5: NaN } })
         return initial
     })
 
@@ -41,7 +49,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         [schoolId: string]: { ht: number, ft: number }
     }>(() => {
         const initial: any = {}
-        match.participants.forEach(p => { initial[p.schoolId] = { ht: 0, ft: 0 } })
+        match.participants.forEach(p => { initial[p.schoolId] = { ht: NaN, ft: NaN } })
         return initial
     })
 
@@ -50,7 +58,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         [schoolId: string]: { q1: number, q2: number, q3: number, q4: number }
     }>(() => {
         const initial: any = {}
-        match.participants.forEach(p => { initial[p.schoolId] = { q1: 0, q2: 0, q3: 0, q4: 0 } })
+        match.participants.forEach(p => { initial[p.schoolId] = { q1: NaN, q2: NaN, q3: NaN, q4: NaN } })
         return initial
     })
 
@@ -59,7 +67,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         [schoolId: string]: { s1: number, s2: number, s3: number, setWins: number }
     }>(() => {
         const initial: any = {}
-        match.participants.forEach(p => { initial[p.schoolId] = { s1: 0, s2: 0, s3: 0, setWins: 0 } })
+        match.participants.forEach(p => { initial[p.schoolId] = { s1: NaN, s2: NaN, s3: NaN, setWins: NaN } })
         return initial
     })
 
@@ -152,6 +160,31 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         }
     }, [quizTotals, footballData, basketballTotals, volleyballTotals, athleticsData, isQuiz, isFootball, isBasketball, isVolleyball, isAthletics, match.participants, isLiveUpdate])
 
+    // --- REAL-TIME VALIDATION ---
+    useEffect(() => {
+        if (isLiveUpdate) return; // Skip validation for live updates
+
+        const metadata: any = {
+            ...(match.sportType === 'football' ? { footballDetails: footballData } : {}),
+            ...(match.sportType === 'basketball' ? { basketballDetails: basketballData } : {}),
+            ...(match.sportType === 'volleyball' ? { volleyballDetails: volleyballData } : {}),
+            ...(match.sportType === 'quiz' ? { quizDetails: quizData } : {}),
+        }
+
+        const validation = validateScores(match.sportType, {}, metadata)
+        setValidationWarnings(validation.warnings)
+    }, [footballData, basketballData, volleyballData, quizData, match.sportType, isLiveUpdate])
+
+    // --- QUICK ACTION HELPERS ---
+    const setHalfTime = () => {
+        if (!isFootball) return
+        setTimerData({ minute: 45, period: "HT" })
+    }
+
+    const setFullTime = () => {
+        if (!isFootball) return
+        setTimerData({ minute: 90, period: "2H" })
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -189,6 +222,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 scores: finalScores,
                 winner: isLiveUpdate ? "" : winner,
                 status: isLiveUpdate ? "live" : "finished",
+                autoEndAt: autoEndAt || null,
                 metadata
             } as any)
 
@@ -242,6 +276,41 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 <div className="p-8">
                     {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-black uppercase text-center">{error}</div>}
 
+                    {/* Validation Warnings */}
+                    {validationWarnings.length > 0 && !isLiveUpdate && (
+                        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-2">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                <span className="text-xs font-black text-amber-500 uppercase tracking-widest">Validation Warnings</span>
+                            </div>
+                            {validationWarnings.map((warning, idx) => (
+                                <div key={idx} className="text-[10px] text-amber-400 font-bold">• {warning}</div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Quick Actions (Live Mode Only) */}
+                    {isLiveUpdate && isFootball && (
+                        <div className="mb-6 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={setHalfTime}
+                                className="flex-1 h-10 px-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/20 flex items-center justify-center gap-2"
+                            >
+                                <Clock className="h-3 w-3" />
+                                Set Half Time
+                            </button>
+                            <button
+                                type="button"
+                                onClick={setFullTime}
+                                className="flex-1 h-10 px-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/20 flex items-center justify-center gap-2"
+                            >
+                                <Clock className="h-3 w-3" />
+                                Set Full Time
+                            </button>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-8">
 
                         {/* TIMER INPUT (Live Mode Only, Non-Quiz) */}
@@ -279,6 +348,16 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                         </div>
                                     </div>
                                 </div>
+                                <div className="mt-4 pt-4 border-t border-red-500/10">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">Auto End Match At (Optional)</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={autoEndAt}
+                                        onChange={(e) => setAutoEndAt(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl h-10 px-3 text-white text-xs font-bold focus:outline-none focus:border-red-500/50 border-dashed"
+                                    />
+                                    <p className="text-[8px] text-slate-600 mt-1 uppercase tracking-tight">Setting this will automatically move the match to pending at the specified time.</p>
+                                </div>
                             </div>
                         )}
 
@@ -291,7 +370,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                         {['r1', 'r2', 'r3', 'r4', 'r5'].map(r => (
                                             <div key={r} className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
                                                 <span>{r === 'r1' ? 'General' : r === 'r2' ? 'Speed' : r === 'r3' ? 'Problem' : r === 'r4' ? 'T/F' : 'Riddles'}</span>
-                                                <input type="number" className="w-14 h-8 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={quizData[p.schoolId][r as keyof typeof quizData[string]]} onChange={e => setQuizData({ ...quizData, [p.schoolId]: { ...quizData[p.schoolId], [r]: parseInt(e.target.value) || 0 } })} />
+                                                <input type="number" className="w-14 h-8 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(quizData[p.schoolId][r as keyof typeof quizData[string]]) ? '' : quizData[p.schoolId][r as keyof typeof quizData[string]]} onChange={e => setQuizData({ ...quizData, [p.schoolId]: { ...quizData[p.schoolId], [r]: parseInt(e.target.value) || 0 } })} placeholder="0" />
                                             </div>
                                         ))}
                                         <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary">Total</span><span className="text-xl">{quizTotals[p.schoolId]}</span></div>
@@ -308,11 +387,43 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                         <div className="grid grid-cols-2 gap-6">
                                             <div>
                                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Half Time (HT)</label>
-                                                <input type="number" min="0" className="w-full h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={footballData[p.schoolId].ht} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: parseInt(e.target.value) || 0 } })} />
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: Math.max(0, (footballData[p.schoolId].ht || 0) - 1) } })}
+                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                    >
+                                                        <Minus className="h-4 w-4" />
+                                                    </button>
+                                                    <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ht) ? '' : footballData[p.schoolId].ht} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: (footballData[p.schoolId].ht || 0) + 1 } })}
+                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Full Time (FT)</label>
-                                                <input type="number" min="0" className="w-full h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={footballData[p.schoolId].ft} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: parseInt(e.target.value) || 0 } })} />
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: Math.max(0, (footballData[p.schoolId].ft || 0) - 1) } })}
+                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                    >
+                                                        <Minus className="h-4 w-4" />
+                                                    </button>
+                                                    <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ft) ? '' : footballData[p.schoolId].ft} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: (footballData[p.schoolId].ft || 0) + 1 } })}
+                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -329,7 +440,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                             {['q1', 'q2', 'q3', 'q4'].map(q => (
                                                 <div key={q} className="text-center">
                                                     <span className="text-[8px] font-black text-slate-500 uppercase">{q}</span>
-                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={basketballData[p.schoolId][q as keyof typeof basketballData[string]]} onChange={e => setBasketballData({ ...basketballData, [p.schoolId]: { ...basketballData[p.schoolId], [q]: parseInt(e.target.value) || 0 } })} />
+                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(basketballData[p.schoolId][q as keyof typeof basketballData[string]]) ? '' : basketballData[p.schoolId][q as keyof typeof basketballData[string]]} onChange={e => setBasketballData({ ...basketballData, [p.schoolId]: { ...basketballData[p.schoolId], [q]: parseInt(e.target.value) || 0 } })} placeholder="0" />
                                                 </div>
                                             ))}
                                         </div>
@@ -348,7 +459,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                             {['s1', 's2', 's3'].map(s => (
                                                 <div key={s} className="text-center">
                                                     <span className="text-[8px] font-black text-slate-500 uppercase">Set {s[1]}</span>
-                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]} onChange={e => setVolleyballData({ ...volleyballData, [p.schoolId]: { ...volleyballData[p.schoolId], [s]: parseInt(e.target.value) || 0 } })} />
+                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]) ? '' : volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]} onChange={e => setVolleyballData({ ...volleyballData, [p.schoolId]: { ...volleyballData[p.schoolId], [s]: parseInt(e.target.value) || 0 } })} placeholder="0" />
                                                 </div>
                                             ))}
                                         </div>
@@ -365,7 +476,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                         <span className="text-sm font-black text-white uppercase">{p.name}</span>
                                         <div className="flex items-center gap-3">
                                             <span className="text-[10px] font-bold text-slate-500 uppercase">Rank</span>
-                                            <input type="number" min="1" max={match.participants.length} className="w-16 h-10 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={athleticsData[p.schoolId] || ""} onChange={e => setAthleticsData({ ...athleticsData, [p.schoolId]: parseInt(e.target.value) || 0 })} />
+                                            <input type="number" min="1" max={match.participants.length} className="w-16 h-10 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={athleticsData[p.schoolId] || ""} onChange={e => setAthleticsData({ ...athleticsData, [p.schoolId]: parseInt(e.target.value) || 0 })} placeholder="1" />
                                         </div>
                                     </div>
                                 ))}
@@ -398,25 +509,46 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                             <button type="button" onClick={onClose} className="h-16 px-8 rounded-3xl bg-white/5 border border-white/5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-white/10">Abort</button>
 
                             {!isLiveUpdate && (
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
-                                        setLoading(true);
-                                        await updateMatchResult(match.id, {
-                                            scores: {},
-                                            winner: 'void',
-                                            status: 'cancelled',
-                                            metadata: { voided: true }
-                                        });
-                                        setLoading(false);
-                                        onSuccess();
-                                        onClose();
-                                    }}
-                                    className="h-16 px-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20"
-                                >
-                                    Void Match
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
+                                            setLoading(true);
+                                            await updateMatchResult(match.id, {
+                                                scores: {},
+                                                winner: 'void',
+                                                status: 'cancelled',
+                                                metadata: { voided: true }
+                                            });
+                                            setLoading(false);
+                                            onSuccess();
+                                            onClose();
+                                        }}
+                                        className="h-16 px-4 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20"
+                                    >
+                                        Void Match
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (!confirm("End match as PENDING? Match will show 'Full Time - Awaiting Result' until you enter final scores.")) return;
+                                            setLoading(true);
+                                            await updateMatchResult(match.id, {
+                                                scores: {},
+                                                winner: '',
+                                                status: 'pending',
+                                                metadata: { pendingSince: new Date().toISOString() }
+                                            });
+                                            setLoading(false);
+                                            onSuccess();
+                                            onClose();
+                                        }}
+                                        className="h-16 px-4 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 font-black uppercase tracking-widest text-[10px] hover:bg-amber-500/20"
+                                    >
+                                        End (Pending)
+                                    </button>
+                                </>
                             )}
 
                             <button

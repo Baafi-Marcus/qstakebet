@@ -48,3 +48,66 @@ export function getMatchLockStatus(match: Match): {
         timeUntilLock: minutesUntilStart // Informational only now
     }
 }
+
+/**
+ * Validate scores based on sport type
+ * This is a pure utility function (no DB access)
+ */
+export function validateScores(sportType: string, scores: any, metadata?: any): {
+    isValid: boolean
+    warnings: string[]
+} {
+    const warnings: string[] = []
+
+    if (sportType === "basketball") {
+        // Check quarter scores
+        if (metadata?.basketballDetails) {
+            Object.values(metadata.basketballDetails).forEach((school: any) => {
+                ['q1', 'q2', 'q3', 'q4'].forEach(quarter => {
+                    if (school[quarter] > 50) {
+                        warnings.push(`Unusually high quarter score: ${school[quarter]} points`)
+                    }
+                    if (school[quarter] < 0) {
+                        warnings.push(`Negative score detected`)
+                    }
+                })
+            })
+        }
+    }
+
+    if (sportType === "football" || sportType === "handball") {
+        if (metadata?.footballDetails) {
+            Object.values(metadata.footballDetails).forEach((school: any) => {
+                if (school.ht > school.ft) {
+                    warnings.push(`Half-time score (${school.ht}) is greater than full-time (${school.ft})`)
+                }
+                if (school.ft < 0 || school.ht < 0) {
+                    warnings.push(`Negative score detected`)
+                }
+                if (school.ft > 30) {
+                    warnings.push(`Unusually high score: ${school.ft} goals`)
+                }
+            })
+        }
+    }
+
+    if (sportType === "quiz") {
+        if (metadata?.quizDetails) {
+            Object.values(metadata.quizDetails).forEach((school: any) => {
+                ['r1', 'r2', 'r3', 'r4', 'r5'].forEach(round => {
+                    if (school[round] < 0) {
+                        warnings.push(`Negative score detected in ${round}`)
+                    }
+                    if (school[round] > 100) {
+                        warnings.push(`Unusually high round score: ${school[round]} points`)
+                    }
+                })
+            })
+        }
+    }
+
+    return {
+        isValid: warnings.length === 0,
+        warnings
+    }
+}

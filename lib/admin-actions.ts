@@ -156,11 +156,13 @@ export async function createMatch(data: {
     schoolIds: string[],
     stage: string,
     startTime?: string,
+    autoEndAt?: string,
     sportType: string,
     gender: string
 }) {
     // Parse datetime if provided
     let scheduledAt: Date | null = null;
+    let autoEndAt: Date | null = null;
     let status = "upcoming";
     let displayTime = data.startTime || "TBD";
 
@@ -181,6 +183,17 @@ export async function createMatch(data: {
             }
         } catch {
             scheduledAt = null;
+        }
+    }
+
+    if (data.autoEndAt) {
+        try {
+            autoEndAt = new Date(data.autoEndAt);
+            if (isNaN(autoEndAt.getTime())) {
+                autoEndAt = null;
+            }
+        } catch {
+            autoEndAt = null;
         }
     }
 
@@ -210,6 +223,7 @@ export async function createMatch(data: {
         participants: participants,
         startTime: displayTime,
         scheduledAt: scheduledAt,
+        autoEndAt: autoEndAt,
         status: status,
         result: null,
         isLive: status === "live",
@@ -286,10 +300,26 @@ export async function updateMatchResult(matchId: string, resultData: {
     scores: { [schoolId: string]: number }
     winner: string
     status: string
+    autoEndAt?: string | null
     metadata?: any
 }) {
     try {
         const { settleMatch } = await import("./settlement")
+        const { recordMatchUpdate } = await import("./match-helpers")
+
+        // Fetch current match state for history
+        const currentMatch = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+        const previousData = currentMatch[0]?.result || {}
+        const previousStatus = currentMatch[0]?.status
+
+        // Log the update to history
+        await recordMatchUpdate({
+            matchId,
+            action: previousStatus !== resultData.status ? "status_change" : "score_update",
+            previousData: { scores: (previousData as any)?.scores, status: previousStatus },
+            newData: { scores: resultData.scores, status: resultData.status },
+            metadata: resultData.metadata
+        })
 
         // Update match with result
         await db.update(matches)
@@ -299,7 +329,9 @@ export async function updateMatchResult(matchId: string, resultData: {
                     winner: resultData.winner,
                     metadata: resultData.metadata
                 },
-                status: resultData.status
+                status: resultData.status,
+                autoEndAt: resultData.autoEndAt ? new Date(resultData.autoEndAt) : null,
+                lastTickAt: new Date()
             })
             .where(eq(matches.id, matchId))
 
