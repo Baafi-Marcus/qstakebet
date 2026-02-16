@@ -1,9 +1,17 @@
 import * as dotenv from "dotenv"
 import { join } from "path"
 
-// Load environment variables IMMEDIATELY
-dotenv.config({ path: join(process.cwd(), ".env.local") })
+// Load environment variables with proper precedence
+// We load .env first, then .env.local as an override if it has a value
 dotenv.config({ path: join(process.cwd(), ".env") })
+dotenv.config({ path: join(process.cwd(), ".env.local"), override: true })
+
+// If DATABASE_URL is still empty (e.g. set to "" in .env.local), try to fallback to .env manually
+if (!process.env.DATABASE_URL && process.env.DATABASE_URL !== undefined) {
+    // This handles the case where DATABASE_URL= exists but is empty
+    delete process.env.DATABASE_URL;
+    dotenv.config({ path: join(process.cwd(), ".env") });
+}
 
 /**
  * PRODUCTION SYNC SCRIPT
