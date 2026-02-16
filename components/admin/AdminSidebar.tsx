@@ -14,7 +14,8 @@ import {
     LineChart,
     Monitor,
     CreditCard,
-    Gift
+    Gift,
+    Radio
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +24,7 @@ const navItems = [
     { name: "User Registry", href: "/admin/users", icon: Users },
     { name: "Bonuses", href: "/admin/bonuses", icon: Gift },
     { name: "Payouts", href: "/admin/withdrawals", icon: CreditCard },
+    { name: "Live Dashboard", href: "/admin/live", icon: Radio },
     { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Tournaments", href: "/admin/tournaments", icon: Trophy },
     { name: "Institutions", href: "/admin/schools", icon: School },

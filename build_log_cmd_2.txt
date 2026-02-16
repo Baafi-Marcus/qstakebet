@@ -1,0 +1,38 @@
+
+> qstakebet-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 8.2s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/admin/live/page.tsx
+35:9  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\marcu\Desktop\QSTAKEbet\app\admin\live\page.tsx:35:9
+  33 |
+  34 |     useEffect(() => {
+> 35 |         fetchLiveMatches()
+     |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  36 |     }, [])
+  37 |
+  38 |     // Auto-refresh every 10 seconds  react-hooks/set-state-in-effect
+
+./components/ui/MatchRow.tsx
+51:11  Warning: The 'participants' logical expression could make the dependencies of useMemo Hook (at line 70) change on every render. To fix this, wrap the initialization of 'participants' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+
+./components/ui/MatchTimer.tsx
+105:9  Warning: Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps').
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

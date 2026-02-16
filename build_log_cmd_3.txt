@@ -1,0 +1,41 @@
+
+> qstakebet-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.3s
+   Linting and checking validity of types ...
+
+./components/ui/MatchTimer.tsx
+105:9  Warning: Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps').
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+   Generating static pages (0/32) ...
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+   Generating static pages (8/32) 
+Error occurred prerendering page "/admin/bonuses". Read more: https://nextjs.org/docs/messages/prerender-error
+Error: Failed query: select "bonuses"."id", "users"."name", "users"."email", "bonuses"."type", "bonuses"."amount", "bonuses"."status", "bonuses"."created_at" from "bonuses" left join "users" on "bonuses"."user_id" = "users"."id" order by "bonuses"."created_at" desc limit $1
+params: 50
+    at av.queryWithCache (C:\Users\marcu\Desktop\QSTAKEbet\.next\server\chunks\2245.js:40:35044)
+    at async av.execute (C:\Users\marcu\Desktop\QSTAKEbet\.next\server\chunks\2245.js:40:37890)
+    at async n (C:\Users\marcu\Desktop\QSTAKEbet\.next\server\chunks\183.js:1:13611)
+    at async q (C:\Users\marcu\Desktop\QSTAKEbet\.next\server\app\admin\bonuses\page.js:1:9801) {
+  query: 'select "bonuses"."id", "users"."name", "users"."email", "bonuses"."type", "bonuses"."amount", "bonuses"."status", "bonuses"."created_at" from "bonuses" left join "users" on "bonuses"."user_id" = "users"."id" order by "bonuses"."created_at" desc limit $1',
+  params: [Array],
+  digest: '2523668742',
+  [cause]: ErrorEvent
+}
+Export encountered an error on /admin/bonuses/page: /admin/bonuses, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

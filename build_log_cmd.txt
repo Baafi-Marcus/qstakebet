@@ -1,0 +1,48 @@
+
+> qstakebet-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./lib/match-helpers.ts
+Error:   [31mx[0m Server Actions must be async functions.
+
+    ,-[[36;1;4mC:\Users\marcu\Desktop\QSTAKEbet\lib\match-helpers.ts[0m:56:1]
+ [2m53[0m | /**
+ [2m54[0m |  * Validate scores based on sport type
+ [2m55[0m |  */
+ [2m56[0m | export function validateScores(sportType: string, scores: any, metadata?: any): {
+    : [35;1m                ^^^^^^^^^^^^^^[0m
+ [2m57[0m |     isValid: boolean
+ [2m58[0m |     warnings: string[]
+ [2m58[0m | } {
+    `----
+
+Import trace for requested module:
+./lib/match-helpers.ts
+./app/admin/live/page.tsx
+
+./lib/match-helpers.ts
+Error:   [31mx[0m Server Actions must be async functions.
+
+    ,-[[36;1;4mC:\Users\marcu\Desktop\QSTAKEbet\lib\match-helpers.ts[0m:56:1]
+ [2m53[0m | /**
+ [2m54[0m |  * Validate scores based on sport type
+ [2m55[0m |  */
+ [2m56[0m | export function validateScores(sportType: string, scores: any, metadata?: any): {
+    : [35;1m                ^^^^^^^^^^^^^^[0m
+ [2m57[0m |     isValid: boolean
+ [2m58[0m |     warnings: string[]
+ [2m58[0m | } {
+    `----
+
+Import trace for requested module:
+./lib/match-helpers.ts
+./lib/admin-actions.ts
+
+
+> Build failed because of webpack errors

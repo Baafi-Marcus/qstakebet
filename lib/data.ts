@@ -27,7 +27,7 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
         margin: typeof m.margin === 'number' ? m.margin : 0.1,
         currentRound: typeof m.currentRound === 'number' ? m.currentRound : 0,
         liveMetadata: m.liveMetadata || null,
-        // Do not spread ...m to avoid passing unserializable Dates like createdAt, lastTickAt
+        result: (m.result as Match['result']) || null,
     }
 }
 

@@ -1,0 +1,89 @@
+
+> qstakebet-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.1s
+   Linting and checking validity of types ...
+
+./components/ui/MatchTimer.tsx
+105:9  Warning: Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps').
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+DATABASE_URL is not set. Using dummy connection string for build.
+   Generating static pages (0/31) ...
+DATABASE_URL is not set. Using dummy connection string for build.
+   Generating static pages (7/31) 
+DATABASE_URL is not set. Using dummy connection string for build.
+   Generating static pages (15/31) 
+   Generating static pages (23/31) 
+ ✓ Generating static pages (31/31)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ƒ /                                    2.71 kB         124 kB
+├ ○ /_not-found                            996 B         103 kB
+├ ○ /account                               160 B         102 kB
+├ ○ /account/bets                        2.58 kB         116 kB
+├ ○ /account/bonuses                     3.08 kB         109 kB
+├ ○ /account/deposit                     5.88 kB         112 kB
+├ ○ /account/deposit/callback            2.58 kB         108 kB
+├ ○ /account/profile                     3.53 kB         109 kB
+├ ○ /account/settings                    3.57 kB         112 kB
+├ ○ /account/wallet                      3.12 kB         117 kB
+├ ○ /account/withdraw                    4.27 kB         113 kB
+├ ƒ /admin                                 165 B         106 kB
+├ ƒ /admin/analytics                     3.04 kB         113 kB
+├ ƒ /admin/bonuses                       3.66 kB         114 kB
+├ ○ /admin/live                          2.97 kB         105 kB
+├ ○ /admin/login                         2.71 kB         108 kB
+├ ƒ /admin/matches                       11.1 kB         126 kB
+├ ƒ /admin/matches/log                    2.5 kB         105 kB
+├ ƒ /admin/schools                       4.43 kB         115 kB
+├ ○ /admin/settings                      3.41 kB         106 kB
+├ ƒ /admin/tournaments                   4.19 kB         110 kB
+├ ƒ /admin/tournaments/[id]              4.69 kB         115 kB
+├ ○ /admin/users                         3.06 kB         117 kB
+├ ƒ /admin/users/[id]                    4.39 kB         115 kB
+├ ƒ /admin/withdrawals                   4.01 kB         114 kB
+├ ƒ /api/auth/[...nextauth]                160 B         102 kB
+├ ƒ /api/user/bets                         160 B         102 kB
+├ ƒ /api/webhooks/moolre                   160 B         102 kB
+├ ƒ /api/webhooks/paystack                 160 B         102 kB
+├ ○ /auth/admin-register                 3.44 kB         109 kB
+├ ○ /auth/login                          2.75 kB         112 kB
+├ ○ /auth/register                       4.03 kB         110 kB
+├ ƒ /competitions/[stage]                  160 B         102 kB
+├ ○ /cookies                               160 B         102 kB
+├ ○ /help                                2.77 kB         108 kB
+├ ○ /how-to-play                           160 B         102 kB
+├ ○ /icon.png                                0 B            0 B
+├ ƒ /live                                2.71 kB         124 kB
+├ ƒ /matches/[id]                        4.79 kB         124 kB
+├ ○ /privacy                               160 B         102 kB
+├ ƒ /rewards                               937 B         111 kB
+├ ƒ /sports/[sport]                        160 B         102 kB
+├ ○ /terms                                 160 B         102 kB
+└ ƒ /virtuals                            17.8 kB         139 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/1255-9494d7e861e97d68.js      45.9 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)          2.12 kB
+
+
+ƒ Middleware                             86.6 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
