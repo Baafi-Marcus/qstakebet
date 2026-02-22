@@ -49,11 +49,22 @@
 - [x] Add Responsible Gaming, AML/KYC, and Dispute Resolution policies
 - [x] Ensure premium, responsive, and accessible dark-mode UI for all legal pages
 
-## Phase 26: Redesign Professional Booking Image [/]
-- [ ] Overhaul shareable image design in `BookingSuccessModal.tsx`
-- [ ] Implement premium "ticket" motif with glassmorphism and gradients
-- [ ] Add visual elements like QR code placeholder and verified badges
-- [ ] Verify exported image looks professional and high-quality
+## Phase 26: Redesign Professional Booking Image [x]
+- [x] Overhaul shareable image design in `BookingSuccessModal.tsx`
+- [x] Implement premium vertical "Betting Slip" layout with detailed match info
+- [x] Add high-density match details (Tournament, Teams, Market, Selection Odds)
+- [x] Verify exported image looks professional and high-quality
+
+## Phase 27: Required T&C Agreement [/]
+- [ ] Add "I agree to Terms & Conditions" checkbox to `app/auth/register/page.tsx`
+- [ ] Enforce checkbox validation on frontend and backend
+- [ ] Verify registration works only when T&C is agreed
+
+## Phase 28: Forgot Password Flow (SMS OTP) [/]
+- [ ] Add "Forgot Password?" link to `app/auth/login/page.tsx`
+- [ ] Create `app/auth/forgot-password/page.tsx` with OTP verification
+- [ ] Implement `resetPassword` server action in `lib/auth-actions.ts`
+- [ ] Verify full flow: Phone -> OTP -> New Password -> Success
 
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal

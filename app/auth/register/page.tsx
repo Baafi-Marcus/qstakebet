@@ -24,6 +24,7 @@ function RegisterForm() {
     const [otpSent, setOtpSent] = useState(false)
     const [sendingOtp, setSendingOtp] = useState(false)
     const [error, setError] = useState("")
+    const [agreedToTerms, setAgreedToTerms] = useState(false)
     const [loading, setLoading] = useState(false)
     const [createdUser, setCreatedUser] = useState<{ id: string, referralCode: string } | null>(null)
 
@@ -59,6 +60,11 @@ function RegisterForm() {
         setError("")
 
         // Validation
+        if (!agreedToTerms) {
+            setError("You must agree to the Terms & Conditions to create an account")
+            return
+        }
+
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match")
             return
@@ -291,11 +297,26 @@ function RegisterForm() {
                             </div>
                         </div>
 
+                        {/* T&C Agreement */}
+                        <div className="flex items-start gap-3 mt-6">
+                            <input
+                                type="checkbox"
+                                id="terms"
+                                required
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-white/10 bg-black/40 text-purple-600 focus:ring-purple-500/20 focus:ring-offset-0 transition-all cursor-pointer"
+                            />
+                            <label htmlFor="terms" className="text-sm text-slate-400 leading-tight cursor-pointer select-none">
+                                I agree to the <Link href="/terms" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Terms & Conditions</Link> and <Link href="/privacy" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Privacy Policy</Link>
+                            </label>
+                        </div>
+
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 mt-6"
+                            disabled={loading || !agreedToTerms}
+                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 mt-4"
                         >
                             {loading ? "Creating account..." : "Create Account"}
                         </button>

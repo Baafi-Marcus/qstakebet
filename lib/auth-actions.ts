@@ -219,3 +219,47 @@ export async function getUserByEmail(email: string) {
     const user = await db.select().from(users).where(eq(users.email, email)).limit(1)
     return user.length > 0 ? user[0] : null
 }
+
+export async function resetPassword(data: {
+    phone: string
+    otp: string
+    password: string
+}) {
+    // Rate limit password resets: 5 per hour per IP
+    const limiter = await rateLimit("reset-password", 5, 3600000);
+    if (!limiter.success) {
+        return { success: false, error: limiter.error };
+    }
+
+    try {
+        // 1. Verify OTP
+        const verification = await verifyOTP(data.phone, data.otp)
+        if (!verification.success) {
+            return { success: false, error: verification.error || "Invalid or expired OTP" }
+        }
+
+        // 2. Check if user exists
+        const user = await db.query.users.findFirst({
+            where: eq(users.phone, data.phone)
+        })
+
+        if (!user) {
+            return { success: false, error: "No account found with this phone number" }
+        }
+
+        // 3. Hash new password
+        const passwordHash = await bcrypt.hash(data.password, 10)
+
+        // 4. Update user
+        await db.update(users)
+            .set({ passwordHash })
+            .where(eq(users.id, user.id))
+
+        // 5. Success
+        return { success: true, message: "Password reset successfully. You can now log in." }
+
+    } catch (error) {
+        console.error("Password reset error:", error)
+        return { success: false, error: "Failed to reset password. Please try again." }
+    }
+}
