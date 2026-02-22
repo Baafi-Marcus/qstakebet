@@ -240,10 +240,10 @@ export function isSelectionWinner(
     match: Match,
     result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
 ): boolean {
-    const sport = match.sportType || 'football'
+    const sport = (match.sportType || 'football').toLowerCase()
     const metadata = result.metadata || {}
     const scores = result.scores || {}
-    const teamIds = Object.keys(scores)
+    const participants = match.participants || []
 
     // Virtuals Adapter: If it's a virtual match outcome
     const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
@@ -252,150 +252,148 @@ export function isSelectionWinner(
     // Normalize Market Name
     const market = marketName.toLowerCase().trim()
 
-    // 1. MATCH WINNER (1X2)
-    if (market === "match winner" || market === "1x2") {
-        if (selectionId === "X") {
-            // Check for Draw
-            if (sport === 'football' || sport === 'handball') {
-                // Return true if scores are equal
-                if (isVirtualOutcome) {
-                    const vScores = vOutcome.totalScores;
-                    return vScores[0] === vScores[1] && vScores[1] === vScores[2]; // Simplified draw check for 3 teams? 
-                    // Usually in quiz, a draw is rare, but let's stick to the conventional 1X2 if it was 2 teams.
-                    // For 3-team quiz, we check if everyone has same score.
-                }
-                const values = Object.values(scores)
-                return values.length === 2 && values[0] === values[1]
+    // 1. MATCH WINNER (1X2 / 12)
+    if (market === "match winner" || market === "1x2" || market === "win" || market === "12") {
+        if (selectionId === "X" || label === "Draw") {
+            // Check for Draw (Football, Handball, Quiz)
+            if (isVirtualOutcome) {
+                const vScores = vOutcome.totalScores;
+                if (vScores.length === 2) return vScores[0] === vScores[1];
+                if (vScores.length === 3) return vScores[0] === vScores[1] && vScores[1] === vScores[2];
+                return false;
             }
-            return false
+            const values = Object.values(scores)
+            return values.length >= 2 && values.every(v => v === values[0])
         }
+
         if (isVirtualOutcome) {
-            const winnerName = vOutcome.schools[vOutcome.winnerIndex];
             // selectionId for virtuals is usually "1", "2", "3" (indices 1-indexed) or the name
+            const winnerName = vOutcome.schools[vOutcome.winnerIndex];
             if (selectionId === "1") return vOutcome.winnerIndex === 0;
             if (selectionId === "2") return vOutcome.winnerIndex === 1;
             if (selectionId === "3") return vOutcome.winnerIndex === 2;
             return winnerName === selectionId;
         }
-        return result.winner === selectionId
+
+        // Standard logic
+        if (result.winner === selectionId) return true;
+
+        // Final score check if winner isn't explicitly set but scores are
+        if (scores[selectionId] !== undefined) {
+            const myScore = scores[selectionId];
+            const otherScores = Object.entries(scores).filter(([id]) => id !== selectionId).map(([_, s]) => s);
+            return otherScores.every(os => myScore > os);
+        }
+
+        return false;
     }
 
     // 2. TOTAL POINTS / GOALS (Over/Under)
     // Label format: "Over 2.5", "Under 140.5"
     if (market.includes("total") || market.includes("over/under")) {
         const totalScore = isVirtualOutcome
-            ? vOutcome.totalScores.reduce((a: number, b: number) => a + b, 0)
+            ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
             : Object.values(scores).reduce((a, b) => a + b, 0)
 
-        const [type, lineStr] = label.split(" ")
+        const parts = label.split(" ")
+        const lineStr = parts[parts.length - 1]
         const line = parseFloat(lineStr)
 
         if (isNaN(line)) return false
 
-        if (type.toLowerCase() === "over") return totalScore > line
-        if (type.toLowerCase() === "under") return totalScore < line
+        if (label.toLowerCase().includes("over")) return totalScore > line
+        if (label.toLowerCase().includes("under")) return totalScore < line
     }
 
-    // 3. WINNING MARGIN
-    // Label format: "1-10", "11-20", "Draw"
+    // 3. HANDICAP / SPREAD
+    // Label format: "School Name +2.5", "Opponent -10.5"
+    if (market.includes("handicap") || market.includes("spread")) {
+        const lineSign = label.includes("+") ? "+" : "-"
+        const [targetName, lineValueStr] = label.split(lineSign)
+        const line = parseFloat(`${lineSign}${lineValueStr}`)
+
+        const participant = participants.find(p => p.name.trim().toLowerCase() === targetName.trim().toLowerCase() || p.schoolId === selectionId)
+        if (!participant) return false
+
+        const targetId = participant.schoolId
+        const participantIdx = participants.findIndex(p => p.schoolId === targetId)
+
+        const myScore = isVirtualOutcome ? vOutcome.totalScores[participantIdx] : (scores[targetId] || 0)
+        const adjustedScore = myScore + line
+
+        const otherScores = isVirtualOutcome
+            ? (vOutcome.totalScores as number[]).filter((_, idx) => idx !== participantIdx)
+            : Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
+
+        return otherScores.every(os => adjustedScore > os)
+    }
+
+    // 4. WINNING MARGIN
     if (market.includes("margin")) {
         const values = isVirtualOutcome ? vOutcome.totalScores : Object.values(scores)
         if (values.length < 2) return false
 
-        // For 3 teams, we take the diff between top 2
         const sorted = [...values].sort((a, b) => b - a);
-        const diff = Math.abs(sorted[0] - sorted[1])
+        const diff = Math.abs(sorted[0] - (sorted[1] || 0))
 
         if (label === "Draw" || label === "0") return diff === 0
 
-        // Parse range "1-10"
         if (label.includes("-")) {
             const [min, max] = label.split("-").map(Number)
             return diff >= min && diff <= max
         }
-        // Parse "10+"
         if (label.includes("+")) {
             const min = parseFloat(label)
             return diff >= min
         }
     }
 
-    // 4. BOTH TEAMS TO SCORE (BTTS)
-    if (market === "btts" || market === "both teams to score") {
-        const values = Object.values(scores)
-        const bothScored = values.length === 2 && values.every(s => s > 0)
-        return (label.toLowerCase() === "yes" && bothScored) || (label.toLowerCase() === "no" && !bothScored)
+    // 5. PODIUM / TOP FINISH (Athletics)
+    // selectionId: user's pick. result.metadata.podium: array of IDs in order.
+    if (market.includes("podium") || market.includes("top 3")) {
+        const podium = (metadata.podium || []) as string[]
+        return podium.slice(0, 3).includes(selectionId)
     }
 
-    // 5. QUIZ SPECIFIC: Round Winners
-    // Market: "Round 1 Winner", "Round 2 Winner"
-    if (market.includes("round") && market.includes("winner")) {
-        // Extract Round Number
-        const roundNum = market.match(/\d+/)?.[0] // "1" from "Round 1 Winner"
-        if (!roundNum) return false
+    // 6. HEAD-TO-HEAD (Athletics/Matchups)
+    if (market === "h2h" || market === "matchup") {
+        // label usually describes the matchup "A vs B"
+        // result.winner or scores determine this
+        if (isVirtualOutcome) return vOutcome.winnerIndex === (parseInt(selectionId) - 1);
+        return result.winner === selectionId;
+    }
 
-        const roundKey = `r${roundNum}` // "r1"
+    // 7. QUIZ SPECIFIC: Round Winners
+    if (market.includes("round") && market.includes("winner")) {
+        const roundNum = market.match(/\d+/)?.[0]
+        if (!roundNum) return false
         const roundIndex = parseInt(roundNum) - 1;
 
         if (isVirtualOutcome) {
-            const roundScores = vOutcome.rounds[roundIndex].scores; // [10, 5, 8]
+            const roundScores = vOutcome.rounds[roundIndex].scores;
             const max = Math.max(...roundScores);
             const winners = roundScores.map((s: number, i: number) => s === max ? i : -1).filter((i: number) => i !== -1);
-
-            // selectionId is "1", "2", "3"
             const selIdx = parseInt(selectionId) - 1;
             return winners.includes(selIdx);
         }
 
-        const roundScores = (metadata.quizDetails as Record<string, Record<string, number>>)?.[roundKey] || {} // { schoolId: 10, schoolId2: 5 }
-
-        // Find max score in this round
-        let maxScore = -999
-        let winner = ""
+        const roundKey = `r${roundNum}`
+        const roundScores = (metadata.quizDetails as Record<string, Record<string, number>>)?.[roundKey] || {}
+        let maxScore = -999; let winner = "";
         Object.entries(roundScores).forEach(([id, score]) => {
-            if ((score as number) > maxScore) {
-                maxScore = score as number
-                winner = id
-            }
+            if (score > maxScore) { maxScore = score; winner = id; }
         })
-
         return winner === selectionId
     }
 
-    // 6. QUIZ: Highest Scoring Round
-    if (market === "highest scoring round") {
-        // label might be "Round 1"
-        const targetRound = label.replace("Round ", "r") // "r1"
-
-        let bestRound = ""
-        let maxTotal = -1
-
-        // Calculate total score for each round r1..r5
-        for (let i = 1; i <= 5; i++) {
-            const total = isVirtualOutcome
-                ? vOutcome.rounds[i - 1].scores.reduce((a: number, b: number) => a + b, 0)
-                : Object.values((metadata.quizDetails as any)?.[`r${i}`] || {}).reduce((a: any, b: any) => a + b, 0)
-
-            if (total > maxTotal) {
-                maxTotal = total
-                bestRound = `r${i}`
-            }
-        }
-
-        return targetRound === bestRound
-    }
-
-    // 7. GENERIC PROPS (Manual Tags)
-    // If the market name exists in metadata as a boolean key
-    // e.g. Market "Sudden Death" -> metadata.suddenDeath = true
+    // 8. GENERIC PROPS
     const cleanKey = market.replace(/\s+/g, "")
-    const propMap: Record<string, keyof typeof vOutcome.stats> = {
+    const propMap: Record<string, string> = {
         perfectround: 'perfectRound',
         shutoutround: 'shutoutRound',
         comebackwin: 'comebackWin',
         leadchanges: 'leadChanges',
         firstbonus: 'firstBonusIndex',
-        fastestbuzz: 'fastestBuzzIndex',
         latesurge: 'lateSurgeIndex',
         strongstart: 'strongStartIndex'
     };
@@ -408,27 +406,19 @@ export function isSelectionWinner(
             const isYes = (val as boolean[]).some(v => v);
             return (label === "Yes" && isYes) || (label === "No" && !isYes);
         }
-        if (cleanKey === 'comebackwin') {
-            return (label === "Yes" && val) || (label === "No" && !val);
-        }
-        if (cleanKey === 'leadchanges') {
-            // Label might be "Over 1.5" etc or simple count? 
-            // In virtuals we often just have "Lead Changes" market with count-based odds?
-            // Actually, usually it's "Lead Changes -> Yes/No" or "Count".
-            // If it's Yes/No:
-            return (label === "Yes" && (val as number) > 0) || (label === "No" && (val as number) === 0);
-        }
+        if (cleanKey === 'comebackwin') return (label === "Yes" && val) || (label === "No" && !val);
+        if (cleanKey === 'leadchanges') return (label === "Yes" && val > 0) || (label === "No" && val === 0);
 
-        // School based props (First Bonus, Late Surge, Strong Start)
         const schoolIdx = parseInt(selectionId) - 1;
         return val === schoolIdx;
     }
 
+    // Metadata fallback
     if (metadata[cleanKey] !== undefined) {
-        return metadata[cleanKey] === true && label === "Yes"
+        return (metadata[cleanKey] === true && label === "Yes") || (metadata[cleanKey] === false && label === "No")
     }
 
-    // Default Fallback: Assume simple winner match
+    // Default Fallback
     if (isVirtualOutcome) return vOutcome.winnerIndex === (parseInt(selectionId) - 1);
     return result.winner === selectionId
 }

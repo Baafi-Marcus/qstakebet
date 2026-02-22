@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
             })
 
             if (result?.error) {
-                setError("Authorization failed. Metadata mismatch.")
+                setError(result.error)
             } else {
                 router.push("/admin")
             }

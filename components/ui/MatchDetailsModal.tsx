@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Match } from "@/lib/types"
-import { X, Trophy, Zap, Target, BarChart3, HelpCircle, Lock } from "lucide-react"
+import { X, Trophy, Zap, Target, BarChart3, HelpCircle, Lock, Sparkles } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { cn, normalizeMarketName } from "@/lib/utils"
 import { Selection } from "@/lib/store/context"
@@ -98,7 +98,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             <span className="px-2 py-0.5 bg-red-600 rounded text-[9px] font-black text-white uppercase tracking-widest">{match.stage}</span>
                             {match.status === 'live' && (
                                 <span className="px-2 py-0.5 bg-red-600/20 border border-red-500/20 rounded text-[9px] font-black text-red-500 uppercase tracking-widest animate-pulse">
-                                    ROUND {match.currentRound !== undefined ? match.currentRound + 1 : 1}
+                                    {match.sportType === 'quiz' ? `ROUND ${match.currentRound !== undefined ? match.currentRound + 1 : 1}` : 'LIVE'}
                                 </span>
                             )}
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• {match.status === 'live' ? 'LIVE UPDATES' : match.status === 'finished' ? 'FINISHED' : 'UPCOMING'}</span>
@@ -176,7 +176,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                     <div className="lg:col-span-7 space-y-2">
 
                         {/* 1X2 Market */}
-                        {renderMarketSection("Match Winner", <Target className="h-3.5 w-3.5" />, (
+                        {renderMarketSection(match.sportType === 'football' ? "Full Time Result" : "Match Winner", <Target className="h-3.5 w-3.5" />, (
                             <div className="flex divide-x divide-white/5 h-20 overflow-x-auto custom-scrollbar">
                                 {participants.map((p, idx) => (
                                     <div key={p.schoolId} className="flex-1 min-w-[80px] h-full relative group">
@@ -198,8 +198,53 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                         />
                                     </div>
                                 ))}
+                                {(match.sportType === "football" || match.sportType === "handball") && (
+                                    <div className="flex-1 min-w-[80px] h-full relative group">
+                                        <OddsButton
+                                            label="X"
+                                            odds={match.odds?.["X"] || null}
+                                            matchId={match.id}
+                                            matchLabel={matchLabel}
+                                            marketName="Match Winner"
+                                            showLabel={true}
+                                            onClick={onOddsClick}
+                                            isSelected={checkSelected(`${match.id}-Match Winner-X`)}
+                                            isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                            isLocked={isLocked}
+                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ), "Match Winner")}
+
+                        {/* Point Spread / Handicap */}
+                        {match.extendedOdds?.handicap && renderMarketSection("Point Spread / Handicap", <Target className="h-3.5 w-3.5" />, (
+                            <div className="grid grid-cols-2 divide-x divide-white/5 h-20">
+                                {participants.slice(0, 2).map((p, idx) => {
+                                    const spread = match.extendedOdds?.handicap?.[p.name] || 0;
+                                    const spreadLabel = spread >= 0 ? `+${spread}` : spread.toString();
+                                    return (
+                                        <div key={p.schoolId} className="min-w-[120px] h-full relative group">
+                                            <div className="absolute top-2 left-4 text-[8px] font-black text-slate-500 uppercase tracking-widest">{p.name}</div>
+                                            <OddsButton
+                                                label={spreadLabel}
+                                                odds={1.90} // Placeholder: In real scenario, this would come from the market logic
+                                                matchId={match.id}
+                                                matchLabel={matchLabel}
+                                                marketName="Handicap"
+                                                showLabel={true}
+                                                onClick={onOddsClick}
+                                                isSelected={checkSelected(`${match.id}-Handicap-${p.name}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Handicap")}
+                                                isLocked={isLocked}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2 text-lg"
+                                            />
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ), "Handicap")}
 
                         {/* Totals & Dynamic Lines */}
                         {renderMarketSection("Total Match Points", <BarChart3 className="h-3.5 w-3.5" />, (
@@ -401,32 +446,51 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             ))}
                         </div>
 
-                        {/* School Performance Specials */}
+                        {/* Generic / AI-Generated Markets (Catch-All) */}
                         <div className="space-y-4">
-                            {match.sportType === 'quiz' && ['firstBonus', 'lateSurge'].map(propKey => {
-                                const propName = propKey === 'firstBonus' ? 'First Bonus' : 'Late Surge';
-                                return renderMarketSection(propName, <Zap className="h-3.5 w-3.5" />, (
-                                    <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
-                                        {participants.map((p, sIdx) => (
-                                            <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
-                                                <OddsButton
-                                                    label={(sIdx + 1).toString()}
-                                                    odds={match.extendedOdds?.[propKey]?.[p.name] ?? 0}
-                                                    matchId={match.id}
-                                                    marketName={propName}
-                                                    matchLabel={matchLabel}
-                                                    showLabel
-                                                    onClick={onOddsClick}
-                                                    isSelected={checkSelected(`${match.id}-${normalizeMarketName(propName)}-${sIdx + 1}`)}
-                                                    isCorrelated={checkIsCorrelated?.(match.id, propName)}
-                                                    isLocked={isLocked}
-                                                    className="h-full w-full bg-transparent border-0 rounded-none hover:bg-white/[0.03]"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ), propName, propKey)
-                            })}
+                            {Object.entries(match.extendedOdds || {})
+                                .filter(([key]) => {
+                                    // List of already handled market keys (case-insensitive or normalized)
+                                    const handled = [
+                                        'winningMargin', 'totalPoints', 'perfectRound', 'perfectRound1',
+                                        'perfectRound2', 'perfectRound3', 'perfectRound4', 'perfectRound5',
+                                        'shutoutRound', 'leaderAfterRound1', 'firstBonus', 'fastestBuzz',
+                                        'lateSurge', 'strongStart', 'highestPoints', 'comebackWin',
+                                        'comebackTeam', 'leadChanges', 'handicap', 'podium', 'h2h'
+                                    ];
+                                    const isRoundWinner = key.toLowerCase().includes('round') && key.toLowerCase().includes('winner');
+                                    return !handled.includes(key) && !isRoundWinner;
+                                })
+                                .map(([key, odds]) => {
+                                    if (!odds || typeof odds !== 'object') return null;
+                                    const marketTitle = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+
+                                    return renderMarketSection(marketTitle, <Sparkles className="h-3.5 w-3.5 text-yellow-500" />, (
+                                        <div className={cn(
+                                            "grid gap-px bg-white/5",
+                                            Object.keys(odds).length <= 2 ? "grid-cols-2" : "grid-cols-3"
+                                        )}>
+                                            {Object.entries(odds as Record<string, number>).map(([label, value]) => (
+                                                <div key={label} className="bg-[#0f1115]">
+                                                    <OddsButton
+                                                        label={label}
+                                                        odds={value}
+                                                        matchId={match.id}
+                                                        marketName={marketTitle}
+                                                        matchLabel={matchLabel}
+                                                        showLabel
+                                                        onClick={onOddsClick}
+                                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(marketTitle)}-${label}`)}
+                                                        isCorrelated={checkIsCorrelated?.(match.id, marketTitle)}
+                                                        isLocked={isLocked}
+                                                        className="h-16 w-full bg-transparent border-0 hover:bg-white/[0.03]"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ), marketTitle);
+                                })
+                            }
                         </div>
                     </div>
                 </div>
@@ -452,15 +516,15 @@ interface MatchDetailsModalProps {
 }
 
 const MARKET_DESCRIPTIONS: Record<string, string> = {
-    "Match Winner": "Pick the overall winner of the contest (Schools 1, 2, or 3).",
-    "Total Points": "Bet on whether the combined total points of all schools will be Over or Under a specific value.",
+    "Match Winner": "Pick the overall winner of the contest.",
+    "Full Time Result": "Predict the outcome of the match at full time (Home win, Draw, or Away win).",
+    "Handicap": "A point spread applied to the final score to level the playing field between competitors.",
+    "Total Points": "Bet on whether the combined total points/goals will be Over or Under a specific value.",
     "Winning Margin": "The point difference between the winner and the 1st runner-up.",
-    "Comeback Team": "Pick a specific school to win the match after being behind after Round 2.",
-    "Lead Changes": "Will the lead change hands more than 2.5 times throughout the match?",
-    "First Bonus": "Predict which school will earn the first bonus points in the match.",
-    "Late Surge": "Which school will score the most points in the final two rounds (R4 + R5)?",
-    "Strong Start": "Which school will score the most points in the first two rounds (R1 + R2)?",
-    "Highest Points": "Which school will have the highest individual round score in the match?",
-    "Perfect Round": "A round where a school answers all questions correctly without any errors.",
-    "Shutout Round": "A round where at least one school fails to score any points."
+    "Comeback Team": "Pick a specific competitor to win after being behind during the match.",
+    "Lead Changes": "Will the lead change hands more than expected throughout the match?",
+    "First Bonus": "Predict which competitor will earn the first advantage or bonus points.",
+    "Podium Finish": "Predict if the selected competitor will finish in the top 3 (Gold, Silver, or Bronze).",
+    "Perfect Round": "A period where a competitor performs without any registered errors.",
+    "Shutout Round": "A period where at least one competitor fails to score any points."
 };

@@ -16,6 +16,7 @@ interface MatchRowProps {
     activeMarket:
     'winner' |
     'total_points' |
+    'handicap' |
     'winning_margin' |
     'highest_scoring_round' |
     'round_winner' |
@@ -25,7 +26,9 @@ interface MatchRowProps {
     'comeback_win' |
     'comeback_team' |
     'lead_changes' |
-    'late_surge'
+    'late_surge' |
+    'h2h' |
+    'podium'
     isSimulating?: boolean
     isFinished?: boolean
     currentScores?: [number, number, number]
@@ -382,7 +385,37 @@ export function MatchRow({
                             </div>
                         )}
 
-                        {activeMarket === 'round_winner' && match.extendedOdds && Object.keys(match.extendedOdds).some(k => k.startsWith('round')) && (
+                        {activeMarket === 'handicap' && (
+                            <div className="flex items-center">
+                                {participants.map((p, idx) => {
+                                    const spreadLine = match.extendedOdds?.handicap?.[`${p.name}`] || 0;
+                                    const spreadLabel = spreadLine >= 0 ? `+${spreadLine}` : spreadLine.toString();
+                                    return (
+                                        <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
+                                            <OddsButton
+                                                label={spreadLabel}
+                                                odds={match.extendedOdds?.handicap?.[p.name] ?? null}
+                                                // Note: Usually handicap odds are separate from the line. 
+                                                // If match.extendedOdds.handicap is { "Team A": 1.90 }, we need the line too.
+                                                // Assuming the line is stored in a separate field or encoded in the name.
+                                                // For now, let's assume the label is the line and odds are the value.
+                                                matchId={match.id}
+                                                marketName="Handicap"
+                                                matchLabel={matchLabel}
+                                                showLabel={true}
+                                                onClick={onOddsClick}
+                                                isSelected={checkSelected(`${match.id}-Handicap-${p.name}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Handicap")}
+                                                sportType={match.sportType}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            />
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+
+                        {activeMarket === 'round_winner' && match.sportType === 'quiz' && match.extendedOdds && Object.keys(match.extendedOdds).some(k => k.startsWith('round')) && (
                             <div className="flex items-center">
                                 {/* Round Selector */}
                                 <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
@@ -414,7 +447,6 @@ export function MatchRow({
                                     )}
                                 </div>
                                 {/* Only render odds if a round is selected */}
-                                {/* Map "Round 1" -> "round1Winner" key safely */}
                                 {renderSchoolOdds(selectedRound.toLowerCase().replace(" ", "") + "Winner", selectedRound + " Winner")}
                             </div>
                         )}
@@ -469,7 +501,7 @@ export function MatchRow({
 
                         {/* Generic Prop Rendering for simple Yes/No or 3-way */}
                         {[
-                            'highest_scoring_round', 'perfect_round', 'shutout_round', 'comeback_win', 'lead_changes',
+                            'highest_scoring_round', 'perfect_round', 'shutout_round', 'comeback_win', 'lead_changes', 'h2h', 'podium'
                         ].includes(activeMarket) && match.extendedOdds && (
                                 activeMarket === 'highest_scoring_round' && match.extendedOdds.highestScoringRound ? (
                                     <>
@@ -486,7 +518,9 @@ export function MatchRow({
                                 ) : (
                                     // Default fallback for Yes/No props or generic single-row make sure data exists
                                     match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] && (
+                                        //@ts-ignore
                                         Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).length > 0 ? (
+                                            //@ts-ignore
                                             Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
                                                 <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
                                                     <OddsButton

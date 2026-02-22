@@ -8,6 +8,35 @@
 - [x] Resolve `VirtualBet` / `ResolvedSelection` type collision by renaming to `ClientVirtualBet`
 - [x] Fix `betHistory` state type and `virtualBets` mapping
 
+## Phase 19: Multi-Sport Platform Transition [x]
+- [x] Audit and Assessment (Completed)
+- [x] Generalize `isSelectionWinner` for Handicap/Spread markets
+- [x] Implement Sport-Agnostic UI for `MatchRow` and `MatchDetailsModal`
+- [x] Add Risk Controls (Max Stake, Locking, Manual Review)
+- [x] Update Admin Tools for Multi-Sport score entry
+- [x] Final multi-sport validation & build
+
+## Phase 20: AI Market Flexibility & Generic Support [x]
+- [x] Update standard AI prompts for sport-specific markets
+- [x] Implement Catch-All market renderer in `MatchDetailsModal`
+- [x] Verify dynamic market settlement logic
+- [x] Final multi-sport UX polish
+
+## Phase 21: Security & Rate Limiting [x]
+- [x] Install and configure Rate Limiting utility
+- [x] Apply rate limits to Login, Register, and Place Bet actions
+- [x] Implement Session Timeout monitoring
+
+## Phase 22: Robust Input Validation [x]
+- [x] Install `zod` for schema validation
+- [x] Refactor auth server actions to use Zod schemas
+- [x] Refactor betting server actions to use Zod schemas
+
+## Phase 23: Caching & Monitoring [x]
+- [x] Implement `unstable_cache` for Match data fetching
+- [x] Set up basic health-check endpoint
+- [x] Implement server-side error logging utility
+
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal
 - [x] Add round-by-round score breakdown table to results ticket view

@@ -250,16 +250,22 @@ export async function getAIMarketSuggestions(
                     messages: [
                         {
                             role: "system",
-                            content: `You are a professional sports bookmaker. Generate 3-5 creative, high-engagement betting markets for this match.
+                            content: `You are a professional sports bookmaker for a diverse campus tournament. Generate 3-5 creative, high-engagement betting markets for this match.
                         
 Rules:
-1. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
-2. **Profitability**: You MUST build in a **15% House Margin (Vig)** into the odds. The implied probability of all options in a market should sum to ~115%.
+1. **Sport Awareness**: The tournament includes Football, Basketball, Athletics, and Quiz competitions. Tailor your suggestions to the specific sport mentioned.
+2. **Standard Keys**: For common markets, use these EXACT keys in your JSON object:
+   - 'handicap' -> for point spreads
+   - 'totalPoints' -> for over/under totals
+   - 'podium' -> for Top 3 finishes (Athletics)
+   - 'h2h' -> for head-to-head matchups
+3. **Specials**: You can create unique keys for special markets (e.g., 'firstTeamToScore', 'mostRiddlesSolved').
+4. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
+5. **Profitability**: You MUST build in a **15% House Margin (Vig)** into the odds. The implied probability of all options in a market should sum to ~115%.
    - Formula: FairProb = 1/FairOdd. VigProb = FairProb * 1.15. FinalOdd = 1/VigProb.
-3. **Format**: Return ONLY valid JSON array of objects.
+6. **Format**: Return ONLY valid JSON array of objects.
    [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
-4. **Variety**: Suggest things like Winner, Correct Score, Over/Under, or Period-based outcomes (Halves/Quarters).
-5. **Realism**: Odds must be realistic for the specific schools and sports mentioned.`
+7. **Realism**: Odds must be realistic for the specific schools and sports mentioned.`
                         },
                         {
                             role: "user",

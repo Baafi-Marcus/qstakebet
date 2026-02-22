@@ -4,6 +4,8 @@ import { db } from "@/lib/db"
 import { bets, transactions, wallets, matches } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { rateLimit } from "@/lib/rate-limit"
+import { PlaceBetSchema } from "@/lib/validators"
 
 export type SelectionInput = {
     matchId: string
@@ -15,6 +17,18 @@ export type SelectionInput = {
 }
 
 export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0, mode: 'single' | 'multi' = 'multi') {
+    // Rate limit: 5 bets per minute per IP
+    const limiter = await rateLimit("place-bet", 5, 60000);
+    if (!limiter.success) {
+        return { success: false, error: limiter.error };
+    }
+
+    // Zod Validation
+    const validation = PlaceBetSchema.safeParse({ stake, selections, bonusId, bonusAmount, mode });
+    if (!validation.success) {
+        return { success: false, error: validation.error.issues[0].message };
+    }
+
     const session = await auth()
     if (!session?.user?.id) {
         return { success: false, error: "Please log in to place a bet" }
@@ -24,12 +38,11 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
         return { success: false, error: "Administrators are restricted from placing bets." }
     }
 
-    if (stake < 1) {
-        return { success: false, error: "Minimum stake is GHS 1.00" }
-    }
+    const { FINANCE_LIMITS } = await import("@/lib/constants")
 
-    if (selections.length === 0) {
-        return { success: false, error: "No selections in bet slip" }
+    // Limit check
+    if (stake > FINANCE_LIMITS.BET.MAX_STAKE) {
+        return { success: false, error: `Maximum stake allowed is GHS ${FINANCE_LIMITS.BET.MAX_STAKE}` }
     }
 
     const userId = session.user.id
@@ -124,7 +137,12 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
             potentialPayout += bonusGiftAmount
 
-            // 3. Create the Bet
+            // 3. Payout Limit Check
+            if (potentialPayout > FINANCE_LIMITS.BET.MAX_PAYOUT) {
+                throw new Error(`Potential payout (GHS ${potentialPayout.toFixed(2)}) exceeds the maximum limit of GHS ${FINANCE_LIMITS.BET.MAX_PAYOUT}.`)
+            }
+
+            // 4. Create the Bet
             const betId = `bet-${Math.random().toString(36).substr(2, 9)}`
             await tx.insert(bets).values({
                 id: betId,

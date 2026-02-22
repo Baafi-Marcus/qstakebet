@@ -7,6 +7,8 @@ import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
 import { verifyOTP } from "@/lib/verification-actions"
 import { vynfy } from "@/lib/vynfy-client"
+import { rateLimit } from "@/lib/rate-limit"
+import { RegisterUserSchema, RegisterAdminSchema } from "@/lib/validators"
 
 export async function registerUser(data: {
     email: string
@@ -16,13 +18,23 @@ export async function registerUser(data: {
     referredBy?: string
     otp?: string
 }) {
+    // Rate limit: 3 registrations per hour per IP
+    const limiter = await rateLimit("register-user", 3, 3600000);
+    if (!limiter.success) {
+        return { success: false, error: limiter.error };
+    }
+
+    // Zod Validation
+    const validation = RegisterUserSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, error: validation.error.issues[0].message };
+    }
+
+    const validatedData = validation.data;
+
     try {
         // Verify OTP first
-        if (!data.otp) {
-            return { success: false, error: "OTP verification required" }
-        }
-
-        const verification = await verifyOTP(data.phone, data.otp)
+        const verification = await verifyOTP(validatedData.phone, validatedData.otp)
         if (!verification.success) {
             return { success: false, error: verification.error || "Invalid OTP" }
         }
@@ -135,6 +147,18 @@ export async function registerAdmin(data: {
     phone: string
     adminToken: string
 }) {
+    // Rate limit: 2 admin registration attempts per hour per IP
+    const limiter = await rateLimit("register-admin", 2, 3600000);
+    if (!limiter.success) {
+        return { success: false, error: limiter.error };
+    }
+
+    // Zod Validation
+    const validation = RegisterAdminSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, error: validation.error.issues[0].message };
+    }
+
     // Verify the admin registration token
     if (!process.env.ADMIN_REGISTRATION_TOKEN || data.adminToken !== process.env.ADMIN_REGISTRATION_TOKEN) {
         return { success: false, error: "Invalid registration token" }

@@ -5,6 +5,7 @@ import { matches, schools, tournaments } from "@/lib/db/schema"
 import { Match } from "@/lib/types"
 import { eq, like, desc, and, or, ne, gt, sql } from "drizzle-orm"
 import { getVirtualMatchById } from "./virtuals"
+import { unstable_cache } from "next/cache"
 
 // Helper to cast DB result to Match type
 function mapDbMatchToMatch(dbMatch: unknown): Match {
@@ -30,37 +31,41 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
     }
 }
 
-export async function getAllMatches(): Promise<Match[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+export const getAllMatches = unstable_cache(
+    async (): Promise<Match[]> => {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-    const results = await db.select({
-        match: matches,
-        region: tournaments.region,
-        level: tournaments.level
-    })
-        .from(matches)
-        .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(
-            and(
-                eq(matches.isVirtual, false),
-                or(
-                    ne(matches.status, "finished"),
-                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
-                ),
-                or(
-                    ne(matches.status, "cancelled"),
-                    and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
+        const results = await db.select({
+            match: matches,
+            region: tournaments.region,
+            level: tournaments.level
+        })
+            .from(matches)
+            .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+            .where(
+                and(
+                    eq(matches.isVirtual, false),
+                    or(
+                        ne(matches.status, "finished"),
+                        and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                        and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                    ),
+                    or(
+                        ne(matches.status, "cancelled"),
+                        and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
+                    )
                 )
             )
-        )
 
-    return results.map(r => ({
-        ...mapDbMatchToMatch(r.match),
-        region: r.region || undefined,
-        level: r.level || undefined
-    }))
-}
+        return results.map(r => ({
+            ...mapDbMatchToMatch(r.match),
+            region: r.region || undefined,
+            level: r.level || undefined
+        }))
+    },
+    ["matches-all"],
+    { revalidate: 30, tags: ["matches"] }
+)
 
 export async function getAllMatchesWithTournaments() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -109,37 +114,41 @@ export async function getVirtualMatches(): Promise<Match[]> {
     return results.map(mapDbMatchToMatch)
 }
 
-export async function getFeaturedMatches(): Promise<Match[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+export const getFeaturedMatches = unstable_cache(
+    async (): Promise<Match[]> => {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-    const results = await db.select({
-        match: matches,
-        tournamentName: tournaments.name,
-        level: tournaments.level,
-        region: tournaments.region
-    })
-        .from(matches)
-        .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(
-            and(
-                eq(matches.isVirtual, false),
-                or(
-                    ne(matches.status, "finished"),
-                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+        const results = await db.select({
+            match: matches,
+            tournamentName: tournaments.name,
+            level: tournaments.level,
+            region: tournaments.region
+        })
+            .from(matches)
+            .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+            .where(
+                and(
+                    eq(matches.isVirtual, false),
+                    or(
+                        ne(matches.status, "finished"),
+                        and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                        and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                    )
                 )
             )
-        )
-        .orderBy(desc(matches.isLive), desc(matches.startTime))
-        .limit(10)
+            .orderBy(desc(matches.isLive), desc(matches.startTime))
+            .limit(10)
 
-    return results.map(r => ({
-        ...mapDbMatchToMatch(r.match),
-        tournamentName: r.tournamentName || null,
-        level: r.level || undefined,
-        region: r.region || undefined
-    }))
-}
+        return results.map(r => ({
+            ...mapDbMatchToMatch(r.match),
+            tournamentName: r.tournamentName || null,
+            level: r.level || undefined,
+            region: r.region || undefined
+        }))
+    },
+    ["matches-featured"],
+    { revalidate: 60, tags: ["matches"] }
+)
 
 export async function getMatchById(id: string): Promise<Match | undefined> {
     if (id.startsWith("vmt-")) {

@@ -209,7 +209,17 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
             if (isFootball) { finalScores = footballTotals; }
             if (isBasketball) { finalScores = basketballTotals; }
             if (isVolleyball) { finalScores = volleyballTotals; }
-            if (isAthletics) { finalScores = athleticsData; }
+            if (isAthletics) {
+                finalScores = athleticsData;
+                // Construct podium metadata: [1st Name, 2nd Name, 3rd Name]
+                const sortedByRank = Object.entries(athleticsData)
+                    .filter(([_, rank]) => rank > 0)
+                    .sort((a, b) => a[1] - b[1]);
+
+                metadata.podium = sortedByRank.slice(0, 3).map(([schoolId]) => {
+                    return match.participants.find(p => p.schoolId === schoolId)?.name || "";
+                });
+            }
 
             // Add Time Metadata for Live Updates
             if (isLiveUpdate && !isQuiz) {
