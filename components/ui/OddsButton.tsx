@@ -18,6 +18,7 @@ interface OddsButtonProps {
     onClick?: (selection: Selection) => void
     isSelected?: boolean
     isCorrelated?: boolean
+    isLocked?: boolean // Added isLocked
     id?: string // Explicit selection ID override
     sportType?: string // Added sportType
 }
@@ -33,6 +34,7 @@ export function OddsButton({
     onClick,
     isSelected: manualSelected,
     isCorrelated,
+    isLocked, // Destructure isLocked
     id: explicitId,
     sportType // Destructure sportType
 }: OddsButtonProps) {
@@ -51,7 +53,7 @@ export function OddsButton({
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (!odds || odds === 0) return;
+        if (!odds || odds === 0 || isLocked) return; // Add isLocked check
         const selection = {
             matchId,
             selectionId,
@@ -68,15 +70,15 @@ export function OddsButton({
         }
     }
 
-    if (!odds || odds === 0 || isCorrelated) {
-        // Handle undefined, null, 0, or correlated as locked
+    if (!odds || odds === 0 || isCorrelated || isLocked) { // Add isLocked check
+        // Handle undefined, null, 0, correlated or locked
         return (
             <button
                 disabled
                 className={cn(
                     "flex flex-col items-center justify-center py-1 px-1 rounded-md transition-all duration-200 border bg-white/5 border-white/5 cursor-not-allowed opacity-50",
                     "font-medium text-sm w-full",
-                    isCorrelated && "grayscale brightness-50", // Extra visual for correlation
+                    (isCorrelated || isLocked) && "grayscale brightness-50", // Extra visual for correlation or lock
                     className
                 )}
             >

@@ -1,7 +1,6 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { BetSlipProvider } from "@/lib/store/context"
 import { BottomNav } from "./BottomNav"
 import { FloatingBetSlipButton } from "./FloatingBetSlipButton"
 import { BetSlipSidebar } from "./BetSlipSidebar"
@@ -10,17 +9,29 @@ import { SubNavBar } from "./SubNavBar"
 import { Footer } from "./Footer"
 import { SessionProvider } from "next-auth/react"
 import React, { useEffect, useState, useContext } from "react"
-import { BetSlipContext } from "@/lib/store/context"
+import { BetSlipContext, BetSlipProvider } from "@/lib/store/context"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { getMatchById } from "@/lib/data"
-import { Match } from "@/lib/types"
+import { Match, Announcement } from "@/lib/types" // Added Announcement type
 import { useBetSlip } from "@/lib/store/useBetSlip"
+import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
+import { getActiveAnnouncements } from "@/lib/announcement-actions"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const isAuthPage = pathname?.startsWith("/auth")
     const isAdmin = pathname?.startsWith("/admin")
     const isVirtuals = pathname?.startsWith("/virtuals")
+
+    const [announcements, setAnnouncements] = useState<Announcement[]>([])
+
+    useEffect(() => {
+        if (!isAdmin && !isAuthPage) {
+            getActiveAnnouncements().then(data => {
+                setAnnouncements(data as Announcement[])
+            })
+        }
+    }, [isAdmin, isAuthPage])
 
     // Admin Layout (Minimal)
     if (isAdmin) {
@@ -41,6 +52,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                 <div className="min-h-screen flex flex-col bg-background">
                     {/* Sticky Main Header */}
                     {!isVirtuals && <Header />}
+
+                    {/* Ad/Announcement Bar between Main Nav and SubNav */}
+                    {!isVirtuals && !isAuthPage && announcements.length > 0 && (
+                        <AdBannerCarousel announcements={announcements} />
+                    )}
 
                     {/* Sticky Secondary Navigation (Sports/Regions) */}
                     {!isVirtuals && !isAuthPage && <SubNavBar />}

@@ -15,12 +15,14 @@ import {
     Monitor,
     CreditCard,
     Gift,
-    Radio
+    Radio,
+    Megaphone
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
     { name: "Intelligence", href: "/admin", icon: LayoutDashboard },
+    { name: "Adverts", href: "/admin/announcements", icon: Megaphone },
     { name: "User Registry", href: "/admin/users", icon: Users },
     { name: "Bonuses", href: "/admin/bonuses", icon: Gift },
     { name: "Payouts", href: "/admin/withdrawals", icon: CreditCard },

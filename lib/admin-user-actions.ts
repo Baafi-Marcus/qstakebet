@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, wallets, bets, transactions } from "@/lib/db/schema"
-import { eq, desc, ilike, or, sql } from "drizzle-orm"
+import { users, wallets, bets, transactions, referralClicks } from "@/lib/db/schema"
+import { eq, desc, ilike, or, sql, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function getUsers(query?: string) {
@@ -15,7 +15,8 @@ export async function getUsers(query?: string) {
             status: users.status,
             createdAt: users.createdAt,
             balance: wallets.balance,
-            referralCount: sql<number>`(SELECT COUNT(*) FROM ${users} r WHERE r.referred_by = ${users.id})`.mapWith(Number)
+            linkClicks: users.linkClicks,
+            referralCount: sql<number>`(SELECT COUNT(*) FROM ${users} r WHERE r.referred_by = ${users.referralCode})`.mapWith(Number)
         })
             .from(users)
             .leftJoin(wallets, eq(users.id, wallets.userId))

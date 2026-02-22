@@ -3,10 +3,9 @@
 import { db } from "@/lib/db"
 import { matches, schools, tournaments } from "@/lib/db/schema"
 import { Match } from "@/lib/types"
-import { eq, like, desc } from "drizzle-orm"
+import { eq, like, desc, and, or, ne, gt, sql } from "drizzle-orm"
 import { getVirtualMatchById } from "./virtuals"
 
-// Helper to cast DB result to Match type (handles JSON fields validation if needed)
 // Helper to cast DB result to Match type
 function mapDbMatchToMatch(dbMatch: unknown): Match {
     const m = dbMatch as Record<string, unknown>;
@@ -32,6 +31,8 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
 }
 
 export async function getAllMatches(): Promise<Match[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
     const results = await db.select({
         match: matches,
         region: tournaments.region,
@@ -39,7 +40,20 @@ export async function getAllMatches(): Promise<Match[]> {
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(eq(matches.isVirtual, false))
+        .where(
+            and(
+                eq(matches.isVirtual, false),
+                or(
+                    ne(matches.status, "finished"),
+                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                ),
+                or(
+                    ne(matches.status, "cancelled"),
+                    and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
+                )
+            )
+        )
 
     return results.map(r => ({
         ...mapDbMatchToMatch(r.match),
@@ -49,6 +63,8 @@ export async function getAllMatches(): Promise<Match[]> {
 }
 
 export async function getAllMatchesWithTournaments() {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
     const results = await db.select({
         match: matches,
         region: tournaments.region,
@@ -56,7 +72,20 @@ export async function getAllMatchesWithTournaments() {
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(eq(matches.isVirtual, false))
+        .where(
+            and(
+                eq(matches.isVirtual, false),
+                or(
+                    ne(matches.status, "finished"),
+                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                ),
+                or(
+                    ne(matches.status, "cancelled"),
+                    and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
+                )
+            )
+        )
 
     return results.map(r => ({
         ...mapDbMatchToMatch(r.match),
@@ -66,11 +95,23 @@ export async function getAllMatchesWithTournaments() {
 }
 
 export async function getVirtualMatches(): Promise<Match[]> {
-    const results = await db.select().from(matches).where(eq(matches.isVirtual, true))
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+    const results = await db.select().from(matches).where(
+        and(
+            eq(matches.isVirtual, true),
+            or(
+                ne(matches.status, "finished"),
+                and(eq(matches.status, "finished"), gt(matches.createdAt, twentyFourHoursAgo))
+            )
+        )
+    )
     return results.map(mapDbMatchToMatch)
 }
 
 export async function getFeaturedMatches(): Promise<Match[]> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
     const results = await db.select({
         match: matches,
         tournamentName: tournaments.name,
@@ -79,7 +120,16 @@ export async function getFeaturedMatches(): Promise<Match[]> {
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(eq(matches.isVirtual, false))
+        .where(
+            and(
+                eq(matches.isVirtual, false),
+                or(
+                    ne(matches.status, "finished"),
+                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                )
+            )
+        )
         .orderBy(desc(matches.isLive), desc(matches.startTime))
         .limit(10)
 
@@ -125,7 +175,18 @@ export async function getMatchById(id: string): Promise<Match | undefined> {
 }
 
 export async function getMatchesByStage(stageSlug: string): Promise<Match[]> {
-    const results = await db.select().from(matches).where(like(matches.stage, `%${stageSlug}%`))
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+    const results = await db.select().from(matches).where(
+        and(
+            like(matches.stage, `%${stageSlug}%`),
+            or(
+                ne(matches.status, "finished"),
+                and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
+                and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+            )
+        )
+    )
     return results.map(mapDbMatchToMatch)
 }
 

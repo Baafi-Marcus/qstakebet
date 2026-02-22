@@ -1,36 +1,19 @@
 import React, { useState } from "react"
 import { Match } from "@/lib/types"
-import { X, Trophy, Zap, Target, BarChart3, HelpCircle } from "lucide-react"
+import { X, Trophy, Zap, Target, BarChart3, HelpCircle, Lock } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { cn, normalizeMarketName } from "@/lib/utils"
 import { Selection } from "@/lib/store/context"
+import { getMatchLockStatus } from "@/lib/match-utils"
 
-interface MatchDetailsModalProps {
-    match: Match;
-    onClose: () => void;
-    onOddsClick: (selection: Selection) => void;
-    checkSelected: (selectionId: string) => boolean;
-    checkIsCorrelated?: (matchId: string, marketName: string) => boolean;
-}
-
-const MARKET_DESCRIPTIONS: Record<string, string> = {
-    "Match Winner": "Pick the overall winner of the contest (Schools 1, 2, or 3).",
-    "Total Points": "Bet on whether the combined total points of all schools will be Over or Under a specific value.",
-    "Winning Margin": "The point difference between the winner and the 1st runner-up.",
-    "Comeback Team": "Pick a specific school to win the match after being behind after Round 2.",
-    "Lead Changes": "Will the lead change hands more than 2.5 times throughout the match?",
-    "First Bonus": "Predict which school will earn the first bonus points in the match.",
-    "Late Surge": "Which school will score the most points in the final two rounds (R4 + R5)?",
-    "Strong Start": "Which school will score the most points in the first two rounds (R1 + R2)?",
-    "Highest Points": "Which school will have the highest individual round score in the match?",
-    "Perfect Round": "A round where a school answers all questions correctly without any errors.",
-    "Shutout Round": "A round where at least one school fails to score any points."
-};
+// ... (PROPS AND DESCRIPTIONS REMAIN SAME)
 
 export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, checkIsCorrelated }: MatchDetailsModalProps) {
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
     const participants = match.participants || []
     const matchLabel = participants.map(p => p.name).join(' vs ')
+
+    const { isLocked } = getMatchLockStatus(match)
 
     const toggleInfo = (market: string) => {
         if (expandedInfo === market) setExpandedInfo(null);
@@ -119,7 +102,13 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                 </span>
                             )}
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-50">• {match.status === 'live' ? 'LIVE UPDATES' : match.status === 'finished' ? 'FINISHED' : 'UPCOMING'}</span>
+                            {isLocked && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">
+                                    <Lock className="h-2 w-2" /> BETS LOCKED
+                                </span>
+                            )}
                         </div>
+                        {/* ... (SCHOOL NAMES REMAINS SAME) */}
                         <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
                             {participants.map((p, idx) => (
                                 <React.Fragment key={p.schoolId}>
@@ -138,6 +127,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             ))}
                         </h2>
                     </div>
+                    {/* ... (CLOSE BUTTON REMAINS SAME) */}
                     <button
                         onClick={onClose}
                         className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white shadow-xl hover:rotate-90"
@@ -149,7 +139,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                 {/* Content Overlay grid */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
 
-                    {/* AI Insights Bar */}
+                    {/* ... (AI INSIGHTS BAR REMAINS SAME) */}
                     <div className="lg:col-span-12 mb-4 bg-slate-900/40 border border-white/5 p-6 rounded-[2rem]">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
@@ -203,6 +193,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             onClick={onOddsClick}
                                             isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                            isLocked={isLocked}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
                                         />
                                     </div>
@@ -241,6 +232,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         id={`${match.id}-Total Points-Over ${group.line}`}
                                                         isSelected={checkSelected(`${match.id}-Total Points-Over ${group.line}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                        isLocked={isLocked}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -255,6 +247,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         id={`${match.id}-Total Points-Under ${group.line}`}
                                                         isSelected={checkSelected(`${match.id}-Total Points-Under ${group.line}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                        isLocked={isLocked}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -285,6 +278,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         onClick={onOddsClick}
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(`${round} Winner`)}-${sIdx + 1}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, `${round} Winner`)}
+                                                        isLocked={isLocked}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
                                                     />
                                                 </div>
@@ -318,6 +312,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             onClick={onOddsClick}
                                             isSelected={checkSelected(`${match.id}-${normalizeMarketName("Winning Margin")}-${opt.label}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
+                                            isLocked={isLocked}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                         />
                                     </div>
@@ -341,6 +336,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 onClick={onOddsClick}
                                                 isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Win")}-${val}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Win")}
+                                                isLocked={isLocked}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
                                         </div>
@@ -362,6 +358,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 onClick={onOddsClick}
                                                 isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Team")}-${sIdx + 1}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Team")}
+                                                isLocked={isLocked}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
                                         </div>
@@ -393,6 +390,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         onClick={onOddsClick}
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(prop.name)}-${opt}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, prop.name)}
+                                                        isLocked={isLocked}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -421,6 +419,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                     onClick={onOddsClick}
                                                     isSelected={checkSelected(`${match.id}-${normalizeMarketName(propName)}-${sIdx + 1}`)}
                                                     isCorrelated={checkIsCorrelated?.(match.id, propName)}
+                                                    isLocked={isLocked}
                                                     className="h-full w-full bg-transparent border-0 rounded-none hover:bg-white/[0.03]"
                                                 />
                                             </div>
@@ -443,3 +442,25 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
         </div>
     )
 }
+
+interface MatchDetailsModalProps {
+    match: Match;
+    onClose: () => void;
+    onOddsClick: (selection: Selection) => void;
+    checkSelected: (selectionId: string) => boolean;
+    checkIsCorrelated?: (matchId: string, marketName: string) => boolean;
+}
+
+const MARKET_DESCRIPTIONS: Record<string, string> = {
+    "Match Winner": "Pick the overall winner of the contest (Schools 1, 2, or 3).",
+    "Total Points": "Bet on whether the combined total points of all schools will be Over or Under a specific value.",
+    "Winning Margin": "The point difference between the winner and the 1st runner-up.",
+    "Comeback Team": "Pick a specific school to win the match after being behind after Round 2.",
+    "Lead Changes": "Will the lead change hands more than 2.5 times throughout the match?",
+    "First Bonus": "Predict which school will earn the first bonus points in the match.",
+    "Late Surge": "Which school will score the most points in the final two rounds (R4 + R5)?",
+    "Strong Start": "Which school will score the most points in the first two rounds (R1 + R2)?",
+    "Highest Points": "Which school will have the highest individual round score in the match?",
+    "Perfect Round": "A round where a school answers all questions correctly without any errors.",
+    "Shutout Round": "A round where at least one school fails to score any points."
+};

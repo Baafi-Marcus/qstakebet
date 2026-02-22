@@ -81,8 +81,30 @@ export const users = pgTable("users", {
     status: text("status").default("active").notNull(), // "active", "suspended", "banned"
     referralCode: text("referral_code").unique(), // User's unique referral code
     referredBy: text("referred_by"), // Referral code used during signup
+    linkClicks: integer("link_clicks").default(0).notNull(),
+    linkClicksRewardClaimed: boolean("link_clicks_reward_claimed").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const referralClicks = pgTable("referral_clicks", {
+    id: text("id").primaryKey(),
+    referralCode: text("referral_code").notNull(),
+    ipAddress: text("ip_address").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const announcements = pgTable("announcements", {
+    id: text("id").primaryKey(),
+    type: text("type").notNull(), // "text", "image"
+    content: text("content"),
+    imageUrl: text("image_url"),
+    link: text("link"),
+    isActive: boolean("is_active").default(true).notNull(),
+    priority: integer("priority").default(0).notNull(),
+    style: text("style"), // "default", "neon", "gold", "purple", "dark"
+    createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const sessions = pgTable("sessions", {
@@ -297,6 +319,8 @@ export type Bet = typeof bets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Bonus = typeof bonuses.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;
+export type ReferralClick = typeof referralClicks.$inferSelect;
+export type Announcement = typeof announcements.$inferSelect;
 export type VirtualSchoolStat = typeof virtualSchoolStats.$inferSelect;
 export type RealSchoolStat = typeof realSchoolStats.$inferSelect;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;

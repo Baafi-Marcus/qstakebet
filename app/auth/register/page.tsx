@@ -1,13 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift } from "lucide-react"
 import { registerUser } from "@/lib/auth-actions"
+import { ReferralSharePopup } from "@/components/ui/ReferralSharePopup"
 
-export default function RegisterPage() {
+function RegisterForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const refCode = searchParams.get("ref")
 
     const [formData, setFormData] = useState({
         email: "",
@@ -15,13 +18,14 @@ export default function RegisterPage() {
         confirmPassword: "",
         name: "",
         phone: "",
-        referredBy: ""
+        referredBy: refCode || ""
     })
     const [otp, setOtp] = useState("")
     const [otpSent, setOtpSent] = useState(false)
     const [sendingOtp, setSendingOtp] = useState(false)
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
+    const [createdUser, setCreatedUser] = useState<{ id: string, referralCode: string } | null>(null)
 
     // Send OTP Handler
     const handleSendOtp = async () => {
@@ -87,15 +91,14 @@ export default function RegisterPage() {
                 otp // Pass OTP for server-side verification
             })
 
-            if (!result.success) {
-                setError(result.error || "Registration failed")
-                setLoading(false)
-                return
+            if (result.success) {
+                // Instead of immediate redirect, show the share popup
+                const user = (result as any).user;
+                setCreatedUser({
+                    id: user?.id as string,
+                    referralCode: user?.referralCode as string
+                })
             }
-
-            // Redirect to home page
-            router.push("/")
-            router.refresh()
         } catch {
             setError("An error occurred. Please try again.")
             setLoading(false)
@@ -324,6 +327,29 @@ export default function RegisterPage() {
                     By creating an account, you agree to our Terms of Service and Privacy Policy
                 </p>
             </div>
+            {/* Referral Share Popup */}
+            {createdUser && (
+                <ReferralSharePopup
+                    referralCode={createdUser.referralCode}
+                    isOpen={!!createdUser}
+                    onClose={() => {
+                        router.push("/")
+                        router.refresh()
+                    }}
+                />
+            )}
         </div>
+    )
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary" />
+            </div>
+        }>
+            <RegisterForm />
+        </Suspense>
     )
 }

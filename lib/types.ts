@@ -90,3 +90,15 @@ export interface Bet {
     settledAt?: Date | null
     createdAt?: Date | null
 }
+
+export interface Announcement {
+    id: string
+    type: string // "text" | "image"
+    content: string | null
+    imageUrl: string | null
+    link: string | null
+    isActive: boolean
+    priority: number
+    style: string | null
+    createdAt: Date | null
+}
