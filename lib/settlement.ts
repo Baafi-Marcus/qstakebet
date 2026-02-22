@@ -218,6 +218,13 @@ export async function settleMatch(matchId: string) {
             }
         }
 
+        // Final Match Status Transition: Finished -> Settled
+        // This signifies that all bets for this match have been processed at least once in its finished state.
+        if (match.status === 'finished') {
+            const { matches } = await import("./db/schema")
+            await db.update(matches).set({ status: 'settled' }).where(eq(matches.id, matchId))
+        }
+
         return { success: true, settledCount }
 
     } catch (error) {

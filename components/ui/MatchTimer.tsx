@@ -25,7 +25,12 @@ export function MatchTimer({ startTime, status, sportType, metadata, className, 
         } else {
             const date = new Date(startTime);
             if (!isNaN(date.getTime())) {
-                timeDisplay = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const now = new Date();
+                if (date < now) {
+                    timeDisplay = "LATE START";
+                } else {
+                    timeDisplay = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
             } else {
                 timeDisplay = startTime;
             }

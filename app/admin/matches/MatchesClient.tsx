@@ -36,6 +36,10 @@ export function MatchesClient({
     const [isBulkStarting, setIsBulkStarting] = useState(false)
     const [isBulkLocking, setIsBulkLocking] = useState(false)
 
+    // Filters
+    const [statusFilter, setStatusFilter] = useState<string>("all")
+    const [sportFilter, setSportFilter] = useState<string>("all")
+
     const toggleMatchSelection = (id: string) => {
         if (selectedMatchIds.includes(id)) {
             setSelectedMatchIds(prev => prev.filter(mid => mid !== id))
@@ -104,7 +108,12 @@ export function MatchesClient({
         const tName = getTournamentName(m.tournamentId).toLowerCase()
         const pNames = m.participants.map(p => p.name.toLowerCase()).join(" ")
         const query = searchQuery.toLowerCase()
-        return tName.includes(query) || pNames.includes(query) || m.stage.toLowerCase().includes(query)
+
+        const matchesQuery = tName.includes(query) || pNames.includes(query) || m.stage.toLowerCase().includes(query)
+        const matchesStatus = statusFilter === "all" || m.status === statusFilter
+        const matchesSport = sportFilter === "all" || m.sportType === sportFilter
+
+        return matchesQuery && matchesStatus && matchesSport
     })
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -185,16 +194,40 @@ export function MatchesClient({
             </div>
 
             {/* Filter Bar */}
-            <div className="flex items-center gap-4 bg-slate-900/60 p-4 rounded-3xl border border-white/5">
-                <div className="relative flex-1">
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-900/60 p-4 rounded-3xl border border-white/5">
+                <div className="relative flex-1 w-full">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <input
                         type="text"
-                        placeholder="Search matches by school, tournament or stage..."
+                        placeholder="Search matches..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-slate-950/50 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     />
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="flex-1 md:flex-none bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 uppercase"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="live">Live</option>
+                        <option value="locked">Locked</option>
+                        <option value="finished">Finished</option>
+                        <option value="settled">Settled</option>
+                    </select>
+                    <select
+                        value={sportFilter}
+                        onChange={(e) => setSportFilter(e.target.value)}
+                        className="flex-1 md:flex-none bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 uppercase"
+                    >
+                        <option value="all">All Sports</option>
+                        <option value="football">Football</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="athletics">Athletics</option>
+                    </select>
                 </div>
             </div>
 
@@ -253,12 +286,18 @@ export function MatchesClient({
                                         <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-widest">{match.stage}</span>
                                         {match.status && (
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${match.status === 'live' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                                match.status === 'finished' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                                    match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
-                                                        match.status === 'locked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                match.status === 'finished' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                                    match.status === 'settled' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                                        match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                                                            match.status === 'locked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                                'bg-slate-500/20 text-slate-400 border border-white/10'
                                                 }`}>
                                                 {match.status}
+                                            </span>
+                                        )}
+                                        {match.status === 'upcoming' && match.startTime && !isNaN(new Date(match.startTime).getTime()) && new Date(match.startTime) < new Date() && (
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest bg-amber-600/20 text-amber-500 border border-amber-600/30 animate-pulse">
+                                                LATE START
                                             </span>
                                         )}
                                     </div>
@@ -281,6 +320,18 @@ export function MatchesClient({
                                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">Start Schedule</div>
                                 </div>
 
+                                {/* bet volume indicator */}
+                                {(() => {
+                                    const totalStake = Object.values(match.betVolume || {}).reduce((acc: number, curr: any) => acc + (curr.totalStake || 0), 0)
+                                    if (totalStake === 0) return null
+                                    return (
+                                        <div className="hidden sm:block text-right px-4 border-r border-white/5">
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Bet Volume</div>
+                                            <div className={`text-sm font-mono font-bold ${totalStake > 100 ? "text-pink-500" : "text-slate-300"}`}>₵ {totalStake.toLocaleString()}</div>
+                                        </div>
+                                    )
+                                })()}
+
                                 <div className="flex items-center gap-2">
                                     {match.status === 'upcoming' && (
                                         <button
@@ -292,7 +343,7 @@ export function MatchesClient({
                                         </button>
                                     )}
 
-                                    {match.status !== 'finished' && (
+                                    {match.status !== 'finished' && match.status !== 'settled' && (
                                         <button
                                             onClick={() => setSelectedMatchForResult(match)}
                                             className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide"

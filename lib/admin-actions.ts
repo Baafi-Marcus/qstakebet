@@ -2,9 +2,10 @@
 
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats } from "./db/schema"
+import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
+import { auth } from "./auth"
 
 // import { School, Tournament } from "./types" 
 
@@ -678,5 +679,50 @@ export async function lockMatches(matchIds: string[]) {
     } catch (error) {
         console.error("Bulk lock error:", error)
         return { success: false, error: "Failed to lock matches" }
+    }
+}
+
+/**
+ * Manually adjust a user's wallet balance (Admin Only)
+ */
+export async function adjustUserBalance(userId: string, amount: number, reason: string) {
+    try {
+        const session = await auth()
+        if (!session?.user?.id) throw new Error("Unauthorized")
+
+        // Verify admin
+        const admin = await db.query.users.findFirst({
+            where: eq(users.id, session.user.id),
+            columns: { id: true, role: true }
+        })
+        if (admin?.role !== 'admin') throw new Error("Forbidden")
+
+        const userWallet = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
+        if (!userWallet.length) throw new Error("Wallet not found")
+
+        const wallet = userWallet[0]
+        const balanceBefore = Number(wallet.balance)
+        const balanceAfter = balanceBefore + amount
+
+        await db.update(wallets)
+            .set({ balance: balanceAfter, updatedAt: new Date() })
+            .where(eq(wallets.id, wallet.id))
+
+        await db.insert(transactions).values({
+            id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+            userId: userId,
+            walletId: wallet.id,
+            amount: amount,
+            type: amount > 0 ? "bonus" : "withdrawal",
+            balanceBefore: balanceBefore,
+            balanceAfter: balanceAfter,
+            reference: `admin-adj-${admin.id}`,
+            description: `Admin Adjustment: ${reason}`
+        })
+
+        return { success: true, newBalance: balanceAfter }
+    } catch (error) {
+        console.error("Balance adjustment error:", error)
+        return { success: false, error: "Failed to adjust balance" }
     }
 }

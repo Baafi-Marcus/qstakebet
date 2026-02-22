@@ -190,11 +190,18 @@ export function MatchRow({
                     ))}
                 </div>
 
-                {/* Lock Indicator for Start Time */}
-                {lockStatus.timeUntilLock !== undefined && lockStatus.timeUntilLock < 30 && !isLocked && (
+                {/* Lock Indicator / Overdue Status */}
+                {!isLocked && lockStatus.timeUntilLock !== undefined && lockStatus.timeUntilLock > 0 && lockStatus.timeUntilLock < 30 && (
                     <div className="mt-1 px-1 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[7px] font-bold text-orange-400 inline-flex items-center gap-1">
                         <Lock className="h-1.5 w-1.5" />
                         LOCKING IN {Math.floor(lockStatus.timeUntilLock)}m
+                    </div>
+                )}
+
+                {!isLocked && lockStatus.isOverdue && (
+                    <div className="mt-1 px-1 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[7px] font-black text-amber-400 inline-flex items-center gap-1 animate-pulse">
+                        <div className="w-1 h-1 rounded-full bg-amber-500 animate-ping" />
+                        ANTICIPATING START
                     </div>
                 )}
 

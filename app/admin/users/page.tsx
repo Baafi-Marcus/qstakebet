@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Search, Ban, CheckCircle, ArrowUpRight } from "lucide-react"
+import { Search, Ban, CheckCircle, ArrowUpRight, Wallet } from "lucide-react"
 import Link from "next/link"
 import { getUsers, updateUserStatus } from "@/lib/admin-user-actions"
+import { BalanceAdjustmentModal } from "./BalanceAdjustmentModal"
 import { cn } from "@/lib/utils"
 
 interface AdminUser {
@@ -23,6 +24,9 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
+
+    // Balance Adjustment Modal State
+    const [adjustingUser, setAdjustingUser] = useState<AdminUser | null>(null)
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -154,6 +158,13 @@ export default function UsersPage() {
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => setAdjustingUser(u)}
+                                                className="p-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-500 transition-all active:scale-95"
+                                                title="Adjust Balance"
+                                            >
+                                                <Wallet className="h-4 w-4" />
+                                            </button>
                                             <Link
                                                 href={`/admin/users/${u.id}`}
                                                 className="p-2.5 rounded-xl bg-white/5 hover:bg-primary/20 text-slate-400 hover:text-primary transition-all active:scale-95"
@@ -179,6 +190,21 @@ export default function UsersPage() {
                     </table>
                 </div>
             </div>
+
+            {adjustingUser && (
+                <BalanceAdjustmentModal
+                    userId={adjustingUser.id}
+                    userName={adjustingUser.name || 'Unknown User'}
+                    currentBalance={adjustingUser.balance || 0}
+                    onClose={() => setAdjustingUser(null)}
+                    onSuccess={async () => {
+                        const refresh = await getUsers(debouncedSearch)
+                        if (refresh.success) {
+                            setUsers((refresh.users as unknown as AdminUser[]) || [])
+                        }
+                    }}
+                />
+            )}
         </div>
     )
 }

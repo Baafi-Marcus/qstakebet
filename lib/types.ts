@@ -35,6 +35,13 @@ export interface Match {
     createdAt?: Date | string | null
     lastTickAt?: Date | string | null
     autoEndAt?: Date | string | null
+    betVolume?: {
+        [selectionId: string]: {
+            totalStake: number,
+            betCount: number,
+            lastUpdated: string
+        }
+    }
 }
 
 export interface Tournament {

@@ -8,10 +8,12 @@ import { Match } from "./types"
 export function getMatchLockStatus(match: Match): {
     isLocked: boolean,
     reason?: string,
-    timeUntilLock?: number // in minutes
+    timeUntilLock?: number, // in minutes
+    isOverdue: boolean,
+    minutesOverdue: number
 } {
     if (!match.scheduledAt) {
-        return { isLocked: false }
+        return { isLocked: false, isOverdue: false, minutesOverdue: 0 }
     }
 
     const now = new Date()
@@ -19,17 +21,34 @@ export function getMatchLockStatus(match: Match): {
     const diffMs = startTime.getTime() - now.getTime()
     const minutesUntilStart = diffMs / 60000
 
-    // RELAXED LOCKING FOR "GHANA TIME"
-    // We do NOT lock based on strict time anymore. 
-    // We only lock if the status is explicitly 'live', 'finished', 'cancelled' or 'locked'.
+    // Overdue metrics
+    const isOverdue = minutesUntilStart < 0
+    const minutesOverdue = isOverdue ? Math.abs(minutesUntilStart) : 0
 
+    // RELAXED LOCKING FOR "GHANA TIME"
+    // We only lock if the status is explicitly 'live', 'finished', 'cancelled' or 'locked'.
     const isExplicitlyLocked = ['live', 'finished', 'cancelled', 'locked'].includes(match.status || "");
 
     if (isExplicitlyLocked) {
         return {
             isLocked: true,
             reason: `Match is ${match.status}`,
-            timeUntilLock: 0
+            timeUntilLock: 0,
+            isOverdue,
+            minutesOverdue
+        }
+    }
+
+    // AUTOMATIC SOFT LOCK
+    // Lock betting if a match is more than 5 minutes past scheduled start time
+    // This protects against "past-posting" while allowing for slight delays.
+    if (isOverdue && minutesOverdue > 5) {
+        return {
+            isLocked: true,
+            reason: 'Match started',
+            timeUntilLock: 0,
+            isOverdue,
+            minutesOverdue
         }
     }
 
@@ -38,14 +57,18 @@ export function getMatchLockStatus(match: Match): {
     if (hoursPast > 24) {
         return {
             isLocked: true,
-            reason: 'Match expired (24h+ overdue)',
-            timeUntilLock: 0
+            reason: 'Match expired',
+            timeUntilLock: 0,
+            isOverdue,
+            minutesOverdue
         }
     }
 
     return {
         isLocked: false,
-        timeUntilLock: minutesUntilStart // Informational only now
+        timeUntilLock: Math.max(0, minutesUntilStart),
+        isOverdue,
+        minutesOverdue
     }
 }
 
