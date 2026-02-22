@@ -43,8 +43,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                         <div className="absolute inset-0 bg-purple-500/20 blur-[100px] rounded-full animate-pulse" />
 
                         <h1 className="relative text-5xl md:text-8xl tracking-tight text-white font-russo">
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 animate-gradient-x">QSTAKE</span>
-                            <span className="text-white">bet</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 animate-gradient-x">QSTAKEbet</span>
                         </h1>
 
                         <p className="relative text-slate-500 text-xs md:text-sm font-bold uppercase tracking-[0.5em] mt-4 animate-pulse">

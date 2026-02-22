@@ -30,7 +30,7 @@ export default function AdminLayout({
             <footer className="py-6 px-10 border-t border-white/5 bg-slate-950/50">
                 <div className="flex items-center justify-between">
                     <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                        QSTAKE Management Console v2.0
+                        QSTAKEbet Management Console v2.0
                     </div>
                     <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
                         Server Time: {new Date().toLocaleTimeString()}

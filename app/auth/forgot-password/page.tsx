@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-black text-white mb-2 italic tracking-tighter">
-                        QSTAKE
+                        QSTAKE<span className="text-purple-400">bet</span>
                     </h1>
                     <p className="text-slate-400">Security & Account Recovery</p>
                 </div>

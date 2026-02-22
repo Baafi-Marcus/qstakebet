@@ -52,10 +52,8 @@ export default function LoginPage() {
             <div className="relative w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-black text-white mb-2">
-                        <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            QSTAKE
-                        </span>
+                    <h1 className="text-4xl font-black text-white mb-2 italic tracking-tighter">
+                        QSTAKE<span className="text-purple-400">bet</span>
                     </h1>
                     <p className="text-slate-400">Welcome back! Sign in to continue</p>
                 </div>

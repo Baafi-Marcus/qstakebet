@@ -55,16 +55,16 @@
 - [x] Add high-density match details (Tournament, Teams, Market, Selection Odds)
 - [x] Verify exported image looks professional and high-quality
 
-## Phase 27: Required T&C Agreement [/]
-- [ ] Add "I agree to Terms & Conditions" checkbox to `app/auth/register/page.tsx`
-- [ ] Enforce checkbox validation on frontend and backend
-- [ ] Verify registration works only when T&C is agreed
+## Phase 27: Required T&C Agreement [x]
+- [x] Add "I agree to Terms & Conditions" checkbox to `app/auth/register/page.tsx`
+- [x] Enforce checkbox validation on frontend and backend
+- [x] Verify registration works only when T&C is agreed
 
-## Phase 28: Forgot Password Flow (SMS OTP) [/]
-- [ ] Add "Forgot Password?" link to `app/auth/login/page.tsx`
-- [ ] Create `app/auth/forgot-password/page.tsx` with OTP verification
-- [ ] Implement `resetPassword` server action in `lib/auth-actions.ts`
-- [ ] Verify full flow: Phone -> OTP -> New Password -> Success
+## Phase 28: Forgot Password Flow (SMS OTP) [x]
+- [x] Add "Forgot Password?" link to `app/auth/login/page.tsx`
+- [x] Create `app/auth/forgot-password/page.tsx` with OTP verification
+- [x] Implement `resetPassword` server action in `lib/auth-actions.ts`
+- [x] Verify full flow: Phone -> OTP -> New Password -> Success
 
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal

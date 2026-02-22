@@ -211,7 +211,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose }: Bo
                     {/* Brand Header */}
                     <div className="bg-[#e11d48] px-6 py-4 flex items-center justify-between border-b border-black/10">
                         <div className="flex items-center gap-2">
-                            <span className="text-white font-black italic tracking-tighter text-2xl">QSTAKE</span>
+                            <span className="text-white font-black italic tracking-tighter text-2xl">QSTAKEbet</span>
                             <div className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Official Booking</div>
                         </div>
                         <div className="text-right">
@@ -300,7 +300,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose }: Bo
                             </p>
                         </div>
                         <div className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">
-                            © 2026 QSTAKE GAMING TECHNOLOGY LIMITED. ALL RIGHTS RESERVED.
+                            © 2026 QSTAKEbet GAMING TECHNOLOGY LIMITED. ALL RIGHTS RESERVED.
                         </div>
                     </div>
                 </div>
