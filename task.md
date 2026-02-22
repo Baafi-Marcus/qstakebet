@@ -49,6 +49,12 @@
 - [x] Add Responsible Gaming, AML/KYC, and Dispute Resolution policies
 - [x] Ensure premium, responsive, and accessible dark-mode UI for all legal pages
 
+## Phase 26: Redesign Professional Booking Image [/]
+- [ ] Overhaul shareable image design in `BookingSuccessModal.tsx`
+- [ ] Implement premium "ticket" motif with glassmorphism and gradients
+- [ ] Add visual elements like QR code placeholder and verified badges
+- [ ] Verify exported image looks professional and high-quality
+
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal
 - [x] Add round-by-round score breakdown table to results ticket view
