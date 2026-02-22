@@ -13,96 +13,63 @@ interface MatchTimerProps {
 }
 
 export function MatchTimer({ startTime, status, sportType, metadata, className, isLive }: MatchTimerProps) {
-    const [timeDisplay, setTimeDisplay] = useState<string>("");
+    // Use a state to force re-render for live matches
+    const [, setTick] = useState(0);
 
-    useEffect(() => {
-        // 1. If not live, show status or start time
-        if (status === "upcoming") {
-            if (!startTime) {
-                setTimeDisplay("TBD");
-                return;
-            }
-            // If startTime is a date string, format it
+    // Derive display text during render to avoid cascading renders
+    let timeDisplay = status;
+
+    if (status === "upcoming") {
+        if (!startTime) {
+            timeDisplay = "TBD";
+        } else {
             const date = new Date(startTime);
             if (!isNaN(date.getTime())) {
-                setTimeDisplay(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                timeDisplay = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             } else {
-                setTimeDisplay(startTime);
+                timeDisplay = startTime;
             }
-            return;
         }
+    } else if (status === "finished") {
+        timeDisplay = "FT";
+    } else if (status === "paused" || status === "HT") {
+        timeDisplay = "HT";
+    } else if (status === "live" || isLive) {
+        if (sportType === "quiz") {
+            timeDisplay = "LIVE";
+        } else if (metadata?.currentMinute !== undefined && metadata?.lastUpdated) {
+            const lastUpdateDate = new Date(metadata.lastUpdated);
+            const now = new Date();
+            const diffInMinutes = Math.floor((now.getTime() - lastUpdateDate.getTime()) / 60000);
+            timeDisplay = `${metadata.currentMinute + diffInMinutes}'`;
+        } else if (startTime) {
+            const startDate = new Date(startTime);
+            if (!isNaN(startDate.getTime())) {
+                const now = new Date();
+                const diffInMinutes = Math.floor((now.getTime() - startDate.getTime()) / 60000);
 
-        if (status === "finished") {
-            setTimeDisplay("FT");
-            return;
+                // Basic HT adjustment for football (approx 15min break after 45)
+                // This is very rough essentially, but better than nothing if no admin input
+                // Without manual admin 'HT' status, we can't know for sure.
+                // We'll just show raw time difference.
+
+                timeDisplay = `${Math.max(0, diffInMinutes)}'`;
+            } else {
+                timeDisplay = "LIVE";
+            }
+        } else {
+            timeDisplay = "LIVE";
         }
+    }
 
-        if (status === "paused" || status === "HT") {
-            setTimeDisplay("HT");
-            return;
-        }
-
-        // 2. Live Logic
+    useEffect(() => {
         if (status === "live" || isLive) {
-            // QUIZ: Just show "LIVE"
-            if (sportType === "quiz") {
-                setTimeDisplay("LIVE");
-                return;
-            }
-
-            // SPORTS: Calculate Timer
-            const calculateTime = () => {
-                // Priority 1: Admin set manual time (e.g. "55'") -> We just show that static or increment?
-                // Better: Admin sets "currentMinute" and "lastUpdated".
-                // We calculate: currentMinute + (now - lastUpdated)
-
-                if (metadata?.currentMinute !== undefined && metadata?.lastUpdated) {
-                    const lastUpdateDate = new Date(metadata.lastUpdated);
-                    const now = new Date();
-                    const diffInMinutes = Math.floor((now.getTime() - lastUpdateDate.getTime()) / 60000);
-                    const totalMinutes = metadata.currentMinute + diffInMinutes;
-
-                    // Cap based on sport? e.g. football max 45+ or 90+
-                    setTimeDisplay(`${totalMinutes}'`);
-                    return;
-                }
-
-                // Priority 2: Calculate from proper scheduledAt/startTime if valid
-                if (startTime) {
-                    const startDate = new Date(startTime);
-                    if (!isNaN(startDate.getTime())) {
-                        const now = new Date();
-                        const diffInMinutes = Math.floor((now.getTime() - startDate.getTime()) / 60000);
-
-                        // Basic HT adjustment for football (approx 15min break after 45)
-                        // This is very rough essentially, but better than nothing if no admin input
-                        const displayMin = diffInMinutes;
-                        if (sportType === 'football' && diffInMinutes > 45) {
-                            // If it's literally continuous time, 50 mins since start = 50'. 
-                            // Realistically there's halftime.
-                            // Without manual admin 'HT' status, we can't know for sure.
-                            // We'll just show raw time difference.
-                        }
-
-                        setTimeDisplay(`${Math.max(0, displayMin)}'`);
-                    } else {
-                        // Fallback text start time (e.g. "14:00") - can't calc diff
-                        setTimeDisplay("LIVE");
-                    }
-                } else {
-                    setTimeDisplay("LIVE");
-                }
-            };
-
-            calculateTime();
-            // Update every minute (or second if we want seconds)
-            const interval = setInterval(calculateTime, 10000);
+            const interval = setInterval(() => {
+                setTick(t => t + 1);
+            }, 10000); // Check every 10s
             return () => clearInterval(interval);
         }
-
-        setTimeDisplay(status);
-
-    }, [startTime, status, sportType, metadata, isLive]);
+    }, [status, isLive]);
 
     return (
         <div className={cn("flex items-center gap-1.5", className)}>
