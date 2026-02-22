@@ -38,9 +38,16 @@
 - [x] Implement server-side error logging utility
 
 ## Phase 24: Fix Deployment Build Errors [x]
-- [x] Replace `@ts-ignore` with `@ts-expect-error` in `MatchRow.tsx` (Ended up removing them as code is type-safe)
+- [x] Replace `@ts-ignore` with `@ts-expect-error` in `MatchRow.tsx` (Removed redundant comments)
 - [x] Convert `<img>` to `next/image` in `AdBannerCarousel` and `BookingSuccessModal`
 - [x] Remove unused eslint-disable in `MatchTimer.tsx`
+- [x] Fix cascading render error in `MatchTimer.tsx` (Derive values during render)
+
+## Phase 25: Legal Documentation Overhaul (Ghanaian Compliance) [x]
+- [x] Implement formal Ghanaian Terms and Conditions in `app/terms/page.tsx`
+- [x] Implement Data Protection Act (2012) compliant Privacy Policy in `app/privacy/page.tsx`
+- [x] Add Responsible Gaming, AML/KYC, and Dispute Resolution policies
+- [x] Ensure premium, responsive, and accessible dark-mode UI for all legal pages
 
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal
