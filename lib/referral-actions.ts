@@ -83,10 +83,20 @@ export async function getUserOffersAndBonuses() {
         const userId = session.user.id
 
         // 1. Get User Data (Referral Code, Loyalty Points)
-        const user = await db.query.users.findFirst({
+        let user = await db.query.users.findFirst({
             where: eq(users.id, userId),
-            columns: { referralCode: true, loyaltyPoints: true }
+            columns: { referralCode: true, loyaltyPoints: true, name: true }
         })
+
+        let currentReferralCode = user?.referralCode
+
+        // Generate referral code if missing (for legacy users)
+        if (!currentReferralCode && user) {
+            currentReferralCode = `${(user.name || "USR").substring(0, 3).toUpperCase()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+            await db.update(users)
+                .set({ referralCode: currentReferralCode })
+                .where(eq(users.id, userId))
+        }
 
         // 2. Get Active Bonuses
         const activeBonuses = await db.query.bonuses.findMany({
@@ -106,7 +116,7 @@ export async function getUserOffersAndBonuses() {
 
         return {
             success: true,
-            referralCode: user?.referralCode || "",
+            referralCode: currentReferralCode || "NONE",
             loyaltyPoints: user?.loyaltyPoints || 0,
             bonuses: activeBonuses,
             referralStats: {

@@ -1,6 +1,6 @@
 "use client"
 
-import { Gift, Zap, Users, Trophy, Star, ArrowRight, ArrowLeft, Loader2, Copy, Check } from "lucide-react"
+import { Gift, Zap, Users, Trophy, Star, ArrowRight, ArrowLeft, Loader2, Copy, Check, X, Info } from "lucide-react"
 import Link from "next/link"
 import React, { useEffect, useState } from "react"
 import { getUserOffersAndBonuses } from "@/lib/referral-actions"
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 export default function BonusesPage() {
     const [loading, setLoading] = useState(true)
     const [copied, setCopied] = useState(false)
+    const [showEarnModal, setShowEarnModal] = useState(false)
     const [data, setData] = useState<{
         referralCode: string;
         loyaltyPoints: number;
@@ -171,12 +172,71 @@ export default function BonusesPage() {
                             <p className="text-3xl font-black">{data?.loyaltyPoints}</p>
                             <p className="text-slate-500 text-sm font-bold">Loyalty Points</p>
                         </div>
-                        <button className="text-purple-400 hover:text-white transition-colors text-sm font-black flex items-center gap-1">
+                        <button
+                            onClick={() => setShowEarnModal(true)}
+                            className="text-purple-400 hover:text-white transition-colors text-sm font-black flex items-center gap-1"
+                        >
                             HOW TO EARN <ArrowRight className="h-3 w-3" />
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* How to Earn Modal */}
+            {showEarnModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-0">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowEarnModal(false)} />
+                    <div className="bg-slate-900 border border-white/10 w-full max-w-lg rounded-[2.5rem] p-10 relative z-10 shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <button
+                            onClick={() => setShowEarnModal(false)}
+                            className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-full transition-colors"
+                        >
+                            <X className="h-6 w-6 text-slate-400" />
+                        </button>
+
+                        <div className="flex flex-col items-center text-center gap-6">
+                            <div className="p-6 bg-purple-500/10 rounded-3xl">
+                                <Star className="h-12 w-12 text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-3xl font-black mb-2">Earn Loyalty Points</h3>
+                                <p className="text-slate-400 font-medium">Accumulate points by participating and win big!</p>
+                            </div>
+
+                            <div className="w-full space-y-4 text-left">
+                                <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex items-start gap-4">
+                                    <div className="p-2 bg-green-500/10 rounded-lg"><Zap className="h-5 w-5 text-green-400" /></div>
+                                    <div>
+                                        <p className="font-bold text-white">Place Bets</p>
+                                        <p className="text-sm text-slate-400">Earn 1 point for every GHS 50.00 wagered.</p>
+                                    </div>
+                                </div>
+                                <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex items-start gap-4">
+                                    <div className="p-2 bg-blue-500/10 rounded-lg"><Users className="h-5 w-5 text-blue-400" /></div>
+                                    <div>
+                                        <p className="font-bold text-white">Refer Friends</p>
+                                        <p className="text-sm text-slate-400">Get 10 points for every successfully verified referral.</p>
+                                    </div>
+                                </div>
+                                <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex items-start gap-4">
+                                    <div className="p-2 bg-pink-500/10 rounded-lg"><Trophy className="h-5 w-5 text-pink-400" /></div>
+                                    <div>
+                                        <p className="font-bold text-white">Win Tournaments</p>
+                                        <p className="text-sm text-slate-400">Bonus points awarded for top placement in regional cups.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowEarnModal(false)}
+                                className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-lg"
+                            >
+                                GOT IT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
