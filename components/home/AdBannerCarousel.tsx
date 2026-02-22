@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { Announcement } from "@/lib/types" // Using central types
 import { cn } from "@/lib/utils"
 
@@ -80,17 +81,19 @@ export function AdBannerCarousel({ announcements }: AdBannerCarouselProps) {
                                 <div className="w-full h-full relative cursor-pointer">
                                     {ad.link ? (
                                         <Link href={ad.link} className="block w-full h-full">
-                                            <img
+                                            <Image
                                                 src={ad.imageUrl || ""}
                                                 alt="Promotion"
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                         </Link>
                                     ) : (
-                                        <img
+                                        <Image
                                             src={ad.imageUrl || ""}
                                             alt="Promotion"
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
                                         />
                                     )}
                                 </div>

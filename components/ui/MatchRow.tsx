@@ -518,9 +518,7 @@ export function MatchRow({
                                 ) : (
                                     // Default fallback for Yes/No props or generic single-row make sure data exists
                                     match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] && (
-                                        //@ts-ignore
                                         Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).length > 0 ? (
-                                            //@ts-ignore
                                             Object.entries(match.extendedOdds?.[activeMarket.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] || {}).map(([key, odd]) => (
                                                 <div key={key} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
                                                     <OddsButton

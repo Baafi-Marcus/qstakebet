@@ -1,6 +1,7 @@
 
 "use client"
 import React from "react"
+import Image from "next/image"
 import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search } from "lucide-react"
 import { toPng } from 'html-to-image'
 import { format } from "date-fns"
@@ -89,7 +90,13 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose }: Bo
                     <div className="relative group flex-shrink-0">
                         <div className="w-32 h-44 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg relative cursor-zoom-in">
                             {previewUrl ? (
-                                <img src={previewUrl} alt="Ticket Preview" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all" />
+                                <Image
+                                    src={previewUrl}
+                                    alt="Ticket Preview"
+                                    fill
+                                    unoptimized
+                                    className="object-cover opacity-60 group-hover:opacity-100 transition-all"
+                                />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <Loader2 className="h-6 w-6 text-slate-600 animate-spin" />

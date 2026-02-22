@@ -37,6 +37,11 @@
 - [x] Set up basic health-check endpoint
 - [x] Implement server-side error logging utility
 
+## Phase 24: Fix Deployment Build Errors [x]
+- [x] Replace `@ts-ignore` with `@ts-expect-error` in `MatchRow.tsx` (Ended up removing them as code is type-safe)
+- [x] Convert `<img>` to `next/image` in `AdBannerCarousel` and `BookingSuccessModal`
+- [x] Remove unused eslint-disable in `MatchTimer.tsx`
+
 ## 2. Feature Implementation [x]
 - [x] Implement auto-advance countdown (15s) in Results Modal
 - [x] Add round-by-round score breakdown table to results ticket view

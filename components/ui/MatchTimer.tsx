@@ -102,7 +102,6 @@ export function MatchTimer({ startTime, status, sportType, metadata, className, 
 
         setTimeDisplay(status);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startTime, status, sportType, metadata, isLive]);
 
     return (
