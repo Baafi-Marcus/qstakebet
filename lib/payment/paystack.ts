@@ -24,7 +24,7 @@ export async function initiatePaystackTransaction(data: {
                 amount: Math.round(data.amount * 100), // Convert to pesewas/cents
                 email: data.email,
                 reference: data.reference,
-                callback_url: data.callback_url || `${process.env.NEXTAUTH_URL}/account/deposit/callback`,
+                callback_url: data.callback_url || `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL}/account/deposit/callback`,
                 metadata: {
                     reference: data.reference,
                 },

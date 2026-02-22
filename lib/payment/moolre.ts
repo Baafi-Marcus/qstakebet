@@ -65,7 +65,7 @@ export async function initiateMomoDeposit({
         customer_phone: phoneNumber,
         network: network.toUpperCase(),
         reference,
-        callback_url: `${process.env.NEXTAUTH_URL}/api/webhooks/moolre`,
+        callback_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/moolre`,
         description: `Deposit of GHS ${amount} to QSTAKEbet wallet`
     };
 
