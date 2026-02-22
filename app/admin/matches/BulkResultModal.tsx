@@ -20,6 +20,8 @@ export function BulkResultModal({ onClose, onSuccess }: BulkResultModalProps) {
         score2?: number
         winner: string
         rawText: string
+        footballDetails?: Record<string, { ht: number, ft: number }>
+        metadata?: Record<string, any>
     }> | null>(null)
     const [updateResults, setUpdateResults] = useState<Array<{
         rawText: string
@@ -194,8 +196,23 @@ export function BulkResultModal({ onClose, onSuccess }: BulkResultModalProps) {
                                         <div className="text-sm text-green-400">
                                             Winner: {result.winner}
                                         </div>
-                                        <div className="text-xs text-slate-500 mt-1">
-                                            {result.rawText}
+                                        {result.footballDetails && (
+                                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                                {Object.entries(result.footballDetails).map(([school, stats]) => (
+                                                    <div key={school} className="text-[10px] bg-white/5 p-1.5 rounded border border-white/5">
+                                                        <div className="text-slate-500 uppercase font-bold truncate">{school}</div>
+                                                        <div className="text-white">HT: {stats.ht} | FT: {stats.ft}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {result.metadata?.outcomes && Object.keys(result.metadata.outcomes).length > 0 && (
+                                            <div className="mt-2 text-[10px] text-purple-400 font-medium">
+                                                AI Resolved Markets: {Object.keys(result.metadata.outcomes).join(", ")}
+                                            </div>
+                                        )}
+                                        <div className="text-xs text-slate-500 mt-2 italic border-t border-white/5 pt-1">
+                                            &quot;{result.rawText}&quot;
                                         </div>
                                     </div>
                                 ))}

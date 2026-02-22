@@ -16,6 +16,13 @@
 - [x] Update Admin Tools for Multi-Sport score entry
 - [x] Final multi-sport validation & build
 
+## Phase 23: Dynamic Market Settlement & AI Support [/]
+- [/] Engine: Update `isSelectionWinner` to support `metadata.outcomes` override
+- [ ] Admin: Implement "Active Markets" tab in `MatchResultModal`
+- [ ] Admin: Add dynamic "Clarify Outcome" dropdowns for custom markets
+- [ ] Admin: Implement Partial/Early Payout button for resolved markets
+- [ ] Verification: Test settling an AI-generated prop market manually
+
 ## Phase 20: AI Market Flexibility & Generic Support [x]
 - [x] Update standard AI prompts for sport-specific markets
 - [x] Implement Catch-All market renderer in `MatchDetailsModal`

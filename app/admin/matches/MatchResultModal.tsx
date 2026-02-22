@@ -11,6 +11,8 @@ interface MatchResultModalProps {
             schoolId: string
             name: string
         }>
+        extendedOdds?: Record<string, Record<string, number | null>>
+        metadata?: any
         autoEndAt?: Date | string | null
     }
     onClose: () => void
@@ -77,7 +79,14 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     // --- AUTO CALCULATIONS ---
 
     const [isLiveUpdate, setIsLiveUpdate] = useState(false)
-    const [timerData, setTimerData] = useState({ minute: 0, period: "1H" })
+    const [timerData, setTimerData] = useState({
+        minute: match.metadata?.currentMinute || 0,
+        period: match.metadata?.period || "1H"
+    })
+    const [activeTab, setActiveTab] = useState<"scores" | "markets">("scores")
+    const [manualOutcomes, setManualOutcomes] = useState<Record<string, string>>(() => {
+        return match.metadata?.outcomes || {}
+    })
 
     // ... (rest of state)
 
@@ -233,7 +242,10 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 winner: isLiveUpdate ? "" : winner,
                 status: isLiveUpdate ? "live" : "finished",
                 autoEndAt: autoEndAt || null,
-                metadata
+                metadata: {
+                    ...metadata,
+                    outcomes: manualOutcomes
+                }
             } as any)
 
             if (result.success) { onSuccess(); onClose() }
@@ -264,22 +276,45 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                         <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-slate-400"><X className="h-5 w-5" /></button>
                     </div>
 
-                    {/* Mode Toggle */}
-                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 self-start">
-                        <button
-                            type="button"
-                            onClick={() => setIsLiveUpdate(true)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isLiveUpdate ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-slate-500 hover:text-slate-300"}`}
-                        >
-                            Live Update
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsLiveUpdate(false)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isLiveUpdate ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "text-slate-500 hover:text-slate-300"}`}
-                        >
-                            Final Settle
-                        </button>
+                    {/* Mode Toggle & Tabs */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 self-start">
+                            <button
+                                type="button"
+                                onClick={() => setIsLiveUpdate(true)}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isLiveUpdate ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                                Live Update
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsLiveUpdate(false)}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isLiveUpdate ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                                Final Settle
+                            </button>
+                        </div>
+
+                        <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
+
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 self-start">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("scores")}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === "scores" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                                <Zap className="h-3 w-3" />
+                                Scores
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("markets")}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === "markets" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300"}`}
+                            >
+                                <Target className="h-3 w-3" />
+                                Markets
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -371,125 +406,179 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                             </div>
                         )}
 
-                        {/* 1. SPORT SPECIFIC INPUTS */}
-                        {isQuiz && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {match.participants.map(p => (
-                                    <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
-                                        <div className="text-sm font-black text-white truncate uppercase border-b border-white/5 pb-2">{p.name}</div>
-                                        {['r1', 'r2', 'r3', 'r4', 'r5'].map(r => (
-                                            <div key={r} className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
-                                                <span>{r === 'r1' ? 'General' : r === 'r2' ? 'Speed' : r === 'r3' ? 'Problem' : r === 'r4' ? 'T/F' : 'Riddles'}</span>
-                                                <input type="number" className="w-14 h-8 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(quizData[p.schoolId][r as keyof typeof quizData[string]]) ? '' : quizData[p.schoolId][r as keyof typeof quizData[string]]} onChange={e => setQuizData({ ...quizData, [p.schoolId]: { ...quizData[p.schoolId], [r]: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                        {/* 1. TAB CONTENT */}
+                        {activeTab === "scores" ? (
+                            <>
+                                {isQuiz && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {match.participants.map(p => (
+                                            <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
+                                                <div className="text-sm font-black text-white truncate uppercase border-b border-white/5 pb-2">{p.name}</div>
+                                                {['r1', 'r2', 'r3', 'r4', 'r5'].map(r => (
+                                                    <div key={r} className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
+                                                        <span>{r === 'r1' ? 'General' : r === 'r2' ? 'Speed' : r === 'r3' ? 'Problem' : r === 'r4' ? 'T/F' : 'Riddles'}</span>
+                                                        <input type="number" className="w-14 h-8 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(quizData[p.schoolId][r as keyof typeof quizData[string]]) ? '' : quizData[p.schoolId][r as keyof typeof quizData[string]]} onChange={e => setQuizData({ ...quizData, [p.schoolId]: { ...quizData[p.schoolId], [r]: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                    </div>
+                                                ))}
+                                                <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary">Total</span><span className="text-xl">{quizTotals[p.schoolId]}</span></div>
                                             </div>
                                         ))}
-                                        <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary">Total</span><span className="text-xl">{quizTotals[p.schoolId]}</span></div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                )}
 
-                        {isFootball && (
+                                {isFootball && (
+                                    <div className="space-y-6">
+                                        {match.participants.map(p => (
+                                            <div key={p.schoolId} className="bg-white/5 rounded-2xl p-6 border border-white/5">
+                                                <h3 className="text-sm font-black text-white uppercase mb-4">{p.name}</h3>
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Half Time (HT)</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: Math.max(0, (footballData[p.schoolId].ht || 0) - 1) } })}
+                                                                className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                            >
+                                                                <Minus className="h-4 w-4" />
+                                                            </button>
+                                                            <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ht) ? '' : footballData[p.schoolId].ht} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: (footballData[p.schoolId].ht || 0) + 1 } })}
+                                                                className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                            >
+                                                                <Plus className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Full Time (FT)</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: Math.max(0, (footballData[p.schoolId].ft || 0) - 1) } })}
+                                                                className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                            >
+                                                                <Minus className="h-4 w-4" />
+                                                            </button>
+                                                            <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ft) ? '' : footballData[p.schoolId].ft} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: (footballData[p.schoolId].ft || 0) + 1 } })}
+                                                                className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
+                                                            >
+                                                                <Plus className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {isBasketball && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {match.participants.map(p => (
+                                            <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
+                                                <div className="text-sm font-black text-white uppercase border-b border-white/5 pb-2">{p.name}</div>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {['q1', 'q2', 'q3', 'q4'].map(q => (
+                                                        <div key={q} className="text-center">
+                                                            <span className="text-[8px] font-black text-slate-500 uppercase">{q}</span>
+                                                            <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(basketballData[p.schoolId][q as keyof typeof basketballData[string]]) ? '' : basketballData[p.schoolId][q as keyof typeof basketballData[string]]} onChange={e => setBasketballData({ ...basketballData, [p.schoolId]: { ...basketballData[p.schoolId], [q]: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary uppercase tracking-widest text-[10px]">Total Score</span><span className="text-2xl">{basketballTotals[p.schoolId]}</span></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {isVolleyball && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {match.participants.map(p => (
+                                            <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
+                                                <div className="text-sm font-black text-white uppercase border-b border-white/5 pb-2">{p.name}</div>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {['s1', 's2', 's3'].map(s => (
+                                                        <div key={s} className="text-center">
+                                                            <span className="text-[8px] font-black text-slate-500 uppercase">Set {s[1]}</span>
+                                                            <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]) ? '' : volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]} onChange={e => setVolleyballData({ ...volleyballData, [p.schoolId]: { ...volleyballData[p.schoolId], [s]: parseInt(e.target.value) || 0 } })} placeholder="0" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary uppercase text-[10px]">Sets Won</span><span className="text-2xl">{volleyballTotals[p.schoolId]}</span></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {isAthletics && (
+                                    <div className="space-y-4">
+                                        {match.participants.map(p => (
+                                            <div key={p.schoolId} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <span className="text-sm font-black text-white uppercase">{p.name}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Rank</span>
+                                                    <input type="number" min="1" max={match.participants.length} className="w-16 h-10 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={athleticsData[p.schoolId] || ""} onChange={e => setAthleticsData({ ...athleticsData, [p.schoolId]: parseInt(e.target.value) || 0 })} placeholder="1" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
                             <div className="space-y-6">
-                                {match.participants.map(p => (
-                                    <div key={p.schoolId} className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                        <h3 className="text-sm font-black text-white uppercase mb-4">{p.name}</h3>
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Half Time (HT)</label>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: Math.max(0, (footballData[p.schoolId].ht || 0) - 1) } })}
-                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
-                                                    >
-                                                        <Minus className="h-4 w-4" />
-                                                    </button>
-                                                    <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ht) ? '' : footballData[p.schoolId].ht} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: parseInt(e.target.value) || 0 } })} placeholder="0" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: (footballData[p.schoolId].ht || 0) + 1 } })}
-                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                    </button>
-                                                </div>
+                                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-start gap-4">
+                                    <HelpCircle className="h-5 w-5 text-blue-400 shrink-0" />
+                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-tight leading-relaxed">
+                                        Clarify results for all active markets below. The system will auto-calculate standard markets based on scores, but manual selections here will act as an absolute override.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4 h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {Object.entries(match.extendedOdds || {}).map(([marketName, options]) => (
+                                        <div key={marketName} className="p-6 bg-white/5 rounded-3xl border border-white/10 space-y-4">
+                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">{marketName}</span>
+                                                {manualOutcomes[marketName] && (
+                                                    <div className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-[8px] font-black text-green-400 uppercase">Clarified</div>
+                                                )}
                                             </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Full Time (FT)</label>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: Math.max(0, (footballData[p.schoolId].ft || 0) - 1) } })}
-                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
-                                                    >
-                                                        <Minus className="h-4 w-4" />
-                                                    </button>
-                                                    <input type="number" min="0" className="flex-1 h-12 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={isNaN(footballData[p.schoolId].ft) ? '' : footballData[p.schoolId].ft} onChange={e => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: parseInt(e.target.value) || 0 } })} placeholder="0" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: (footballData[p.schoolId].ft || 0) + 1 } })}
-                                                        className="h-12 w-12 bg-black/40 border border-white/10 rounded-xl text-white hover:bg-white/5 flex items-center justify-center"
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                    </button>
-                                                </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {Object.entries(options).map(([label, _]) => {
+                                                    // selectionId is usually the label for custom props
+                                                    const selectionId = label;
+                                                    const isSelected = manualOutcomes[marketName] === selectionId;
+
+                                                    return (
+                                                        <button
+                                                            key={label}
+                                                            type="button"
+                                                            onClick={() => setManualOutcomes({
+                                                                ...manualOutcomes,
+                                                                [marketName]: isSelected ? "" : selectionId
+                                                            })}
+                                                            className={`h-12 px-4 rounded-xl border text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between ${isSelected ? "bg-primary text-slate-950 border-primary" : "bg-black/20 border-white/5 text-slate-500 hover:border-white/20"}`}
+                                                        >
+                                                            <span>{label}</span>
+                                                            {isSelected && <Zap className="h-3 w-3 fill-current" />}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
 
-                        {isBasketball && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {match.participants.map(p => (
-                                    <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
-                                        <div className="text-sm font-black text-white uppercase border-b border-white/5 pb-2">{p.name}</div>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {['q1', 'q2', 'q3', 'q4'].map(q => (
-                                                <div key={q} className="text-center">
-                                                    <span className="text-[8px] font-black text-slate-500 uppercase">{q}</span>
-                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(basketballData[p.schoolId][q as keyof typeof basketballData[string]]) ? '' : basketballData[p.schoolId][q as keyof typeof basketballData[string]]} onChange={e => setBasketballData({ ...basketballData, [p.schoolId]: { ...basketballData[p.schoolId], [q]: parseInt(e.target.value) || 0 } })} placeholder="0" />
-                                                </div>
-                                            ))}
+                                    {Object.keys(match.extendedOdds || {}).length === 0 && (
+                                        <div className="h-32 flex items-center justify-center text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                                            No additional markets found for this match
                                         </div>
-                                        <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary uppercase tracking-widest text-[10px]">Total Score</span><span className="text-2xl">{basketballTotals[p.schoolId]}</span></div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {isVolleyball && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {match.participants.map(p => (
-                                    <div key={p.schoolId} className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
-                                        <div className="text-sm font-black text-white uppercase border-b border-white/5 pb-2">{p.name}</div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {['s1', 's2', 's3'].map(s => (
-                                                <div key={s} className="text-center">
-                                                    <span className="text-[8px] font-black text-slate-500 uppercase">Set {s[1]}</span>
-                                                    <input type="number" className="w-full h-10 bg-black/40 border border-white/5 rounded-lg text-center text-white font-black" value={isNaN(volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]) ? '' : volleyballData[p.schoolId][s as keyof typeof volleyballData[string]]} onChange={e => setVolleyballData({ ...volleyballData, [p.schoolId]: { ...volleyballData[p.schoolId], [s]: parseInt(e.target.value) || 0 } })} placeholder="0" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="pt-2 border-t border-white/5 flex justify-between font-black"><span className="text-primary uppercase text-[10px]">Sets Won</span><span className="text-2xl">{volleyballTotals[p.schoolId]}</span></div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {isAthletics && (
-                            <div className="space-y-4">
-                                {match.participants.map(p => (
-                                    <div key={p.schoolId} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                        <span className="text-sm font-black text-white uppercase">{p.name}</span>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Rank</span>
-                                            <input type="number" min="1" max={match.participants.length} className="w-16 h-10 bg-black/40 border border-white/10 rounded-xl text-center text-white font-black" value={athleticsData[p.schoolId] || ""} onChange={e => setAthleticsData({ ...athleticsData, [p.schoolId]: parseInt(e.target.value) || 0 })} placeholder="1" />
-                                        </div>
-                                    </div>
-                                ))}
+                                    )}
+                                </div>
                             </div>
                         )}
 

@@ -46,15 +46,18 @@ export async function settleMatch(matchId: string) {
                 odds: number,
                 marketName?: string,
                 label?: string,
-                status?: string // Track individual leg status
+                status?: string // Track individual leg status (won, lost, void, pending)
             }>
+
+            // Skip if this bet has already been settled for this match (safety)
+            if (bet.status !== "pending") continue;
 
             // Handle Void Match
             if (isVoid) {
                 // Find legs for this match and mark them void
                 const updatedSelections = selections.map(s => {
-                    if (s.matchId === matchId) {
-                        return { ...s, status: 'void', odds: 1.00 } // Set odds to 1.00
+                    if (s.matchId === matchId && s.status === 'pending') {
+                        return { ...s, status: 'void', odds: 1.00 } // Set odds to 1.00 for void
                     }
                     return s
                 })
@@ -66,18 +69,20 @@ export async function settleMatch(matchId: string) {
                 let newBonusGiftAmount = 0
                 if (updatedSelections.length >= 3 && !bet.isBonusBet) {
                     const { MULTI_BONUS } = await import("@/lib/constants")
-                    const count = updatedSelections.length
+                    const count = updatedSelections.filter(s => s.status !== 'void').length
                     let bonusPct = 0
 
-                    Object.entries(MULTI_BONUS.SCALING)
-                        .sort((a, b) => Number(b[0]) - Number(a[0]))
-                        .some(([threshold, percent]) => {
-                            if (count >= Number(threshold)) {
-                                bonusPct = Number(percent)
-                                return true
-                            }
-                            return false
-                        })
+                    if (count >= 3) {
+                        Object.entries(MULTI_BONUS.SCALING)
+                            .sort((a, b) => Number(b[0]) - Number(a[0]))
+                            .some(([threshold, percent]) => {
+                                if (count >= Number(threshold)) {
+                                    bonusPct = Number(percent)
+                                    return true
+                                }
+                                return false
+                            })
+                    }
 
                     const baseWin = bet.stake * newTotalOdds
                     const rawBonus = baseWin * (bonusPct / 100)
@@ -95,116 +100,101 @@ export async function settleMatch(matchId: string) {
                     updatedAt: new Date()
                 }).where(eq(bets.id, bet.id))
 
-                // If it was a Single Bet, it is now WON (Refunded) but strictly it's a "Void Refund"
-                if (updatedSelections.length === 1) {
-                    const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
-                    if (userWallet.length > 0) {
-                        const balanceBefore = parseFloat(userWallet[0].balance.toString())
-                        const balanceAfter = balanceBefore + newPayout
+                // If all legs are now finished (won/lost/void), settle the bet
+                const allFinished = updatedSelections.every(s => s.status !== 'pending')
+                if (allFinished) {
+                    const isAllWinOrVoid = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
+                    const finalStatus = isAllWinOrVoid ? 'won' : 'lost'
 
-                        await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
+                    if (finalStatus === 'won') {
+                        const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                        if (userWallet.length > 0) {
+                            const balanceBefore = parseFloat(userWallet[0].balance.toString())
+                            const payout = (bet.isBonusBet && updatedSelections.length === 1) ? (newPayout - bet.stake) : newPayout
+                            const balanceAfter = balanceBefore + Math.max(0, payout)
 
-                        await db.insert(transactions).values({
-                            id: `txn-${Math.random().toString(36).substr(2, 9)}`,
-                            userId: bet.userId,
-                            walletId: userWallet[0].id,
-                            amount: newPayout,
-                            type: "bet_payout",
-                            balanceBefore,
-                            balanceAfter,
-                            reference: bet.id,
-                            description: `Refund (Void): ${match.participants?.[0]?.name || 'Match'} vs ${match.participants?.[1]?.name || 'Opponent'}`
-                        })
+                            await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
+
+                            await db.insert(transactions).values({
+                                id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                                userId: bet.userId,
+                                walletId: userWallet[0].id,
+                                amount: Math.max(0, payout),
+                                type: "bet_payout",
+                                balanceBefore,
+                                balanceAfter,
+                                reference: bet.id,
+                                description: `Refund/Win (All Legs Decided): ${bet.id}`
+                            })
+                        }
                     }
 
-                    await db.update(bets).set({ status: 'void', settledAt: new Date() }).where(eq(bets.id, bet.id))
+                    await db.update(bets).set({
+                        status: isAllWinOrVoid ? (updatedSelections.every(s => s.status === 'void') ? 'void' : 'won') : 'lost',
+                        settledAt: new Date()
+                    }).where(eq(bets.id, bet.id))
                     settledCount++
-                    continue;
                 }
-
-                // For multis with other pending legs, we just updated the odds. 
-                // We do NOT mark the whole bet as settled unless all legs are done (task for another time).
                 continue;
             }
 
-            // For now, we only support single bets or accumulators that are all purely decided
-            // We iterate through selections. If ANY selection in the bet is for THIS match, we check it.
-            // If it's a multi-bet, we just update the status of the *leg* conceptually (not yet implemented fully for parlay legs)
-            // But current logic treats the whole bet as "Won" or "Lost" based on single validation?
-            // The existing code assumed single bets or simple logic. 
-            // We will ASSUME single bets logic for settlement simplicity here or process specific match legs.
-
-            // To properly handle multis, we'd need a more complex "Leg Status" system.
-            // For now, let's assume if it's a single bet on this match, we settle it.
-            // OR if it's a multi, we check if this match makes it LOSE.
-
-            const matchSelection = selections.find(s => s.matchId === matchId)
-            if (!matchSelection) continue
-
-            const { selectionId, marketName, label } = matchSelection
-
-            // If we are here, it's NOT a void match, so result must be valid
-            if (!result) continue; // Should catch by earlier check but safety first
-
-            const isWin = isSelectionWinner(selectionId, marketName || "Match Winner", label || "", match, result)
-
-            // Leg status update logic
+            // Normal Settlement Logic (Live or Finished)
+            let betUpdated = false
             const updatedSelections = selections.map(s => {
-                if (s.matchId === matchId) {
-                    return { ...s, status: isWin ? 'won' : 'lost' }
+                if (s.matchId === matchId && s.status === 'pending') {
+                    const resolution = isSelectionWinner(s.selectionId, s.marketName || "Match Winner", s.label || "", match, result || {})
+
+                    if (resolution.resolved) {
+                        betUpdated = true
+                        return { ...s, status: resolution.isWin ? 'won' : 'lost' }
+                    }
                 }
                 return s
             })
 
-            let newStatus: "pending" | "won" | "lost" = "pending"
+            if (!betUpdated) continue
 
-            if (!isWin) {
-                newStatus = "lost"
-            } else {
-                // If this leg won, check if all other legs are ALSO decided
-                const allFinished = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
-                if (allFinished) {
-                    newStatus = "won"
-                } else {
-                    // Update the selection statuses in DB but keep bet as pending
-                    await db.update(bets).set({
-                        selections: updatedSelections,
-                        updatedAt: new Date()
-                    }).where(eq(bets.id, bet.id))
-                    continue
-                }
-            }
+            // Check if entire bet is decided
+            const allDecided = updatedSelections.every(s => s.status !== 'pending')
+            const stillDecidedWin = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
+            const hasLostLeg = updatedSelections.some(s => s.status === 'lost')
 
-            let payoutAmount = (newStatus === "won") ? bet.potentialPayout : 0
-
-            // GIFT RULE: Profit only for bonus bets
-            if (newStatus === "won" && bet.isBonusBet) {
-                payoutAmount = Math.max(0, payoutAmount - bet.stake);
-            }
-
-            // Update Bet Status
-            await db.update(bets)
-                .set({
-                    status: newStatus,
+            if (hasLostLeg) {
+                // Bet is LOST
+                await db.update(bets).set({
+                    status: 'lost',
                     selections: updatedSelections,
                     settledAt: new Date(),
                     updatedAt: new Date()
-                })
-                .where(eq(bets.id, bet.id))
+                }).where(eq(bets.id, bet.id))
+                settledCount++
+            } else if (allDecided && stillDecidedWin) {
+                // Bet is WON
+                let payoutAmount = bet.potentialPayout
 
-            // Credit Wallet if Won
-            if (newStatus === "won" && payoutAmount > 0) {
+                // Payout adjustment (e.g. if some legs were voided during this or previous runs)
+                const currentTotalOdds = updatedSelections.reduce((acc, curr) => acc * (curr.status === 'void' ? 1.0 : curr.odds), 1)
+                // Note: Bonus logic would need to be re-run here too for accuracy on multi-settle
+                // For now, use existing potential payout but adjust for bonus rules
+
+                if (bet.isBonusBet) {
+                    payoutAmount = Math.max(0, payoutAmount - bet.stake);
+                }
+
+                await db.update(bets).set({
+                    status: 'won',
+                    selections: updatedSelections,
+                    settledAt: new Date(),
+                    updatedAt: new Date()
+                }).where(eq(bets.id, bet.id))
+
                 const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
                 if (userWallet.length > 0) {
                     const wallet = userWallet[0]
-
-                    // Consolidation: All match winnings go to main balance
-                    await db.update(wallets)
-                        .set({
-                            balance: sql`${wallets.balance} + ${payoutAmount}`,
-                            updatedAt: new Date()
-                        })
-                        .where(eq(wallets.userId, bet.userId))
+                    await db.update(wallets).set({
+                        balance: sql`${wallets.balance} + ${payoutAmount}`,
+                        updatedAt: new Date()
+                    }).where(eq(wallets.userId, bet.userId))
 
                     await db.insert(transactions).values({
                         id: `txn-${Math.random().toString(36).substr(2, 9)}`,
@@ -215,11 +205,17 @@ export async function settleMatch(matchId: string) {
                         balanceBefore: wallet.balance,
                         balanceAfter: Number(wallet.balance) + payoutAmount,
                         reference: bet.id,
-                        description: `Winnings: ${marketName || 'Match Winner'} - ${label || 'Selection'}`
+                        description: `Double Win: ${bet.id}`
                     })
                 }
+                settledCount++
+            } else {
+                // Bet is still pending (partial legs won), just update the selections
+                await db.update(bets).set({
+                    selections: updatedSelections,
+                    updatedAt: new Date()
+                }).where(eq(bets.id, bet.id))
             }
-            settledCount++
         }
 
         return { success: true, settledCount }
@@ -239,11 +235,17 @@ export function isSelectionWinner(
     label: string,
     match: Match,
     result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
-): boolean {
+): { resolved: boolean, isWin: boolean } {
     const sport = (match.sportType || 'football').toLowerCase()
-    const metadata = result.metadata || {}
+    const metadata = (result.metadata || {}) as Record<string, any>
     const scores = result.scores || {}
     const participants = match.participants || []
+
+    // 0. MANUAL OVERRIDE (Explicit Outcomes from Admin)
+    const outcomes = (metadata.outcomes as Record<string, string>) || {}
+    if (outcomes[marketName]) {
+        return { resolved: true, isWin: outcomes[marketName] === selectionId }
+    }
 
     // Virtuals Adapter: If it's a virtual match outcome
     const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
@@ -254,42 +256,39 @@ export function isSelectionWinner(
 
     // 1. MATCH WINNER (1X2 / 12)
     if (market === "match winner" || market === "1x2" || market === "win" || market === "12") {
+        const isFinished = match.status === 'finished'
+        if (!isFinished) return { resolved: false, isWin: false }
+
         if (selectionId === "X" || label === "Draw") {
-            // Check for Draw (Football, Handball, Quiz)
             if (isVirtualOutcome) {
                 const vScores = vOutcome.totalScores;
-                if (vScores.length === 2) return vScores[0] === vScores[1];
-                if (vScores.length === 3) return vScores[0] === vScores[1] && vScores[1] === vScores[2];
-                return false;
+                if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1] };
+                return { resolved: true, isWin: false };
             }
             const values = Object.values(scores)
-            return values.length >= 2 && values.every(v => v === values[0])
+            return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
         }
 
         if (isVirtualOutcome) {
-            // selectionId for virtuals is usually "1", "2", "3" (indices 1-indexed) or the name
             const winnerName = vOutcome.schools[vOutcome.winnerIndex];
-            if (selectionId === "1") return vOutcome.winnerIndex === 0;
-            if (selectionId === "2") return vOutcome.winnerIndex === 1;
-            if (selectionId === "3") return vOutcome.winnerIndex === 2;
-            return winnerName === selectionId;
+            if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0 };
+            if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1 };
+            return { resolved: true, isWin: winnerName === selectionId };
         }
 
-        // Standard logic
-        if (result.winner === selectionId) return true;
+        if (result.winner === selectionId) return { resolved: true, isWin: true };
 
-        // Final score check if winner isn't explicitly set but scores are
+        // Final score check
         if (scores[selectionId] !== undefined) {
             const myScore = scores[selectionId];
             const otherScores = Object.entries(scores).filter(([id]) => id !== selectionId).map(([_, s]) => s);
-            return otherScores.every(os => myScore > os);
+            return { resolved: true, isWin: otherScores.every(os => myScore > os) };
         }
 
-        return false;
+        return { resolved: true, isWin: false };
     }
 
     // 2. TOTAL POINTS / GOALS (Over/Under)
-    // Label format: "Over 2.5", "Under 140.5"
     if (market.includes("total") || market.includes("over/under")) {
         const totalScore = isVirtualOutcome
             ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
@@ -299,126 +298,108 @@ export function isSelectionWinner(
         const lineStr = parts[parts.length - 1]
         const line = parseFloat(lineStr)
 
-        if (isNaN(line)) return false
+        if (isNaN(line)) return { resolved: false, isWin: false }
 
-        if (label.toLowerCase().includes("over")) return totalScore > line
-        if (label.toLowerCase().includes("under")) return totalScore < line
+        const isOver = label.toLowerCase().includes("over")
+        const isUnder = label.toLowerCase().includes("under")
+
+        // If it's already "Over" the line, it's resolved even if match is live
+        if (isOver && totalScore > line) return { resolved: true, isWin: true }
+
+        // If match is finished, resolve definitively
+        if (match.status === 'finished') {
+            return { resolved: true, isWin: isOver ? totalScore > line : totalScore < line }
+        }
+
+        // If it's "Under" and we already passed it, it's lost
+        if (isUnder && totalScore > line) return { resolved: true, isWin: false }
+
+        return { resolved: false, isWin: false }
     }
 
-    // 3. HANDICAP / SPREAD
-    // Label format: "School Name +2.5", "Opponent -10.5"
+    // 3. FIRST HALF WINNER / TOTALS
+    if (market.includes("1st half") || market.includes("first half")) {
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        const isHTDecided = match.status === "HT" || match.status === "2nd Half" || match.status === "finished" || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
+
+        if (!isHTDecided) return { resolved: false, isWin: false }
+
+        const htScores: Record<string, number> = {}
+        Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
+
+        if (market.includes("winner")) {
+            if (selectionId === "X" || label === "Draw") {
+                const values = Object.values(htScores)
+                return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
+            }
+            const myScore = htScores[selectionId]
+            const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
+            return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+        }
+
+        if (market.includes("total") || market.includes("over/under")) {
+            const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
+            const parts = label.split(" ")
+            const line = parseFloat(parts[parts.length - 1])
+            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > line }
+            return { resolved: true, isWin: totalHT < line }
+        }
+    }
+
+    // 4. QUIZ ROUND WINNER
+    if (market.includes("round") && market.includes("winner")) {
+        const roundNum = market.match(/\d+/)?.[0]
+        if (!roundNum) return { resolved: false, isWin: false }
+
+        const roundKey = `r${roundNum}`
+        const quizDetails = (metadata.quizDetails as Record<string, Record<string, number>>) || {}
+
+        // Check if all participants have a non-NaN score for this round
+        const participants = match.participants || []
+        const roundResolved = participants.every(p => {
+            const score = quizDetails[p.schoolId]?.[roundKey]
+            return score !== undefined && !isNaN(score)
+        })
+
+        if (!roundResolved) return { resolved: false, isWin: false }
+
+        const roundScores: Record<string, number> = {}
+        participants.forEach(p => roundScores[p.schoolId] = quizDetails[p.schoolId][roundKey])
+
+        const myScore = roundScores[selectionId]
+        const otherScores = Object.entries(roundScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
+
+        // Handle Draw in rounds? (Usually quiz rounds don't have Draw market, if they do, same logic as match winner)
+        if (selectionId === "X" || label === "Draw") {
+            return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
+        }
+
+        return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+    }
+
+    // 5. HANDICAP / SPREAD
     if (market.includes("handicap") || market.includes("spread")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+
         const lineSign = label.includes("+") ? "+" : "-"
         const [targetName, lineValueStr] = label.split(lineSign)
         const line = parseFloat(`${lineSign}${lineValueStr}`)
 
         const participant = participants.find(p => p.name.trim().toLowerCase() === targetName.trim().toLowerCase() || p.schoolId === selectionId)
-        if (!participant) return false
+        if (!participant) return { resolved: false, isWin: false }
 
         const targetId = participant.schoolId
-        const participantIdx = participants.findIndex(p => p.schoolId === targetId)
-
-        const myScore = isVirtualOutcome ? vOutcome.totalScores[participantIdx] : (scores[targetId] || 0)
+        const myScore = scores[targetId] || 0
         const adjustedScore = myScore + line
+        const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
 
-        const otherScores = isVirtualOutcome
-            ? (vOutcome.totalScores as number[]).filter((_, idx) => idx !== participantIdx)
-            : Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
-
-        return otherScores.every(os => adjustedScore > os)
+        return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
     }
 
-    // 4. WINNING MARGIN
-    if (market.includes("margin")) {
-        const values = isVirtualOutcome ? vOutcome.totalScores : Object.values(scores)
-        if (values.length < 2) return false
-
-        const sorted = [...values].sort((a, b) => b - a);
-        const diff = Math.abs(sorted[0] - (sorted[1] || 0))
-
-        if (label === "Draw" || label === "0") return diff === 0
-
-        if (label.includes("-")) {
-            const [min, max] = label.split("-").map(Number)
-            return diff >= min && diff <= max
-        }
-        if (label.includes("+")) {
-            const min = parseFloat(label)
-            return diff >= min
-        }
+    // Default Fallback for finished matches
+    if (match.status === 'finished') {
+        return { resolved: true, isWin: result.winner === selectionId || scores[selectionId] > 0 }
     }
 
-    // 5. PODIUM / TOP FINISH (Athletics)
-    // selectionId: user's pick. result.metadata.podium: array of IDs in order.
-    if (market.includes("podium") || market.includes("top 3")) {
-        const podium = (metadata.podium || []) as string[]
-        return podium.slice(0, 3).includes(selectionId)
-    }
-
-    // 6. HEAD-TO-HEAD (Athletics/Matchups)
-    if (market === "h2h" || market === "matchup") {
-        // label usually describes the matchup "A vs B"
-        // result.winner or scores determine this
-        if (isVirtualOutcome) return vOutcome.winnerIndex === (parseInt(selectionId) - 1);
-        return result.winner === selectionId;
-    }
-
-    // 7. QUIZ SPECIFIC: Round Winners
-    if (market.includes("round") && market.includes("winner")) {
-        const roundNum = market.match(/\d+/)?.[0]
-        if (!roundNum) return false
-        const roundIndex = parseInt(roundNum) - 1;
-
-        if (isVirtualOutcome) {
-            const roundScores = vOutcome.rounds[roundIndex].scores;
-            const max = Math.max(...roundScores);
-            const winners = roundScores.map((s: number, i: number) => s === max ? i : -1).filter((i: number) => i !== -1);
-            const selIdx = parseInt(selectionId) - 1;
-            return winners.includes(selIdx);
-        }
-
-        const roundKey = `r${roundNum}`
-        const roundScores = (metadata.quizDetails as Record<string, Record<string, number>>)?.[roundKey] || {}
-        let maxScore = -999; let winner = "";
-        Object.entries(roundScores).forEach(([id, score]) => {
-            if (score > maxScore) { maxScore = score; winner = id; }
-        })
-        return winner === selectionId
-    }
-
-    // 8. GENERIC PROPS
-    const cleanKey = market.replace(/\s+/g, "")
-    const propMap: Record<string, string> = {
-        perfectround: 'perfectRound',
-        shutoutround: 'shutoutRound',
-        comebackwin: 'comebackWin',
-        leadchanges: 'leadChanges',
-        firstbonus: 'firstBonusIndex',
-        latesurge: 'lateSurgeIndex',
-        strongstart: 'strongStartIndex'
-    };
-
-    if (isVirtualOutcome && propMap[cleanKey]) {
-        const statKey = propMap[cleanKey];
-        const val = vOutcome.stats[statKey];
-
-        if (cleanKey === 'perfectround' || cleanKey === 'shutoutround') {
-            const isYes = (val as boolean[]).some(v => v);
-            return (label === "Yes" && isYes) || (label === "No" && !isYes);
-        }
-        if (cleanKey === 'comebackwin') return (label === "Yes" && val) || (label === "No" && !val);
-        if (cleanKey === 'leadchanges') return (label === "Yes" && val > 0) || (label === "No" && val === 0);
-
-        const schoolIdx = parseInt(selectionId) - 1;
-        return val === schoolIdx;
-    }
-
-    // Metadata fallback
-    if (metadata[cleanKey] !== undefined) {
-        return (metadata[cleanKey] === true && label === "Yes") || (metadata[cleanKey] === false && label === "No")
-    }
-
-    // Default Fallback
-    if (isVirtualOutcome) return vOutcome.winnerIndex === (parseInt(selectionId) - 1);
-    return result.winner === selectionId
+    return { resolved: false, isWin: false }
 }

@@ -9,6 +9,10 @@ export interface ParsedResult {
     score1?: number
     score2?: number
     winner: string
+    footballDetails?: {
+        [schoolName: string]: { ht: number, ft: number }
+    }
+    metadata?: Record<string, any>
     rawText: string
 }
 
@@ -58,10 +62,20 @@ Rules:
     "team2": "Full School Name",
     "score1": 3,
     "score2": 1,
-    "winner": "Full School Name"
+    "winner": "Full School Name",
+    "footballDetails": {
+      "Full School Name": { "ht": 1, "ft": 3 },
+      "Other School Name": { "ht": 0, "ft": 1 }
+    },
+    "metadata": {
+      "period": "FT",
+      "outcomes": { "First Half Winner": "Full School Name" }
+    }
   }
 ]
-5. If the score is missing but a winner is mentioned, include the winner and leave scores null.`
+5. If the score is missing but a winner is mentioned, include the winner and leave scores null.
+6. Extract Half-Time (HT) vs Full-Time (FT) scores if explicitly mentioned (e.g., "1-0 at HT, 3-1 FT").
+7. Extract period-specific winners or special event outcomes if mentioned (e.g., "Round 1 winner: X", "Q1: 12-10").`
                         },
                         {
                             role: "user",

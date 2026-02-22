@@ -4,6 +4,7 @@
 import { db } from "./db"
 import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
+import { type ParsedResult } from "./ai-result-parser"
 
 // import { School, Tournament } from "./types" 
 
@@ -457,14 +458,7 @@ async function updateRealSchoolStats(match: any, resultData: { scores: any, winn
 /**
  * Bulk update match results from parsed AI data
  */
-export async function bulkUpdateResults(parsedResults: Array<{
-    team1: string
-    team2: string
-    score1?: number
-    score2?: number
-    winner: string
-    rawText: string
-}>) {
+export async function bulkUpdateResults(parsedResults: ParsedResult[]) {
     try {
         const { fuzzyMatchSchool } = await import("./ai-result-parser")
 
@@ -516,13 +510,38 @@ export async function bulkUpdateResults(parsedResults: Array<{
                 ? team1Id
                 : team2Id
 
+            // Mapping AI Outcomes to Selection IDs/School IDs
+            const mappedOutcomes: Record<string, string> = {}
+            if (result.metadata?.outcomes) {
+                Object.entries(result.metadata.outcomes).forEach(([market, winnerName]) => {
+                    if (typeof winnerName === 'string') {
+                        const winnerId = fuzzyMatchSchool(winnerName, allSchools)
+                        if (winnerId) mappedOutcomes[market] = winnerId
+                    }
+                })
+            }
+
+            // Map Football Details (HT/FT) if present
+            const mappedFootballDetails: any = {}
+            if (result.footballDetails) {
+                Object.entries(result.footballDetails).forEach(([schoolName, data]) => {
+                    const sid = fuzzyMatchSchool(schoolName, allSchools)
+                    if (sid) mappedFootballDetails[sid] = data
+                })
+            }
+
             // Update match result
             const updateResult = await updateMatchResult(match.id, {
                 scores: result.score1 !== undefined && result.score2 !== undefined
                     ? { [team1Id]: result.score1, [team2Id]: result.score2 }
                     : {},
                 winner: winnerId,
-                status: "finished"
+                status: "finished",
+                metadata: {
+                    ...result.metadata,
+                    footballDetails: Object.keys(mappedFootballDetails).length > 0 ? mappedFootballDetails : undefined,
+                    outcomes: mappedOutcomes
+                }
             })
 
             results.push({
