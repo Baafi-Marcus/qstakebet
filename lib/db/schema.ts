@@ -9,6 +9,8 @@ export const schools = pgTable("schools", {
     category: text("category"), // e.g. "A", "B", "C" or Group
     level: text("level").default("shs").notNull(), // "shs", "university", etc.
     location: text("location"),
+    parentId: text("parent_id"), // Self-reference for University -> Hall/Dept
+    type: text("type").default("school").notNull(), // "school", "hall", "department", "program"
     createdAt: timestamp("created_at").defaultNow(),
 });
 

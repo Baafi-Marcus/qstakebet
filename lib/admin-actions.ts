@@ -41,7 +41,15 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
     return results;
 }
 
-export async function createSchoolAction(data: { name: string, region: string, district?: string, category?: string, level?: string }) {
+export async function createSchoolAction(data: {
+    name: string,
+    region: string,
+    district?: string,
+    category?: string,
+    level?: string,
+    parentId?: string,
+    type?: string
+}) {
     try {
         const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
         const [newSchool] = await db.insert(schools).values({
@@ -50,7 +58,9 @@ export async function createSchoolAction(data: { name: string, region: string, d
             region: data.region,
             district: data.district,
             category: data.category,
-            level: data.level || 'shs'
+            level: data.level || 'shs',
+            parentId: data.parentId,
+            type: data.type || 'school'
         }).returning();
 
         // Initialize Virtual Stats
@@ -77,6 +87,8 @@ export async function updateSchoolAction(id: string, data: {
     district?: string,
     category?: string,
     level?: string,
+    type?: string,
+    parentId?: string | null,
     currentForm?: number,
     volatilityIndex?: number
 }) {
@@ -89,7 +101,9 @@ export async function updateSchoolAction(id: string, data: {
                     region: data.region,
                     district: data.district,
                     category: data.category,
-                    level: data.level
+                    level: data.level,
+                    type: data.type,
+                    parentId: data.parentId
                 }).where(eq(schools.id, id));
             }
 

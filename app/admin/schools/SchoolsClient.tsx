@@ -12,6 +12,9 @@ type School = {
     region: string
     district?: string | null
     category?: string | null
+    level?: string | null
+    type?: string | null
+    parentId?: string | null
     currentForm?: number | null
     volatilityIndex?: number | null
     matchesPlayed?: number | null
@@ -33,6 +36,9 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
         name: "",
         region: "",
         district: "",
+        level: "shs",
+        type: "school",
+        parentId: "",
         category: "A",
         currentForm: 1.0,
         volatilityIndex: 0.1
@@ -48,7 +54,17 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
             const res = await createSchoolAction(formData)
             if (res.success) {
                 setIsAddModalOpen(false)
-                setFormData({ name: "", region: "", district: "", category: "A", currentForm: 1.0, volatilityIndex: 0.1 })
+                setFormData({
+                    name: "",
+                    region: "",
+                    district: "",
+                    level: "shs",
+                    type: "school",
+                    parentId: "",
+                    category: "A",
+                    currentForm: 1.0,
+                    volatilityIndex: 0.1
+                })
                 router.refresh()
             } else {
                 alert((res as any).error || "Failed to create school")
@@ -87,6 +103,9 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
             name: school.name,
             region: school.region,
             district: school.district || "",
+            level: school.level || "shs",
+            type: school.type || "school",
+            parentId: school.parentId || "",
             category: school.category || "A",
             currentForm: school.currentForm || 1.0,
             volatilityIndex: school.volatilityIndex || 0.1
@@ -114,7 +133,17 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ name: "", region: "", district: "", category: "A", currentForm: 1.0, volatilityIndex: 0.1 });
+                            setFormData({
+                                name: "",
+                                region: "",
+                                district: "",
+                                level: "shs",
+                                type: "school",
+                                parentId: "",
+                                category: "A",
+                                currentForm: 1.0,
+                                volatilityIndex: 0.1
+                            });
                             setIsAddModalOpen(true);
                         }}
                         className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-purple-600/20 transition-all border border-purple-400/20"
@@ -160,8 +189,21 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <div className="font-black text-white uppercase tracking-tight text-sm whitespace-nowrap">{school.name}</div>
-                                            <div className="text-[10px] text-slate-500 font-bold uppercase">{school.district || 'General'}</div>
+                                            <div className="font-black text-white uppercase tracking-tight text-sm whitespace-nowrap">
+                                                {school.name}
+                                                {school.type !== 'school' && (
+                                                    <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[9px]">
+                                                        {school.type}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase">
+                                                {school.parentId ? (
+                                                    <span className="text-purple-400">@ {initialSchools.find(s => s.id === school.parentId)?.name}</span>
+                                                ) : (
+                                                    school.district || 'General'
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -232,6 +274,49 @@ export function SchoolsClient({ initialSchools }: { initialSchools: School[] }) 
                                     />
                                 </div>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Level</label>
+                                    <select
+                                        value={formData.level}
+                                        onChange={e => setFormData({ ...formData, level: e.target.value, type: e.target.value === 'shs' ? 'school' : formData.type })}
+                                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                                    >
+                                        <option value="shs">SHS</option>
+                                        <option value="university">University</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Entity Type</label>
+                                    <select
+                                        value={formData.type}
+                                        onChange={e => setFormData({ ...formData, type: e.target.value, parentId: e.target.value === 'school' ? '' : formData.parentId })}
+                                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                                    >
+                                        <option value="school">University / School</option>
+                                        <option value="hall">Residential Hall</option>
+                                        <option value="department">Department</option>
+                                        <option value="program">Academic Program</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {formData.type !== 'school' && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Parent University</label>
+                                    <select
+                                        value={formData.parentId}
+                                        onChange={e => setFormData({ ...formData, parentId: e.target.value })}
+                                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                                    >
+                                        <option value="">Select Parent University</option>
+                                        {initialSchools.filter(s => s.type === 'school' && s.level === 'university').map(univ => (
+                                            <option key={univ.id} value={univ.id}>{univ.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             {/* AI SETTINGS */}
                             <div className="p-4 bg-purple-600/5 rounded-xl border border-purple-500/10 space-y-4">

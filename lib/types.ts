@@ -63,6 +63,8 @@ export interface School {
     district?: string | null
     category?: string | null
     level: string
+    type?: string | null
+    parentId?: string | null
     location?: string | null
     createdAt?: Date | null
 }

@@ -432,7 +432,21 @@ export function MatchesClient({
                                             onClick={() => toggleSchool(s.id)}
                                             className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${formData.schoolIds.includes(s.id) ? 'bg-purple-600/20 border border-purple-500/50' : 'hover:bg-white/5 border border-transparent'}`}
                                         >
-                                            <div className="text-sm font-bold text-white">{s.name}</div>
+                                            <div className="flex flex-col">
+                                                <div className="text-sm font-bold text-white uppercase tracking-tight">
+                                                    {s.name}
+                                                    {s.type !== 'school' && (
+                                                        <span className="ml-2 text-[8px] px-1 bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded">
+                                                            {s.type}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {s.parentId && (
+                                                    <div className="text-[9px] text-purple-400 font-bold uppercase">
+                                                        @ {schools.find(x => x.id === s.parentId)?.name}
+                                                    </div>
+                                                )}
+                                            </div>
                                             <div className="text-[10px] text-slate-500 uppercase tracking-wider">{s.region}</div>
                                         </div>
                                     )) : (
