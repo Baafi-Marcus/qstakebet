@@ -83,6 +83,7 @@ export const users = pgTable("users", {
     referredBy: text("referred_by"), // Referral code used during signup
     linkClicks: integer("link_clicks").default(0).notNull(),
     linkClicksRewardClaimed: boolean("link_clicks_reward_claimed").default(false).notNull(),
+    loyaltyPoints: integer("loyalty_points").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });

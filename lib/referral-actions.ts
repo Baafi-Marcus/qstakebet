@@ -1,8 +1,9 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { referralClicks, users, bonuses, wallets, transactions } from "@/lib/db/schema"
-import { eq, and } from "drizzle-orm"
+import { referralClicks, users, bonuses, wallets, transactions, referrals } from "@/lib/db/schema"
+import { eq, and, desc } from "drizzle-orm"
+import { auth } from "@/lib/auth"
 import { nanoid } from "nanoid"
 
 /**
@@ -67,6 +68,54 @@ export async function trackLinkClick(referralCode: string, ip: string, userAgent
         return { success: true }
     } catch (error) {
         console.error("Failed to track link click:", error)
+        return { success: false, error: "Internal Error" }
+    }
+}
+
+/**
+ * Fetches user data for the Offers & Bonuses page.
+ */
+export async function getUserOffersAndBonuses() {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    try {
+        const userId = session.user.id
+
+        // 1. Get User Data (Referral Code, Loyalty Points)
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { referralCode: true, loyaltyPoints: true }
+        })
+
+        // 2. Get Active Bonuses
+        const activeBonuses = await db.query.bonuses.findMany({
+            where: and(
+                eq(bonuses.userId, userId),
+                eq(bonuses.status, "active")
+            ),
+            orderBy: [desc(bonuses.createdAt)]
+        })
+
+        // 3. Get Referral Stats
+        const userReferrals = await db.query.referrals.findMany({
+            where: eq(referrals.referrerId, userId)
+        })
+
+        const totalEarnedRewards = userReferrals.reduce((sum, ref) => sum + (ref.referrerBonus || 0), 0)
+
+        return {
+            success: true,
+            referralCode: user?.referralCode || "",
+            loyaltyPoints: user?.loyaltyPoints || 0,
+            bonuses: activeBonuses,
+            referralStats: {
+                totalCount: userReferrals.length,
+                totalEarned: totalEarnedRewards
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching offers and bonuses:", e)
         return { success: false, error: "Internal Error" }
     }
 }
