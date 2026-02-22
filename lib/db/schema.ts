@@ -23,6 +23,7 @@ export const tournaments = pgTable("tournaments", {
     year: text("year").notNull(),
     level: text("level").default("shs").notNull(), // "shs", "university", etc.
     status: text("status").default("active").notNull(), // "active", "completed"
+    metadata: jsonb("metadata"), // Groups, Matchdays, Rules
     createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -47,6 +48,8 @@ export const matches = pgTable("matches", {
     isVirtual: boolean("is_virtual").default(false).notNull(),
     sportType: text("sport_type").default("quiz").notNull(),
     gender: text("gender").default("male").notNull(),
+    group: text("group"), // e.g. "Group A"
+    matchday: text("matchday"), // e.g. "Matchday 1"
     margin: jsonb("margin").default(0.1).notNull(), // Default 10% profit margin
     betVolume: jsonb("bet_volume").$type<{
         [selectionId: string]: {

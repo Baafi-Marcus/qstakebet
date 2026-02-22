@@ -134,3 +134,85 @@ export function validateScores(sportType: string, scores: any, metadata?: any): 
         warnings
     }
 }
+
+export interface GroupStanding {
+    schoolId: string
+    schoolName: string
+    played: number
+    won: number
+    drawn: number
+    lost: number
+    gf: number // Goals For
+    ga: number // Goals Against
+    gd: number // Goal Difference
+    points: number
+}
+
+/**
+ * Calculates current group standings based on finished matches.
+ */
+export function calculateGroupStandings(matches: Match[], groupName: string): GroupStanding[] {
+    const standings: Record<string, GroupStanding> = {}
+
+    // Filter matches for this group and only those that are finished/settled
+    const groupMatches = matches.filter(m => m.group === groupName && (m.status === 'finished' || m.status === 'settled'))
+
+    groupMatches.forEach(match => {
+        if (match.participants.length < 2) return
+
+        const p1 = match.participants[0]
+        const p2 = match.participants[1]
+
+        // Attempt to get numeric scores from result field
+        // Note: result can be number or string or null
+        const s1 = typeof p1.result === 'number' ? p1.result : parseInt(String(p1.result || "0")) || 0
+        const s2 = typeof p2.result === 'number' ? p2.result : parseInt(String(p2.result || "0")) || 0
+
+            // Initialize schools in standings if not present
+            ;[p1, p2].forEach(p => {
+                if (!standings[p.schoolId]) {
+                    standings[p.schoolId] = {
+                        schoolId: p.schoolId,
+                        schoolName: p.name,
+                        played: 0, won: 0, drawn: 0, lost: 0,
+                        gf: 0, ga: 0, gd: 0, points: 0
+                    }
+                }
+            })
+
+        const st1 = standings[p1.schoolId]
+        const st2 = standings[p2.schoolId]
+
+        st1.played++
+        st2.played++
+        st1.gf += s1
+        st1.ga += s2
+        st2.gf += s2
+        st2.ga += s1
+
+        if (s1 > s2) {
+            st1.won++
+            st1.points += 3
+            st2.lost++
+        } else if (s2 > s1) {
+            st2.won++
+            st2.points += 3
+            st1.lost++
+        } else {
+            st1.drawn++
+            st1.points++
+            st2.drawn++
+            st2.points++
+        }
+    })
+
+    // Calculate GD and sort
+    return Object.values(standings).map(s => ({
+        ...s,
+        gd: s.gf - s.ga
+    })).sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points
+        if (b.gd !== a.gd) return b.gd - a.gd
+        return b.gf - a.gf
+    })
+}

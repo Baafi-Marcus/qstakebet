@@ -20,7 +20,10 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
         region: "Ashanti",
         sportType: "football",
         gender: "male",
-        year: new Date().getFullYear().toString()
+        year: new Date().getFullYear().toString(),
+        level: "shs",
+        format: "league", // Default to league
+        groups: "A, B, C" // Simplified comma-separated input for creation
     })
 
     const filteredTournaments = tournaments.filter(t =>
@@ -50,7 +53,10 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                     region: "Ashanti",
                     sportType: "football",
                     gender: "male",
-                    year: new Date().getFullYear().toString()
+                    year: new Date().getFullYear().toString(),
+                    level: "shs",
+                    format: "league",
+                    groups: "A, B, C"
                 })
                 router.refresh()
             }
@@ -240,6 +246,42 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                                     </select>
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Level</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        value={formData.level}
+                                        onChange={e => setFormData({ ...formData, level: e.target.value })}
+                                    >
+                                        <option value="shs">SHS</option>
+                                        <option value="university">University</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Format</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        value={formData.format}
+                                        onChange={e => setFormData({ ...formData, format: e.target.value })}
+                                    >
+                                        <option value="league">League (Groups)</option>
+                                        <option value="knockout">Straight Knockout</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {formData.format === 'league' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Initial Groups</label>
+                                    <input
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        placeholder="e.g. A, B, C"
+                                        value={formData.groups}
+                                        onChange={e => setFormData({ ...formData, groups: e.target.value })}
+                                    />
+                                </div>
+                            )}
                             <div className="pt-4">
                                 <button
                                     type="submit"

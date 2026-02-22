@@ -28,6 +28,8 @@ export interface Match {
     }
     sportType: string
     gender: string
+    group?: string | null
+    matchday?: string | null
     margin: number
     currentRound?: number
     liveMetadata?: any
@@ -53,6 +55,7 @@ export interface Tournament {
     year: string
     level: string
     status: string
+    metadata?: any
     createdAt?: Date | null
 }
 

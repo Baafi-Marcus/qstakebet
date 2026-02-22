@@ -156,13 +156,29 @@ export async function createTournament(data: {
     sportType: string,
     gender: string,
     year: string,
-    level?: string
+    level?: string,
+    format?: string,
+    groups?: string,
+    metadata?: any
 }) {
     const id = `tmt-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Process metadata
+    const metadata = data.metadata || {};
+    if (data.format) metadata.format = data.format;
+    if (data.groups) {
+        metadata.groups = data.groups.split(',').map(g => g.trim()).filter(Boolean);
+    }
+
     return await db.insert(tournaments).values({
         id,
-        ...data,
+        name: data.name,
+        region: data.region,
+        sportType: data.sportType,
+        gender: data.gender,
+        year: data.year,
         level: data.level || 'shs',
+        metadata,
         status: 'active'
     }).returning();
 }
@@ -174,7 +190,9 @@ export async function createMatch(data: {
     startTime?: string,
     autoEndAt?: string,
     sportType: string,
-    gender: string
+    gender: string,
+    group?: string,
+    matchday?: string
 }) {
     // Parse datetime if provided
     let scheduledAt: Date | null = null;
@@ -214,7 +232,7 @@ export async function createMatch(data: {
     }
 
     // 1. Calculate Odds
-    const initialOdds = await calculateInitialOdds(data.schoolIds, data.sportType, data.gender);
+    const initialOdds = await calculateInitialOdds(data.schoolIds, data.sportType, data.gender, data.tournamentId);
 
     // 2. Fetch School Names (for simplified display/redundancy in JSON)
     const schoolDetails = await db.select().from(schools)
@@ -244,6 +262,8 @@ export async function createMatch(data: {
         result: null,
         isLive: status === "live",
         stage: data.stage,
+        group: data.group,
+        matchday: data.matchday,
         odds: initialOdds,
         sportType: data.sportType,
         gender: data.gender,
@@ -255,7 +275,19 @@ export async function createMatch(data: {
  * Generates automated odds based on school strengths.
  * If strengths don't exist, it defaults to balanced odds with margin.
  */
-export async function calculateInitialOdds(schoolIds: string[], sportType: string, gender: string, margin: number = 0.1) {
+export async function calculateInitialOdds(schoolIds: string[], sportType: string, gender: string, tournamentId?: string, margin: number = 0.1) {
+    // Determine level for constraints
+    let level = 'shs';
+    if (tournamentId) {
+        const t = await db.select({ level: tournaments.level }).from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+        if (t.length > 0) level = t[0].level;
+    }
+
+    // ACSES/University Rules: Higher Margin, Tight Caps
+    const isUniversity = level === 'university';
+    const effectiveMargin = isUniversity ? 0.15 : margin;
+    const minOdd = isUniversity ? 1.08 : 1.01;
+    const maxOdd = isUniversity ? 3.50 : 100.0;
     // 1. Fetch school ratings (Base Seed)
     const baseStrengths = await db.select().from(schoolStrengths)
         .where(and(
@@ -297,7 +329,12 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
     schoolPowers.forEach(sp => {
         const prob = sp.power / totalPower;
         const rawOdd = 1 / prob;
-        odds[sp.id] = parseFloat((rawOdd * (1 - margin)).toFixed(2));
+        let finalOdd = rawOdd * (1 - effectiveMargin);
+
+        // Apply Constraints
+        finalOdd = Math.max(minOdd, Math.min(maxOdd, finalOdd));
+
+        odds[sp.id] = parseFloat(finalOdd.toFixed(2));
     });
 
     // 4. Add Draw odd for relevant sports

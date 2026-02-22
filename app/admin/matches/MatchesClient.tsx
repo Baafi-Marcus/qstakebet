@@ -87,6 +87,8 @@ export function MatchesClient({
         tournamentId: "",
         schoolIds: [] as string[],
         stage: "Group Stage",
+        group: "",
+        matchday: "Matchday 1",
         startTime: "",
         autoEndAt: "",
         sportType: "football",
@@ -414,6 +416,42 @@ export function MatchesClient({
                                         value={formData.stage}
                                         onChange={e => setFormData({ ...formData, stage: e.target.value })}
                                     />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Group</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        value={formData.group}
+                                        onChange={e => setFormData({ ...formData, group: e.target.value })}
+                                    >
+                                        <option value="">No Group</option>
+                                        <option value="Group A">Group A</option>
+                                        <option value="Group B">Group B</option>
+                                        <option value="Group C">Group C</option>
+                                        <option value="Group D">Group D</option>
+                                        <option value="Knockout">Knockout</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Matchday</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        value={formData.group}
+                                        onChange={e => setFormData({ ...formData, matchday: e.target.value })}
+                                    >
+                                        <option value="Matchday 1">Matchday 1</option>
+                                        <option value="Matchday 2">Matchday 2</option>
+                                        <option value="Matchday 3">Matchday 3</option>
+                                        <option value="Matchday 4">Matchday 4</option>
+                                        <option value="Matchday 5">Matchday 5</option>
+                                        <option value="Matchday 6">Matchday 6</option>
+                                        <option value="Quarter Final">Quarter Final</option>
+                                        <option value="Semi Final">Semi Final</option>
+                                        <option value="Final">Final</option>
+                                    </select>
                                 </div>
                             </div>
 
