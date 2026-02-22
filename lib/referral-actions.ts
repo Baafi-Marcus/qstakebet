@@ -83,7 +83,7 @@ export async function getUserOffersAndBonuses() {
         const userId = session.user.id
 
         // 1. Get User Data (Referral Code, Loyalty Points)
-        let user = await db.query.users.findFirst({
+        const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
             columns: { referralCode: true, loyaltyPoints: true, name: true }
         })

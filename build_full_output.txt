@@ -1,0 +1,10 @@
+﻿
+> qstakebet-app@0.1.0 build
+> next build
+
+   Γû▓ Next.js 15.5.9
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 13.6s
+   Linting and checking validity of types ...
