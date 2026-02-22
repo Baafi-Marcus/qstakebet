@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Gift, Users, Copy, Sparkles, Clock, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton"
 
 export default async function RewardsPage() {
     const session = await auth()
@@ -21,49 +22,49 @@ export default async function RewardsPage() {
                     <Gift className="w-8 h-8 text-yellow-500" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black uppercase tracking-tight text-slate-800">My Rewards</h1>
+                    <h1 className="text-2xl font-black uppercase tracking-tight text-white">My Rewards</h1>
                     <p className="text-slate-500 font-medium">Manage your bonuses and referral earnings</p>
                 </div>
             </div>
 
             {/* Referral Section */}
             <div className="grid md:grid-cols-3 gap-4">
-                <Card className="md:col-span-2 bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-0 shadow-xl">
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-6">
-                            <div>
-                                <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
-                                    <Users className="w-5 h-5" />
+                <Card className="md:col-span-2 bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] text-white border-0 shadow-xl overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                    <CardContent className="p-8 relative z-10">
+                        <div className="flex items-start justify-between mb-8">
+                            <div className="space-y-1">
+                                <h3 className="font-black text-2xl flex items-center gap-3 uppercase tracking-tight">
+                                    <Users className="w-6 h-6" />
                                     Refer & Earn
                                 </h3>
-                                <p className="text-indigo-100 text-sm">Get <strong>GHS 10.00</strong> for every friend who joins and deposits!</p>
+                                <p className="text-indigo-100 text-sm font-medium opacity-90">
+                                    Get <strong className="text-white font-black">GHS 10.00</strong> for every friend who joins and deposits!
+                                </p>
                             </div>
-                            <div className="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                            <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm">
                                 <Sparkles className="w-6 h-6 text-yellow-300" />
                             </div>
                         </div>
 
-                        <div className="bg-black/20 p-4 rounded-xl flex items-center justify-between gap-4 mb-4">
-                            <div className="font-mono text-2xl tracking-widest font-bold">
-                                {referralStats?.code || "Generating..."}
+                        <div className="bg-black/30 backdrop-blur-md border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4">
+                            <div className="font-mono text-xl tracking-tight font-black truncate max-w-[65%] text-slate-100">
+                                {referralStats?.code ? `qstakebet.com/r/${referralStats.code}` : "Generating..."}
                             </div>
-                            <Button size="sm" variant="secondary" className="gap-2">
-                                <Copy className="w-4 h-4" />
-                                Copy Code
-                            </Button>
+                            <CopyLinkButton referralCode={referralStats?.code || ""} />
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-slate-900/50 border-white/5 backdrop-blur-sm flex flex-col justify-center">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500 uppercase">Total Earnings</CardTitle>
+                        <CardTitle className="text-xs font-black text-slate-500 uppercase tracking-widest leading-none">Total Earnings</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-black text-slate-800">
+                        <div className="text-3xl font-black text-white">
                             GHS {referralStats?.totalEarnings.toFixed(2)}
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-tighter">
                             {referralStats?.completedReferrals} successful referrals
                         </p>
                     </CardContent>

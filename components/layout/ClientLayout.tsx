@@ -71,14 +71,38 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     {!isVirtuals && !isAuthPage && <Footer />}
 
                     {/* Overlay components */}
-                    {!isAuthPage && !isVirtuals && (
-                        <>
-                            <BetSlipSidebar />
-                            <FloatingBetSlipButton />
-                            <BottomNav />
-                            <GlobalMatchDetails />
-                        </>
-                    )}
+                    {(() => {
+                        const noBetslipPaths = [
+                            '/auth',
+                            '/admin',
+                            '/virtuals',
+                            '/account',
+                            '/rewards',
+                            '/help',
+                            '/how-to-play',
+                            '/privacy',
+                            '/terms',
+                            '/cookies'
+                        ]
+                        const hideBetslip = noBetslipPaths.some(path => pathname?.startsWith(path))
+
+                        if (hideBetslip) {
+                            return (
+                                <>
+                                    {!isAuthPage && !isAdmin && <BottomNav />}
+                                </>
+                            )
+                        }
+
+                        return (
+                            <>
+                                <BetSlipSidebar />
+                                <FloatingBetSlipButton />
+                                <BottomNav />
+                                <GlobalMatchDetails />
+                            </>
+                        )
+                    })()}
                 </div>
             </BetSlipProvider>
         </SessionProvider>

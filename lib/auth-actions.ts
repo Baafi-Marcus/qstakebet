@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, wallets, bonuses, transactions } from "@/lib/db/schema"
+import { users, wallets, bonuses, transactions, referrals } from "@/lib/db/schema"
 import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
@@ -61,49 +61,28 @@ export async function registerUser(data: {
             return { success: false, error: "Failed to create user" }
         }
 
-        // --- REFERRAL REWARD LOGIC ---
+        // --- REFERRAL TRACKING ---
         if (data.referredBy) {
             try {
-                // Find Referrer by code
                 const referrer = await db.query.users.findFirst({
                     where: eq(users.referralCode, data.referredBy)
                 });
 
                 if (referrer) {
-                    const referrerWallet = await db.query.wallets.findFirst({
-                        where: eq(wallets.userId, referrer.id)
+                    await db.insert(referrals).values({
+                        id: `ref-${Math.random().toString(36).substring(2, 11)}`,
+                        referrerId: referrer.id,
+                        referredUserId: userId,
+                        referralCode: data.referredBy,
+                        status: "pending",
+                        referrerBonus: 10.00 // Set the potential reward amount
                     });
-
-                    if (referrerWallet) {
-                        const rewardAmount = 1.00;
-                        const balanceBefore = referrerWallet.balance;
-                        const balanceAfter = balanceBefore + rewardAmount;
-
-                        // 1. Update Referrer Wallet
-                        await db.update(wallets)
-                            .set({ balance: balanceAfter })
-                            .where(eq(wallets.id, referrerWallet.id));
-
-                        // 2. Log Transaction
-                        await db.insert(transactions).values({
-                            id: `txn-${Math.random().toString(36).substring(2, 11)}`,
-                            userId: referrer.id,
-                            walletId: referrerWallet.id,
-                            type: "referral_bonus",
-                            amount: rewardAmount,
-                            balanceBefore,
-                            balanceAfter,
-                            description: `Referral bonus for signing up ${data.name}`,
-                            paymentStatus: "success"
-                        });
-                    }
                 }
             } catch (refError) {
-                console.error("Failed to process referral reward:", refError);
-                // Don't fail the whole registration if reward logic fails
+                console.error("Failed to record referral:", refError);
             }
         }
-        // --- END REFERRAL REWARD LOGIC ---
+        // --- END REFERRAL TRACKING ---
 
         // Create wallet for user
         const walletId = `wlt-${Math.random().toString(36).substring(2, 11)}`
