@@ -308,6 +308,17 @@ export const verificationCodes = pgTable("verification_codes", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const smsLogs = pgTable("sms_logs", {
+    id: text("id").primaryKey(), // sl-xxxxx
+    messageId: text("message_id"), // From Vynfy
+    phone: text("phone").notNull(),
+    message: text("message").notNull(),
+    status: text("status").default("pending").notNull(), // "pending", "delivered", "failed"
+    error: text("error"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;

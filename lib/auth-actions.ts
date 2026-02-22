@@ -119,8 +119,10 @@ export async function registerUser(data: {
 
         // Send welcome SMS
         try {
+            const { formatToInternational } = await import("@/lib/phone-utils")
+            const formattedPhone = formatToInternational(data.phone)
             const welcomeMessage = `Welcome to QSTAKEbet! Your account has been created successfully. You've received 5 GHS bonus to start betting. Good luck!`;
-            await vynfy.sendSMS([data.phone], welcomeMessage);
+            await vynfy.sendSMS([formattedPhone], welcomeMessage);
         } catch (smsError) {
             console.error("Failed to send welcome SMS:", smsError);
             // Don't fail registration if SMS fails

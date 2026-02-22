@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { KeyRound, Phone, Lock, AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react"
@@ -18,6 +18,22 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
     const [sendingOtp, setSendingOtp] = useState(false)
+    const [timer, setTimer] = useState(0)
+
+    // Countdown effect
+    useEffect(() => {
+        let interval: NodeJS.Timeout | undefined
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1)
+            }, 1000)
+        }
+        return () => {
+            if (interval) {
+                clearInterval(interval)
+            }
+        }
+    }, [timer])
 
     const handleSendOtp = async () => {
         if (!formData.phone || formData.phone.length < 10) {
@@ -35,14 +51,25 @@ export default function ForgotPasswordPage() {
 
             if (result.success) {
                 setStep("otp")
+                setTimer(600) // 10 minutes
             } else {
                 setError(result.error || "Failed to send SMS. Make sure the number is registered.")
+                // If it's a wait error, we could parse it but for now just showing it is fine
+                if (result.error?.includes("wait")) {
+                    // Optionally set timer based on error message if we parsed it properly
+                }
             }
         } catch (e) {
             setError("Error sending OTP")
         } finally {
             setSendingOtp(false)
         }
+    }
+
+    const formatTimer = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs < 10 ? "0" : ""}${secs}`
     }
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -143,10 +170,10 @@ export default function ForgotPasswordPage() {
                                 </div>
                                 <button
                                     onClick={handleSendOtp}
-                                    disabled={sendingOtp || !formData.phone}
+                                    disabled={sendingOtp || !formData.phone || timer > 0}
                                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {sendingOtp ? "Sending code..." : "Send Verification Code"}
+                                    {sendingOtp ? "Sending code..." : timer > 0 ? `Resend in ${formatTimer(timer)}` : "Send Verification Code"}
                                 </button>
                             </div>
                         </div>
@@ -181,9 +208,10 @@ export default function ForgotPasswordPage() {
                                 <button
                                     type="button"
                                     onClick={handleSendOtp}
-                                    className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-400 mt-2 hover:underline underline-offset-4"
+                                    disabled={sendingOtp || timer > 0}
+                                    className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-400 mt-2 hover:underline underline-offset-4 disabled:opacity-50 disabled:no-underline"
                                 >
-                                    Didn&apos;t receive it? Send again
+                                    {timer > 0 ? `Resend code in ${formatTimer(timer)}` : "Didn't receive it? Send again"}
                                 </button>
                             </div>
                         </form>

@@ -44,6 +44,25 @@ export function formatPhoneNumber(phone: string): string {
 }
 
 /**
+ * Formats a phone number to international Ghanaian format (233XXXXXXXXX)
+ */
+export function formatToInternational(phone: string): string {
+    const cleaned = phone.replace(/[\s\-+]/g, "");
+
+    // If starts with 0, replace with 233
+    if (cleaned.startsWith("0")) {
+        return "233" + cleaned.slice(1);
+    }
+
+    // If doesn't start with 233, add it
+    if (!cleaned.startsWith("233")) {
+        return "233" + cleaned;
+    }
+
+    return cleaned;
+}
+
+/**
  * Gets a human-readable provider name
  */
 export function getProviderName(method: string): string {

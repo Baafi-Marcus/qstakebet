@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift } from "lucide-react"
@@ -27,6 +27,26 @@ function RegisterForm() {
     const [agreedToTerms, setAgreedToTerms] = useState(false)
     const [loading, setLoading] = useState(false)
     const [createdUser, setCreatedUser] = useState<{ id: string, referralCode: string } | null>(null)
+    const [timer, setTimer] = useState(0)
+
+    // Countdown effect
+    useEffect(() => {
+        let interval: NodeJS.Timeout | undefined
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1)
+            }, 1000)
+        }
+        return () => {
+            if (interval) clearInterval(interval)
+        }
+    }, [timer])
+
+    const formatTimer = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs < 10 ? "0" : ""}${secs}`
+    }
 
     // Send OTP Handler
     const handleSendOtp = async () => {
@@ -44,7 +64,7 @@ function RegisterForm() {
 
             if (result.success) {
                 setOtpSent(true)
-                // Optional: Start generic success message or toast
+                setTimer(600) // 10 minutes
             } else {
                 setError(result.error || "Failed to send SMS")
             }
@@ -210,10 +230,10 @@ function RegisterForm() {
                                 <button
                                     type="button"
                                     onClick={handleSendOtp}
-                                    disabled={sendingOtp || otpSent || !formData.phone}
+                                    disabled={sendingOtp || (otpSent && timer > 0) || !formData.phone}
                                     className="px-4 py-2 bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/40 text-purple-400 text-sm font-semibold rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
                                 >
-                                    {sendingOtp ? "Sending..." : otpSent ? "Sent" : "Send Code"}
+                                    {sendingOtp ? "Sending..." : (otpSent && timer > 0) ? formatTimer(timer) : "Send Code"}
                                 </button>
                             </div>
                         </div>

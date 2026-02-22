@@ -6,7 +6,7 @@ export class VynfyClient {
 
     constructor() {
         this.apiKey = process.env.VYNFY_API_KEY || "";
-        this.senderId = process.env.VYNFY_SENDER_ID || "QSTAKE";
+        this.senderId = process.env.VYNFY_SENDER_ID || "QSTAKEbet";
     }
 
     /**
@@ -33,6 +33,30 @@ export class VynfyClient {
             });
 
             const data = await res.json();
+
+            // Log to database for tracking
+            if (res.ok) {
+                try {
+                    const { db } = await import("@/lib/db");
+                    const { smsLogs } = await import("@/lib/db/schema");
+
+                    // Use message_id from Vynfy if present
+                    const messageId = data.message_id || data.id || `msg-${Date.now()}`;
+
+                    await db.insert(smsLogs).values({
+                        id: `sl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                        messageId: messageId,
+                        phone: recipients.join(","),
+                        message: message,
+                        status: "pending",
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    });
+                } catch (dbError) {
+                    console.error("Failed to log SMS to database:", dbError);
+                }
+            }
+
             return { success: res.ok, data };
         } catch (error) {
             console.error("Vynfy Send SMS Error:", error);

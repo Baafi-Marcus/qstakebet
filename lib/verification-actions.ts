@@ -15,30 +15,43 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
         return { success: false, error: "Invalid phone number" }
     }
 
-    // Check if phone is already registered (only for signup flow)
-    if (!isExistingUser) {
-        try {
-            const existingUser = await db.query.users.findFirst({
-                where: eq(users.phone, phone)
-            })
-
-            if (existingUser) {
-                return { success: false, error: "Phone number is already associated with an account" }
-            }
-        } catch (e) {
-            console.error("Duplicate phone check error:", e)
-            return { success: false, error: "Internal Error during verification" }
-        }
-    }
-
     try {
+        // 1. Check if user exists (for forgot password/login flows)
+        const user = await db.query.users.findFirst({
+            where: eq(users.phone, phone)
+        })
+
+        if (isExistingUser && !user) {
+            return { success: false, error: "Phone number not registered" }
+        }
+
+        if (!isExistingUser && user) {
+            return { success: false, error: "Phone number is already associated with an account" }
+        }
+
+        // 2. Check for existing non-expired OTP (Rate Limiting / Cooldown)
+        const existingOTP = await db.query.verificationCodes.findFirst({
+            where: and(
+                eq(verificationCodes.phone, phone),
+                gt(verificationCodes.expiresAt, new Date())
+            )
+        })
+
+        if (existingOTP) {
+            const remainingMs = existingOTP.expiresAt.getTime() - Date.now()
+            const remainingMins = Math.ceil(remainingMs / 60000)
+            return {
+                success: false,
+                error: `Please wait ${remainingMins} minute${remainingMins > 1 ? "s" : ""} before requesting a new code.`
+            }
+        }
+
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString()
         const id = `vc-${Date.now()}-${randomBytes(4).toString("hex")}`
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes expiry
 
-        // Store in DB (delete old codes for this phone first to keep it clean?)
-        // Or just insert new one.
+        // Clear any old (expired) codes for this phone
         await db.delete(verificationCodes).where(eq(verificationCodes.phone, phone))
 
         await db.insert(verificationCodes).values({
@@ -49,8 +62,10 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
         })
 
         // Send SMS via Vynfy
+        const { formatToInternational } = await import("@/lib/phone-utils")
+        const formattedPhone = formatToInternational(phone)
         const message = `Your QSTAKEbet verification code is: ${otp}. Valid for 10 minutes.`
-        const smsResult = await vynfy.sendSMS([phone], message)
+        const smsResult = await vynfy.sendSMS([formattedPhone], message)
 
         if (!smsResult.success) {
             console.error("Failed to send OTP SMS:", smsResult.error)
@@ -60,7 +75,7 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
         return { success: true, message: "OTP sent successfully" }
 
     } catch (error) {
-        console.error("Generate OTP Error:", error)
+        console.error("OTP Flow Error:", error)
         return { success: false, error: "Internal Error" }
     }
 }
