@@ -3,16 +3,19 @@
 import { useState } from "react"
 import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { Tournament } from "@/lib/types"
-import { createTournament } from "@/lib/admin-actions"
+import { Tournament, School } from "@/lib/types"
+import { createTournament, updateTournament, deleteTournament } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
+import { Pencil, Trash2, AlertCircle } from "lucide-react"
 
-export function TournamentsClient({ initialTournaments }: { initialTournaments: Tournament[] }) {
+export function TournamentsClient({ initialTournaments, universities }: { initialTournaments: Tournament[], universities: School[] }) {
     const router = useRouter()
     const [tournaments, setTournaments] = useState<Tournament[]>(initialTournaments)
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
+    const [editingTournament, setEditingTournament] = useState<Tournament | null>(null)
+    const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
     // Form State
     const [formData, setFormData] = useState({
@@ -23,7 +26,8 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
         year: new Date().getFullYear().toString(),
         level: "shs",
         format: "league", // Default to league
-        groups: "A, B, C" // Simplified comma-separated input for creation
+        groups: "A, B, C",
+        parentUniversityId: ""
     })
 
     const filteredTournaments = tournaments.filter(t =>
@@ -35,37 +39,78 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
         e.preventDefault()
         setIsCreating(true)
         try {
-            const newTournament = await createTournament(formData)
-            // Ideally revalidatePath or update local state
-            // For now, simple optimistic update or router refresh
-            if (newTournament && newTournament.length > 0) {
-                // Cast safely because DB returns date objects potentially, but our type expects string/null sometimes depending on setup
-                // Adapting to the type definition
-                const created = {
-                    ...newTournament[0],
-                    createdAt: newTournament[0].createdAt || null
-                } as Tournament
-
-                setTournaments([created, ...tournaments])
-                setIsCreateModalOpen(false)
-                setFormData({
-                    name: "",
-                    region: "Ashanti",
-                    sportType: "football",
-                    gender: "male",
-                    year: new Date().getFullYear().toString(),
-                    level: "shs",
-                    format: "league",
-                    groups: "A, B, C"
-                })
-                router.refresh()
+            if (editingTournament) {
+                const result = await updateTournament(editingTournament.id, formData)
+                if (result) {
+                    setTournaments(prev => prev.map(t => t.id === editingTournament.id ? { ...t, ...result[0] } : t))
+                }
+            } else {
+                const newTournament = await createTournament(formData)
+                if (newTournament && newTournament.length > 0) {
+                    const created = {
+                        ...newTournament[0],
+                        createdAt: newTournament[0].createdAt || null
+                    } as Tournament
+                    setTournaments([created, ...tournaments])
+                }
             }
+
+            setIsCreateModalOpen(false)
+            setEditingTournament(null)
+            setFormData({
+                name: "",
+                region: "Ashanti",
+                sportType: "football",
+                gender: "male",
+                year: new Date().getFullYear().toString(),
+                level: "shs",
+                format: "league",
+                groups: "A, B, C",
+                parentUniversityId: ""
+            })
+            router.refresh()
         } catch (error) {
-            console.error("Failed to create tournament", error)
-            alert("Failed to create tournament")
+            console.error("Failed to save tournament", error)
+            alert("Failed to save tournament")
         } finally {
             setIsCreating(false)
         }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this tournament? This cannot be undone.")) return
+        setIsDeleting(id)
+        try {
+            const result = await deleteTournament(id)
+            if (result.success) {
+                setTournaments(prev => prev.filter(t => t.id !== id))
+                router.refresh()
+            } else {
+                alert(result.error || "Failed to delete tournament")
+            }
+        } catch (error) {
+            console.error("Delete error:", error)
+            alert("An error occurred while deleting")
+        } finally {
+            setIsDeleting(null)
+        }
+    }
+
+    const openEditModal = (t: Tournament) => {
+        setEditingTournament(t)
+        const meta = (t.metadata as any) || {}
+        setFormData({
+            name: t.name,
+            region: t.region,
+            sportType: t.sportType,
+            gender: t.gender,
+            year: t.year,
+            level: t.level || 'shs',
+            format: meta.format || "league",
+            groups: meta.groups ? meta.groups.join(", ") : "A, B, C",
+            parentUniversityId: meta.parentUniversityId || ""
+        })
+        setIsCreateModalOpen(true)
     }
 
     return (
@@ -140,10 +185,25 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 self-end md:self-auto">
+                            <div className="flex items-center gap-2 self-end md:self-auto">
+                                <button
+                                    onClick={() => openEditModal(tournament)}
+                                    className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
+                                    title="Edit Tournament"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(tournament.id)}
+                                    disabled={isDeleting === tournament.id}
+                                    className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded-xl transition-all border border-red-500/20 disabled:opacity-50"
+                                    title="Delete Tournament"
+                                >
+                                    {isDeleting === tournament.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                </button>
                                 <Link
                                     href={`/admin/tournaments/${tournament.id}`}
-                                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-white/5"
+                                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-purple-900/20 active:scale-95"
                                 >
                                     Manage
                                     <ChevronRight className="h-4 w-4" />
@@ -164,8 +224,13 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">Create Tournament</h2>
-                            <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                                {editingTournament ? "Edit Tournament" : "Create Tournament"}
+                            </h2>
+                            <button onClick={() => {
+                                setIsCreateModalOpen(false)
+                                setEditingTournament(null)
+                            }} className="text-slate-500 hover:text-white transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -282,6 +347,24 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                                     />
                                 </div>
                             )}
+
+                            {formData.level === 'university' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Primary Institution (University)</label>
+                                    <select
+                                        required={formData.level === 'university'}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                        value={formData.parentUniversityId}
+                                        onChange={e => setFormData({ ...formData, parentUniversityId: e.target.value })}
+                                    >
+                                        <option value="">Select University...</option>
+                                        {universities.map(uni => (
+                                            <option key={uni.id} value={uni.id}>{uni.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div className="pt-4">
                                 <button
                                     type="submit"
@@ -289,7 +372,7 @@ export function TournamentsClient({ initialTournaments }: { initialTournaments: 
                                     className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    {isCreating ? "Creating..." : "Create Tournament"}
+                                    {editingTournament ? "Update Tournament" : "Create Tournament"}
                                 </button>
                             </div>
                         </form>

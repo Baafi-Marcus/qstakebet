@@ -2,7 +2,7 @@
 
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions } from "./db/schema"
+import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions, bets } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { auth } from "./auth"
@@ -36,6 +36,52 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
         }).returning();
 
         results.push({ ...newSchool[0], status: 'created' });
+    }
+
+    return results;
+}
+
+export async function upsertTournamentRoster(tournamentId: string, rosterText: string) {
+    // 1. Fetch Tournament to get level and region
+    const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+    if (tData.length === 0) throw new Error("Tournament not found");
+    const tournament = tData[0];
+
+    const entities = rosterText.split('\n').map(s => s.trim()).filter(Boolean);
+    const results = [];
+
+    // Get parentId from metadata if it exists
+    const parentId = (tournament.metadata as any)?.parentUniversityId;
+
+    for (const name of entities) {
+        // Check if exists in this level/region
+        const existing = await db.select().from(schools)
+            .where(and(
+                eq(schools.region, tournament.region),
+                eq(schools.level, tournament.level),
+                sql`lower(${schools.name}) = lower(${name})`
+            ))
+            .limit(1);
+
+        if (existing.length > 0) {
+            results.push({ ...existing[0], status: 'found' });
+            continue;
+        }
+
+        // Create new
+        const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
+        const type = tournament.level === 'university' ? 'hall' : 'school';
+
+        const newEntity = await db.insert(schools).values({
+            id,
+            name,
+            region: tournament.region,
+            level: tournament.level,
+            type,
+            parentId: parentId || null
+        }).returning();
+
+        results.push({ ...newEntity[0], status: 'created' });
     }
 
     return results;
@@ -159,6 +205,7 @@ export async function createTournament(data: {
     level?: string,
     format?: string,
     groups?: string,
+    parentUniversityId?: string,
     metadata?: any
 }) {
     const id = `tmt-${Math.random().toString(36).substr(2, 9)}`;
@@ -168,6 +215,9 @@ export async function createTournament(data: {
     if (data.format) metadata.format = data.format;
     if (data.groups) {
         metadata.groups = data.groups.split(',').map(g => g.trim()).filter(Boolean);
+    }
+    if (data.parentUniversityId) {
+        metadata.parentUniversityId = data.parentUniversityId;
     }
 
     return await db.insert(tournaments).values({
@@ -181,6 +231,63 @@ export async function createTournament(data: {
         metadata,
         status: 'active'
     }).returning();
+}
+
+export async function updateTournament(id: string, data: {
+    name?: string,
+    region?: string,
+    sportType?: string,
+    gender?: string,
+    year?: string,
+    level?: string,
+    format?: string,
+    groups?: string,
+    parentUniversityId?: string,
+    metadata?: any
+}) {
+    // Process metadata
+    const metadata = data.metadata || {};
+    if (data.format) metadata.format = data.format;
+    if (data.groups) {
+        metadata.groups = data.groups.split(',').map(g => g.trim()).filter(Boolean);
+    }
+    if (data.parentUniversityId) {
+        metadata.parentUniversityId = data.parentUniversityId;
+    }
+
+    const updateData: any = {
+        name: data.name,
+        region: data.region,
+        sportType: data.sportType,
+        gender: data.gender,
+        year: data.year,
+        level: data.level,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined
+    };
+
+    // Remove undefined
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    return await db.update(tournaments)
+        .set(updateData)
+        .where(eq(tournaments.id, id))
+        .returning();
+}
+
+export async function deleteTournament(id: string) {
+    // Safety check: Don't delete if matches exist
+    const linkedMatches = await db.select().from(matches).where(eq(matches.tournamentId, id)).limit(1);
+    if (linkedMatches.length > 0) {
+        return { success: false, error: "Cannot delete tournament with existing matches. Delete the matches first." };
+    }
+
+    try {
+        await db.delete(tournaments).where(eq(tournaments.id, id));
+        return { success: true };
+    } catch (e) {
+        console.error("Delete tournament error:", e);
+        return { success: false, error: "Failed to delete tournament" };
+    }
 }
 
 export async function createMatch(data: {
@@ -269,6 +376,124 @@ export async function createMatch(data: {
         gender: data.gender,
         margin: 0.1
     }).returning();
+}
+
+export async function updateMatch(id: string, data: {
+    tournamentId?: string,
+    schoolIds?: string[],
+    stage?: string,
+    startTime?: string,
+    autoEndAt?: string | null,
+    sportType?: string,
+    gender?: string,
+    group?: string,
+    matchday?: string
+}) {
+    // 1. Process Timing
+    let scheduledAt: Date | null = undefined as any;
+    let autoEndAt: Date | null = undefined as any;
+    let displayTime: string | null = undefined as any;
+
+    if (data.startTime !== undefined) {
+        if (!data.startTime) {
+            scheduledAt = null;
+            displayTime = "TBD";
+        } else {
+            const date = new Date(data.startTime);
+            if (!isNaN(date.getTime())) {
+                scheduledAt = date;
+                displayTime = date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else {
+                displayTime = data.startTime;
+                scheduledAt = null;
+            }
+        }
+    }
+
+    if (data.autoEndAt !== undefined) {
+        if (!data.autoEndAt) {
+            autoEndAt = null;
+        } else {
+            const date = new Date(data.autoEndAt);
+            autoEndAt = isNaN(date.getTime()) ? null : date;
+        }
+    }
+
+    // 2. Prepare Update Object
+    const updateData: any = {
+        tournamentId: data.tournamentId,
+        stage: data.stage,
+        startTime: displayTime,
+        scheduledAt: scheduledAt,
+        autoEndAt: autoEndAt,
+        sportType: data.sportType,
+        gender: data.gender,
+        group: data.group,
+        matchday: data.matchday
+    };
+
+    // 3. Handle School Changes (Participants & Odds)
+    if (data.schoolIds && data.schoolIds.length >= 2) {
+        const initialOdds = await calculateInitialOdds(
+            data.schoolIds,
+            data.sportType || 'football',
+            data.gender || 'male',
+            data.tournamentId
+        );
+        const schoolDetails = await db.select().from(schools).where(sql`${schools.id} IN ${data.schoolIds}`);
+
+        const participants = data.schoolIds.map(sid => {
+            const school = schoolDetails.find(s => s.id === sid);
+            return {
+                schoolId: sid,
+                name: school?.name || "Unknown School",
+                odd: initialOdds[sid] || 2.00,
+                result: null
+            };
+        });
+
+        updateData.participants = participants;
+        updateData.odds = initialOdds;
+    }
+
+    // Remove undefined
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    return await db.update(matches)
+        .set(updateData)
+        .where(eq(matches.id, id))
+        .returning();
+}
+
+export async function deleteMatch(id: string) {
+    // Safety check: Don't delete if bets exist
+    const linkedBets = await db.select().from(bets).limit(1);
+    // Note: Since 'bets' table uses JSONB for selections, we filter in JS for now or use SQL JSON search
+    // For large scale, we'd use: where(sql`exists (select 1 from jsonb_array_elements(${bets.selections}) as s where s->>'matchId' = ${id})`)
+
+    // Quick JS filter for safety in intermediate scale
+    const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
+    const hasBets = allPendingBets.some(b => {
+        const selections = b.selections as any[];
+        return selections.some(s => s.matchId === id);
+    });
+
+    if (hasBets) {
+        return { success: false, error: "Cannot delete match with active bets. Void the bets first." };
+    }
+
+    try {
+        await db.delete(matches).where(eq(matches.id, id));
+        return { success: true };
+    } catch (e) {
+        console.error("Delete match error:", e);
+        return { success: false, error: "Failed to delete match" };
+    }
 }
 
 /**

@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
-import { createMatch, startMatches, lockMatches } from "@/lib/admin-actions"
+import { createMatch, startMatches, lockMatches, updateMatch, deleteMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
+import { Pencil, Trash2, Clock } from "lucide-react"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
@@ -35,6 +36,8 @@ export function MatchesClient({
     const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([])
     const [isBulkStarting, setIsBulkStarting] = useState(false)
     const [isBulkLocking, setIsBulkLocking] = useState(false)
+    const [editingMatch, setEditingMatch] = useState<Match | null>(null)
+    const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
     // Filters
     const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -127,31 +130,78 @@ export function MatchesClient({
 
         setIsCreating(true)
         try {
-            const newMatch = await createMatch({
-                ...formData,
-                startTime: formData.startTime || "Live" // Default or validated
-            })
+            if (editingMatch) {
+                const result = await updateMatch(editingMatch.id, formData)
+                if (result) {
+                    setMatches((prev: Match[]) => prev.map(m => m.id === editingMatch.id ? ({
+                        ...m,
+                        ...result[0],
+                        startTime: result[0].startTime || "",
+                        participants: result[0].participants as any
+                    } as Match) : m))
+                }
+            } else {
+                const newMatch = await createMatch({
+                    ...formData,
+                    startTime: formData.startTime || "" // Allow empty for TBD
+                })
 
-            if (newMatch && newMatch.length > 0) {
-                const created = {
-                    ...newMatch[0],
-                    // Ensure participants match the type structure expected by client if DB returns JSON columns differently
-                    // Typically Drizzle handles this, but casting for safety
-                    participants: newMatch[0].participants as unknown[]
-                } as Match
-
-                setMatches([created, ...matches])
-                setIsCreateModalOpen(false)
-                // Reset minimal form
-                setFormData(prev => ({ ...prev, schoolIds: [], startTime: "", autoEndAt: "" }))
-                router.refresh()
+                if (newMatch && newMatch.length > 0) {
+                    const created = {
+                        ...newMatch[0],
+                        participants: newMatch[0].participants as any
+                    } as Match
+                    setMatches([created, ...matches])
+                }
             }
+
+            setIsCreateModalOpen(false)
+            setEditingMatch(null)
+            setFormData(prev => ({ ...prev, schoolIds: [], startTime: "", autoEndAt: "" }))
+            router.refresh()
         } catch (error) {
-            console.error("Failed to create match", error)
-            alert("Failed to create match")
+            console.error("Failed to save match", error)
+            alert("Failed to save match")
         } finally {
             setIsCreating(false)
         }
+    }
+
+    const handleDeleteMatch = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this match? This cannot be undone.")) return
+        setIsDeleting(id)
+        try {
+            const result = await deleteMatch(id)
+            if (result.success) {
+                setMatches(prev => prev.filter(m => m.id !== id))
+                router.refresh()
+            } else {
+                alert(result.error || "Failed to delete match")
+            }
+        } catch (error) {
+            console.error("Delete error:", error)
+            alert("An error occurred while deleting")
+        } finally {
+            setIsDeleting(null)
+        }
+    }
+
+    const openEditMatchModal = (match: Match) => {
+        setEditingMatch(match)
+        setFormData({
+            tournamentId: match.tournamentId || "",
+            schoolIds: match.participants.map(p => p.schoolId),
+            stage: match.stage,
+            group: match.group || "",
+            matchday: match.matchday || "Matchday 1",
+            // Note: startTime on object is the display string, we might need a separate ISO field if we want accuracy
+            // But for now we'll just try to parse it or leave blank for TBD
+            startTime: match.scheduledAt ? new Date(match.scheduledAt).toISOString().slice(0, 16) : "",
+            autoEndAt: match.autoEndAt ? new Date(match.autoEndAt).toISOString().slice(0, 16) : "",
+            sportType: match.sportType,
+            gender: match.gender || "male"
+        })
+        setIsCreateModalOpen(true)
     }
 
     // School Selection Helper
@@ -335,6 +385,22 @@ export function MatchesClient({
                                 })()}
 
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => openEditMatchModal(match)}
+                                        className="p-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-all border border-white/5"
+                                        title="Edit Match"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteMatch(match.id)}
+                                        disabled={isDeleting === match.id}
+                                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded-lg transition-all border border-red-500/20 disabled:opacity-50"
+                                        title="Delete Match"
+                                    >
+                                        {isDeleting === match.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                    </button>
+
                                     {match.status === 'upcoming' && (
                                         <button
                                             onClick={() => setSelectedMatchForAI(match)}
@@ -378,8 +444,13 @@ export function MatchesClient({
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-white/10 flex justify-between items-center shrink-0">
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">Create Match</h2>
-                            <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                                {editingMatch ? "Edit Match" : "Create Match"}
+                            </h2>
+                            <button onClick={() => {
+                                setIsCreateModalOpen(false)
+                                setEditingMatch(null)
+                            }} className="text-slate-500 hover:text-white transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -439,7 +510,7 @@ export function MatchesClient({
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Matchday</label>
                                     <select
                                         className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.group}
+                                        value={formData.matchday}
                                         onChange={e => setFormData({ ...formData, matchday: e.target.value })}
                                     >
                                         <option value="Matchday 1">Matchday 1</option>
@@ -527,7 +598,7 @@ export function MatchesClient({
                                 className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                                {isCreating ? "Creating..." : "Create Match"}
+                                {editingMatch ? "Update Match" : "Create Match"}
                             </button>
                         </div>
                     </div>

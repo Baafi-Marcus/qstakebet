@@ -20,8 +20,13 @@
 - [/] Engine: Update `isSelectionWinner` to support `metadata.outcomes` override
 - [ ] Admin: Implement "Active Markets" tab in `MatchResultModal`
 - [ ] Admin: Add dynamic "Clarify Outcome" dropdowns for custom markets
-- [ ] Admin: Implement Partial/Early Payout button for resolved markets
-- [ ] Verification: Test settling an AI-generated prop market manually
+- [ ] Logic: Update `upsertTournamentRoster` to link new entities (Halls/Depts) to the Parent University
+- [ ] Verification: Test creating a University tournament and adding Halls correctly linked to the Parent
+
+## Phase 37: Seeding University Data [ ]
+- [ ] Logic: Create `scripts/seed-universities.ts` with the provided list
+- [ ] Action: Run the seed script to populate the production database
+- [ ] Verification: Verify universities appear in the Parent selection dropdown
 
 ## Phase 20: AI Market Flexibility & Generic Support [x]
 - [x] Update standard AI prompts for sport-specific markets

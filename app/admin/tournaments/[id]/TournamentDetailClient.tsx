@@ -7,6 +7,7 @@ import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
 import { useRouter } from "next/navigation"
 import { calculateGroupStandings } from "@/lib/match-utils"
+import { upsertTournamentRoster } from "@/lib/admin-actions"
 
 export function TournamentDetailClient({
     tournament,
@@ -187,13 +188,24 @@ export function TournamentDetailClient({
                             className="w-full h-48 bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono"
                         />
                         <button
-                            onClick={() => {
+                            onClick={async () => {
+                                if (!roster.trim()) return
                                 setIsSaving(true)
-                                setTimeout(() => setIsSaving(false), 500)
+                                try {
+                                    await upsertTournamentRoster(tournament.id, roster)
+                                    setRoster("")
+                                    router.refresh()
+                                } catch (error) {
+                                    console.error("Failed to update roster", error)
+                                    alert("Failed to update roster")
+                                } finally {
+                                    setIsSaving(false)
+                                }
                             }}
-                            className="w-full mt-4 py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-purple-500 transition-all active:scale-[0.98]"
+                            disabled={isSaving || !roster.trim()}
+                            className="w-full mt-4 py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-purple-500 transition-all active:scale-[0.98] disabled:opacity-50"
                         >
-                            {isSaving ? "Saving..." : "Update Roster"}
+                            {isSaving ? "Updating..." : "Update Roster"}
                         </button>
                         <div className="mt-8 space-y-2">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Participating Entities</p>
