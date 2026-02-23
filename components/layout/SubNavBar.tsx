@@ -74,16 +74,16 @@ export function SubNavBar() {
                                 FEATURED
                             </Link>
                             <Link
-                                href="/live"
+                                href="/tournaments"
                                 className={cn(
                                     "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all whitespace-nowrap",
-                                    pathname === "/live"
+                                    pathname === "/tournaments"
                                         ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
                                         : "text-slate-400 hover:text-white"
                                 )}
                             >
-                                <Timer className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                LIVE
+                                <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                TOURNAMENTS
                             </Link>
                             <Link
                                 href="/virtuals"

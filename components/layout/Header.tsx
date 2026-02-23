@@ -23,7 +23,7 @@ export function Header() {
 
     const navLinks = [
         { href: "/", label: "Featured", icon: Star },
-        { href: "/live", label: "Live Matches", icon: Timer },
+        { href: "/tournaments", label: "Tournaments", icon: Trophy },
         { href: "/virtuals", label: "Virtuals", icon: Zap, status: "NEW" },
     ]
 

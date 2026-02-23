@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2, Building2, GraduationCap, ChevronLeft, Users, Layers } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School } from "@/lib/types"
@@ -32,6 +32,11 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
     const [step, setStep] = useState(0)
     const [formData, setFormData] = useState({ ...DEFAULT_FORM })
+
+    // Sync state with props when server-side data changes (e.g. after refresh)
+    useEffect(() => {
+        setTournaments(initialTournaments)
+    }, [initialTournaments])
 
     const set = (key: string, val: string) => setFormData(prev => ({ ...prev, [key]: val }))
 
@@ -107,7 +112,12 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                     <p className="text-slate-400 text-sm mt-1 uppercase tracking-widest font-bold">Manage all inter-school competitions.</p>
                 </div>
                 <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={() => {
+                        setEditingTournament(null)
+                        setFormData({ ...DEFAULT_FORM })
+                        setStep(0)
+                        setIsCreateModalOpen(true)
+                    }}
                     className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"
                 >
                     <Plus className="h-5 w-5" />

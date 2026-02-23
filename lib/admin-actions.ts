@@ -316,7 +316,10 @@ export async function deleteTournament(id: string) {
     }
 
     try {
-        await db.delete(tournaments).where(eq(tournaments.id, id));
+        const result = await db.delete(tournaments).where(eq(tournaments.id, id)).returning({ deletedId: tournaments.id });
+        if (result.length === 0) {
+            return { success: false, error: "Tournament not found or already deleted." };
+        }
         return { success: true };
     } catch (e) {
         console.error("Delete tournament error:", e);
