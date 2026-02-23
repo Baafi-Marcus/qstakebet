@@ -1,10 +1,10 @@
 "use server"
 
-
 import { db } from "./db"
 import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions, bets } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
+import { parseRosterWithAI } from "./ai-roster-parser"
 import { auth } from "./auth"
 
 // import { School, Tournament } from "./types" 
@@ -41,7 +41,6 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
     return results;
 }
 
-import { parseRosterWithAI } from "./ai-roster-parser"
 
 export async function upsertTournamentRoster(tournamentId: string, rosterText: string) {
     // 1. Fetch Tournament to get level and region

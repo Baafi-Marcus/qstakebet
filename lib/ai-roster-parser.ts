@@ -60,8 +60,7 @@ Rules:
                     ],
                     model: "gpt-4o",
                     temperature: 0.1,
-                    max_tokens: 2000,
-                    response_format: { type: "json_object" }
+                    max_tokens: 2000
                 })
             })
 
@@ -76,11 +75,25 @@ Rules:
             const result = await response.json() as { choices: Array<{ message: { content: string } }> }
             const content = result.choices[0]?.message?.content || "[]"
 
-            // Extract JSON handle markdown code blocks
-            const jsonMatch = content.match(/\[[\s\S]*\]/)
-            const jsonStr = jsonMatch ? jsonMatch[0] : "[]"
+            // Extract JSON - handle both raw arrays and objects wrapping an array
+            let parsed: ParsedRosterEntity[] = []
+            try {
+                const cleaned = content.replace(/```json|```/g, '').trim()
+                const raw = JSON.parse(cleaned)
+                if (Array.isArray(raw)) {
+                    parsed = raw
+                } else {
+                    // AI returned an object - find the first array value inside it
+                    const arrayVal = Object.values(raw).find(v => Array.isArray(v))
+                    parsed = (arrayVal as ParsedRosterEntity[]) || []
+                }
+            } catch {
+                // Last resort: regex extraction
+                const jsonMatch = content.match(/\[[\s\S]*\]/)
+                parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : []
+            }
 
-            return JSON.parse(jsonStr) as ParsedRosterEntity[]
+            return parsed
 
         } catch (error) {
             console.error(`Roster AI Attempt ${attempts} failed:`, error);
