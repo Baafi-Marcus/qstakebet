@@ -212,3 +212,23 @@ export async function getAllSchools() {
         throw error;
     }
 }
+
+export async function getTournamentWithStandings(tournamentId: string) {
+    const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+    if (tData.length === 0) return null;
+    const tournament = tData[0];
+
+    const matchData = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    const schoolIds = Array.from(new Set(matchData.flatMap(m => (m.participants as any[]).map((p: any) => p.schoolId))));
+
+    const schoolData = schoolIds.length > 0
+        ? await db.select().from(schools).where(sql`${schools.id} = ANY(${schoolIds})`)
+        : [];
+
+    return { tournament, matches: matchData, schools: schoolData };
+}
+
+export async function getAllActiveTournaments() {
+    return db.select().from(tournaments).where(eq(tournaments.status, 'active'));
+}
+

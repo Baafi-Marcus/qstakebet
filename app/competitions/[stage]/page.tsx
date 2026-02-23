@@ -1,52 +1,192 @@
-import { Star } from "lucide-react";
-import { getMatchesByStage } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { db } from "@/lib/db"
+import { tournaments, matches, schools } from "@/lib/db/schema"
+import { eq, sql } from "drizzle-orm"
+import { notFound } from "next/navigation"
+import { Trophy, BarChart2 } from "lucide-react"
+import { TournamentStandingsModal } from "@/components/ui/TournamentStandingsModal"
+import { OddsButton } from "@/components/ui/OddsButton"
+import type { Match } from "@/lib/types"
 
-// Next.js 15 requires awaiting params
+export const dynamic = 'force-dynamic'
+
 type Props = {
     params: Promise<{ stage: string }>
 }
 
-export const dynamic = 'force-dynamic'
+const REGION_MAP: Record<string, string> = {
+    "ashanti": "Ashanti", "greater-accra": "Greater Accra", "central": "Central",
+    "western": "Western", "eastern": "Eastern", "northern": "Northern",
+    "upper-east": "Upper East", "upper-west": "Upper West", "volta": "Volta",
+    "bono": "Bono", "bono-east": "Bono East", "ahafo": "Ahafo",
+    "western-north": "Western North", "oti": "Oti", "savannah": "Savannah",
+    "north-east": "North East", "national": "National", "regional": "Regional", "zonal": "Zonal"
+}
 
 export default async function CompetitionPage({ params }: Props) {
     const { stage } = await params
+    const regionLabel = REGION_MAP[stage.toLowerCase()] || (stage.charAt(0).toUpperCase() + stage.slice(1))
 
-    const matches = await getMatchesByStage(stage)
-    const title = stage.charAt(0).toUpperCase() + stage.slice(1) + " Competitions"
+    const allTournaments = await db.select().from(tournaments).where(eq(tournaments.status, 'active'))
+    const stageTournaments = allTournaments.filter(t =>
+        t.region?.toLowerCase().replace(/\s+/g, '-') === stage.toLowerCase() ||
+        t.region?.toLowerCase() === stage.toLowerCase() ||
+        t.name?.toLowerCase().includes(stage.toLowerCase())
+    )
 
-    const validStages = [
-        "regional", "zonal", "national",
-        "ashanti", "greater-accra", "central", "western", "northern",
-        "upper-east", "upper-west", "volta", "eastern", "bono",
-        "bono-east", "ahafo", "western-north", "oti", "savannah", "north-east"
-    ]
-
-    if (matches.length === 0 && !validStages.includes(stage.toLowerCase())) {
+    if (stageTournaments.length === 0 && !REGION_MAP[stage.toLowerCase()]) {
         notFound()
     }
 
+    const tournamentData = await Promise.all(stageTournaments.map(async tournament => {
+        const matchData = await db.select().from(matches).where(eq(matches.tournamentId, tournament.id))
+        const schoolIds = Array.from(new Set(matchData.flatMap(m => (m.participants as any[]).map((p: any) => p.schoolId))))
+        const schoolData = schoolIds.length > 0
+            ? await db.select({ id: schools.id, name: schools.name }).from(schools)
+                .where(sql`${schools.id} = ANY(ARRAY[${sql.join(schoolIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
+            : []
+        return { tournament, matches: matchData as unknown as Match[], schools: schoolData }
+    }))
+
     return (
         <div className="min-h-screen bg-background flex flex-col">
-            <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold font-display text-foreground mb-2">{title}</h1>
-                    <p className="text-muted-foreground">Bet on the latest {title.toLowerCase()} matches.</p>
+            <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20">
+                        <Trophy className="h-6 w-6 text-purple-400" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black text-white uppercase tracking-tight">{regionLabel} Competitions</h1>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
+                    </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center py-20 bg-slate-900/40 border border-white/5 rounded-[2.5rem] text-center space-y-6 animate-in fade-in duration-700">
-                    <div className="inline-flex p-4 rounded-3xl bg-purple-500/10 border border-purple-500/20 shadow-2xl shadow-purple-500/10">
-                        <Star className="h-10 w-10 text-purple-400" />
+                {tournamentData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 bg-slate-900/40 border border-white/5 rounded-[2.5rem] text-center space-y-4">
+                        <BarChart2 className="h-12 w-12 text-slate-700" />
+                        <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">No active tournaments in this region yet</p>
                     </div>
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{title}</h2>
-                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">Live Registration & Betting Coming Soon</p>
+                ) : (
+                    <div className="space-y-10">
+                        {tournamentData.map(({ tournament, matches: tMatches, schools: tSchools }) => {
+                            const metadata = tournament.metadata as any || {}
+                            const groups: string[] = metadata.groups || []
+                            const groupAssignments: Record<string, string> = metadata.groupAssignments || {}
+
+                            const upcomingMatches = tMatches.filter(m => m.status === 'upcoming' || m.status === 'live')
+
+                            return (
+                                <div key={tournament.id} className="space-y-4">
+                                    {/* Tournament Header */}
+                                    <div className="flex items-center justify-between gap-4 p-5 bg-slate-900/60 border border-white/5 rounded-[2rem]">
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">
+                                                {tournament.sportType} · {tournament.gender} · {tournament.year}
+                                            </span>
+                                            <h2 className="text-xl font-black text-white uppercase tracking-tight">{tournament.name}</h2>
+                                        </div>
+                                        <TournamentStandingsModal
+                                            tournamentName={tournament.name}
+                                            tournamentId={tournament.id}
+                                            matches={tMatches}
+                                            groups={groups}
+                                            groupAssignments={groupAssignments}
+                                            allSchools={tSchools}
+                                        />
+                                    </div>
+
+                                    {/* Group Standings */}
+                                    {groups.length > 0 && (
+                                        <div className="space-y-4">
+                                            {groups.map(group => {
+                                                const gFinished = tMatches.filter(m => m.group === group && (m.status === 'finished' || m.status === 'settled'))
+                                                const rows: Record<string, any> = {}
+
+                                                gFinished.forEach(m => {
+                                                    if (m.participants.length < 2) return
+                                                    const [p1, p2] = m.participants
+                                                    const s1 = typeof p1.result === 'number' ? p1.result : parseInt(String(p1.result || "0")) || 0
+                                                    const s2 = typeof p2.result === 'number' ? p2.result : parseInt(String(p2.result || "0")) || 0
+                                                        ;[p1, p2].forEach(p => { if (!rows[p.schoolId]) rows[p.schoolId] = { id: p.schoolId, name: p.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 } })
+                                                    const r1 = rows[p1.schoolId], r2 = rows[p2.schoolId]
+                                                    r1.p++; r2.p++; r1.gf += s1; r1.ga += s2; r2.gf += s2; r2.ga += s1
+                                                    if (s1 > s2) { r1.w++; r1.pts += 3; r2.l++ }
+                                                    else if (s2 > s1) { r2.w++; r2.pts += 3; r1.l++ }
+                                                    else { r1.d++; r1.pts++; r2.d++; r2.pts++ }
+                                                })
+
+                                                tSchools.filter(s => groupAssignments[s.id] === group).forEach(s => {
+                                                    if (!rows[s.id]) rows[s.id] = { id: s.id, name: s.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }
+                                                })
+
+                                                const sorted = Object.values(rows).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga))
+                                                if (sorted.length === 0) return null
+
+                                                return (
+                                                    <div key={group} className="bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden">
+                                                        <div className="px-5 py-3 bg-white/5 border-b border-white/5 flex items-center justify-between">
+                                                            <span className="text-sm font-black text-white uppercase">{group}</span>
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Group Stage</span>
+                                                        </div>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-xs">
+                                                                <thead>
+                                                                    <tr className="border-b border-white/5 text-slate-500 text-[10px]">
+                                                                        <th className="text-left px-5 py-2 font-black">#</th>
+                                                                        <th className="text-left px-0 pr-4 py-2 font-black">Team</th>
+                                                                        {["P", "W", "D", "L", "GD"].map(h => <th key={h} className="text-center px-2 py-2 font-black">{h}</th>)}
+                                                                        <th className="text-center px-2 py-2 font-black text-purple-400">Pts</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {sorted.map((s: any, idx: number) => (
+                                                                        <tr key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                                            <td className="px-5 py-3">
+                                                                                <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
+                                                                            </td>
+                                                                            <td className="py-3 pr-4 font-bold text-white">{s.name}</td>
+                                                                            {[s.p, s.w, s.d, s.l, s.gf - s.ga > 0 ? `+${s.gf - s.ga}` : s.gf - s.ga].map((v, i) => (
+                                                                                <td key={i} className="text-center px-2 py-3 text-slate-400">{v}</td>
+                                                                            ))}
+                                                                            <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Upcoming Fixtures with Bet Buttons */}
+                                    {upcomingMatches.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Upcoming Fixtures</p>
+                                            {upcomingMatches.map(m => {
+                                                const matchLabel = m.participants.map(p => p.name).join(' vs ')
+                                                return (
+                                                    <div key={m.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
+                                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
+                                                            <span>{m.group || m.stage}</span>
+                                                            <span className={m.status === 'live' ? 'text-red-400 animate-pulse' : ''}>{m.status === 'live' ? '🔴 LIVE' : m.startTime || 'TBD'}</span>
+                                                        </div>
+                                                        <div className={`grid gap-2 ${m.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                                            {m.participants.map(p => (
+                                                                <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={matchLabel} marketName="Match Winner" showLabel={true} />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
-                    <p className="max-w-xs mx-auto text-slate-400 text-sm font-medium">
-                        The {title.toLowerCase()} are currently in the preparation phase. Follow us for updates on when the matches will go live!
-                    </p>
-                </div>
+                )}
             </main>
         </div>
-    );
+    )
 }
