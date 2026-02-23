@@ -32,6 +32,7 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
     const [step, setStep] = useState(0)
     const [formData, setFormData] = useState({ ...DEFAULT_FORM })
+    const [viewMode, setViewMode] = useState<"active" | "archive">("active")
 
     // Sync state with props when server-side data changes (e.g. after refresh)
     useEffect(() => {
@@ -40,10 +41,15 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
 
     const set = (key: string, val: string) => setFormData(prev => ({ ...prev, [key]: val }))
 
-    const filteredTournaments = tournaments.filter(t =>
-        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.region.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredTournaments = tournaments.filter(t => {
+        const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.region.toLowerCase().includes(searchQuery.toLowerCase())
+
+        const isCompleted = t.status === 'completed'
+        const matchesView = viewMode === 'active' ? !isCompleted : isCompleted
+
+        return matchesSearch && matchesView
+    })
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -139,6 +145,22 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                         <div className={`h-1 w-8 ${stat.color} mt-3 rounded-full`} />
                     </div>
                 ))}
+            </div>
+
+            {/* View Mode Tabs */}
+            <div className="flex items-center gap-1 bg-slate-900/40 p-1.5 rounded-2xl border border-white/5 w-fit">
+                <button
+                    onClick={() => setViewMode("active")}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "active" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
+                >
+                    Active
+                </button>
+                <button
+                    onClick={() => setViewMode("archive")}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "archive" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
+                >
+                    Archive
+                </button>
             </div>
 
             {/* Filters and Search */}

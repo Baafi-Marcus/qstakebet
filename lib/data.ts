@@ -31,6 +31,34 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
     }
 }
 
+// Reuseable filter for "Active/Recent" matches
+const getActiveMatchFilter = (twentyFourHoursAgo: Date) => {
+    return and(
+        eq(matches.isVirtual, false),
+        or(
+            // 1. Matches that are NOT finished, settled, or cancelled
+            and(
+                ne(matches.status, "finished"),
+                ne(matches.status, "settled"),
+                ne(matches.status, "cancelled")
+            ),
+            // 2. Finished or Settled matches within last 24h
+            and(
+                or(eq(matches.status, "finished"), eq(matches.status, "settled")),
+                or(
+                    gt(matches.lastTickAt, twentyFourHoursAgo),
+                    and(sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                )
+            ),
+            // 3. Cancelled matches within last 24h
+            and(
+                eq(matches.status, "cancelled"),
+                gt(matches.createdAt, twentyFourHoursAgo)
+            )
+        )
+    )
+}
+
 export const getAllMatches = unstable_cache(
     async (): Promise<Match[]> => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -42,20 +70,7 @@ export const getAllMatches = unstable_cache(
         })
             .from(matches)
             .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-            .where(
-                and(
-                    eq(matches.isVirtual, false),
-                    or(
-                        ne(matches.status, "finished"),
-                        and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                        and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
-                    ),
-                    or(
-                        ne(matches.status, "cancelled"),
-                        and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
-                    )
-                )
-            )
+            .where(getActiveMatchFilter(twentyFourHoursAgo))
 
         return results.map(r => ({
             ...mapDbMatchToMatch(r.match),
@@ -77,20 +92,7 @@ export async function getAllMatchesWithTournaments() {
     })
         .from(matches)
         .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-        .where(
-            and(
-                eq(matches.isVirtual, false),
-                or(
-                    ne(matches.status, "finished"),
-                    and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                    and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
-                ),
-                or(
-                    ne(matches.status, "cancelled"),
-                    and(eq(matches.status, "cancelled"), gt(matches.createdAt, twentyFourHoursAgo))
-                )
-            )
-        )
+        .where(getActiveMatchFilter(twentyFourHoursAgo))
 
     return results.map(r => ({
         ...mapDbMatchToMatch(r.match),
@@ -107,7 +109,11 @@ export async function getVirtualMatches(): Promise<Match[]> {
             eq(matches.isVirtual, true),
             or(
                 ne(matches.status, "finished"),
-                and(eq(matches.status, "finished"), gt(matches.createdAt, twentyFourHoursAgo))
+                ne(matches.status, "settled"),
+                and(
+                    or(eq(matches.status, "finished"), eq(matches.status, "settled")),
+                    gt(matches.createdAt, twentyFourHoursAgo)
+                )
             )
         )
     )
@@ -126,16 +132,7 @@ export const getFeaturedMatches = unstable_cache(
         })
             .from(matches)
             .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
-            .where(
-                and(
-                    eq(matches.isVirtual, false),
-                    or(
-                        ne(matches.status, "finished"),
-                        and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                        and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
-                    )
-                )
-            )
+            .where(getActiveMatchFilter(twentyFourHoursAgo))
             .orderBy(desc(matches.isLive), desc(matches.startTime))
             .limit(10)
 
@@ -191,8 +188,14 @@ export async function getMatchesByStage(stageSlug: string): Promise<Match[]> {
             like(matches.stage, `%${stageSlug}%`),
             or(
                 ne(matches.status, "finished"),
-                and(eq(matches.status, "finished"), gt(matches.lastTickAt, twentyFourHoursAgo)),
-                and(eq(matches.status, "finished"), sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                ne(matches.status, "settled"),
+                and(
+                    or(eq(matches.status, "finished"), eq(matches.status, "settled")),
+                    or(
+                        gt(matches.lastTickAt, twentyFourHoursAgo),
+                        and(sql`${matches.lastTickAt} IS NULL`, gt(matches.createdAt, twentyFourHoursAgo))
+                    )
+                )
             )
         )
     )
@@ -231,4 +234,3 @@ export async function getTournamentWithStandings(tournamentId: string) {
 export async function getAllActiveTournaments() {
     return db.select().from(tournaments).where(eq(tournaments.status, 'active'));
 }
-

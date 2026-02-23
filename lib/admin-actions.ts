@@ -274,6 +274,7 @@ export async function updateTournament(id: string, data: {
     groups?: string,
     parentUniversityId?: string,
     uniType?: string,
+    status?: string,
     metadata?: any
 }) {
     // Process metadata
@@ -296,6 +297,7 @@ export async function updateTournament(id: string, data: {
         gender: data.gender,
         year: data.year,
         level: data.level,
+        status: data.status,
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined
     };
 

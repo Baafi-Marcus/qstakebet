@@ -7,6 +7,10 @@
 - [x] Restore `hydrateTicket` logic for viewing history
 - [x] Resolve `VirtualBet` / `ResolvedSelection` type collision by renaming to `ClientVirtualBet`
 - [x] Fix `betHistory` state type and `virtualBets` mapping
+- [x] SubNavBar: Replace "TOURNAMENTS" with "LIVE MATCHES"
+- [x] Admin UI: Implement "Match Log" for settled/cancelled matches
+- [x] Admin UI: Implement "Archive" for completed tournaments
+- [x] Logic: Update `lib/data.ts` to ensuring `settled` matches also follow 24hr cleanup
 
 ## Phase 19: Multi-Sport Platform Transition [x]
 - [x] Audit and Assessment (Completed)
@@ -16,17 +20,17 @@
 - [x] Update Admin Tools for Multi-Sport score entry
 - [x] Final multi-sport validation & build
 
-## Phase 23: Dynamic Market Settlement & AI Support [/]
-- [/] Engine: Update `isSelectionWinner` to support `metadata.outcomes` override
-- [ ] Admin: Implement "Active Markets" tab in `MatchResultModal`
-- [ ] Admin: Add dynamic "Clarify Outcome" dropdowns for custom markets
-- [ ] Logic: Update `upsertTournamentRoster` to link new entities (Halls/Depts) to the Parent University
-- [ ] Verification: Test creating a University tournament and adding Halls correctly linked to the Parent
+## Phase 23: Dynamic Market Settlement & AI Support [x]
+- [x] Engine: Update `isSelectionWinner` to support `metadata.outcomes` override
+- [x] Admin: Implement "Active Markets" tab in `MatchResultModal`
+- [x] Admin: Add dynamic "Clarify Outcome" dropdowns for custom markets
+- [x] Logic: Update `upsertTournamentRoster` to link new entities (Halls/Depts) to the Parent University
+- [x] Verification: Test creating a University tournament and adding Halls correctly linked to the Parent
 
-## Phase 37: Seeding University Data [ ]
-- [ ] Logic: Create `scripts/seed-universities.ts` with the provided list
-- [ ] Action: Run the seed script to populate the production database
-- [ ] Verification: Verify universities appear in the Parent selection dropdown
+## Phase 37: Seeding University Data [x]
+- [x] Logic: Create `scripts/seed-universities.ts` with the provided list
+- [x] Action: Run the seed script to populate the production database
+- [x] Verification: Verify universities appear in the Parent selection dropdown
 
 ## Phase 20: AI Market Flexibility & Generic Support [x]
 - [x] Update standard AI prompts for sport-specific markets

@@ -42,6 +42,7 @@ export function MatchesClient({
     // Filters
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [sportFilter, setSportFilter] = useState<string>("all")
+    const [viewMode, setViewMode] = useState<"active" | "log">("active")
 
     const toggleMatchSelection = (id: string) => {
         if (selectedMatchIds.includes(id)) {
@@ -118,7 +119,11 @@ export function MatchesClient({
         const matchesStatus = statusFilter === "all" || m.status === statusFilter
         const matchesSport = sportFilter === "all" || m.sportType === sportFilter
 
-        return matchesQuery && matchesStatus && matchesSport
+        // Archive logic
+        const isSettledOrCancelled = m.status === "settled" || m.status === "cancelled"
+        const matchesView = viewMode === "active" ? !isSettledOrCancelled : isSettledOrCancelled
+
+        return matchesQuery && matchesStatus && matchesSport && matchesView
     })
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -252,6 +257,22 @@ export function MatchesClient({
                         Create Match
                     </button>
                 </div>
+            </div>
+
+            {/* View Mode Tabs */}
+            <div className="flex items-center gap-1 bg-slate-900/40 p-1.5 rounded-2xl border border-white/5 w-fit">
+                <button
+                    onClick={() => setViewMode("active")}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "active" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
+                >
+                    Active Matches
+                </button>
+                <button
+                    onClick={() => setViewMode("log")}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "log" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
+                >
+                    Match Log
+                </button>
             </div>
 
             {/* Filter Bar */}

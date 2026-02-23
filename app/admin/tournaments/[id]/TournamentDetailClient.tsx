@@ -7,7 +7,7 @@ import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
 import { useRouter } from "next/navigation"
 import { calculateGroupStandings } from "@/lib/match-utils"
-import { upsertTournamentRoster } from "@/lib/admin-actions"
+import { upsertTournamentRoster, updateTournament } from "@/lib/admin-actions"
 
 export function TournamentDetailClient({
     tournament,
@@ -62,6 +62,36 @@ export function TournamentDetailClient({
                         <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-black rounded border border-blue-500/20 uppercase tracking-widest">{format}</span>
                     </div>
                 </div>
+
+                {/* Status Toggle */}
+                <button
+                    onClick={async () => {
+                        const newStatus = tournament.status === 'active' ? 'completed' : 'active'
+                        if (newStatus === 'completed' && !confirm("Mark this tournament as COMPLETED? This will move it to the archive.")) return
+
+                        setIsSaving(true)
+                        try {
+                            await updateTournament(tournament.id, { status: newStatus })
+                            router.refresh()
+                        } catch (e) {
+                            console.error(e)
+                            alert("Failed to update status")
+                        } finally {
+                            setIsSaving(false)
+                        }
+                    }}
+                    disabled={isSaving}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${tournament.status === 'active'
+                            ? "bg-slate-800 text-slate-400 hover:text-white border border-white/5"
+                            : "bg-green-600 text-white shadow-lg"
+                        }`}
+                >
+                    {tournament.status === 'active' ? (
+                        <>Complete Tournament</>
+                    ) : (
+                        <><CheckCircle2 className="h-4 w-4" /> Tournament Completed</>
+                    )}
+                </button>
             </div>
 
             {/* Tab Navigation */}
