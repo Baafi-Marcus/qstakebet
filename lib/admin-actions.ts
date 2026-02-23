@@ -232,6 +232,7 @@ export async function createTournament(data: {
     format?: string,
     groups?: string,
     parentUniversityId?: string,
+    uniType?: string,
     metadata?: any
 }) {
     const id = `tmt-${Math.random().toString(36).substr(2, 9)}`;
@@ -244,6 +245,9 @@ export async function createTournament(data: {
     }
     if (data.parentUniversityId) {
         metadata.parentUniversityId = data.parentUniversityId;
+    }
+    if (data.uniType) {
+        metadata.uniType = data.uniType;
     }
 
     return await db.insert(tournaments).values({
@@ -269,6 +273,7 @@ export async function updateTournament(id: string, data: {
     format?: string,
     groups?: string,
     parentUniversityId?: string,
+    uniType?: string,
     metadata?: any
 }) {
     // Process metadata
@@ -279,6 +284,9 @@ export async function updateTournament(id: string, data: {
     }
     if (data.parentUniversityId) {
         metadata.parentUniversityId = data.parentUniversityId;
+    }
+    if (data.uniType) {
+        metadata.uniType = data.uniType;
     }
 
     const updateData: any = {

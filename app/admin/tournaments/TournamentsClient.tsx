@@ -1,12 +1,26 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2 } from "lucide-react"
+import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2, Building2, GraduationCap, ChevronLeft, Users, Layers } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School } from "@/lib/types"
 import { createTournament, updateTournament, deleteTournament } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, AlertCircle } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
+
+const STEPS = ["Basics", "Details", "Format"]
+
+const FIELD_CLS = "w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none transition-all"
+const LABEL_CLS = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5"
+
+const REGIONS = ["Ashanti", "Greater Accra", "Central", "Western", "Eastern", "Volta", "Northern", "Upper East", "Upper West", "Bono", "Bono East", "Ahafo", "Western North", "Oti", "Savannah", "North East", "National"]
+const SPORTS = [["football", "Football"], ["athletics", "Athletics"], ["basketball", "Basketball"], ["volleyball", "Volleyball"], ["handball", "Handball"], ["quiz", "Quiz"]]
+
+const DEFAULT_FORM = {
+    name: "", region: "Ashanti", sportType: "football", gender: "male",
+    year: new Date().getFullYear().toString(), level: "shs", uniType: "hall",
+    format: "league", groups: "Group A, Group B, Group C", parentUniversityId: ""
+}
 
 export function TournamentsClient({ initialTournaments, universities }: { initialTournaments: Tournament[], universities: School[] }) {
     const router = useRouter()
@@ -16,19 +30,10 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     const [isCreating, setIsCreating] = useState(false)
     const [editingTournament, setEditingTournament] = useState<Tournament | null>(null)
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
+    const [step, setStep] = useState(0)
+    const [formData, setFormData] = useState({ ...DEFAULT_FORM })
 
-    // Form State
-    const [formData, setFormData] = useState({
-        name: "",
-        region: "Ashanti",
-        sportType: "football",
-        gender: "male",
-        year: new Date().getFullYear().toString(),
-        level: "shs",
-        format: "league", // Default to league
-        groups: "A, B, C",
-        parentUniversityId: ""
-    })
+    const set = (key: string, val: string) => setFormData(prev => ({ ...prev, [key]: val }))
 
     const filteredTournaments = tournaments.filter(t =>
         t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,35 +44,15 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
         e.preventDefault()
         setIsCreating(true)
         try {
+            const payload = { ...formData }
             if (editingTournament) {
-                const result = await updateTournament(editingTournament.id, formData)
-                if (result) {
-                    setTournaments(prev => prev.map(t => t.id === editingTournament.id ? { ...t, ...result[0] } : t))
-                }
+                const result = await updateTournament(editingTournament.id, payload)
+                if (result) setTournaments(prev => prev.map(t => t.id === editingTournament.id ? { ...t, ...result[0] } : t))
             } else {
-                const newTournament = await createTournament(formData)
-                if (newTournament && newTournament.length > 0) {
-                    const created = {
-                        ...newTournament[0],
-                        createdAt: newTournament[0].createdAt || null
-                    } as Tournament
-                    setTournaments([created, ...tournaments])
-                }
+                const newT = await createTournament(payload)
+                if (newT?.length > 0) setTournaments([{ ...newT[0], createdAt: newT[0].createdAt || null } as Tournament, ...tournaments])
             }
-
-            setIsCreateModalOpen(false)
-            setEditingTournament(null)
-            setFormData({
-                name: "",
-                region: "Ashanti",
-                sportType: "football",
-                gender: "male",
-                year: new Date().getFullYear().toString(),
-                level: "shs",
-                format: "league",
-                groups: "A, B, C",
-                parentUniversityId: ""
-            })
+            closeModal()
             router.refresh()
         } catch (error) {
             console.error("Failed to save tournament", error)
@@ -78,40 +63,41 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this tournament? This cannot be undone.")) return
+        if (!confirm("Delete this tournament? This cannot be undone.")) return
         setIsDeleting(id)
         try {
             const result = await deleteTournament(id)
-            if (result.success) {
-                setTournaments(prev => prev.filter(t => t.id !== id))
-                router.refresh()
-            } else {
-                alert(result.error || "Failed to delete tournament")
-            }
-        } catch (error) {
-            console.error("Delete error:", error)
-            alert("An error occurred while deleting")
-        } finally {
-            setIsDeleting(null)
-        }
+            if (result.success) { setTournaments(prev => prev.filter(t => t.id !== id)); router.refresh() }
+            else alert(result.error || "Failed to delete")
+        } catch { alert("An error occurred") }
+        finally { setIsDeleting(null) }
+    }
+
+    const closeModal = () => {
+        setIsCreateModalOpen(false)
+        setEditingTournament(null)
+        setFormData({ ...DEFAULT_FORM })
+        setStep(0)
     }
 
     const openEditModal = (t: Tournament) => {
         setEditingTournament(t)
         const meta = (t.metadata as any) || {}
         setFormData({
-            name: t.name,
-            region: t.region,
-            sportType: t.sportType,
-            gender: t.gender,
-            year: t.year,
-            level: t.level || 'shs',
+            name: t.name, region: t.region, sportType: t.sportType, gender: t.gender,
+            year: t.year, level: t.level || 'shs', uniType: meta.uniType || 'hall',
             format: meta.format || "league",
-            groups: meta.groups ? meta.groups.join(", ") : "A, B, C",
+            groups: meta.groups ? meta.groups.join(", ") : "Group A, Group B, Group C",
             parentUniversityId: meta.parentUniversityId || ""
         })
+        setStep(0)
         setIsCreateModalOpen(true)
     }
+
+    // Step validation — Next button only active when required fields are filled
+    const step0Valid = formData.name.trim().length > 1 && formData.year.trim().length === 4
+    const step1Valid = formData.level !== 'university' || !!formData.parentUniversityId
+    const canSubmit = step0Valid && step1Valid
 
     return (
         <div className="space-y-8">
@@ -150,10 +136,8 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <input
-                        type="text"
-                        placeholder="Search tournaments by name or region..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        type="text" placeholder="Search tournaments..."
+                        value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
                     />
                 </div>
@@ -161,221 +145,226 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
 
             {/* Tournament List */}
             <div className="grid grid-cols-1 gap-4">
-                {filteredTournaments.length > 0 ? (
-                    filteredTournaments.map((tournament) => (
-                        <div key={tournament.id} className="group bg-slate-900/40 border border-white/5 hover:border-white/10 p-5 rounded-2xl transition-all hover:bg-slate-800/40 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-start gap-4">
-                                <div className="p-3 bg-purple-600/10 rounded-xl text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                                    <Trophy className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{tournament.name}</h3>
-                                        {tournament.status === 'active' && (
-                                            <span className="flex items-center gap-1 bg-green-500/10 text-green-500 text-[10px] font-black px-2 py-0.5 rounded-full border border-green-500/20">
-                                                <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-                                                ACTIVE
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-400 text-xs uppercase tracking-wide font-bold">
-                                        <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {tournament.region}</span>
-                                        <span className="flex items-center gap-1.5"><Activity className="h-3 w-3" /> {tournament.sportType} • {tournament.gender}</span>
-                                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {tournament.year}</span>
-                                    </div>
-                                </div>
+                {filteredTournaments.length > 0 ? filteredTournaments.map((tournament) => (
+                    <div key={tournament.id} className="group bg-slate-900/40 border border-white/5 hover:border-white/10 p-5 rounded-2xl transition-all hover:bg-slate-800/40 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-purple-600/10 rounded-xl text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                                <Trophy className="h-6 w-6" />
                             </div>
-                            <div className="flex items-center gap-2 self-end md:self-auto">
-                                <button
-                                    onClick={() => openEditModal(tournament)}
-                                    className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
-                                    title="Edit Tournament"
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(tournament.id)}
-                                    disabled={isDeleting === tournament.id}
-                                    className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded-xl transition-all border border-red-500/20 disabled:opacity-50"
-                                    title="Delete Tournament"
-                                >
-                                    {isDeleting === tournament.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                </button>
-                                <Link
-                                    href={`/admin/tournaments/${tournament.id}`}
-                                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-purple-900/20 active:scale-95"
-                                >
-                                    Manage
-                                    <ChevronRight className="h-4 w-4" />
-                                </Link>
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{tournament.name}</h3>
+                                    {tournament.status === 'active' && (
+                                        <span className="flex items-center gap-1 bg-green-500/10 text-green-500 text-[10px] font-black px-2 py-0.5 rounded-full border border-green-500/20">
+                                            <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" /> ACTIVE
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-3 text-xs text-slate-500 font-bold mt-1">
+                                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{tournament.region}</span>
+                                    <span className="flex items-center gap-1"><Activity className="h-3 w-3" />{tournament.sportType}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{tournament.year}</span>
+                                    {tournament.level && <span className="text-purple-400 uppercase">{tournament.level}</span>}
+                                </div>
                             </div>
                         </div>
-                    ))
-                ) : (
-                    <div className="py-20 text-center bg-slate-900/20 rounded-3xl border border-dashed border-white/5">
+                        <div className="flex items-center gap-3 shrink-0">
+                            <button onClick={() => openEditModal(tournament)} className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+                                <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDelete(tournament.id)} disabled={isDeleting === tournament.id} className="p-2.5 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all disabled:opacity-50">
+                                {isDeleting === tournament.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </button>
+                            <Link href={`/admin/tournaments/${tournament.id}`} className="flex items-center gap-2 bg-purple-600/10 hover:bg-purple-600 border border-purple-500/20 text-purple-400 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all">
+                                Manage <ChevronRight className="h-4 w-4" />
+                            </Link>
+                        </div>
+                    </div>
+                )) : (
+                    <div className="p-20 text-center border border-dashed border-white/10 rounded-3xl bg-slate-950/20">
                         <Trophy className="h-12 w-12 text-slate-700 mx-auto mb-4 opacity-20" />
-                        <p className="text-slate-500 font-medium uppercase tracking-wide text-sm">No tournaments found.</p>
+                        <p className="text-slate-600 font-bold uppercase tracking-widest text-sm">No tournaments found. Create one to get started.</p>
                     </div>
                 )}
             </div>
 
-            {/* Create Modal */}
+            {/* ===== CREATE / EDIT MODAL ===== */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">
-                                {editingTournament ? "Edit Tournament" : "Create Tournament"}
-                            </h2>
-                            <button onClick={() => {
-                                setIsCreateModalOpen(false)
-                                setEditingTournament(null)
-                            }} className="text-slate-500 hover:text-white transition-colors">
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-slate-950 border border-white/10 rounded-t-[2rem] md:rounded-[2rem] w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+
+                        {/* Modal Header */}
+                        <div className="p-5 border-b border-white/5 flex items-center justify-between shrink-0">
+                            <div>
+                                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5">
+                                    Step {step + 1} of {STEPS.length} — {STEPS[step]}
+                                </p>
+                                <h2 className="text-lg font-black text-white uppercase tracking-tight">
+                                    {editingTournament ? "Edit Tournament" : "New Tournament"}
+                                </h2>
+                            </div>
+                            <button onClick={closeModal} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-500 hover:text-white transition-all">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreate} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tournament Name</label>
-                                <input
-                                    required
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                    placeholder="e.g. Ashanti Inter-Schools 2026"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Region</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.region}
-                                        onChange={e => setFormData({ ...formData, region: e.target.value })}
-                                    >
-                                        <option value="Ashanti">Ashanti</option>
-                                        <option value="Greater Accra">Greater Accra</option>
-                                        <option value="Central">Central</option>
-                                        <option value="Western">Western</option>
-                                        <option value="Eastern">Eastern</option>
-                                        <option value="Volta">Volta</option>
-                                        <option value="Northern">Northern</option>
-                                        <option value="Upper East">Upper East</option>
-                                        <option value="Upper West">Upper West</option>
-                                        <option value="Bono">Bono</option>
-                                        <option value="Bono East">Bono East</option>
-                                        <option value="Ahafo">Ahafo</option>
-                                        <option value="Western North">Western North</option>
-                                        <option value="Oti">Oti</option>
-                                        <option value="Savannah">Savannah</option>
-                                        <option value="North East">North East</option>
-                                        <option value="National">National</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Year</label>
-                                    <input
-                                        required
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.year}
-                                        onChange={e => setFormData({ ...formData, year: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Sport</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.sportType}
-                                        onChange={e => setFormData({ ...formData, sportType: e.target.value })}
-                                    >
-                                        <option value="football">Football</option>
-                                        <option value="athletics">Athletics</option>
-                                        <option value="basketball">Basketball</option>
-                                        <option value="volleyball">Volleyball</option>
-                                        <option value="handball">Handball</option>
-                                        <option value="quiz">Quiz</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Gender</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.gender}
-                                        onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                                    >
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="mixed">Mixed</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Level</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.level}
-                                        onChange={e => setFormData({ ...formData, level: e.target.value })}
-                                    >
-                                        <option value="shs">SHS</option>
-                                        <option value="university">University</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Format</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.format}
-                                        onChange={e => setFormData({ ...formData, format: e.target.value })}
-                                    >
-                                        <option value="league">League (Groups)</option>
-                                        <option value="knockout">Straight Knockout</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            {formData.format === 'league' && (
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Initial Groups</label>
-                                    <input
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        placeholder="e.g. A, B, C"
-                                        value={formData.groups}
-                                        onChange={e => setFormData({ ...formData, groups: e.target.value })}
-                                    />
-                                </div>
+                        {/* Step Indicator */}
+                        <div className="flex px-5 pt-4 gap-2 shrink-0">
+                            {STEPS.map((s, i) => (
+                                <div key={s} className={`flex-1 h-1 rounded-full transition-all ${i <= step ? 'bg-purple-500' : 'bg-white/10'}`} />
+                            ))}
+                        </div>
+
+                        {/* Step Body */}
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <form id="tournament-form" onSubmit={handleCreate}>
+
+                                {/* STEP 0 — BASICS */}
+                                {step === 0 && (
+                                    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-200">
+                                        <div>
+                                            <label className={LABEL_CLS}>Tournament Name</label>
+                                            <input required className={FIELD_CLS} placeholder="e.g. Ashanti Inter-Schools 2026"
+                                                value={formData.name} onChange={e => set('name', e.target.value)} />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className={LABEL_CLS}>Year</label>
+                                                <input required className={FIELD_CLS} placeholder="2026"
+                                                    value={formData.year} onChange={e => set('year', e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <label className={LABEL_CLS}>Level</label>
+                                                <select className={FIELD_CLS} value={formData.level} onChange={e => set('level', e.target.value)}>
+                                                    <option value="shs">SHS</option>
+                                                    <option value="university">University</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* University sub-options */}
+                                        {formData.level === 'university' && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div>
+                                                    <label className={LABEL_CLS}>Tournament Type</label>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[
+                                                            { val: 'hall', icon: Building2, label: 'Hall-Based', desc: 'Teams represent halls / hostels' },
+                                                            { val: 'program', icon: GraduationCap, label: 'Program-Based', desc: 'Teams represent academic departments' }
+                                                        ].map(({ val, icon: Icon, label, desc }) => (
+                                                            <button key={val} type="button"
+                                                                onClick={() => set('uniType', val)}
+                                                                className={`flex flex-col items-start gap-2 p-4 rounded-2xl border text-left transition-all ${formData.uniType === val ? 'bg-purple-500/10 border-purple-500/50 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
+                                                                <Icon className={`h-5 w-5 ${formData.uniType === val ? 'text-purple-400' : ''}`} />
+                                                                <div>
+                                                                    <p className="font-black text-xs uppercase tracking-wide">{label}</p>
+                                                                    <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className={LABEL_CLS}>University</label>
+                                                    <select required={formData.level === 'university'} className={FIELD_CLS}
+                                                        value={formData.parentUniversityId} onChange={e => set('parentUniversityId', e.target.value)}>
+                                                        <option value="">Select University...</option>
+                                                        {universities.map(uni => (
+                                                            <option key={uni.id} value={uni.id}>{uni.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* STEP 1 — DETAILS */}
+                                {step === 1 && (
+                                    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-200">
+                                        <div>
+                                            <label className={LABEL_CLS}>Region</label>
+                                            <select className={FIELD_CLS} value={formData.region} onChange={e => set('region', e.target.value)}>
+                                                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className={LABEL_CLS}>Sport</label>
+                                                <select className={FIELD_CLS} value={formData.sportType} onChange={e => set('sportType', e.target.value)}>
+                                                    {SPORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className={LABEL_CLS}>Gender</label>
+                                                <select className={FIELD_CLS} value={formData.gender} onChange={e => set('gender', e.target.value)}>
+                                                    <option value="male">Male</option>
+                                                    <option value="female">Female</option>
+                                                    <option value="mixed">Mixed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STEP 2 — FORMAT */}
+                                {step === 2 && (
+                                    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-200">
+                                        <div>
+                                            <label className={LABEL_CLS}>Format</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {[
+                                                    { val: 'league', icon: Layers, label: 'League / Groups', desc: 'Group stage + knockout' },
+                                                    { val: 'knockout', icon: Trophy, label: 'Straight Knockout', desc: 'Bracket from round 1' }
+                                                ].map(({ val, icon: Icon, label, desc }) => (
+                                                    <button key={val} type="button"
+                                                        onClick={() => set('format', val)}
+                                                        className={`flex flex-col items-start gap-2 p-4 rounded-2xl border text-left transition-all ${formData.format === val ? 'bg-purple-500/10 border-purple-500/50 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
+                                                        <Icon className={`h-5 w-5 ${formData.format === val ? 'text-purple-400' : ''}`} />
+                                                        <div>
+                                                            <p className="font-black text-xs uppercase tracking-wide">{label}</p>
+                                                            <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {formData.format === 'league' && (
+                                            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <label className={LABEL_CLS}>Initial Groups</label>
+                                                <input className={FIELD_CLS} placeholder="e.g. Group A, Group B, Group C"
+                                                    value={formData.groups} onChange={e => set('groups', e.target.value)} />
+                                                <p className="text-[10px] text-slate-600 mt-1.5">Separate with commas. You can add more later via the Roster tab.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+
+                        {/* Modal Footer Nav */}
+                        <div className="p-5 border-t border-white/5 flex items-center gap-3 shrink-0">
+                            {step > 0 && (
+                                <button type="button" onClick={() => setStep(s => s - 1)}
+                                    className="flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-black text-xs uppercase tracking-widest transition-all">
+                                    <ChevronLeft className="h-4 w-4" /> Back
+                                </button>
                             )}
-
-                            {formData.level === 'university' && (
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Primary Institution (University)</label>
-                                    <select
-                                        required={formData.level === 'university'}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-purple-500 focus:outline-none"
-                                        value={formData.parentUniversityId}
-                                        onChange={e => setFormData({ ...formData, parentUniversityId: e.target.value })}
-                                    >
-                                        <option value="">Select University...</option>
-                                        {universities.map(uni => (
-                                            <option key={uni.id} value={uni.id}>{uni.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            <div className="pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={isCreating}
-                                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
+                            {step < STEPS.length - 1 ? (
+                                <button type="button" onClick={() => setStep(s => s + 1)}
+                                    disabled={step === 0 && !step0Valid}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95">
+                                    Next <ChevronRight className="h-4 w-4" />
+                                </button>
+                            ) : (
+                                <button type="submit" form="tournament-form" disabled={isCreating || !canSubmit}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95">
                                     {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {editingTournament ? "Update Tournament" : "Create Tournament"}
                                 </button>
-                            </div>
-                        </form>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
