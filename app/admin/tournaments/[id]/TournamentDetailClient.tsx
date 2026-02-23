@@ -26,7 +26,9 @@ export function TournamentDetailClient({
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
 
     // Parse Groups from Metadata
-    const groups = tournament.metadata?.groups || (format === 'league' ? ["Group A", "Group B", "Group C"] : [])
+    const metadata = tournament.metadata || {}
+    const groups = metadata.groups || (format === 'league' ? ["Group A", "Group B", "Group C"] : [])
+    const groupAssignments = (metadata.groupAssignments || {}) as Record<string, string>
 
     // Differentiate matches
     const knockoutMatches = matches.filter(m =>
@@ -82,7 +84,22 @@ export function TournamentDetailClient({
                         <div className="space-y-8">
                             {groups.map((group: string) => {
                                 const standings = calculateGroupStandings(groupMatches, group)
-                                if (standings.length === 0) return null
+                                const assignedSchools = schools.filter(s => groupAssignments[s.id] === group)
+
+                                // Merge logic: include assigned schools even if 0 matches played
+                                const fullStandings = [...standings]
+                                assignedSchools.forEach(as => {
+                                    if (!standings.find(s => s.schoolId === as.id)) {
+                                        fullStandings.push({
+                                            schoolId: as.id,
+                                            schoolName: as.name,
+                                            played: 0, won: 0, drawn: 0, lost: 0,
+                                            gf: 0, ga: 0, gd: 0, points: 0
+                                        })
+                                    }
+                                })
+
+                                if (fullStandings.length === 0) return null
                                 return (
                                     <div key={group} className="bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden">
                                         <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
@@ -104,7 +121,7 @@ export function TournamentDetailClient({
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {standings.map((s, idx) => (
+                                                    {fullStandings.map((s, idx) => (
                                                         <tr key={s.schoolId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                                             <td className="px-6 py-4">
                                                                 <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-500' : 'bg-slate-800 text-slate-400'}`}>
@@ -184,7 +201,7 @@ export function TournamentDetailClient({
                         <textarea
                             value={roster}
                             onChange={(e) => setRoster(e.target.value)}
-                            placeholder="Add schools (one per line)..."
+                            placeholder="Add schools... (AI will organize groups even from messy text!)"
                             className="w-full h-48 bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono"
                         />
                         <button
@@ -214,7 +231,10 @@ export function TournamentDetailClient({
                                     <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm font-bold text-slate-300 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <Trophy className="h-3 w-3 text-purple-500 font-bold" />
-                                            {s.name}
+                                            <div className="flex flex-col">
+                                                <span>{s.name}</span>
+                                                {groupAssignments[s.id] && <span className="text-[10px] text-purple-400 uppercase tracking-widest">{groupAssignments[s.id]}</span>}
+                                            </div>
                                         </div>
                                         {s.type !== 'school' && <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-500 uppercase">{s.type}</span>}
                                     </div>

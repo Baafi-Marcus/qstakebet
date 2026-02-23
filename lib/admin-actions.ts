@@ -41,20 +41,31 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
     return results;
 }
 
+import { parseRosterWithAI } from "./ai-roster-parser"
+
 export async function upsertTournamentRoster(tournamentId: string, rosterText: string) {
     // 1. Fetch Tournament to get level and region
     const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
     if (tData.length === 0) throw new Error("Tournament not found");
     const tournament = tData[0];
 
-    const entities = rosterText.split('\n').map(s => s.trim()).filter(Boolean);
+    // AI Parsing
+    const entities = await parseRosterWithAI(rosterText);
     const results = [];
 
     // Get parentId from metadata if it exists
-    const parentId = (tournament.metadata as any)?.parentUniversityId;
+    const metadata = (tournament.metadata as any) || {};
+    const parentId = metadata.parentUniversityId;
 
-    for (const name of entities) {
+    // Initialize group assignments if they don't exist
+    const groupAssignments = metadata.groupAssignments || {};
+    const tournamentGroups = new Set<string>(metadata.groups || []);
+
+    for (const entity of entities) {
+        const { schoolName: name, groupName } = entity;
+
         // Check if exists in this level/region
+        let schoolId: string;
         const existing = await db.select().from(schools)
             .where(and(
                 eq(schools.region, tournament.region),
@@ -64,25 +75,41 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
             .limit(1);
 
         if (existing.length > 0) {
+            schoolId = existing[0].id;
             results.push({ ...existing[0], status: 'found' });
-            continue;
+        } else {
+            // Create new
+            const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
+            const type = tournament.level === 'university' ? 'hall' : 'school';
+
+            const newEntity = await db.insert(schools).values({
+                id,
+                name,
+                region: tournament.region,
+                level: tournament.level,
+                type,
+                parentId: parentId || null
+            }).returning();
+
+            schoolId = id;
+            results.push({ ...newEntity[0], status: 'created' });
         }
 
-        // Create new
-        const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
-        const type = tournament.level === 'university' ? 'hall' : 'school';
-
-        const newEntity = await db.insert(schools).values({
-            id,
-            name,
-            region: tournament.region,
-            level: tournament.level,
-            type,
-            parentId: parentId || null
-        }).returning();
-
-        results.push({ ...newEntity[0], status: 'created' });
+        // Handle Group Assignment
+        if (groupName) {
+            groupAssignments[schoolId] = groupName;
+            tournamentGroups.add(groupName);
+        }
     }
+
+    // Update Tournament Metadata
+    await db.update(tournaments).set({
+        metadata: {
+            ...metadata,
+            groupAssignments,
+            groups: Array.from(tournamentGroups)
+        }
+    }).where(eq(tournaments.id, tournamentId));
 
     return results;
 }

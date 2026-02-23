@@ -206,11 +206,20 @@ export function MatchesClient({
 
     // School Selection Helper
     const [schoolSearch, setSchoolSearch] = useState("")
-    const filteredSchools = schools.filter(s =>
-        s.name.toLowerCase().includes(schoolSearch.toLowerCase()) &&
-        // Optional: filter by region if tournament selected?
-        (formData.tournamentId ? s.region === tournaments.find(t => t.id === formData.tournamentId)?.region : true)
-    ).slice(0, 50) // Limit for performance
+
+    const selectedTournament = tournaments.find(t => t.id === formData.tournamentId)
+    const groupAssignments = selectedTournament?.metadata?.groupAssignments as Record<string, string> | undefined
+    const hasGroupAssignments = groupAssignments && Object.keys(groupAssignments).length > 0
+
+    const filteredSchools = schools.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(schoolSearch.toLowerCase())
+        const matchesRegion = selectedTournament ? s.region === selectedTournament.region : true
+        // If group is selected AND tournament has pre-set assignments, filter by group
+        const matchesGroup = (formData.group && hasGroupAssignments)
+            ? groupAssignments[s.id] === formData.group
+            : true
+        return matchesSearch && matchesRegion && matchesGroup
+    }).slice(0, 50)
 
     const toggleSchool = (id: string) => {
         if (formData.schoolIds.includes(id)) {
