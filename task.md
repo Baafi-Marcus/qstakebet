@@ -13,6 +13,10 @@
 - [x] Logic: Update `lib/data.ts` to ensuring `settled` matches also follow 24hr cleanup
 - [x] Debug: Fix tournament creation flow (last step issue)
 - [x] Debug: Investigate and fix tournament name/info collision after deletion
+- [x] Fix: Filter roster schools to only assigned entities
+- [x] Fix: Sync participant result field in `updateMatchResult` for standings
+- [x] Fix: Prevent auto-submission on last step of tournament creator
+- [ ] Admin UI: Add ability to delete or manage global schools
 
 ## Phase 19: Multi-Sport Platform Transition [x]
 - [x] Audit and Assessment (Completed)

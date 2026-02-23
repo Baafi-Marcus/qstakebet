@@ -399,8 +399,14 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                                     Next <ChevronRight className="h-4 w-4" />
                                 </button>
                             ) : (
-                                <button type="submit" form="tournament-form" disabled={isCreating || !canSubmit}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95">
+                                <button type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        const form = document.getElementById('tournament-form') as HTMLFormElement;
+                                        if (form) form.requestSubmit();
+                                    }}
+                                    disabled={isCreating || !canSubmit}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-lg shadow-purple-900/20">
                                     {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {editingTournament ? "Update Tournament" : "Create Tournament"}
                                 </button>

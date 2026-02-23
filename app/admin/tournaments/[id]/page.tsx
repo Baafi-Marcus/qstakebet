@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { tournaments, schools, matches } from "@/lib/db/schema"
-import { eq, or, sql, and } from "drizzle-orm"
+import { eq, or, sql, and, inArray } from "drizzle-orm"
 import { Tournament, School, Match } from "@/lib/types"
 import { TournamentDetailClient } from "./TournamentDetailClient"
 import { notFound } from "next/navigation"
@@ -19,20 +19,25 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     // 2. Fetch Matches for this tournament
     const matchesData = await db.select().from(matches).where(eq(matches.tournamentId, id))
 
-    // 3. Fetch Schools involved (filter by level and parent if applicable)
-    const parentId = (tournament.metadata as any)?.parentUniversityId;
+    // 3. Fetch Schools involved
+    const metadata = (tournament.metadata as any) || {};
+    const groupAssignments = metadata.groupAssignments || {};
+    const assignedSchoolIds = Object.keys(groupAssignments);
 
-    // We filter by level ALWAYS
-    // If it's university and has a parent, we filter by parent too
-    const schoolQuery = db.select().from(schools).where(
-        and(
-            eq(schools.level, tournament.level),
-            parentId ? eq(schools.parentId, parentId) : undefined,
-            eq(schools.region, tournament.region)
-        )
-    )
+    // Also include schools from matches just in case metadata is out of sync
+    const matchSchoolIds = new Set<string>();
+    matchesData.forEach((m: any) => {
+        m.participants?.forEach((p: any) => {
+            if (p.schoolId) matchSchoolIds.add(p.schoolId);
+        });
+    });
 
-    const allSchools = await schoolQuery;
+    const allRelevantIds = Array.from(new Set([...assignedSchoolIds, ...Array.from(matchSchoolIds)]));
+
+    let allSchools: School[] = [];
+    if (allRelevantIds.length > 0) {
+        allSchools = await db.select().from(schools).where(inArray(schools.id, allRelevantIds));
+    }
 
     return (
         <TournamentDetailClient

@@ -66,12 +66,19 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
 
         // Check if exists in this level/region
         let schoolId: string;
+        const searchConditions = [
+            eq(schools.region, tournament.region),
+            eq(schools.level, tournament.level),
+            sql`lower(${schools.name}) = lower(${name})`
+        ];
+
+        // For university level, scope by parentId to avoid collisions between campuses
+        if (tournament.level === 'university' && parentId) {
+            searchConditions.push(eq(schools.parentId, parentId));
+        }
+
         const existing = await db.select().from(schools)
-            .where(and(
-                eq(schools.region, tournament.region),
-                eq(schools.level, tournament.level),
-                sql`lower(${schools.name}) = lower(${name})`
-            ))
+            .where(and(...searchConditions))
             .limit(1);
 
         if (existing.length > 0) {
@@ -80,7 +87,11 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
         } else {
             // Create new
             const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
-            const type = tournament.level === 'university' ? 'hall' : 'school';
+
+            // Use metadata.uniType if available (Hall vs Department)
+            const type = tournament.level === 'university'
+                ? (metadata.uniType || 'hall')
+                : 'school';
 
             const newEntity = await db.insert(schools).values({
                 id,
@@ -654,8 +665,16 @@ export async function updateMatchResult(matchId: string, resultData: {
         })
 
         // Update match with result
+        // We also need to map the flat resultData.scores back into each participant's 'result' field
+        // so that calculateGroupStandings (which expects participants[i].result) works.
+        const updatedParticipants = (currentMatch[0] as any).participants.map((p: any) => ({
+            ...p,
+            result: resultData.scores[p.schoolId] ?? p.result
+        }));
+
         await db.update(matches)
             .set({
+                participants: updatedParticipants,
                 result: {
                     scores: resultData.scores,
                     winner: resultData.winner,
