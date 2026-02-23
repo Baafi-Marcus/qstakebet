@@ -11,6 +11,8 @@
 - [x] Admin UI: Implement "Match Log" for settled/cancelled matches
 - [x] Admin UI: Implement "Archive" for completed tournaments
 - [x] Logic: Update `lib/data.ts` to ensuring `settled` matches also follow 24hr cleanup
+- [x] Debug: Fix tournament creation flow (last step issue)
+- [x] Debug: Investigate and fix tournament name/info collision after deletion
 
 ## Phase 19: Multi-Sport Platform Transition [x]
 - [x] Audit and Assessment (Completed)

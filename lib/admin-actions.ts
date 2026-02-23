@@ -6,6 +6,7 @@ import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { auth } from "./auth"
+import { revalidateTag } from "next/cache"
 
 // import { School, Tournament } from "./types" 
 
@@ -110,6 +111,7 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
         }
     }).where(eq(tournaments.id, tournamentId));
 
+    revalidateTag("tournaments")
     return results;
 }
 
@@ -250,7 +252,7 @@ export async function createTournament(data: {
         metadata.uniType = data.uniType;
     }
 
-    return await db.insert(tournaments).values({
+    const result = await db.insert(tournaments).values({
         id,
         name: data.name,
         region: data.region,
@@ -261,6 +263,9 @@ export async function createTournament(data: {
         metadata,
         status: 'active'
     }).returning();
+
+    revalidateTag("tournaments")
+    return result;
 }
 
 export async function updateTournament(id: string, data: {
@@ -304,10 +309,13 @@ export async function updateTournament(id: string, data: {
     // Remove undefined
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    return await db.update(tournaments)
+    const result = await db.update(tournaments)
         .set(updateData)
         .where(eq(tournaments.id, id))
         .returning();
+
+    revalidateTag("tournaments")
+    return result;
 }
 
 export async function deleteTournament(id: string) {
@@ -316,12 +324,13 @@ export async function deleteTournament(id: string) {
     if (linkedMatches.length > 0) {
         return { success: false, error: "Cannot delete tournament with existing matches. Delete the matches first." };
     }
-
     try {
         const result = await db.delete(tournaments).where(eq(tournaments.id, id)).returning({ deletedId: tournaments.id });
         if (result.length === 0) {
             return { success: false, error: "Tournament not found or already deleted." };
         }
+        revalidateTag("tournaments")
+        revalidateTag("matches")
         return { success: true };
     } catch (e) {
         console.error("Delete tournament error:", e);
@@ -397,7 +406,7 @@ export async function createMatch(data: {
 
     const id = `mtc-${Math.random().toString(36).substr(2, 9)}`;
 
-    return await db.insert(matches).values({
+    const result = await db.insert(matches).values({
         id,
         tournamentId: data.tournamentId,
         participants: participants,
@@ -415,6 +424,9 @@ export async function createMatch(data: {
         gender: data.gender,
         margin: 0.1
     }).returning();
+
+    revalidateTag("matches")
+    return result;
 }
 
 export async function updateMatch(id: string, data: {
@@ -503,10 +515,13 @@ export async function updateMatch(id: string, data: {
     // Remove undefined
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    return await db.update(matches)
+    const result = await db.update(matches)
         .set(updateData)
         .where(eq(matches.id, id))
         .returning();
+
+    revalidateTag("matches")
+    return result;
 }
 
 export async function deleteMatch(id: string) {

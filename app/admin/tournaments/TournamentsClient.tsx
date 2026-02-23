@@ -106,9 +106,15 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     }
 
     // Step validation — Next button only active when required fields are filled
-    const step0Valid = formData.name.trim().length > 1 && formData.year.trim().length === 4
-    const step1Valid = formData.level !== 'university' || !!formData.parentUniversityId
-    const canSubmit = step0Valid && step1Valid
+    const isStep0Valid = formData.name.trim().length > 1 &&
+        formData.year.trim().length === 4 &&
+        (formData.level !== 'university' || !!formData.parentUniversityId)
+
+    const isStep1Valid = !!formData.region && !!formData.sportType && !!formData.gender
+
+    const isStep2Valid = !!formData.format && (formData.format !== 'league' || formData.groups.trim().length > 0)
+
+    const canSubmit = isStep0Valid && isStep1Valid && isStep2Valid
 
     return (
         <div className="space-y-8">
@@ -385,7 +391,10 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                             )}
                             {step < STEPS.length - 1 ? (
                                 <button type="button" onClick={() => setStep(s => s + 1)}
-                                    disabled={step === 0 && !step0Valid}
+                                    disabled={
+                                        (step === 0 && !isStep0Valid) ||
+                                        (step === 1 && !isStep1Valid)
+                                    }
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95">
                                     Next <ChevronRight className="h-4 w-4" />
                                 </button>

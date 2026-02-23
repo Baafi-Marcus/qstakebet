@@ -231,6 +231,10 @@ export async function getTournamentWithStandings(tournamentId: string) {
     return { tournament, matches: matchData, schools: schoolData };
 }
 
-export async function getAllActiveTournaments() {
-    return db.select().from(tournaments).where(eq(tournaments.status, 'active'));
-}
+export const getAllActiveTournaments = unstable_cache(
+    async () => {
+        return db.select().from(tournaments).where(eq(tournaments.status, 'active'));
+    },
+    ["tournaments-active"],
+    { revalidate: 60, tags: ["tournaments"] }
+)
