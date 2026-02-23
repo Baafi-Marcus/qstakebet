@@ -1,8 +1,9 @@
 import { db } from "@/lib/db"
 import { tournaments, matches, schools } from "@/lib/db/schema"
-import { eq, sql } from "drizzle-orm"
+import { eq, sql, inArray } from "drizzle-orm"
 import { notFound } from "next/navigation"
-import { Trophy, BarChart2 } from "lucide-react"
+import { Trophy, BarChart2, ChevronLeft } from "lucide-react"
+import Link from "next/link"
 import { TournamentStandingsModal } from "@/components/ui/TournamentStandingsModal"
 import { OddsButton } from "@/components/ui/OddsButton"
 import type { Match } from "@/lib/types"
@@ -39,24 +40,38 @@ export default async function CompetitionPage({ params }: Props) {
 
     const tournamentData = await Promise.all(stageTournaments.map(async tournament => {
         const matchData = await db.select().from(matches).where(eq(matches.tournamentId, tournament.id))
-        const schoolIds = Array.from(new Set(matchData.flatMap(m => (m.participants as any[]).map((p: any) => p.schoolId))))
-        const schoolData = schoolIds.length > 0
+
+        // Fetch schools from group assignments OR matches
+        const metadata = (tournament.metadata as any) || {}
+        const groupAssignments = metadata.groupAssignments || {}
+        const assignedIds = Object.keys(groupAssignments)
+
+        const matchIds = Array.from(new Set(matchData.flatMap(m => (m.participants as any[]).map((p: any) => p.schoolId))))
+        const allRelevantIds = Array.from(new Set([...assignedIds, ...matchIds]))
+
+        const schoolData = allRelevantIds.length > 0
             ? await db.select({ id: schools.id, name: schools.name }).from(schools)
-                .where(sql`${schools.id} = ANY(ARRAY[${sql.join(schoolIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
+                .where(inArray(schools.id, allRelevantIds))
             : []
+
         return { tournament, matches: matchData as unknown as Match[], schools: schoolData }
     }))
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-                        <Trophy className="h-6 w-6 text-purple-400" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-white uppercase tracking-tight">{regionLabel} Competitions</h1>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link href="/tournaments" className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all shadow-xl">
+                            <ChevronLeft className="h-5 w-5" />
+                        </Link>
+                        <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20">
+                            <Trophy className="h-6 w-6 text-purple-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">{regionLabel} Competitions</h1>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
+                        </div>
                     </div>
                 </div>
 

@@ -16,6 +16,9 @@
 - [x] Fix: Filter roster schools to only assigned entities
 - [x] Fix: Sync participant result field in `updateMatchResult` for standings
 - [x] Fix: Prevent auto-submission on last step of tournament creator
+- [ ] User UI: Add Back button to competition header
+- [ ] User UI: Fix standings not showing (expand school fetching logic)
+- [ ] User UI: Remove redundant fixtures tab from standings modal
 - [ ] Admin UI: Add ability to delete or manage global schools
 
 ## Phase 19: Multi-Sport Platform Transition [x]
@@ -32,6 +35,7 @@
 - [x] Admin: Add dynamic "Clarify Outcome" dropdowns for custom markets
 - [x] Logic: Update `upsertTournamentRoster` to link new entities (Halls/Depts) to the Parent University
 - [x] Verification: Test creating a University tournament and adding Halls correctly linked to the Parent
+- [x] Final Build & Deployment: Run build and push all changes
 
 ## Phase 37: Seeding University Data [x]
 - [x] Logic: Create `scripts/seed-universities.ts` with the provided list

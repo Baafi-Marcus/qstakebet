@@ -65,10 +65,6 @@ interface Props {
 
 export function TournamentStandingsModal({ tournamentName, matches, groups, groupAssignments, allSchools }: Props) {
     const [open, setOpen] = useState(false)
-    const [tab, setTab] = useState<"standings" | "fixtures">("standings")
-
-    const upcomingMatches = matches.filter(m => m.status === 'upcoming' || m.status === 'live')
-    const finishedMatches = matches.filter(m => m.status === 'finished' || m.status === 'settled')
 
     const hasGroupData = groups.length > 0
 
@@ -105,134 +101,66 @@ export function TournamentStandingsModal({ tournamentName, matches, groups, grou
                             </button>
                         </div>
 
-                        {/* Tabs */}
-                        <div className="flex border-b border-white/5 shrink-0">
-                            {[{ id: "standings", label: "Standings", icon: BarChart2 }, { id: "fixtures", label: "Fixtures", icon: CalendarDays }].map(t => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => setTab(t.id as any)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-black uppercase tracking-widest transition-all ${tab === t.id ? 'text-purple-400 border-b-2 border-purple-500 bg-purple-500/5' : 'text-slate-500 hover:text-slate-300'}`}
-                                >
-                                    <t.icon className="h-3.5 w-3.5" />
-                                    {t.label}
-                                </button>
-                            ))}
-                        </div>
 
                         {/* Body */}
                         <div className="overflow-y-auto flex-1 p-4 space-y-4">
-                            {tab === "standings" && (
-                                <>
-                                    {hasGroupData ? groups.map(group => {
-                                        const standings = calculateGroupStandings(matches, group)
-                                        // Merge pre-assigned schools not yet in standings
-                                        const assignedSchools = allSchools?.filter(s => groupAssignments[s.id] === group) || []
-                                        const full = [...standings]
-                                        assignedSchools.forEach(as => {
-                                            if (!standings.find(s => s.schoolId === as.id)) {
-                                                full.push({ schoolId: as.id, schoolName: as.name, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 })
-                                            }
-                                        })
-                                        if (full.length === 0) return null
-                                        return (
-                                            <div key={group} className="rounded-2xl overflow-hidden border border-white/5">
-                                                <div className="bg-white/5 px-4 py-3 flex items-center gap-2">
-                                                    <span className="text-xs font-black text-white uppercase tracking-widest">{group}</span>
-                                                    <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-slate-500">Group Stage</span>
-                                                </div>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-xs">
-                                                        <thead>
-                                                            <tr className="border-b border-white/5 text-slate-500">
-                                                                <th className="text-left px-4 py-2 font-black uppercase">#</th>
-                                                                <th className="text-left px-4 py-2 font-black uppercase">Team</th>
-                                                                <th className="px-2 py-2 font-black uppercase">P</th>
-                                                                <th className="px-2 py-2 font-black uppercase">W</th>
-                                                                <th className="px-2 py-2 font-black uppercase">D</th>
-                                                                <th className="px-2 py-2 font-black uppercase">L</th>
-                                                                <th className="px-2 py-2 font-black uppercase">GD</th>
-                                                                <th className="px-2 py-2 font-black uppercase text-purple-400">Pts</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {full.map((s, idx) => (
-                                                                <tr key={s.schoolId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                                                    <td className="px-4 py-3">
-                                                                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
-                                                                    </td>
-                                                                    <td className="px-4 py-3 font-bold text-white">{s.schoolName}</td>
-                                                                    <td className="px-2 py-3 text-center text-slate-400">{s.played}</td>
-                                                                    <td className="px-2 py-3 text-center text-slate-400">{s.won}</td>
-                                                                    <td className="px-2 py-3 text-center text-slate-400">{s.drawn}</td>
-                                                                    <td className="px-2 py-3 text-center text-slate-400">{s.lost}</td>
-                                                                    <td className="px-2 py-3 text-center text-slate-400">{s.gd > 0 ? `+${s.gd}` : s.gd}</td>
-                                                                    <td className="px-2 py-3 text-center font-black text-purple-400">{s.points}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        )
-                                    }) : (
-                                        <div className="text-center py-12 text-slate-500 font-bold uppercase text-xs tracking-widest">
-                                            No group standings yet
+                            {hasGroupData ? groups.map(group => {
+                                const standings = calculateGroupStandings(matches, group)
+                                // Merge pre-assigned schools not yet in standings
+                                const assignedSchools = allSchools?.filter(s => groupAssignments[s.id] === group) || []
+                                const full = [...standings]
+                                assignedSchools.forEach(as => {
+                                    if (!standings.find(s => s.schoolId === as.id)) {
+                                        full.push({ schoolId: as.id, schoolName: as.name, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 })
+                                    }
+                                })
+                                if (full.length === 0) return null
+                                return (
+                                    <div key={group} className="rounded-2xl overflow-hidden border border-white/5">
+                                        <div className="bg-white/5 px-4 py-3 flex items-center gap-2">
+                                            <span className="text-xs font-black text-white uppercase tracking-widest">{group}</span>
+                                            <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-slate-500">Group Stage</span>
                                         </div>
-                                    )}
-                                </>
-                            )}
-
-                            {tab === "fixtures" && (
-                                <div className="space-y-3">
-                                    {upcomingMatches.length > 0 && (
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 px-1">Upcoming</p>
-                                            <div className="space-y-2">
-                                                {upcomingMatches.map(m => {
-                                                    const label = m.participants.map(p => p.name).join(' vs ')
-                                                    return (
-                                                        <div key={m.id} className="bg-white/5 rounded-2xl p-3 border border-white/5 space-y-3">
-                                                            <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                                                <span>{m.group || m.stage}</span>
-                                                                <span className={m.status === 'live' ? 'text-red-400 animate-pulse' : ''}>{m.status === 'live' ? '🔴 LIVE' : m.startTime || 'TBD'}</span>
-                                                            </div>
-                                                            <div className={`grid gap-2 ${m.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                                                {m.participants.map(p => (
-                                                                    <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={label} marketName="Match Winner" showLabel={true} />
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="border-b border-white/5 text-slate-500">
+                                                        <th className="text-left px-4 py-2 font-black uppercase">#</th>
+                                                        <th className="text-left px-4 py-2 font-black uppercase">Team</th>
+                                                        <th className="px-2 py-2 font-black uppercase">P</th>
+                                                        <th className="px-2 py-2 font-black uppercase">W</th>
+                                                        <th className="px-2 py-2 font-black uppercase">D</th>
+                                                        <th className="px-2 py-2 font-black uppercase">L</th>
+                                                        <th className="px-2 py-2 font-black uppercase">GD</th>
+                                                        <th className="px-2 py-2 font-black uppercase text-purple-400">Pts</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {full.map((s, idx) => (
+                                                        <tr key={s.schoolId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                            <td className="px-4 py-3">
+                                                                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
+                                                            </td>
+                                                            <td className="px-4 py-3 font-bold text-white">{s.schoolName}</td>
+                                                            <td className="px-2 py-3 text-center text-slate-400">{s.played}</td>
+                                                            <td className="px-2 py-3 text-center text-slate-400">{s.won}</td>
+                                                            <td className="px-2 py-3 text-center text-slate-400">{s.drawn}</td>
+                                                            <td className="px-2 py-3 text-center text-slate-400">{s.lost}</td>
+                                                            <td className="px-2 py-3 text-center text-slate-400">{s.gd > 0 ? `+${s.gd}` : s.gd}</td>
+                                                            <td className="px-2 py-3 text-center font-black text-purple-400">{s.points}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    )}
-
-                                    {finishedMatches.length > 0 && (
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 px-1">Results</p>
-                                            <div className="space-y-2">
-                                                {finishedMatches.map(m => (
-                                                    <div key={m.id} className="bg-white/5 rounded-2xl p-3 border border-white/5 flex items-center justify-between">
-                                                        <div className="flex items-center gap-2 text-sm font-bold text-white">
-                                                            <span>{m.participants[0]?.name}</span>
-                                                            <span className="text-slate-400 font-mono text-xs px-2 py-0.5 bg-white/10 rounded">
-                                                                {m.participants[0]?.result ?? '-'} – {m.participants[1]?.result ?? '-'}
-                                                            </span>
-                                                            <span>{m.participants[1]?.name}</span>
-                                                        </div>
-                                                        <span className="text-[9px] text-slate-600 font-black uppercase">{m.group || m.stage}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {upcomingMatches.length === 0 && finishedMatches.length === 0 && (
-                                        <div className="text-center py-12 text-slate-500 font-bold uppercase text-xs tracking-widest">No fixtures yet</div>
-                                    )}
+                                    </div>
+                                )
+                            }) : (
+                                <div className="text-center py-12 text-slate-500 font-bold uppercase text-xs tracking-widest">
+                                    No group standings yet
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>
