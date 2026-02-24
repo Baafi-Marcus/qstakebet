@@ -16,10 +16,8 @@
 - [x] Fix: Filter roster schools to only assigned entities
 - [x] Fix: Sync participant result field in `updateMatchResult` for standings
 - [x] Fix: Prevent auto-submission on last step of tournament creator
-- [x] User UI: Add Back button to competition header
-- [x] User UI: Fix standings not showing (expand school fetching logic)
 - [x] User UI: Repurpose Standings modal to Fixtures/Results modal
-- [ ] User UI: Implement "Qualified Teams" section for knockouts
+- [x] User UI: Implement "Qualified Teams" section for knockouts
 - [ ] Admin UI: Add ability to delete or manage global schools
 
 ## Phase 19: Multi-Sport Platform Transition [x]

@@ -279,7 +279,8 @@ Rules:
    - Formula: FairProb = 1/FairOdd. VigProb = FairProb * 1.15. FinalOdd = 1/VigProb.
 6. **Format**: Return ONLY valid JSON array of objects.
    [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
-7. **Realism**: Odds must be realistic for the specific schools and sports mentioned.`
+7. **Realism**: Odds must be realistic for the specific schools and sports mentioned.
+8. **Tournament Awareness**: Use the provided 'Tournament Context' (recent results) to influence your markets. For example, if a team has been scoring high, suggest 'Over' markets or 'Next Goal' specials for them. If a team is on a losing streak, adjust their odds and suggest 'Double Chance' for their opponents.`
                         },
                         {
                             role: "user",

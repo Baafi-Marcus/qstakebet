@@ -2,9 +2,10 @@ import { db } from "@/lib/db"
 import { tournaments, matches, schools } from "@/lib/db/schema"
 import { eq, sql, inArray } from "drizzle-orm"
 import { notFound } from "next/navigation"
-import { Trophy, BarChart2, ChevronLeft } from "lucide-react"
+import { Trophy, BarChart2, ChevronLeft, CalendarDays } from "lucide-react"
 import Link from "next/link"
 import { TournamentFixturesModal } from "@/components/ui/TournamentFixturesModal"
+import { GroupStandingsModal } from "@/components/ui/GroupStandingsModal"
 import { OddsButton } from "@/components/ui/OddsButton"
 import type { Match } from "@/lib/types"
 
@@ -89,6 +90,10 @@ export default async function CompetitionPage({ params }: Props) {
 
                             const upcomingMatches = tMatches.filter(m => m.status === 'upcoming' || m.status === 'live')
 
+                            // Detect if Group Rounds are over
+                            const groupMatches = tMatches.filter(m => m.group && m.group !== 'Knockout')
+                            const allGroupsFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'finished' || m.status === 'settled')
+
                             return (
                                 <div key={tournament.id} className="space-y-4">
                                     {/* Tournament Header */}
@@ -99,15 +104,26 @@ export default async function CompetitionPage({ params }: Props) {
                                             </span>
                                             <h2 className="text-xl font-black text-white uppercase tracking-tight">{tournament.name}</h2>
                                         </div>
-                                        <TournamentFixturesModal
-                                            tournamentName={tournament.name}
-                                            tournamentId={tournament.id}
-                                            matches={tMatches}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            {allGroupsFinished && (
+                                                <GroupStandingsModal
+                                                    tournamentName={tournament.name}
+                                                    matches={tMatches}
+                                                    groups={groups}
+                                                    groupAssignments={groupAssignments}
+                                                    allSchools={tSchools}
+                                                />
+                                            )}
+                                            <TournamentFixturesModal
+                                                tournamentName={tournament.name}
+                                                tournamentId={tournament.id}
+                                                matches={tMatches}
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Group Standings OR Qualified Teams */}
-                                    {groups.length > 0 ? (
+                                    {(groups.length > 0 && !allGroupsFinished) ? (
                                         <div className="space-y-4">
                                             {groups.map(group => {
                                                 const gFinished = tMatches.filter(m => m.group === group && (m.status === 'finished' || m.status === 'settled'))
@@ -170,15 +186,16 @@ export default async function CompetitionPage({ params }: Props) {
                                             })}
                                         </div>
                                     ) : (
-                                        // Knockout Qualified Teams Display
+                                        // Knockout Qualified Teams Display OR Progress
                                         (() => {
                                             const finishedKnockouts = tMatches.filter(m => m.status === 'finished' || m.status === 'settled')
-                                            if (finishedKnockouts.length === 0) return null
 
                                             // Determine latest finished stage
                                             const stages = Array.from(new Set(finishedKnockouts.map(m => m.stage || "Tournament"))).reverse()
-                                            const latestStage = stages[0]
-                                            const latestMatches = finishedKnockouts.filter(m => (m.stage || "Tournament") === latestStage)
+
+                                            // Fallback for when group stage just ended but no knockouts exist yet
+                                            const latestStage = stages.length > 0 ? stages[0] : "Group Stage"
+                                            const latestMatches = stages.length > 0 ? finishedKnockouts.filter(m => (m.stage || "Tournament") === latestStage) : groupMatches
 
                                             // Collect winners
                                             const winners = latestMatches.reduce((acc: Array<{ id: string, name: string }>, m) => {
@@ -190,13 +207,13 @@ export default async function CompetitionPage({ params }: Props) {
                                                 return acc
                                             }, [])
 
-                                            if (winners.length === 0) return null
+                                            if (winners.length === 0 && !allGroupsFinished) return null
 
                                             return (
                                                 <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 space-y-4">
                                                     <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-4">
                                                         <div>
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Round Progress</p>
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Tournament Progress</p>
                                                             <h3 className="text-lg font-black text-white uppercase tracking-tight">Teams Through to Next Round</h3>
                                                         </div>
                                                         <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">

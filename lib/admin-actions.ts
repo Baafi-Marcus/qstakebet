@@ -585,13 +585,41 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
             eq(schoolStrengths.gender, gender)
         ));
 
-    // 1b. Fetch Live Form (Real Stats)
-    const liveStats = await db.select().from(realSchoolStats)
-        .where(and(
-            inArray(realSchoolStats.schoolId, schoolIds),
-            eq(realSchoolStats.sportType, sportType),
-            eq(realSchoolStats.gender, gender)
-        ));
+    // 1b. Fetch Live Form (Tournament Specific if available, else Global)
+    let liveStats: any[] = [];
+    if (tournamentId) {
+        // Calculate dynamic form from this tournament's matches
+        const tMatches = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+        const schoolsInvolved = schoolIds;
+
+        liveStats = schoolsInvolved.map(id => {
+            const schoolMatches = tMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id) && (m.status === 'finished' || m.status === 'settled'));
+            let wins = 0, draws = 0, gf = 0, ga = 0;
+            schoolMatches.forEach(m => {
+                const res = m.result as any;
+                if (res?.winner === id) wins++;
+                else if (res?.winner === 'X') draws++;
+
+                const p = (m.participants as any[]).find((p: any) => p.schoolId === id);
+                const opp = (m.participants as any[]).find((p: any) => p.schoolId !== id);
+                gf += parseInt(String(p?.result || "0")) || 0;
+                ga += parseInt(String(opp?.result || "0")) || 0;
+            });
+
+            // Generate a 'currentForm' multiplier: 1.0 is base. 
+            // Simple: +5% per win, -5% per loss, +2% per goal diff
+            const gd = gf - ga;
+            const formMultiplier = 1.0 + (wins * 0.05) + (gd * 0.02);
+            return { schoolId: id, currentForm: Math.max(0.7, Math.min(1.5, formMultiplier)), matchesPlayed: schoolMatches.length };
+        });
+    } else {
+        liveStats = await db.select().from(realSchoolStats)
+            .where(and(
+                inArray(realSchoolStats.schoolId, schoolIds),
+                eq(realSchoolStats.sportType, sportType),
+                eq(realSchoolStats.gender, gender)
+            ));
+    }
 
     // 2. Calculate probabilities
     let totalPower = 0;
@@ -603,9 +631,6 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
         // Live Form Adjustment
         const live = liveStats.find(l => l.schoolId === id);
         if (live && live.matchesPlayed && live.matchesPlayed > 0) {
-            // FormFactor: 1.0 is neutral. Range 0.5 to 2.0.
-            // Blend: 70% Base + 30% Form? Or direct multiplier?
-            // Let's use Multiplier for dynamic drift.
             const formMultiplier = live.currentForm || 1.0;
             power = power * formMultiplier;
         }
@@ -944,6 +969,7 @@ export async function getMatchSuggestions(matchId: string) {
         if (!matchData.length) throw new Error("Match not found")
 
         const match = matchData[0]
+        if (!match.tournamentId) throw new Error("Tournament ID missing")
         const participants = match.participants as Array<{ name: string }> | null
         const pNames = participants?.map(p => p.name).join(" vs ") || "Teams"
 
@@ -951,7 +977,14 @@ export async function getMatchSuggestions(matchId: string) {
         const currentOdds = (match.extendedOdds as Record<string, any>) || {}
         const currentMarkets = Object.keys(currentOdds)
 
-        const details = `${match.sportType} match between ${pNames}. Gender: ${match.gender}. Stage: ${match.stage}.`
+        // Get tournament context for better AI logic
+        const tPrevMatches = await db.select().from(matches).where(and(eq(matches.tournamentId, match.tournamentId), eq(matches.status, 'finished'))).limit(10)
+        const context = tPrevMatches.map(m => {
+            const [p1, p2] = m.participants as any[]
+            return `${p1.name} ${p1.result}-${p2.result} ${p2.name} (${m.stage})`
+        }).join("; ")
+
+        const details = `${match.sportType} match between ${pNames}. Gender: ${match.gender}. Stage: ${match.stage}. Tournament Context: ${context}`
 
         const { getAIMarketSuggestions } = await import("./ai-result-parser")
         const suggestions = await getAIMarketSuggestions(details, currentMarkets)
