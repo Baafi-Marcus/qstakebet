@@ -26,8 +26,8 @@ export function getMatchLockStatus(match: Match): {
     const minutesOverdue = isOverdue ? Math.abs(minutesUntilStart) : 0
 
     // RELAXED LOCKING FOR "GHANA TIME"
-    // We only lock if the status is explicitly 'live', 'finished', 'cancelled' or 'locked'.
-    const isExplicitlyLocked = ['live', 'finished', 'cancelled', 'locked'].includes(match.status || "");
+    // We only lock if the status is explicitly 'live', 'finished', 'cancelled', 'locked', 'suspended', 'postponed' or 'abandoned'.
+    const isExplicitlyLocked = ['live', 'finished', 'cancelled', 'locked', 'suspended', 'postponed', 'abandoned'].includes(match.status || "");
 
     if (isExplicitlyLocked) {
         return {

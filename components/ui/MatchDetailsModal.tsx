@@ -83,7 +83,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
     }
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose} />
 
             <div className="relative bg-[#0f1115] w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] flex flex-col">

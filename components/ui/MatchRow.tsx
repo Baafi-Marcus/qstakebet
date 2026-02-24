@@ -312,7 +312,10 @@ export function MatchRow({
                                 {/* Selector */}
                                 <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
                                     <button
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsDropdownOpen(!isDropdownOpen);
+                                        }}
                                         className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                                     >
                                         <span className="text-[7px] uppercase opacity-50">LINE</span>
@@ -322,7 +325,10 @@ export function MatchRow({
                                         </div>
                                     </button>
                                     {isDropdownOpen && (
-                                        <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md" >
+                                        <div
+                                            className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             {
                                                 Object.keys(match.extendedOdds?.totalPoints || {})
                                                     .map(k => k.split(" ")[1])
@@ -331,7 +337,8 @@ export function MatchRow({
                                                     .map(line => (
                                                         <button
                                                             key={line}
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 setSelectedTotalLine(line);
                                                                 setIsDropdownOpen(false);
                                                             }}
@@ -427,7 +434,10 @@ export function MatchRow({
                                 {/* Round Selector */}
                                 <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
                                     <button
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsDropdownOpen(!isDropdownOpen);
+                                        }}
                                         className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                                     >
                                         <span className="text-[7px] uppercase opacity-50">ROUND</span>
@@ -437,11 +447,15 @@ export function MatchRow({
                                         </div>
                                     </button>
                                     {isDropdownOpen && (
-                                        <div className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md">
+                                        <div
+                                            className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map(r => (
                                                 <button
                                                     key={r}
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         setSelectedRound(r);
                                                         setIsDropdownOpen(false);
                                                     }}

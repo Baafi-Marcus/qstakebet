@@ -20,11 +20,11 @@ export function BottomNav() {
     ]
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden">
+        <div className="fixed bottom-6 left-4 right-4 z-[100] lg:hidden">
             {/* Glassmorphic Background */}
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" />
+            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem]" />
 
-            <div className="relative h-16 pb-safe flex items-center justify-around px-2">
+            <div className="relative h-16 flex items-center justify-around px-2">
                 {/* Home & Virtuals */}
                 <div className="flex flex-1 justify-around">
                     {navItems.slice(0, 2).map((item) => {

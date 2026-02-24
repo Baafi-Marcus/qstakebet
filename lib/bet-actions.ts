@@ -52,7 +52,19 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
     for (const selection of selections) {
         // Skip DB check for virtual matches as they are ephemeral
-        if (selection.matchId.startsWith('vmt-')) {
+        // But validate round expiration
+        if (selection.matchId.startsWith('vmt-') || selection.matchId.startsWith('vr-')) {
+            const parts = selection.matchId.split('-');
+            const roundId = parseInt(parts[1]);
+            const currentRoundId = Math.floor(Date.now() / 60000);
+
+            // If round is older than current round, it's already started/finished
+            if (roundId < currentRoundId) {
+                return {
+                    success: false,
+                    error: `The virtual match "${selection.matchLabel}" has already started. Please remove it.`
+                }
+            }
             continue;
         }
 

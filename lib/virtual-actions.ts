@@ -144,17 +144,24 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         let queryRegion: string | undefined = undefined
         const selections = bet.selections as any[]
         const firstSelection = selections[0]
-        if (firstSelection?.matchId.startsWith('vr-')) {
-            const parts = firstSelection.matchId.split('-')
+        const matchId = firstSelection?.matchId || ""
+
+        if (matchId.startsWith('vr-') || matchId.startsWith('vmt-')) {
+            const parts = matchId.split('-')
             category = (parts[3] as 'national' | 'regional') || 'national'
             const regionSlug = parts[4]
             if (regionSlug && regionSlug !== 'all') {
+                // Find regional name from slug
                 const schoolsInThisRegion = schools.filter(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
                 queryRegion = schoolsInThisRegion[0]?.region;
             }
         }
 
-        const { outcomes } = generateVirtualMatches(15, schools, roundId, category, queryRegion, strengthMap, userSeed)
+        // Parity: National uses 9 matches, Regional uses 15 (sync with VirtualsClient.tsx)
+        const matchCount = category === 'national' ? 9 : 15
+        const { outcomes } = generateVirtualMatches(matchCount, schools, roundId, category, queryRegion, strengthMap, userSeed)
+
+        console.log(`Settling virtual bet ${betId}: round=${roundId}, category=${category}, region=${queryRegion}, matches=${outcomes.length}`)
 
         const MAX_GAME_PAYOUT = 3000
         const isMulti = bet.mode === 'multi'

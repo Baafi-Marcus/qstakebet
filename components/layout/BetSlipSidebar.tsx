@@ -77,11 +77,31 @@ export function BetSlipSidebar() {
         try {
             const res = await loadBookedBet(bookingCode)
             if (res.success && res.selections) {
-                // Add selections to context
-                res.selections.forEach((sel: any) => {
-                    addSelection(sel)
-                })
-                setBookingCode("")
+                const now = Math.floor(Date.now() / 60000);
+                const validSelections = res.selections.filter((sel: any) => {
+                    // Check if finished
+                    if (sel.matchStatus === 'finished' || sel.matchStatus === 'cancelled') return false;
+
+                    // Check virtual expiration
+                    if (sel.matchId.startsWith('vmt-') || sel.matchId.startsWith('vr-')) {
+                        const roundId = parseInt(sel.matchId.split('-')[1]);
+                        if (roundId < now) return false;
+                    }
+                    return true;
+                });
+
+                if (validSelections.length === 0) {
+                    setError("All matches in this code have already finished or expired.")
+                } else {
+                    if (validSelections.length < res.selections.length) {
+                        setError(`Loaded ${validSelections.length} active selections. ${res.selections.length - validSelections.length} finished games were skipped.`)
+                    }
+                    // Add selections to context
+                    validSelections.forEach((sel: any) => {
+                        addSelection(sel)
+                    })
+                    setBookingCode("")
+                }
             } else {
                 setError(res.error || "Invalid code")
             }

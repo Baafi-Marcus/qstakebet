@@ -18,6 +18,13 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
     ]
 
     useEffect(() => {
+        // Check if splash already shown this session
+        const hasShown = sessionStorage.getItem('qstake_splash_shown')
+        if (hasShown) {
+            setShow(false)
+            return
+        }
+
         // Start animation after a brief delay
         const animationTimer = setTimeout(() => {
             setAnimate(true)
@@ -42,6 +49,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
 
         // Hide splash screen after delay
         const timer = setTimeout(() => {
+            sessionStorage.setItem('qstake_splash_shown', 'true')
             setShow(false)
         }, 3800)
 
