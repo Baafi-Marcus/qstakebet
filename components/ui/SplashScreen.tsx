@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
+
+const STATUSES = [
+    "Initializing Secure Environment",
+    "Loading Market Engine",
+    "Syncing Live Odds",
+    "Optimizing UI Components",
+    "Ready for Play"
+]
 
 export function SplashScreen({ children }: { children: React.ReactNode }) {
     const [show, setShow] = useState(true)
@@ -9,20 +18,16 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
     const [progress, setProgress] = useState(0)
     const [statusIdx, setStatusIdx] = useState(0)
 
-    const statuses = [
-        "Initializing Secure Environment",
-        "Loading Market Engine",
-        "Syncing Live Odds",
-        "Optimizing UI Components",
-        "Ready for Play"
-    ]
-
     useEffect(() => {
         // Check if splash already shown this session
-        const hasShown = sessionStorage.getItem('qstake_splash_shown')
+        const hasShown = typeof window !== 'undefined' ? sessionStorage.getItem('qstake_splash_shown') : null
+
         if (hasShown) {
-            setShow(false)
-            return
+            // Use setTimeout to avoid synchronous setState inside effect
+            const skipTimer = setTimeout(() => {
+                setShow(false)
+            }, 0)
+            return () => clearTimeout(skipTimer)
         }
 
         // Start animation after a brief delay
@@ -44,7 +49,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
 
         // Status simulation
         const statusTimer = setInterval(() => {
-            setStatusIdx(prev => (prev < statuses.length - 1 ? prev + 1 : prev))
+            setStatusIdx(prev => (prev < STATUSES.length - 1 ? prev + 1 : prev))
         }, 700)
 
         // Hide splash screen after delay
@@ -82,9 +87,12 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
 
                     <div className="flex flex-col items-center relative w-full">
                         <div className="relative mb-6">
-                            <img
+                            <Image
                                 src="/icon.png"
                                 alt="QSTAKE Logo"
+                                width={96}
+                                height={96}
+                                priority
                                 className="h-20 w-20 md:h-24 md:w-24 object-contain animate-float drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                             />
                         </div>
@@ -103,7 +111,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
 
                             <div className="flex flex-col items-center gap-1">
                                 <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] h-4 flex items-center justify-center text-center">
-                                    {statuses[statusIdx]}
+                                    {STATUSES[statusIdx]}
                                 </p>
                                 <span className="text-[10px] text-slate-600 font-mono tabular-nums leading-none">
                                     {Math.round(progress)}%

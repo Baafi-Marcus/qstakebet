@@ -16,6 +16,7 @@ import { Match, Announcement } from "@/lib/types" // Added Announcement type
 import { useBetSlip } from "@/lib/store/useBetSlip"
 import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 import { getActiveAnnouncements } from "@/lib/announcement-actions"
+import { PullToRefresh } from "@/components/ui/PullToRefresh"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -62,9 +63,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     {!isVirtuals && !isAuthPage && <SubNavBar />}
 
                     <div className="flex-1 flex flex-col">
-                        <main className="flex-1 min-w-0">
-                            {children}
-                        </main>
+                        <PullToRefresh disabled={isAuthPage || isAdmin}>
+                            <main className="flex-1 min-w-0">
+                                {children}
+                            </main>
+                        </PullToRefresh>
                     </div>
 
                     {/* Standard Footer */}
