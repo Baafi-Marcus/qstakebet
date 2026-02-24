@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { tournaments, matches, schools } from "@/lib/db/schema"
-import { eq, sql, inArray } from "drizzle-orm"
+import { eq, sql, inArray, and } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { Trophy, BarChart2, ChevronLeft, CalendarDays } from "lucide-react"
 import Link from "next/link"
@@ -12,7 +12,7 @@ import type { Match } from "@/lib/types"
 export const dynamic = 'force-dynamic'
 
 type Props = {
-    params: Promise<{ stage: string }>
+    params: Promise<{ slug: string[] }>
 }
 
 const REGION_MAP: Record<string, string> = {
@@ -25,15 +25,26 @@ const REGION_MAP: Record<string, string> = {
 }
 
 export default async function CompetitionPage({ params }: Props) {
-    const { stage } = await params
+    const { slug } = await params
+    const stage = slug[0]
+    const sportFilter = slug[1]?.toLowerCase()
+
     const regionLabel = REGION_MAP[stage.toLowerCase()] || (stage.charAt(0).toUpperCase() + stage.slice(1))
+    const sportLabel = sportFilter ? (sportFilter.charAt(0).toUpperCase() + sportFilter.slice(1)) : null
 
     const allTournaments = await db.select().from(tournaments).where(eq(tournaments.status, 'active'))
-    const stageTournaments = allTournaments.filter(t =>
+    let stageTournaments = allTournaments.filter(t =>
         t.region?.toLowerCase().replace(/\s+/g, '-') === stage.toLowerCase() ||
         t.region?.toLowerCase() === stage.toLowerCase() ||
         t.name?.toLowerCase().includes(stage.toLowerCase())
     )
+
+    // Apply sport filter if present
+    if (sportFilter) {
+        stageTournaments = stageTournaments.filter(t =>
+            t.sportType?.toLowerCase() === sportFilter
+        )
+    }
 
     if (stageTournaments.length === 0 && !REGION_MAP[stage.toLowerCase()]) {
         notFound()
@@ -70,7 +81,9 @@ export default async function CompetitionPage({ params }: Props) {
                             <Trophy className="h-6 w-6 text-purple-400" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">{regionLabel} Competitions</h1>
+                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">
+                                {regionLabel} {sportLabel && <span className="text-purple-400">{sportLabel}</span>} Competitions
+                            </h1>
                             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
                         </div>
                     </div>
@@ -79,7 +92,9 @@ export default async function CompetitionPage({ params }: Props) {
                 {tournamentData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 bg-slate-900/40 border border-white/5 rounded-[2.5rem] text-center space-y-4">
                         <BarChart2 className="h-12 w-12 text-slate-700" />
-                        <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">No active tournaments in this region yet</p>
+                        <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">
+                            No active {sportLabel ? sportLabel.toLowerCase() : ''} tournaments in this region yet
+                        </p>
                     </div>
                 ) : (
                     <div className="space-y-10">

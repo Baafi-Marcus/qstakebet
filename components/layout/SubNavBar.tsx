@@ -49,12 +49,23 @@ const REGIONS = [
 export function SubNavBar() {
     const pathname = usePathname()
     const [isRegionsOpen, setIsRegionsOpen] = useState(false)
+    const [menuOffset, setMenuOffset] = useState(104)
+    const navRef = React.useRef<HTMLDivElement>(null)
+
+    React.useLayoutEffect(() => {
+        if (isRegionsOpen && navRef.current) {
+            setMenuOffset(navRef.current.getBoundingClientRect().bottom)
+        }
+    }, [isRegionsOpen])
 
     return (
-        <div className={cn(
-            "w-full bg-slate-900/50 backdrop-blur-md border-b border-white/5 sticky top-14",
-            isRegionsOpen ? "z-[9999]" : "z-40"
-        )}>
+        <div
+            ref={navRef}
+            className={cn(
+                "w-full bg-slate-900/50 backdrop-blur-md border-b border-white/5 sticky top-14",
+                isRegionsOpen ? "z-[9999]" : "z-40"
+            )}
+        >
             <div className="max-w-[1400px] mx-auto px-4 flex items-center h-12 gap-2 sm:gap-6">
                 {/* Scrollable Content Container */}
                 <div className="flex-1 overflow-x-auto no-scrollbar pr-2">
@@ -143,6 +154,7 @@ export function SubNavBar() {
             <RegionsMenu
                 isOpen={isRegionsOpen}
                 onClose={() => setIsRegionsOpen(false)}
+                topOffset={menuOffset}
             />
         </div>
     )

@@ -17,6 +17,7 @@ import { getMatchStatsByRegion } from "@/lib/match-stats"
 interface RegionsMenuProps {
     isOpen: boolean
     onClose: () => void
+    topOffset?: number
 }
 
 const SPORTS = [
@@ -48,7 +49,7 @@ const REGIONS = [
     { label: "National", href: "/competitions/national" },
 ]
 
-export function RegionsMenu({ isOpen, onClose }: RegionsMenuProps) {
+export function RegionsMenu({ isOpen, onClose, topOffset = 104 }: RegionsMenuProps) {
     const [expandedRegion, setExpandedRegion] = React.useState<string | null>(null)
     const [stats, setStats] = React.useState<Record<string, Record<string, number>>>({})
     const [mounted, setMounted] = useState(false)
@@ -81,7 +82,10 @@ export function RegionsMenu({ isOpen, onClose }: RegionsMenuProps) {
             />
 
             {/* Menu Container */}
-            <div className="relative mt-[104px] w-full flex-1 bg-slate-900 border-t border-white/10 overflow-y-auto no-scrollbar pointer-events-auto shadow-2xl flex flex-col">
+            <div
+                className="relative w-full flex-1 bg-slate-900 border-t border-white/10 overflow-y-auto no-scrollbar pointer-events-auto shadow-2xl flex flex-col"
+                style={{ marginTop: `${topOffset}px` }}
+            >
                 <div className="flex flex-col flex-1">
                     {/* Header Area */}
                     <div className="flex items-center justify-between p-4 border-b border-white/5 sticky top-0 bg-slate-900 z-10">

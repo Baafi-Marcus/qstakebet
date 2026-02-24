@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, wallets, bets, transactions, bonuses } from "@/lib/db/schema"
+import { users, wallets, bets, transactions, bonuses, matches } from "@/lib/db/schema"
 import { eq, desc, sql, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
@@ -36,19 +36,64 @@ export async function getUserProfileSummary() {
 }
 
 /**
- * Fetches a simple list of user bets for the history page.
+ * Fetches a detailed list of user bets enriched with current match results and status.
+ * Required for the high-end Expandable Bets UI.
  */
-export async function getUserBets() {
+export async function getUserBetsWithDetails() {
     const session = await auth()
     if (!session?.user?.id) return { success: false, error: "Unauthorized" }
 
     try {
+        const userId = session.user.id
         const userBets = await db.query.bets.findMany({
-            where: eq(bets.userId, session.user.id),
-            orderBy: [desc(bets.createdAt)]
+            where: eq(bets.userId, userId),
+            orderBy: [desc(bets.createdAt)],
+            limit: 50
         })
-        return { success: true, bets: userBets }
+
+        if (!userBets.length) return { success: true, bets: [] }
+
+        // 1. Collect all unique match IDs from all selections
+        const matchIds = new Set<string>()
+        userBets.forEach(bet => {
+            const selections = bet.selections as any[]
+            selections.forEach(s => {
+                if (s.matchId) matchIds.add(s.matchId)
+            })
+        })
+
+        // 2. Fetch current state for all involved matches
+        const matchesData = await db.query.matches.findMany({
+            where: sql`${matches.id} IN ${Array.from(matchIds)}`
+        })
+
+        // 3. Map matches for easy lookup
+        const matchLookup = new Map(matchesData.map(m => [m.id, m]))
+
+        // 4. Enrich bets with live match data
+        const enrichedBets = userBets.map(bet => {
+            const selections = (bet.selections as any[]).map(s => {
+                const currentMatch = matchLookup.get(s.matchId)
+                return {
+                    ...s,
+                    currentMatch: currentMatch ? {
+                        status: currentMatch.status,
+                        result: currentMatch.result,
+                        isLive: currentMatch.isLive,
+                        startTime: currentMatch.startTime
+                    } : null
+                }
+            })
+
+            return {
+                ...bet,
+                selections
+            }
+        })
+
+        return { success: true, bets: enrichedBets }
     } catch (e) {
+        console.error("Get user bets with details error:", e)
         return { success: false, error: "Internal Error" }
     }
 }

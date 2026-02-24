@@ -1,152 +1,206 @@
-import React from "react"
-import { ArrowLeft, Home, X, Trophy, ChevronRight, Ticket } from "lucide-react"
+import React, { useState, useRef, useEffect } from "react"
+import { ArrowLeft, Home, X, Trophy, ChevronRight, Ticket, ChevronDown, Clock, Target, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
     ClientVirtualBet,
     ResolvedSelection,
     getTicketId,
-    getSchoolAcronym
 } from "@/lib/virtuals"
+import gsap from "gsap"
 
 interface VirtualsHistoryProps {
     isOpen: boolean;
     onClose: () => void;
     betHistory: ClientVirtualBet[];
-    viewedTicket: ClientVirtualBet | null;
-    onViewTicket: (ticket: ClientVirtualBet | null) => void;
 }
 
 export function VirtualsHistory({
     isOpen,
     onClose,
     betHistory,
-    viewedTicket,
-    onViewTicket
 }: VirtualsHistoryProps) {
 
-    // Ticket Details View
-    if (viewedTicket) {
-        return (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => onViewTicket(null)} />
-                <div className="relative bg-[#1a1b1e] w-full max-w-lg h-full md:h-[90vh] md:rounded-b-2xl overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-300 border border-white/10">
+    if (!isOpen) return null;
 
-                    <div className="bg-red-600 px-4 py-3 flex items-center justify-between text-white shadow-md z-10">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => onViewTicket(null)} className="p-1 hover:bg-black/10 rounded-full transition-colors">
-                                <ArrowLeft className="h-6 w-6" />
-                            </button>
-                            <h2 className="text-lg font-bold tracking-tight">Ticket Details</h2>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button className="p-1 hover:bg-black/10 rounded-full transition-colors" onClick={() => onViewTicket(null)}>
-                                <Home className="h-5 w-5" />
-                            </button>
-                        </div>
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
+            <div className="relative bg-slate-900 w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-[2.5rem] border border-white/10 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                {/* Header */}
+                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                    <div>
+                        <h2 className="text-xl font-black uppercase tracking-tight text-white mb-1">Bet History</h2>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Instant Virtuals History</p>
                     </div>
+                    <button onClick={onClose} className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all active:scale-90">
+                        <X className="h-5 w-5 text-slate-400" />
+                    </button>
+                </div>
 
-                    <div className="flex-1 overflow-y-auto bg-slate-900 custom-scrollbar">
-                        <div className="p-4 border-b border-white/5 bg-slate-900/50">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ticket ID: {getTicketId(viewedTicket.id)}</span>
-                                    <h3 className="text-lg font-black text-white">{viewedTicket.mode === 'multi' ? 'Multiple' : 'Single'}</h3>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Return</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Ticket Settled</span>
-                                    <span className={cn(
-                                        "font-black",
-                                        (viewedTicket.totalReturns ?? 0) > viewedTicket.totalStake ? "text-emerald-500" :
-                                            (viewedTicket.totalReturns ?? 0) > 0 ? "text-yellow-500" : "text-white/20"
-                                    )}>
-                                        {(viewedTicket.totalReturns ?? 0) > 0 ? `+ GHS ${(viewedTicket.totalReturns ?? 0).toFixed(2)} ` : 'GHS 0.00'}
-                                    </span>
-                                    <div className="text-2xl font-black text-white mt-1">
-                                        {(viewedTicket.totalReturns ?? 0).toFixed(2)}
-                                    </div>
-                                </div>
+                {/* History List */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar bg-[#0f1115]">
+                    {betHistory.length > 0 ? (
+                        betHistory.map((h, i) => (
+                            <VirtualBetTicket key={i} bet={h} />
+                        ))
+                    ) : (
+                        <div className="py-20 flex flex-col items-center justify-center text-center">
+                            <div className="h-20 w-20 bg-slate-900 border border-white/5 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl">
+                                <Ticket className="h-10 w-10 text-slate-700" />
                             </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2">No tickets found</h3>
+                            <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest max-w-[200px] leading-relaxed">
+                                You have no virtual betting history yet. Start playing to see your tickets here.
+                            </p>
+                        </div>
+                    )}
+                </div>
 
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                                <div>
-                                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Stake</div>
-                                    <div className="text-sm font-black text-white">
-                                        {viewedTicket.totalStake.toFixed(2)}
-                                    </div>
+                {/* Footer Footer */}
+                <div className="p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/5">
+                    <button
+                        onClick={onClose}
+                        className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+                    >
+                        Return to Virtuals
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function VirtualBetTicket({ bet }: { bet: ClientVirtualBet }) {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const detailsRef = useRef<HTMLDivElement>(null)
+    const arrowRef = useRef<SVGSVGElement>(null)
+
+    useEffect(() => {
+        if (!detailsRef.current) return
+
+        if (isExpanded) {
+            gsap.fromTo(detailsRef.current,
+                { height: 0, opacity: 0 },
+                { height: "auto", opacity: 1, duration: 0.4, ease: "power2.out" }
+            )
+            gsap.to(arrowRef.current, { rotate: 180, duration: 0.3 })
+        } else {
+            gsap.to(detailsRef.current, { height: 0, opacity: 0, duration: 0.3, ease: "power2.in" })
+            gsap.to(arrowRef.current, { rotate: 0, duration: 0.3 })
+        }
+    }, [isExpanded])
+
+    const date = new Date(bet.timestamp || 0)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase()
+    const isWon = (bet.totalReturns ?? 0) > 0
+    const statusColor = isWon ? 'emerald' : 'slate'
+    const results = (bet.results || []) as ResolvedSelection[]
+
+    return (
+        <div className="flex gap-4 w-full group">
+            {/* Date Gutter */}
+            <div className="flex flex-col items-center pt-2 w-10 shrink-0">
+                <span className="text-xl font-black text-white leading-none group-hover:text-primary transition-colors">{day}</span>
+                <span className="text-[10px] font-black text-slate-500 tracking-widest mt-1">{month}</span>
+            </div>
+
+            {/* Ticket Card */}
+            <div className="flex-1 bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl transition-all hover:border-white/10">
+                {/* Status Header Strip */}
+                <div className={cn(
+                    "px-5 py-2 flex items-center justify-between",
+                    isWon ? "bg-emerald-500" : "bg-slate-700"
+                )}>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black uppercase text-white tracking-[0.2em]">
+                            {bet.mode === 'multi' ? 'Multiple' : 'Single'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {isWon && <Trophy className="h-3 w-3 text-white fill-white" />}
+                        <span className="text-[9px] font-black uppercase text-white tracking-[0.1em]">
+                            {isWon ? "Won" : "Settled"}
+                        </span>
+                        <ChevronDown ref={arrowRef} className="h-4 w-4 text-white/70 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)} />
+                    </div>
+                </div>
+
+                <div className="p-5 space-y-4">
+                    {/* Summary View */}
+                    {!isExpanded && (
+                        <div className="space-y-3">
+                            {results.slice(0, 3).map((r, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <div className={cn(
+                                        "h-1.5 w-1.5 rounded-full shrink-0",
+                                        r.won ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-red-500"
+                                    )} />
+                                    <span className="text-[11px] font-bold text-slate-200 truncate">
+                                        {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
+                                    </span>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Status</div>
-                                    <div className="text-sm font-black text-white uppercase tracking-widest">{viewedTicket.status}</div>
-                                </div>
+                            ))}
+                            <div className="flex items-center justify-between pt-1">
+                                {results.length > 3 && (
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase">
+                                        + {results.length - 3} other events
+                                    </span>
+                                ) || <span />}
+                                <button
+                                    onClick={() => setIsExpanded(true)}
+                                    className="text-[9px] font-black text-primary uppercase tracking-wider hover:underline"
+                                >
+                                    Match Details
+                                </button>
                             </div>
                         </div>
+                    )}
 
-                        <div className="space-y-3">
-                            {(viewedTicket.results || []).map((r: ResolvedSelection, idx: number) => (
-                                <div key={idx} className="p-4 flex gap-4 transition-colors hover:bg-white/[0.02]">
-                                    <div className="mt-1 flex-shrink-0">
-                                        {r.won ? (
-                                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                                <span className="text-white text-[10px] font-bold">✓</span>
+                    {/* Detailed Leg List (Expanded) */}
+                    <div ref={detailsRef} className="overflow-hidden h-0 opacity-0">
+                        <div className="space-y-6 pt-2 pb-2">
+                            {results.map((r, idx) => (
+                                <div key={idx} className="relative pl-7 border-l-2 border-white/5 space-y-2">
+                                    <div className={cn(
+                                        "absolute -left-[7px] top-0 h-3 w-3 rounded-full border-2 border-slate-900",
+                                        r.won ? "bg-emerald-500" : "bg-red-500"
+                                    )} />
+
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{r.marketName}</p>
+                                        <p className="text-sm font-black text-white leading-tight">
+                                            {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
+                                        </p>
+                                    </div>
+
+                                    {/* Virtual Score Grid */}
+                                    <div className="flex flex-col gap-1.5 py-1">
+                                        <span className="text-[9px] font-bold text-slate-600 uppercase">Result:</span>
+                                        {r.outcome ? (
+                                            <div className="flex gap-2">
+                                                {r.outcome.schools.map((s, si) => (
+                                                    <div key={si} className="bg-black/40 px-3 py-1.5 rounded-xl border border-white/5 flex flex-col items-center min-w-[50px]">
+                                                        <span className="text-sm font-black text-white tabular-nums">{r.outcome?.totalScores[si]}</span>
+                                                        <span className="text-[7px] font-bold text-slate-500 uppercase truncate w-[40px] text-center">{s}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         ) : (
-                                            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                                                <X className="h-3 w-3 text-white" />
+                                            <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                                <span className="text-[9px] font-black text-emerald-500 uppercase italic">Refunded</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] text-slate-500 font-bold mb-1">Match Detail</div>
-                                        <div className="text-sm font-bold text-white mb-2 truncate">
-                                            {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5 flex items-center gap-1.5">
+                                            <span className="text-[10px] font-black text-primary">{r.label}</span>
+                                            <span className="text-[9px] font-bold text-slate-600">@</span>
+                                            <span className="text-[10px] font-black text-white">{r.odds.toFixed(2)}</span>
                                         </div>
-
-                                        <div className="flex flex-col gap-1 mb-3">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Score Breakdown:</span>
-                                            {r.outcome ? (
-                                                <div className="grid grid-cols-3 gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
-                                                    {r.outcome.schools.map((s, si) => (
-                                                        <div key={si} className="flex flex-col items-center">
-                                                            <span className="text-[14px] font-black text-white tabular-nums">{r.outcome.totalScores[si]}</span>
-                                                            <span className="text-[6px] font-bold text-slate-500 uppercase tracking-tight text-center truncate w-full">{s}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/20 text-center">
-                                                    <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Cashed Out</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="bg-slate-950/50 rounded-lg p-3 space-y-2 border border-white/5 relative group overflow-hidden">
-                                            <div className="flex gap-3 text-[10px]">
-                                                <span className="w-14 text-slate-500 font-bold flex-shrink-0">Pick:</span>
-                                                <div className="flex items-center gap-1.5 font-black text-white">
-                                                    <span>{r.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')} @ {r.odds.toFixed(2)}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3 text-[10px]">
-                                                <span className="w-14 text-slate-500 font-bold flex-shrink-0">Market:</span>
-                                                <span className="font-bold text-slate-300">{r.marketName}</span>
-                                            </div>
-                                            <div className="flex gap-3 text-[10px]">
-                                                <span className="w-14 text-slate-500 font-bold flex-shrink-0">Outcome:</span>
-                                                <span className="font-bold text-slate-300">
-                                                    {(() => {
-                                                        const market = r.marketName;
-                                                        const outcome = r.outcome;
-                                                        if (!outcome) return "Cashed Out";
-
-                                                        if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
-                                                        // ... (Reusing logic, slightly truncated for brevity as most is same as Results)
-                                                        // Ideally extract this switch case too, but for refactor I'll keep it simple or minimal
-                                                        return "View Details";
-                                                    })()}
-                                                </span>
-                                            </div>
+                                        <div className="px-2 py-1 bg-primary/10 border border-primary/20 rounded-lg text-[8px] font-black text-primary uppercase">
+                                            Instant
                                         </div>
                                     </div>
                                 </div>
@@ -154,98 +208,40 @@ export function VirtualsHistory({
                         </div>
                     </div>
 
-                    <div className="p-4 bg-slate-900 border-t border-white/5">
-                        <button
-                            onClick={() => onViewTicket(null)}
-                            className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all active:scale-95"
-                        >
-                            Back to History
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    // History List View
-    if (isOpen) {
-        return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
-                <div className="relative bg-slate-900 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/10 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-black uppercase tracking-widest">Bet History</h2>
-                        <button onClick={onClose} className="p-2 bg-white/5 rounded-full"><X className="h-5 w-5" /></button>
-                    </div>
-                    <div className="space-y-8">
-                        {betHistory.map((h, i) => {
-                            const date = new Date(h.timestamp || 0); // Pure fallback
-                            const day = date.getDate().toString().padStart(2, '0');
-                            const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                            const isWon = (h.totalReturns ?? 0) > 0;
-
-                            return (
-                                <div
-                                    key={i}
-                                    className="flex gap-6 cursor-pointer group/item hover:bg-white/[0.02] p-2 -mx-2 rounded-2xl transition-all"
-                                    onClick={() => onViewTicket(h)}
-                                >
-                                    <div className="flex flex-col items-center pt-2 min-w-[40px]">
-                                        <span className="text-2xl font-black text-slate-500 leading-none group-hover/item:text-accent transition-colors">{day}</span>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">{month}</span>
-                                    </div>
-
-                                    <div className="flex-1 bg-slate-800/20 rounded-xl overflow-hidden border border-white/5 shadow-xl">
-                                        <div className={cn(
-                                            "p-2.5 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.1em]",
-                                            isWon ? "bg-green-600 text-white" : "bg-slate-700 text-slate-300"
-                                        )}>
-                                            <span className="flex items-center gap-2">
-                                                {h.mode || 'Single'}
-                                                {isWon && <Trophy className="h-3 w-3 fill-white" />}
-                                            </span>
-                                            <div className="flex items-center gap-1.5">
-                                                {isWon ? "Won" : "Lost"}
-                                                <ChevronRight className="h-3 w-3 opacity-50" />
-                                            </div>
-                                        </div>
-
-                                        <div className="p-4 space-y-3 bg-slate-900/40">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Total Return</span>
-                                                <span className={cn("font-black font-mono text-sm", isWon ? "text-green-400" : "text-slate-300")}>
-                                                    {(h.totalReturns ?? 0).toFixed(2)}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Total Stake</span>
-                                                <span className="font-black font-mono text-xs text-white">
-                                                    {(h.totalStake ?? 0).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="px-4 py-2 border-t border-white/5 bg-black/20 flex justify-between items-center">
-                                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">QuickGame</span>
-                                            <span className="text-[8px] font-bold text-slate-500">Ticket ID: {getTicketId(h.id)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        {betHistory.length === 0 && (
-                            <div className="text-center py-20">
-                                <div className="w-12 h-12 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
-                                    <Ticket className="h-6 w-6 text-slate-600" />
-                                </div>
-                                <p className="text-slate-500 uppercase text-[10px] font-black tracking-[0.2em]">No transaction history yet</p>
+                    {/* Footer Metrics */}
+                    <div className="pt-4 border-t border-white/5 flex items-end justify-between">
+                        <div className="flex gap-6">
+                            <div>
+                                <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Stake</p>
+                                <p className="text-base font-black text-white leading-none">
+                                    <span className="text-[10px] text-slate-500 mr-0.5">GHS</span>
+                                    {bet.totalStake.toLocaleString()}
+                                </p>
                             </div>
-                        )}
+                            <div>
+                                <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Return</p>
+                                <p className={cn(
+                                    "text-base font-black leading-none",
+                                    isWon ? "text-emerald-400" : "text-slate-400"
+                                )}>
+                                    <span className="text-[10px] text-slate-500 mr-0.5">GHS</span>
+                                    {(bet.totalReturns ?? 0).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button className="p-2 bg-white/5 rounded-xl border border-white/5 text-slate-500 hover:text-white transition-colors">
+                                <Share2 className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between opacity-30 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[8px] font-bold text-slate-600 uppercase">TICKET ID: {getTicketId(bet.id)}</span>
                     </div>
                 </div>
             </div>
-        )
-    }
-
-    return null;
+        </div>
+    )
 }

@@ -67,7 +67,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [activeLiveMatchId, setActiveLiveMatchId] = useState<string | null>(null)
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
-    const [viewedHistoryTicket, setViewedHistoryTicket] = useState<ClientVirtualBet | null>(null)
     const [confirmCashoutSlipId, setConfirmCashoutSlipId] = useState<string | null>(null)
     const [currentCommentary, setCurrentCommentary] = useState<string>("Ready for kickoff!")
     const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
@@ -390,8 +389,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 isOpen={showHistoryModal}
                 onClose={() => setShowHistoryModal(false)}
                 betHistory={betHistory}
-                viewedTicket={viewedHistoryTicket}
-                onViewTicket={setViewedHistoryTicket}
             />
 
             {selectedMatchForDetails && (
