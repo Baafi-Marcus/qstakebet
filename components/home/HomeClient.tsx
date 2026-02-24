@@ -13,7 +13,6 @@ import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 
 interface HomeClientProps {
     initialMatches: Match[]
-    announcements?: any[]
 }
 
 // Helper to get ordinal suffix
@@ -50,7 +49,7 @@ function getDateGroupLabel(date: Date): string {
     }
 }
 
-export function HomeClient({ initialMatches, announcements = [] }: HomeClientProps) {
+export function HomeClient({ initialMatches }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
     const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')
@@ -217,9 +216,6 @@ export function HomeClient({ initialMatches, announcements = [] }: HomeClientPro
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            {/* Promotional Ad Banner */}
-            <AdBannerCarousel announcements={announcements} />
-
             {/* Pull to Refresh Indicator */}
             <div
                 className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none transition-all duration-200"
