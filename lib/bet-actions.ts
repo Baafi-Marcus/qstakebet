@@ -152,6 +152,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 potentialPayout,
                 status: "pending",
                 selections: selections, // JSONB column
+                mode: mode, // "single" or "multi"
                 isBonusBet: bonusAmount > 0,
                 bonusUsed: bonusId,
                 bonusAmountUsed: bonusAmount,

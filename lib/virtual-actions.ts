@@ -155,20 +155,11 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         const { outcomes } = generateVirtualMatches(15, [], roundId, category, queryRegion, {}, userSeed)
 
         const MAX_GAME_PAYOUT = 3000
-        const isMulti = bet.status === 'pending' && selections.length > 1 && !bet.id.includes('single') // Simplified mode check or use potential payout logic
-
-        // We need to know if it was 'single' or 'multi' mode. 
-        // In VirtualsClient we use betMode. If we didn't save it in DB, we can infer from payout logic.
-        // Actually, let's assume if potentialPayout == stake * totalOdds (ignoring bonus) it's multi.
-        // But since we updated placeBet to take 'mode', let's check if we can add 'mode' to the bets table?
-        // For now, we can check if it's a multi based on selections length and potential payout.
-        const totalOdds = selections.reduce((acc, s) => acc * s.odds, 1)
-        const inferredMulti = Math.abs(bet.potentialPayout - (bet.stake * totalOdds)) < 0.01
-
+        const isMulti = bet.mode === 'multi'
         let isWon = false
         let totalReturns = 0
 
-        if (!inferredMulti && selections.length > 1) {
+        if (!isMulti && selections.length > 1) {
             // SINGLE Mode logic
             const stakePerSelection = bet.stake / selections.length
             const gameReturns: Record<string, number> = {}
@@ -176,8 +167,8 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             selections.forEach(s => {
                 const outcome = outcomes.find(o => o.id === s.matchId) as any
                 if (outcome) {
-                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz' } as any, outcome)
-                    if (winner) {
+                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz', status: 'finished' } as any, outcome)
+                    if (winner && winner.isWin) {
                         const amount = s.odds * stakePerSelection
                         gameReturns[s.matchId] = (gameReturns[s.matchId] || 0) + amount
                     }
@@ -200,8 +191,8 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
                     allWon = false
                     return
                 }
-                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz' } as any, outcome)
-                if (!winner) allWon = false
+                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz', status: 'finished' } as any, outcome)
+                if (!winner || !winner.isWin) allWon = false
             })
 
             if (allWon) {

@@ -278,9 +278,11 @@ export function isSelectionWinner(
 
         if (isVirtualOutcome) {
             const winnerName = vOutcome.schools[vOutcome.winnerIndex];
+            const normalizedSid = selectionId.startsWith('v-') ? selectionId.substring(2) : selectionId;
+
             if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0 };
             if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1 };
-            return { resolved: true, isWin: winnerName === selectionId };
+            return { resolved: true, isWin: winnerName === normalizedSid };
         }
 
         if (result.winner === selectionId) return { resolved: true, isWin: true };

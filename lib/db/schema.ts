@@ -145,6 +145,7 @@ export const bets = pgTable("bets", {
     status: text("status").default("pending").notNull(), // "pending", "won", "lost", "void"
     bonusUsed: text("bonus_id"), // If bonus was used
     isBonusBet: boolean("is_bonus_bet").default(false).notNull(),
+    mode: text("mode").default("multi").notNull(), // "single", "multi"
     bonusAmountUsed: real("bonus_amount_used").default(0),
     bonusGiftAmount: real("bonus_gift_amount").default(0),
     settledAt: timestamp("settled_at"),
