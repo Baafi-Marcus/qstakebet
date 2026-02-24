@@ -164,7 +164,12 @@ export function BetSlipSidebar() {
     };
 
     const { cappedBonus } = getBonusDetails();
-    const finalPotentialWin = potentialWin + cappedBonus;
+    const totalPotential = potentialWin + cappedBonus;
+
+    // GIFT RULE: If using a gift, winnings = (Stake * Odds) - Stake (Profit Only)
+    const finalPotentialWin = useBonus
+        ? Math.max(0, totalPotential - totalStake)
+        : totalPotential;
 
     return (
         <>
@@ -180,7 +185,7 @@ export function BetSlipSidebar() {
             {/* Betslip Sidebar */}
             <div
                 className={cn(
-                    "bg-slate-900 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-[90] fixed shadow-2xl overflow-hidden",
+                    "bg-slate-900 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-[150] fixed shadow-2xl overflow-hidden",
                     // Mobile: Bottom sheet
                     "bottom-0 left-0 right-0 h-full rounded-t-3xl",
                     isOpen ? "translate-y-0" : "translate-y-full",
@@ -393,7 +398,7 @@ export function BetSlipSidebar() {
                         </div>
 
                         {/* Unified Compact Summary Card */}
-                        <div className="bg-slate-900 border-t border-slate-800 p-2 space-y-2">
+                        <div className="bg-slate-900 border-t border-slate-800 p-2 pb-safe space-y-2">
                             {/* Summary Grid */}
                             <div className="grid grid-cols-2 gap-2 bg-slate-800/50 rounded-lg p-2 border border-slate-800">
                                 <div>
@@ -454,6 +459,11 @@ export function BetSlipSidebar() {
                                     <div className="text-base font-black text-white tracking-tight leading-none">
                                         GHS {finalPotentialWin.toFixed(2)}
                                     </div>
+                                    {useBonus && (
+                                        <div className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter mt-1">
+                                            Profit only credited (Stake deducted)
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

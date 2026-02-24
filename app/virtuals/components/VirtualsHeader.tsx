@@ -34,116 +34,117 @@ export function VirtualsHeader({
     onSkip
 }: VirtualsHeaderProps) {
     return (
-        <div className="flex items-center bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 py-3 px-4 gap-4">
-            {/* Left: Back/Skip Button */}
-            {!isSimulationActive ? (
-                <button
-                    onClick={onBack}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all shrink-0 active:scale-90"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                </button>
-            ) : (
-                <button
-                    onClick={onSkip}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-95 animate-in fade-in slide-in-from-left-2"
-                >
-                    Skip
-                </button>
-            )}
+        <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
+            {/* Top Row: Navigation & Actions */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-white/5 md:border-b-0">
+                <div className="flex items-center gap-3">
+                    {!isSimulationActive ? (
+                        <button
+                            onClick={onBack}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all active:scale-90 border border-white/5"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onSkip}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 animate-in fade-in"
+                        >
+                            Skip
+                        </button>
+                    )}
+                    <div className="h-6 w-px bg-white/10 hidden md:block" />
+                    <span className="font-display font-black text-xs md:text-sm text-primary tracking-widest uppercase ml-1">
+                        INSTANT<span className="text-white"> VIRTUALS</span>
+                    </span>
+                </div>
 
-            <div className="h-6 w-px bg-white/10 shrink-0" />
+                {/* Desktop Category Selector (Moved to Second Row on Mobile) */}
+                <div className={cn("hidden md:flex items-center gap-2", isSimulationActive && "opacity-20 pointer-events-none")}>
+                    {(['all', 'national', 'regional'] as const).map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => {
+                                onCategoryChange(cat);
+                                if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
+                                else setSelectedRegion(null);
+                            }}
+                            className={cn(
+                                "text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border",
+                                selectedCategory === cat
+                                    ? "bg-purple-600 border-purple-400 text-white shadow-lg"
+                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
 
-            {/* Middle: Category Selector */}
-            <div className={cn("flex-1 overflow-x-auto no-scrollbar", isSimulationActive && "opacity-20 pointer-events-none")}>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => {
-                            onCategoryChange('all');
-                            setSelectedRegion(null);
-                        }}
-                        className={cn(
-                            "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
-                            selectedCategory === 'all'
-                                ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                        )}
-                    >
-                        All
-                    </button>
-                    <button
-                        onClick={() => {
-                            onCategoryChange('national');
-                            setSelectedRegion(null);
-                        }}
-                        className={cn(
-                            "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
-                            selectedCategory === 'national'
-                                ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                        )}
-                    >
-                        National
-                    </button>
-                    <button
-                        onClick={() => {
-                            onCategoryChange('regional');
-                            if (availableRegions.length > 0) {
-                                setSelectedRegion(availableRegions[0]);
-                            }
-                        }}
-                        className={cn(
-                            "text-xs font-black uppercase tracking-widest transition-all px-4 py-2 rounded-xl whitespace-nowrap border",
-                            selectedCategory === 'regional'
-                                ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-500/20"
-                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                        )}
-                    >
-                        Regional
-                    </button>
+                    {/* Compact Balance Toggle for small screens */}
+                    <div className="flex items-center bg-slate-950/50 rounded-xl p-0.5 border border-white/5">
+                        <button
+                            onClick={() => onBalanceTypeChange('cash')}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                                balanceType === 'cash' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500"
+                            )}
+                        >
+                            <Wallet className="h-3 w-3" />
+                            <span className="text-[10px] font-black font-mono">{balance.toFixed(0)}</span>
+                        </button>
+                        <button
+                            onClick={() => onBalanceTypeChange('gift')}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                                balanceType === 'gift' ? "bg-purple-600 text-white shadow-lg" : "text-slate-500"
+                            )}
+                        >
+                            <Zap className="h-3 w-3" />
+                            <span className="text-[10px] font-black font-mono">{bonusBalance.toFixed(0)}</span>
+                        </button>
+                    </div>
+
+                    {!isSimulationActive && (
+                        <button
+                            onClick={onOpenHistory}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all relative active:scale-90 border border-white/5"
+                        >
+                            <Ticket className="h-4 w-4" />
+                            {hasPendingBets && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                                    <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                                </span>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0 pl-2 border-l border-white/10">
-                {/* Balance Display */}
-                <div
-                    onClick={() => onBalanceTypeChange('cash')}
-                    className={cn(
-                        "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
-                        balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
-                    )}
-                >
-                    <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-400")} />
-                    <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
-                        {balance.toFixed(2)}
-                    </span>
-                </div>
-
-                <div
-                    onClick={() => onBalanceTypeChange('gift')}
-                    className={cn(
-                        "flex items-center gap-2 rounded-full px-3 py-1.5 border transition-all cursor-pointer active:scale-95",
-                        balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-950/30 border-white/5 opacity-60"
-                    )}
-                >
-                    <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
-                    <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
-                        {bonusBalance.toFixed(2)}
-                    </span>
-                </div>
-
-                {!isSimulationActive && (
+            {/* Bottom Row: Mobile Category Selector */}
+            <div className={cn(
+                "md:hidden flex items-center gap-2 px-4 py-2 border-b border-white/5 overflow-x-auto no-scrollbar bg-slate-900/50",
+                isSimulationActive && "opacity-20 pointer-events-none"
+            )}>
+                {(['all', 'national', 'regional'] as const).map((cat) => (
                     <button
-                        onClick={onOpenHistory}
-                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all relative active:scale-90"
-                    >
-                        <Ticket className="h-4 w-4" />
-                        {/* Dot indicator if active bets exist? */}
-                        {hasPendingBets && (
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
+                        key={cat}
+                        onClick={() => {
+                            onCategoryChange(cat);
+                            if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
+                            else setSelectedRegion(null);
+                        }}
+                        className={cn(
+                            "text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all border whitespace-nowrap flex-1",
+                            selectedCategory === cat
+                                ? "bg-purple-600 border-purple-400 text-white shadow-lg"
+                                : "bg-slate-900/60 border-white/5 text-slate-500"
                         )}
+                    >
+                        {cat}
                     </button>
-                )}
+                ))}
             </div>
         </div>
     )

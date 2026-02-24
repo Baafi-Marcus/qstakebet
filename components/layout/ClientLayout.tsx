@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation"
 import { BottomNav } from "./BottomNav"
-import { FloatingBetSlipButton } from "./FloatingBetSlipButton"
 import { BetSlipSidebar } from "./BetSlipSidebar"
 import { Header } from "./Header"
 import { SubNavBar } from "./SubNavBar"
@@ -90,7 +89,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         if (hideBetslip) {
                             return (
                                 <>
-                                    {!isAuthPage && !isAdmin && <BottomNav />}
+                                    {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
                                     <InteractiveLayer />
                                 </>
                             )
@@ -99,7 +98,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         return (
                             <>
                                 <BetSlipSidebar />
-                                <FloatingBetSlipButton />
                                 <BottomNav />
                                 <GlobalMatchDetails />
                                 <InteractiveLayer />
