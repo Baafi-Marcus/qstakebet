@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { bets, transactions, wallets, matches } from "@/lib/db/schema"
+import { bets, transactions, wallets, matches, tournaments } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
@@ -9,6 +9,7 @@ import { PlaceBetSchema } from "@/lib/validators"
 
 export type SelectionInput = {
     matchId: string
+    tournamentId?: string // Added
     selectionId: string
     label: string
     odds: number
@@ -51,14 +52,40 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
     const { getMatchLockStatus } = await import("@/lib/match-utils")
 
     for (const selection of selections) {
-        // Skip DB check for virtual matches as they are ephemeral
-        // But validate round expiration
+        // Handle Tournament Outrights
+        if (selection.tournamentId || selection.matchId.startsWith('outright-')) {
+            const tournamentId = selection.tournamentId || selection.matchId.replace('outright-', '');
+            const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+
+            if (!tData.length) {
+                return { success: false, error: "Tournament not found." }
+            }
+
+            const tournament = tData[0];
+            if (!tournament.isOutrightEnabled || tournament.winnerId) {
+                return { success: false, error: `The market for "${selection.matchLabel}" is currently closed.` }
+            }
+
+            // Verify odds
+            const currentItem = tournament.outrightOdds?.find(o => o.schoolId === selection.selectionId);
+            if (!currentItem || Math.abs(currentItem.odd - selection.odds) > 0.1) {
+                return { success: false, error: "The odds for your selection have changed. Please update your slip." }
+            }
+
+            // Enforce Singles Only for outrights
+            if (selections.length > 1) {
+                return { success: false, error: "Tournament Winner predictions must be placed as individual single bets." }
+            }
+
+            continue;
+        }
+
+        // Handle Virtual Matches
         if (selection.matchId.startsWith('vmt-') || selection.matchId.startsWith('vr-')) {
             const parts = selection.matchId.split('-');
             const roundId = parseInt(parts[1]);
             const currentRoundId = Math.floor(Date.now() / 60000);
 
-            // If round is older than current round, it's already started/finished
             if (roundId < currentRoundId) {
                 return {
                     success: false,
@@ -252,9 +279,10 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             // 6. Record stake for dynamic odds (after successful transaction)
             const { recordBetStake } = await import("@/lib/odds-engine")
             for (const selection of selections) {
-                // We record the portion of the stake for this match
-                // For multis, we record the full stake on each selection (liability accumulation)
-                await recordBetStake(selection.matchId, selection.selectionId, stake)
+                // Record stake for dynamic odds (Skip for outrights as they are handled differently)
+                if (!selection.tournamentId && !selection.matchId.startsWith('outright-')) {
+                    await recordBetStake(selection.matchId, selection.selectionId, stake)
+                }
             }
 
             // 7. Revalidate paths

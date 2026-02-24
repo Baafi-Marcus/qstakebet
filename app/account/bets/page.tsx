@@ -61,12 +61,11 @@ export default function BetsPage() {
         <div className="max-w-4xl mx-auto py-4 px-4 md:px-0">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
-                <Link href="/account" className="p-3 bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl text-slate-400 transition-all group">
+                <Link href="/account" className="hidden md:flex p-3 bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl text-slate-400 transition-all group">
                     <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
                 </Link>
                 <div>
                     <h1 className="text-3xl font-black tracking-tighter uppercase text-white leading-none">My Bets</h1>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Manage your active & settled tickets</p>
                 </div>
             </div>
 

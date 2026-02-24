@@ -720,6 +720,10 @@ export async function updateMatchResult(matchId: string, resultData: {
             const matchDetails = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
             if (matchDetails.length > 0) {
                 await updateRealSchoolStats(matchDetails[0], resultData);
+                // Trigger tournament outright odds recalculation
+                if (matchDetails[0].tournamentId) {
+                    await recalculateTournamentOutrightOdds(matchDetails[0].tournamentId);
+                }
             }
 
             return {
@@ -1132,5 +1136,109 @@ export async function getActiveMarketsAction(matchId: string) {
     } catch (error) {
         console.error("Error fetching active markets:", error);
         return { success: false, error: "Failed to fetch active markets", activeMarkets: [] };
+    }
+}
+
+export async function updateTournamentOutright(tournamentId: string, data: {
+    isOutrightEnabled: boolean,
+    outrightOdds: { schoolId: string, odd: number, status: string }[]
+}) {
+    try {
+        const result = await db.update(tournaments)
+            .set({
+                isOutrightEnabled: data.isOutrightEnabled,
+                outrightOdds: data.outrightOdds
+            })
+            .where(eq(tournaments.id, tournamentId))
+            .returning();
+
+        revalidateTag("tournaments")
+        return { success: true, tournament: result[0] };
+    } catch (error) {
+        console.error("Error updating outright settings:", error);
+        return { success: false, error: "Failed to update outright settings" };
+    }
+}
+
+export async function settleTournamentWinner(tournamentId: string, winnerId: string) {
+    try {
+        const { settleOutrightBets } = await import("./settlement")
+
+        // 1. Update tournament status and winner
+        await db.update(tournaments)
+            .set({
+                winnerId,
+                status: 'completed'
+            })
+            .where(eq(tournaments.id, tournamentId));
+
+        // 2. Settle bets
+        const settlementResult = await settleOutrightBets(tournamentId, winnerId);
+
+        revalidateTag("tournaments")
+        revalidateTag("bets")
+
+        return {
+            success: true,
+            message: `Tournament settled. Winner declared. ${settlementResult.settledCount || 0} bets processed.`
+        };
+    } catch (error) {
+        console.error("Error settling tournament winner:", error);
+        return { success: false, error: "Failed to settle tournament winner" };
+    }
+}
+
+export async function recalculateTournamentOutrightOdds(tournamentId: string) {
+    try {
+        const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+        if (tData.length === 0 || !tData[0].isOutrightEnabled) return;
+
+        const tournament = tData[0];
+        const allMatches = await db.select().from(matches)
+            .where(and(eq(matches.tournamentId, tournamentId), inArray(matches.status, ['finished', 'settled'])));
+
+        const currentOdds = tournament.outrightOdds || [];
+        if (currentOdds.length === 0) return;
+
+        const updatedOdds = currentOdds.map(item => {
+            const schoolMatches = allMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === item.schoolId));
+            if (schoolMatches.length === 0) return item;
+
+            let wins = 0, draws = 0, gf = 0, ga = 0;
+            schoolMatches.forEach(m => {
+                const res = m.result as any;
+                if (res?.winner === item.schoolId) wins++;
+                else if (res?.winner === 'X') draws++;
+
+                const p = (m.participants as any[]).find((p: any) => p.schoolId === item.schoolId);
+                const opp = (m.participants as any[]).find((p: any) => p.schoolId !== item.schoolId);
+                gf += parseInt(String(p?.result || "0")) || 0;
+                ga += parseInt(String(opp?.result || "0")) || 0;
+            });
+
+            const gd = gf - ga;
+            // Simplified dynamic odds logic: 
+            // Better performance (wins/gd) = Lower odds
+            // Base odd is multiplied by a factor derived from performance
+            // factor: 1.0 (starting), -5% per win, -1% per goal diff
+            const winFactor = Math.pow(0.95, wins);
+            const gdFactor = Math.pow(0.99, Math.max(0, gd)); // only decrease odds for positive gd
+            const negativeGdFactor = Math.pow(1.02, Math.abs(Math.min(0, gd))); // increase odds for negative gd
+
+            const newOdd = item.odd * winFactor * gdFactor * negativeGdFactor;
+
+            return {
+                ...item,
+                odd: parseFloat(Math.max(1.01, Math.min(100, newOdd)).toFixed(2))
+            };
+        });
+
+        await db.update(tournaments)
+            .set({ outrightOdds: updatedOdds })
+            .where(eq(tournaments.id, tournamentId));
+
+        revalidateTag("tournaments");
+    } catch (error) {
+        console.error("Error recalculating tournament odds:", error);
     }
 }

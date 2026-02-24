@@ -23,6 +23,9 @@ export const tournaments = pgTable("tournaments", {
     year: text("year").notNull(),
     level: text("level").default("shs").notNull(), // "shs", "university", etc.
     status: text("status").default("active").notNull(), // "active", "completed"
+    isOutrightEnabled: boolean("is_outright_enabled").default(false).notNull(),
+    outrightOdds: jsonb("outright_odds").default([]).$type<{ schoolId: string, odd: number, status: string }[]>(),
+    winnerId: text("winner_id"),
     metadata: jsonb("metadata"), // Groups, Matchdays, Rules
     createdAt: timestamp("created_at").defaultNow(),
 });

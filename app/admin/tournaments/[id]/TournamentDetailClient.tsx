@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List } from "lucide-react"
+import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner } from "@/lib/admin-actions"
+import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
 import { useRouter } from "next/navigation"
 import { calculateGroupStandings } from "@/lib/match-utils"
-import { upsertTournamentRoster, updateTournament } from "@/lib/admin-actions"
 
 export function TournamentDetailClient({
     tournament,
@@ -22,7 +22,7 @@ export function TournamentDetailClient({
     const [roster, setRoster] = useState("")
     const [isSaving, setIsSaving] = useState(false)
     const format = tournament.metadata?.format || 'league'
-    const [activeTab, setActiveTab] = useState<'standings' | 'roster' | 'fixtures' | 'results'>(format === 'league' ? 'standings' : 'results')
+    const [activeTab, setActiveTab] = useState<'standings' | 'roster' | 'fixtures' | 'results' | 'outrights'>(format === 'league' ? 'standings' : 'results')
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
 
     // Parse Groups from Metadata
@@ -41,8 +41,8 @@ export function TournamentDetailClient({
 
     // Define available tabs
     const availableTabs = format === 'league'
-        ? ['standings', 'fixtures', 'results', 'roster']
-        : ['fixtures', 'results', 'roster']
+        ? ['standings', 'fixtures', 'results', 'outrights', 'roster']
+        : ['fixtures', 'results', 'outrights', 'roster']
 
     return (
         <div className="space-y-8 pb-20">
@@ -82,8 +82,8 @@ export function TournamentDetailClient({
                     }}
                     disabled={isSaving}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${tournament.status === 'active'
-                            ? "bg-slate-800 text-slate-400 hover:text-white border border-white/5"
-                            : "bg-green-600 text-white shadow-lg"
+                        ? "bg-slate-800 text-slate-400 hover:text-white border border-white/5"
+                        : "bg-green-600 text-white shadow-lg"
                         }`}
                 >
                     {tournament.status === 'active' ? (
@@ -352,6 +352,169 @@ export function TournamentDetailClient({
                                 <p className="text-slate-600 font-bold uppercase tracking-widest text-xs italic">No matches scheduled for this tournament yet.</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === 'outrights' && (
+                    <div className="lg:col-span-12 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-white/5">
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                                        <Target className="h-6 w-6 text-purple-500" />
+                                        Winner Predictions
+                                    </h2>
+                                    <p className="text-slate-500 text-sm font-medium">Configure Tournament Winner outright markets and manage payouts.</p>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        setIsSaving(true);
+                                        try {
+                                            const currentOdds = tournament.outrightOdds || [];
+                                            // Initialize if empty
+                                            const odds = currentOdds.length > 0 ? currentOdds : schools.map(s => ({ schoolId: s.id, odd: 5.0, status: 'active' }));
+                                            await updateTournamentOutright(tournament.id, {
+                                                isOutrightEnabled: !tournament.isOutrightEnabled,
+                                                outrightOdds: odds
+                                            });
+                                            router.refresh();
+                                        } catch (e) {
+                                            alert("Failed to toggle outrights");
+                                        } finally {
+                                            setIsSaving(false);
+                                        }
+                                    }}
+                                    className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${tournament.isOutrightEnabled
+                                        ? "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white"
+                                        : "bg-purple-600 text-white shadow-lg shadow-purple-900/40 hover:bg-purple-500"
+                                        }`}
+                                >
+                                    {tournament.isOutrightEnabled ? "Disable Predictions" : "Enable Predictions"}
+                                </button>
+                            </div>
+
+                            {tournament.isOutrightEnabled ? (
+                                <div className="space-y-8">
+                                    {/* Uniform Odds Utility */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 p-6 rounded-3xl border border-white/5">
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Zap className="h-3 w-3" /> Quick Action
+                                            </h4>
+                                            <h3 className="text-lg font-bold text-white uppercase tracking-tight">Set Uniform Odds</h3>
+                                            <p className="text-slate-500 text-xs font-medium">Apply a base odd to all participating teams in one click.</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-1">
+                                                <Calculator className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                                <input
+                                                    type="number"
+                                                    id="uniform-odd-input"
+                                                    placeholder="5.00"
+                                                    step="0.1"
+                                                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={async () => {
+                                                    const val = parseFloat((document.getElementById('uniform-odd-input') as HTMLInputElement).value);
+                                                    if (!val || val < 1.01) return alert("Enter a valid odd (min 1.01)");
+                                                    setIsSaving(true);
+                                                    try {
+                                                        const newOdds = schools.map(s => ({ schoolId: s.id, odd: val, status: 'active' }));
+                                                        await updateTournamentOutright(tournament.id, {
+                                                            isOutrightEnabled: true,
+                                                            outrightOdds: newOdds
+                                                        });
+                                                        router.refresh();
+                                                    } finally {
+                                                        setIsSaving(false);
+                                                    }
+                                                }}
+                                                className="px-6 py-3.5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                            >
+                                                Apply All
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Odds List */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-2">
+                                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Participating Teams ({schools.length})</h3>
+                                            <span className="text-[10px] font-bold text-slate-600 italic">Singles Only Enforced</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {schools.map(s => {
+                                                const currentItem = tournament.outrightOdds?.find(o => o.schoolId === s.id);
+                                                const currentOdd = currentItem?.odd || 5.0;
+                                                const isWinner = tournament.winnerId === s.id;
+
+                                                return (
+                                                    <div key={s.id} className={`group p-4 bg-slate-950/50 border rounded-3xl transition-all ${isWinner ? 'border-green-500/50 bg-green-500/5' : 'border-white/5 hover:border-white/20'}`}>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isWinner ? 'bg-green-500 text-white' : 'bg-white/5 text-slate-500'}`}>
+                                                                    {isWinner ? <CheckCircle2 className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                                                                </div>
+                                                                <span className="text-sm font-bold text-white uppercase truncate">{s.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    defaultValue={currentOdd}
+                                                                    onBlur={async (e) => {
+                                                                        const val = parseFloat(e.target.value);
+                                                                        if (val === currentOdd || isNaN(val) || val < 1.01) return;
+                                                                        setIsSaving(true);
+                                                                        try {
+                                                                            const otherOdds = tournament.outrightOdds?.filter(o => o.schoolId !== s.id) || [];
+                                                                            await updateTournamentOutright(tournament.id, {
+                                                                                isOutrightEnabled: true,
+                                                                                outrightOdds: [...otherOdds, { schoolId: s.id, odd: val, status: 'active' }]
+                                                                            });
+                                                                        } finally {
+                                                                            setIsSaving(false);
+                                                                        }
+                                                                    }}
+                                                                    className="w-16 bg-white/5 border border-white/10 rounded-xl py-1.5 text-center text-xs font-black text-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                                />
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (tournament.winnerId) return alert("Tournament already settled");
+                                                                        if (!confirm(`Declare ${s.name} as the Tournament Winner? This will settle all open outright bets.`)) return;
+                                                                        setIsSaving(true);
+                                                                        try {
+                                                                            const res = await settleTournamentWinner(tournament.id, s.id);
+                                                                            if (res.success) alert(res.message);
+                                                                            router.refresh();
+                                                                        } catch (e) {
+                                                                            alert("Settlement failed");
+                                                                        } finally {
+                                                                            setIsSaving(false);
+                                                                        }
+                                                                    }}
+                                                                    disabled={isWinner || !!tournament.winnerId}
+                                                                    className={`p-2 rounded-xl transition-all ${isWinner ? 'bg-green-500 text-white' : 'bg-white/5 text-slate-500 hover:bg-green-600 hover:text-white disabled:opacity-30'}`}
+                                                                >
+                                                                    <Trophy className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 bg-slate-950/30 rounded-[2rem] border border-dashed border-white/10">
+                                    <Calculator className="h-16 w-16 text-slate-800 mx-auto mb-4 opacity-20" />
+                                    <h3 className="text-xl font-black text-slate-600 uppercase tracking-tight">Predictions Restricted</h3>
+                                    <p className="text-slate-700 text-sm font-bold uppercase tracking-widest mt-2">Enable Winner Predictions to allow users to place stakes on the eventual winner.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

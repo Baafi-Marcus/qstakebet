@@ -55,6 +55,9 @@ export interface Tournament {
     year: string
     level: string
     status: string
+    isOutrightEnabled?: boolean
+    outrightOdds?: { schoolId: string, odd: number, status: string }[]
+    winnerId?: string | null
     metadata?: any
     createdAt?: Date | null
 }

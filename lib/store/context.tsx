@@ -4,13 +4,14 @@ import React from 'react'
 
 export type Selection = {
     matchId: string
+    tournamentId?: string // Link to tournament for outrights
     selectionId: string
     label: string
     odds: number
     marketName: string
     matchLabel: string
-    sportType?: string // The sport type for dynamic icons
-    stake?: number // Individual stake for Single mode
+    sportType?: string
+    stake?: number
 }
 
 export interface BetSlipContextType {
@@ -67,11 +68,26 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
             if (exists) {
                 return prev.filter(s => s.selectionId !== selection.selectionId)
             }
+
+            // ENFORCE SINGLES ONLY for "Tournament Winner" / "Outright Winner"
+            const isOutright = selection.marketName === "Tournament Winner" || selection.marketName === "Outright Winner"
+            if (isOutright) {
+                // If adding an outright, it MUST be the only selection in the slip
+                // Or if there are existing selections, we remove them? 
+                // Better: if there are ANY other selections, we clear them if the user adds an outright.
+                return [selection]
+            }
+
+            // If we are adding a NORMAL bet but there is an OUTRIGHT in the slip, clear the outright
+            const hasOutright = prev.some(s => s.marketName === "Tournament Winner" || s.marketName === "Outright Winner")
+            if (hasOutright) {
+                return [selection]
+            }
+
             // Allow one selection per market for each match
             const filtered = prev.filter(s => !(s.matchId === selection.matchId && s.marketName === selection.marketName))
             return [...filtered, selection]
         })
-        // Don't auto-open the bet slip - user must click the button
     }
 
     const removeSelection = (selectionId: string) => {

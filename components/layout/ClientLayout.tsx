@@ -62,7 +62,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         )}
 
                         {/* Sticky Secondary Navigation (Sports/Regions) */}
-                        {!isVirtuals && !isAuthPage && <SubNavBar />}
+                        {(() => {
+                            const hideSubNav = isVirtuals || isAuthPage || pathname === "/account/bets" || pathname === "/account/profile"
+                            if (hideSubNav) return null
+                            return <SubNavBar />
+                        })()}
 
                         <div className="flex-1 flex flex-col">
                             <PullToRefresh disabled={isAuthPage || isAdmin}>

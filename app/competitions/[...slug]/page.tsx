@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { tournaments, matches, schools } from "@/lib/db/schema"
 import { eq, sql, inArray, and } from "drizzle-orm"
 import { notFound } from "next/navigation"
-import { Trophy, BarChart2, ChevronLeft, CalendarDays } from "lucide-react"
+import { Trophy, BarChart2, ChevronLeft, CalendarDays, Target, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 import { TournamentFixturesModal } from "@/components/ui/TournamentFixturesModal"
 import { GroupStandingsModal } from "@/components/ui/GroupStandingsModal"
@@ -136,6 +136,52 @@ export default async function CompetitionPage({ params }: Props) {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* Tournament Winner Prediction (Outright) */}
+                                    {tournament.isOutrightEnabled && tournament.outrightOdds && tournament.outrightOdds.length > 0 && !tournament.winnerId && (
+                                        <div className="bg-slate-900/60 border border-purple-500/20 rounded-[2rem] p-6 space-y-4 shadow-lg shadow-purple-900/10 overflow-hidden relative group">
+                                            {/* Decorative Background */}
+                                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <Target className="h-24 w-24 text-purple-500" />
+                                            </div>
+
+                                            <div className="flex items-center justify-between relative z-10">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                                        <Trophy className="h-4 w-4 text-purple-400" />
+                                                        Tournament Winner
+                                                    </h3>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Predict the overall champion</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                                                        <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest">Singles Only</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 relative z-10">
+                                                {tournament.outrightOdds
+                                                    .sort((a, b) => a.odd - b.odd)
+                                                    .map(item => {
+                                                        const school = tSchools.find(s => s.id === item.schoolId);
+                                                        if (!school) return null;
+                                                        return (
+                                                            <OddsButton
+                                                                key={item.schoolId}
+                                                                label={school.name}
+                                                                odds={item.odd}
+                                                                matchId={`outright-${tournament.id}`} // Dummy ID for matching in slip logic if needed
+                                                                tournamentId={tournament.id}
+                                                                matchLabel={`${tournament.name} (${tournament.sportType})`}
+                                                                marketName="Tournament Winner"
+                                                                showLabel={true}
+                                                            />
+                                                        );
+                                                    })}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Group Standings OR Qualified Teams */}
                                     {(groups.length > 0 && !allGroupsFinished) ? (

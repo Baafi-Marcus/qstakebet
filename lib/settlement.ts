@@ -416,3 +416,84 @@ export function isSelectionWinner(
 
     return { resolved: false, isWin: false }
 }
+
+export async function settleOutrightBets(tournamentId: string, winnerId: string) {
+    try {
+        console.log(`Starting settlement for tournament outrights: ${tournamentId}`)
+
+        // 1. Fetch all PENDING bets that contain an outright prediction for this tournament
+        const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
+        const pendingBets = allPendingBets.filter(bet => {
+            const selections = bet.selections as unknown as Array<{ tournamentId?: string, marketName: string }> | null
+            return selections?.some(s => s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner"))
+        })
+
+        console.log(`Found ${pendingBets.length} pending outright bets to settle`)
+
+        let settledCount = 0
+
+        for (const bet of pendingBets) {
+            const selections = bet.selections as unknown as Array<{
+                tournamentId?: string,
+                selectionId: string,
+                odds: number,
+                marketName: string,
+                status?: string
+            }>
+
+            if (bet.status !== "pending") continue;
+
+            const updatedSelections = selections.map(s => {
+                if (s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner")) {
+                    return { ...s, status: s.selectionId === winnerId ? 'won' : 'lost' }
+                }
+                return s
+            })
+
+            // Since outrights are SINGLES (enforced at placement), the bet status is simply the selection status
+            const outrightSelection = updatedSelections.find(s => s.tournamentId === tournamentId)
+            if (!outrightSelection) continue
+
+            const isWin = outrightSelection.status === 'won'
+            const finalStatus = isWin ? 'won' : 'lost'
+
+            if (isWin) {
+                const payoutAmount = bet.potentialPayout
+                const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+
+                if (userWallet.length > 0) {
+                    const wallet = userWallet[0]
+                    const balanceBefore = parseFloat(wallet.balance.toString())
+                    const balanceAfter = balanceBefore + payoutAmount
+
+                    await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
+
+                    await db.insert(transactions).values({
+                        id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                        userId: bet.userId,
+                        walletId: wallet.id,
+                        amount: payoutAmount,
+                        type: "bet_payout",
+                        balanceBefore,
+                        balanceAfter,
+                        reference: bet.id,
+                        description: `Outright Winner Payout: ${bet.id}`
+                    })
+                }
+            }
+
+            await db.update(bets).set({
+                status: finalStatus,
+                selections: updatedSelections,
+                settledAt: new Date()
+            }).where(eq(bets.id, bet.id))
+
+            settledCount++
+        }
+
+        return { success: true, settledCount }
+    } catch (error) {
+        console.error("Outright settlement error:", error)
+        return { success: false, error: "Failed to settle outright bets" }
+    }
+}

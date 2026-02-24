@@ -57,8 +57,8 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
         try {
             const payload = { ...formData }
             if (editingTournament) {
-                const result = await updateTournament(editingTournament.id, payload)
-                if (result) setTournaments(prev => prev.map(t => t.id === editingTournament.id ? { ...t, ...result[0] } : t))
+                const result = await updateTournament(editingTournament.id, payload) as Tournament[]
+                if (result?.length > 0) setTournaments(prev => prev.map(t => t.id === editingTournament.id ? { ...t, ...result[0] } as Tournament : t))
             } else {
                 const newT = await createTournament(payload)
                 if (newT?.length > 0) setTournaments([{ ...newT[0], createdAt: newT[0].createdAt || null } as Tournament, ...tournaments])

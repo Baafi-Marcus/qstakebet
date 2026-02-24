@@ -46,7 +46,8 @@ export const SelectionSchema = z.object({
     label: z.string(),
     odds: z.number().positive(),
     marketName: z.string(),
-    matchLabel: z.string()
+    matchLabel: z.string(),
+    tournamentId: z.string().optional(),
 });
 
 export const PlaceBetSchema = z.object({

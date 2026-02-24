@@ -79,10 +79,10 @@ export function VirtualsBetSlip({
 }: VirtualsBetSlipProps) {
     return (
         <>
-            {/* Fixed Bottom Navigation - SportyBet Style Tab Bar */}
+            {/* Bottom Navigation - SportyBet Style Tab Bar (Non-fixed) */}
             {!isSimulationActive && (
-                <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-6 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent pointer-events-none">
-                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pointer-events-auto pb-safe">
+                <div className="inset-x-0 px-4 pb-6 pt-4 bg-slate-950/50 mt-auto border-t border-white/5">
+                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
                         {/* Left Side: Active Slips Counter */}
                         <div className="flex -space-x-3 shrink-0">
                             {pendingSlips.slice(0, 3).map((slip, i) => (
@@ -320,7 +320,7 @@ export function VirtualsBetSlip({
                                         ))}
                                     </div>
 
-                                    <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2 flex-shrink-0 sticky bottom-0 z-20 pb-safe">
+                                    <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2 pb-safe">
                                         {/* Alerts at bottom for visibility */}
                                         {hasConflicts && (
                                             <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
