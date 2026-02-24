@@ -13,7 +13,7 @@ import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 
 interface HomeClientProps {
     initialMatches: Match[]
-    announcements: any[]
+    announcements?: any[]
 }
 
 // Helper to get ordinal suffix
@@ -50,7 +50,7 @@ function getDateGroupLabel(date: Date): string {
     }
 }
 
-export function HomeClient({ initialMatches, announcements }: HomeClientProps) {
+export function HomeClient({ initialMatches, announcements = [] }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
     const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')

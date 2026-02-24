@@ -9,6 +9,13 @@ import { useRef, useLayoutEffect } from "react"
 import gsap from "gsap"
 import { haptics } from "@/lib/haptics"
 
+const navItems = [
+    { label: "Home", icon: Home, href: "/" },
+    { label: "Virtuals", icon: Zap, href: "/virtuals" },
+    { label: "Bets", icon: ScrollText, href: "/account/bets" },
+    { label: "Me", icon: User, href: "/account/profile" },
+]
+
 export function BottomNav() {
     const pathname = usePathname()
     const { selections, toggleSlip, isOpen } = useBetSlip()
@@ -17,13 +24,6 @@ export function BottomNav() {
     const navRef = useRef<HTMLDivElement>(null)
     const indicatorRef = useRef<HTMLDivElement>(null)
     const itemsRef = useRef<(HTMLAnchorElement | null)[]>([])
-
-    const navItems = [
-        { label: "Home", icon: Home, href: "/" },
-        { label: "Virtuals", icon: Zap, href: "/virtuals" },
-        { label: "Bets", icon: ScrollText, href: "/account/bets" },
-        { label: "Me", icon: User, href: "/account/profile" },
-    ]
 
     useLayoutEffect(() => {
         const activeIndex = navItems.findIndex(item => pathname === item.href)

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Trophy, HelpCircle, ShieldAlert, BookOpen, Twitter, Facebook, Instagram } from "lucide-react"
 
 export function Footer() {
@@ -74,11 +75,11 @@ export function Footer() {
 
                 {/* Compliance & Payment Icons area */}
                 <div className="py-12 border-y border-white/5 flex flex-wrap items-center justify-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
-                    <div className="relative h-12 w-12">
-                        <img src="/18plus.png" alt="18+" className="object-contain h-full w-full" />
+                    <div className="relative h-12 w-12 text-white">
+                        <Image src="/18plus.png" alt="18+" fill className="object-contain" />
                     </div>
-                    <div className="relative h-12 w-48">
-                        <img src="/paystack.png" alt="Paystack" className="object-contain h-full w-full" />
+                    <div className="relative h-12 w-48 text-white">
+                        <Image src="/paystack.png" alt="Paystack" fill className="object-contain" />
                     </div>
                 </div>
 
