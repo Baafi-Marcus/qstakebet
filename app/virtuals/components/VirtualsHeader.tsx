@@ -16,6 +16,7 @@ interface VirtualsHeaderProps {
     availableRegions: string[]; // Passed for logic if needed, though mostly used in resetting
     isSimulationActive?: boolean;
     onSkip?: () => void;
+    isAuthenticated: boolean;
 }
 
 export function VirtualsHeader({
@@ -31,7 +32,8 @@ export function VirtualsHeader({
     onOpenHistory,
     availableRegions,
     isSimulationActive,
-    onSkip
+    onSkip,
+    isAuthenticated
 }: VirtualsHeaderProps) {
     return (
         <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
@@ -82,41 +84,52 @@ export function VirtualsHeader({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Compact Balance Toggle for small screens */}
-                    <div className="flex items-center bg-slate-950/50 rounded-xl p-0.5 border border-white/5">
-                        <button
-                            onClick={() => onBalanceTypeChange('cash')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
-                                balanceType === 'cash' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500"
-                            )}
-                        >
-                            <Wallet className="h-3 w-3" />
-                            <span className="text-[10px] font-black font-mono">{balance.toFixed(2)}</span>
-                        </button>
-                        <button
-                            onClick={() => onBalanceTypeChange('gift')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
-                                balanceType === 'gift' ? "bg-purple-600 text-white shadow-lg" : "text-slate-500"
-                            )}
-                        >
-                            <Zap className="h-3 w-3" />
-                            <span className="text-[10px] font-black font-mono">{bonusBalance.toFixed(2)}</span>
-                        </button>
-                    </div>
+                    {isAuthenticated ? (
+                        <>
+                            {/* Compact Balance Toggle for small screens */}
+                            <div className="flex items-center bg-slate-950/50 rounded-xl p-0.5 border border-white/5">
+                                <button
+                                    onClick={() => onBalanceTypeChange('cash')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                                        balanceType === 'cash' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500"
+                                    )}
+                                >
+                                    <Wallet className="h-3 w-3" />
+                                    <span className="text-[10px] font-black font-mono">{balance.toFixed(2)}</span>
+                                </button>
+                                <button
+                                    onClick={() => onBalanceTypeChange('gift')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                                        balanceType === 'gift' ? "bg-purple-600 text-white shadow-lg" : "text-slate-500"
+                                    )}
+                                >
+                                    <Zap className="h-3 w-3" />
+                                    <span className="text-[10px] font-black font-mono">{bonusBalance.toFixed(2)}</span>
+                                </button>
+                            </div>
 
-                    {!isSimulationActive && (
-                        <button
-                            onClick={onOpenHistory}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all relative active:scale-90 border border-white/5"
-                        >
-                            <Ticket className="h-4 w-4" />
-                            {hasPendingBets && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-purple-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                                    <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
-                                </span>
+                            {!isSimulationActive && (
+                                <button
+                                    onClick={onOpenHistory}
+                                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all relative active:scale-90 border border-white/5"
+                                >
+                                    <Ticket className="h-4 w-4" />
+                                    {hasPendingBets && (
+                                        <span className="absolute -top-1 -right-1 h-3 w-3 bg-purple-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                                            <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                                        </span>
+                                    )}
+                                </button>
                             )}
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => window.location.href = '/auth/login'}
+                            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-600/20 transition-all active:scale-95"
+                        >
+                            Login
                         </button>
                     )}
                 </div>

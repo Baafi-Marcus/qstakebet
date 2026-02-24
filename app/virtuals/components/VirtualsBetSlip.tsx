@@ -46,6 +46,7 @@ interface VirtualsBetSlipProps {
     setConfirmCashoutSlipId: (id: string | null) => void;
     onConfirmCashout: () => void;
     hasConflicts: boolean;
+    isAuthenticated: boolean;
 }
 
 export function VirtualsBetSlip({
@@ -73,19 +74,20 @@ export function VirtualsBetSlip({
     confirmCashoutSlipId,
     setConfirmCashoutSlipId,
     onConfirmCashout,
-    hasConflicts
+    hasConflicts,
+    isAuthenticated
 }: VirtualsBetSlipProps) {
     return (
         <>
             {/* Fixed Bottom Navigation - SportyBet Style Tab Bar */}
             {!isSimulationActive && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none">
-                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pointer-events-auto">
-                        {/* Left Side: Active Slips Counter or History Trigger */}
-                        <div className="flex -space-x-3">
+                <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-6 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent pointer-events-none">
+                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pointer-events-auto pb-safe">
+                        {/* Left Side: Active Slips Counter */}
+                        <div className="flex -space-x-3 shrink-0">
                             {pendingSlips.slice(0, 3).map((slip, i) => (
-                                <div key={slip.id} className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center shadow-xl animate-in fade-in slide-in-from-left-4 duration-300" style={{ transitionDelay: `${i * 100}ms` }}>
-                                    <Ticket className="h-4 w-4 text-purple-400" />
+                                <div key={slip.id} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center shadow-xl animate-in fade-in slide-in-from-left-4 duration-300" style={{ transitionDelay: `${i * 100}ms` }}>
+                                    <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400" />
                                 </div>
                             ))}
                         </div>
@@ -96,35 +98,35 @@ export function VirtualsBetSlip({
                                 onClick={onKickoff}
                                 disabled={isSimulating || pendingSlips.length === 0}
                                 className={cn(
-                                    "flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5",
+                                    "flex-1 h-12 sm:h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5",
                                     isSimulating ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50" :
                                         pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5" :
                                             "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
                                 )}
                             >
-                                <span className="text-xs">{isSimulating ? "SIMULATING..." : "KICKOFF"}</span>
+                                <span className="text-[10px] sm:text-xs">{isSimulating ? "SIMULATING..." : "KICKOFF"}</span>
                                 {!isSimulating && pendingSlips.length > 0 && (
-                                    <span className="text-[8px] opacity-70">{pendingSlips.length} SLIPS PENDING</span>
+                                    <span className="text-[7px] sm:text-[8px] opacity-70">{pendingSlips.length} SLIPS PENDING</span>
                                 )}
                             </button>
 
                             <button
                                 onClick={() => setShowSlip(true)}
                                 className={cn(
-                                    "h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95 overflow-hidden group",
+                                    "h-12 sm:h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95 overflow-hidden group",
                                     selections.length > 0
                                         ? "bg-purple-600/20 backdrop-blur-xl border border-purple-500/50 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]"
                                         : "bg-slate-900/40 backdrop-blur-xl text-slate-500 border border-white/10"
                                 )}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <Zap className={cn("h-5 w-5 relative z-10", selections.length > 0 ? "fill-purple-400 text-purple-400" : "")} />
+                                <Zap className={cn("h-4 w-4 sm:h-5 sm:w-5 relative z-10", selections.length > 0 ? "fill-purple-400 text-purple-400" : "")} />
                                 {selections.length > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
                                         {selections.length}
                                     </span>
                                 )}
-                                <span className="text-[7px] font-black uppercase tracking-widest mt-0.5">SLIP</span>
+                                <span className="text-[6px] sm:text-[7px] font-black uppercase tracking-widest mt-0.5">SLIP</span>
                             </button>
                         </div>
                     </div>
@@ -147,7 +149,7 @@ export function VirtualsBetSlip({
                             <div className="flex justify-center pt-3 pb-1">
                                 <div className="w-10 h-1 bg-white/10 rounded-full" />
                             </div>
-                            <div className="p-5 border-b border-white/5 flex items-center justify-between">
+                            <div className="p-5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                                 <div className="flex items-center gap-3">
                                     <Zap className="h-5 w-5 text-purple-400" />
                                     <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
@@ -158,7 +160,7 @@ export function VirtualsBetSlip({
                             </div>
 
                             {/* Selections / My Bets Tabs */}
-                            <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5">
+                            <div className="p-2 grid grid-cols-2 gap-1 bg-slate-900 border-b border-white/5 flex-shrink-0">
                                 <button
                                     onClick={() => setSlipTab('selections')}
                                     className={cn(
@@ -191,56 +193,59 @@ export function VirtualsBetSlip({
 
                             {slipTab === 'selections' ? (
                                 <>
-                                    {/* Balance Selector in Slip */}
-                                    <div className="flex gap-2 mb-4 px-4 pt-4">
-                                        <button
-                                            onClick={() => setBalanceType('cash')}
-                                            className={cn(
-                                                "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
-                                                balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-1.5 mb-0.5">
-                                                <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
-                                            </div>
-                                            <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
-                                                {(profile?.balance || 0).toFixed(2)}
-                                            </span>
-                                        </button>
-                                        <button
-                                            onClick={() => setBalanceType('gift')}
-                                            className={cn(
-                                                "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
-                                                balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-1.5 mb-0.5">
-                                                <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
-                                            </div>
-                                            <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
-                                                {(profile?.bonusBalance || 0).toFixed(2)}
-                                            </span>
-                                        </button>
-                                    </div>
-
-                                    {/* Singles/Multi/System Toggle */}
-                                    <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-4 mx-4 max-w-[200px] shadow-inner">
-                                        {(['single', 'multi'] as const).map((mode) => (
+                                    {/* Balance & Settings Wrapper - Scrollable */}
+                                    <div className="flex-shrink-0 bg-slate-900/50">
+                                        {/* Balance Selector in Slip */}
+                                        <div className="flex gap-2 p-4">
                                             <button
-                                                key={mode}
-                                                onClick={() => setBetMode(mode)}
+                                                onClick={() => setBalanceType('cash')}
                                                 className={cn(
-                                                    "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all",
-                                                    betMode === mode
-                                                        ? "bg-purple-600 text-white shadow-lg shadow-purple-900/50"
-                                                        : "text-slate-500 hover:text-slate-300"
+                                                    "flex-1 py-1.5 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                    balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
                                                 )}
                                             >
-                                                {mode}
+                                                <div className="flex items-center gap-1.5">
+                                                    <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
+                                                </div>
+                                                <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                                                    {(profile?.balance || 0).toFixed(2)}
+                                                </span>
                                             </button>
-                                        ))}
+                                            <button
+                                                onClick={() => setBalanceType('gift')}
+                                                className={cn(
+                                                    "flex-1 py-1.5 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                                                    balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
+                                                </div>
+                                                <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                                                    {(profile?.bonusBalance || 0).toFixed(2)}
+                                                </span>
+                                            </button>
+                                        </div>
+
+                                        {/* Singles/Multi/System Toggle */}
+                                        <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-2 mx-4 max-w-[180px] shadow-inner">
+                                            {(['single', 'multi'] as const).map((mode) => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setBetMode(mode)}
+                                                    className={cn(
+                                                        "flex-1 py-1 text-[8px] font-black uppercase tracking-wider rounded-md transition-all",
+                                                        betMode === mode
+                                                            ? "bg-purple-600 text-white shadow-lg shadow-purple-900/50"
+                                                            : "text-slate-500 hover:text-slate-300"
+                                                    )}
+                                                >
+                                                    {mode}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Selections List - Ultra Compact */}
@@ -315,7 +320,7 @@ export function VirtualsBetSlip({
                                         ))}
                                     </div>
 
-                                    <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2">
+                                    <div className="p-3 border-t border-white/10 bg-slate-900 space-y-2 flex-shrink-0 sticky bottom-0 z-20 pb-safe">
                                         {/* Alerts at bottom for visibility */}
                                         {hasConflicts && (
                                             <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
@@ -435,18 +440,27 @@ export function VirtualsBetSlip({
                                             </div>
                                         </div>
 
-                                        <button
-                                            onClick={onPlaceBet}
-                                            disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
-                                            className={cn(
-                                                "w-full py-4 sm:py-2.5 rounded-2xl sm:rounded-xl font-black uppercase tracking-wider text-[11px] sm:text-[10px] shadow-lg transition-all active:scale-90",
-                                                (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
-                                                    ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
-                                                    : "bg-slate-700 text-slate-500 cursor-not-allowed"
-                                            )}
-                                        >
-                                            Place Bet
-                                        </button>
+                                        {!isAuthenticated ? (
+                                            <button
+                                                onClick={() => window.location.href = '/auth/login'}
+                                                className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black uppercase tracking-wider text-[11px] shadow-lg shadow-purple-600/20 transition-all active:scale-95"
+                                            >
+                                                Login to Place Bet
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={onPlaceBet}
+                                                disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
+                                                className={cn(
+                                                    "w-full py-3.5 rounded-2xl font-black uppercase tracking-wider text-[11px] shadow-lg transition-all active:scale-90",
+                                                    (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
+                                                        ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
+                                                        : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                                                )}
+                                            >
+                                                Place Bet
+                                            </button>
+                                        )}
                                     </div>
                                 </>
                             ) : (

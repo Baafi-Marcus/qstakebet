@@ -56,8 +56,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         {/* Sticky Main Header */}
                         {!isVirtuals && <Header />}
 
-                        {/* Ad/Announcement Bar between Main Nav and SubNav */}
-                        {!isVirtuals && !isAuthPage && announcements.length > 0 && (
+                        {/* Ad/Announcement Bar between Main Nav and SubNav - Homepage only */}
+                        {pathname === "/" && announcements.length > 0 && (
                             <AdBannerCarousel announcements={announcements} />
                         )}
 

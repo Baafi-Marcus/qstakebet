@@ -32,5 +32,5 @@ export default async function VirtualsPage() {
         userSeed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
     }
 
-    return <VirtualsClient schools={schools} profile={profile} userSeed={userSeed} />
+    return <VirtualsClient schools={schools} profile={profile} userSeed={userSeed} user={session?.user} />
 }

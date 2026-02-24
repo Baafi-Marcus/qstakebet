@@ -70,6 +70,19 @@ export function BetSlipSidebar() {
         }
     }, [isOpen])
 
+    // Sync bonusAmount with totalStake to ensure we don't try to use more bonus than stake
+    React.useEffect(() => {
+        if (useBonus && bonusId) {
+            const gift = gifts.find(g => g.id === bonusId)
+            const currentTotalStake = betMode === 'single'
+                ? selections.reduce((acc, s) => acc + (s.stake || stake), 0)
+                : stake
+            if (gift) {
+                setBonusAmount(Math.min(gift.amount, currentTotalStake))
+            }
+        }
+    }, [selections, stake, useBonus, bonusId, gifts, betMode, setBonusAmount])
+
     const handleLoadBooking = async () => {
         if (!bookingCode) return
         setIsProcessing(true)
@@ -367,7 +380,10 @@ export function BetSlipSidebar() {
                                                         {item.odds.toFixed(2)}
                                                     </div>
                                                     <button
-                                                        onClick={() => removeSelection(item.selectionId)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removeSelection(item.selectionId);
+                                                        }}
                                                         className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
                                                     >
                                                         <X className="h-3.5 w-3.5" />
@@ -529,19 +545,22 @@ export function BetSlipSidebar() {
                                                 setError("")
                                                 try {
                                                     if (betMode === 'single') {
-                                                        const bonusPerSelection = bonusAmount / selections.length
                                                         for (const sel of selections) {
                                                             const currentStake = sel.stake || stake
                                                             if (currentStake >= FINANCE_LIMITS.BET.MIN_STAKE) {
-                                                                // Distribute bonus proportionately or equally
-                                                                await placeBet(currentStake, [sel], bonusId, bonusPerSelection, 'single')
+                                                                // Calculate precise bonus for this leg
+                                                                const legBonus = useBonus ? (bonusAmount / selections.length) : 0
+                                                                // Ensure legBonus doesn't exceed currentStake
+                                                                const finalLegBonus = Math.min(legBonus, currentStake)
+
+                                                                await placeBet(currentStake, [sel], bonusId, finalLegBonus, 'single')
 
                                                                 // Update local wallet for single bet
                                                                 if (wallet) {
                                                                     setWallet(prev => prev ? ({
                                                                         ...prev,
-                                                                        balance: prev.balance - Math.max(0, currentStake - bonusPerSelection),
-                                                                        bonusBalance: prev.bonusBalance - bonusPerSelection
+                                                                        balance: prev.balance - Math.max(0, currentStake - finalLegBonus),
+                                                                        bonusBalance: prev.bonusBalance - finalLegBonus
                                                                     }) : null)
                                                                 }
                                                             }
@@ -549,27 +568,21 @@ export function BetSlipSidebar() {
                                                         clearSlip()
                                                         closeSlip()
                                                     } else {
-                                                        const result = await placeBet(stake, selections, bonusId, bonusAmount)
+                                                        const finalBonus = useBonus ? Math.min(bonusAmount, stake) : 0
+                                                        const result = await placeBet(stake, selections, bonusId, finalBonus)
                                                         if (result.success) {
                                                             // Update local wallet state immediately for better UX
                                                             if (wallet) {
                                                                 setWallet(prev => prev ? ({
                                                                     ...prev,
-                                                                    balance: prev.balance - (stake - bonusAmount),
-                                                                    bonusBalance: prev.bonusBalance - bonusAmount
+                                                                    balance: prev.balance - (stake - finalBonus),
+                                                                    bonusBalance: prev.bonusBalance - finalBonus
                                                                 }) : null)
                                                             }
-
-                                                            // Soft refresh to update server components
-                                                            import("next/navigation").then(({ useRouter }) => {
-                                                                // We can't use hooks here, but we can trigger a router refresh if we had access to router
-                                                                // For now, revalidatePath on server does the heavy lifting
-                                                            })
 
                                                             // Clear slip success
                                                             clearSlip()
                                                             closeSlip()
-                                                            // Show success feedback (Toast or Modal could be added here)
                                                         } else {
                                                             const resultWithError = result as { success: false; error: string }
                                                             setError(resultWithError.error || "Failed to place bet")
@@ -661,7 +674,10 @@ export function BetSlipSidebar() {
                                                 onClick={() => {
                                                     if (isIneligible) return
                                                     setBonusId(gift.id)
-                                                    setBonusAmount(Math.min(gift.amount, totalStake))
+                                                    const currentTotalStake = betMode === 'single'
+                                                        ? selections.reduce((acc, s) => acc + (s.stake || stake), 0)
+                                                        : stake
+                                                    setBonusAmount(Math.min(gift.amount, currentTotalStake))
                                                 }}
                                             >
                                                 <div className="flex justify-between items-center">
@@ -696,7 +712,10 @@ export function BetSlipSidebar() {
                                                     onChange={(e) => {
                                                         const gift = gifts.find(g => g.id === bonusId)
                                                         if (gift) {
-                                                            const val = Math.max(0, Math.min(gift.amount, Number(e.target.value)))
+                                                            const currentTotalStake = betMode === 'single'
+                                                                ? selections.reduce((acc, s) => acc + (s.stake || stake), 0)
+                                                                : stake
+                                                            const val = Math.max(0, Math.min(gift.amount, currentTotalStake, Number(e.target.value)))
                                                             setBonusAmount(val)
                                                         }
                                                     }}
@@ -708,7 +727,12 @@ export function BetSlipSidebar() {
                                             <button
                                                 onClick={() => {
                                                     const gift = gifts.find(g => g.id === bonusId)
-                                                    if (gift) setBonusAmount(gift.amount)
+                                                    if (gift) {
+                                                        const currentTotalStake = betMode === 'single'
+                                                            ? selections.reduce((acc, s) => acc + (s.stake || stake), 0)
+                                                            : stake
+                                                        setBonusAmount(Math.min(gift.amount, currentTotalStake))
+                                                    }
                                                 }}
                                                 className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase rounded-lg transition-all"
                                             >

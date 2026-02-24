@@ -35,7 +35,7 @@ import { VirtualsHistory } from "./components/VirtualsHistory"
 import { VirtualsLivePlayer } from "./components/VirtualsLivePlayer"
 
 interface VirtualsClientProps {
-    user?: { id: string; email: string };
+    user?: { id: string; email: string; name?: string | null };
     profile?: { balance: number; currency: string; bonusBalance?: number };
     schools: VirtualSchool[];
     userSeed?: number;
@@ -43,7 +43,7 @@ interface VirtualsClientProps {
 
 const MAX_GAME_PAYOUT = 3000;
 
-export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClientProps) {
+export function VirtualsClient({ profile, schools, userSeed = 0, user }: VirtualsClientProps) {
     const router = useRouter()
 
     // Status / UI State
@@ -75,6 +75,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
 
     const isSimulatingRef = useRef(false)
     const outcomesRef = useRef<VirtualMatchOutcome[]>([])
+
+    const isAuthenticated = !!user
 
     // Load dynamic data
     useEffect(() => {
@@ -311,6 +313,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 onOpenHistory={() => setShowHistoryModal(true)}
                 isSimulationActive={isSimulationActive}
                 onSkip={skipToResult}
+                isAuthenticated={isAuthenticated}
             />
 
             <div className="flex flex-1 overflow-hidden">
@@ -380,6 +383,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 setConfirmCashoutSlipId={setConfirmCashoutSlipId}
                 onConfirmCashout={handleConfirmCashout}
                 hasConflicts={hasConflicts}
+                isAuthenticated={isAuthenticated}
             />
 
             <VirtualsResults
