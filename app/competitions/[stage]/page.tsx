@@ -4,7 +4,7 @@ import { eq, sql, inArray } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { Trophy, BarChart2, ChevronLeft } from "lucide-react"
 import Link from "next/link"
-import { TournamentStandingsModal } from "@/components/ui/TournamentStandingsModal"
+import { TournamentFixturesModal } from "@/components/ui/TournamentFixturesModal"
 import { OddsButton } from "@/components/ui/OddsButton"
 import type { Match } from "@/lib/types"
 
@@ -99,13 +99,10 @@ export default async function CompetitionPage({ params }: Props) {
                                             </span>
                                             <h2 className="text-xl font-black text-white uppercase tracking-tight">{tournament.name}</h2>
                                         </div>
-                                        <TournamentStandingsModal
+                                        <TournamentFixturesModal
                                             tournamentName={tournament.name}
                                             tournamentId={tournament.id}
                                             matches={tMatches}
-                                            groups={groups}
-                                            groupAssignments={groupAssignments}
-                                            allSchools={tSchools}
                                         />
                                     </div>
 
