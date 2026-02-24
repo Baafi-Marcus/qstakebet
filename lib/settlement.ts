@@ -250,8 +250,12 @@ export function isSelectionWinner(
 
     // 0. MANUAL OVERRIDE (Explicit Outcomes from Admin)
     const outcomes = (metadata.outcomes as Record<string, string>) || {}
-    if (outcomes[marketName]) {
-        return { resolved: true, isWin: outcomes[marketName] === selectionId }
+    const normalizedMarket = marketName.toLowerCase().trim()
+
+    // Check for exact or normalized match in overrides
+    const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
+    if (overrideKey && outcomes[overrideKey]) {
+        return { resolved: true, isWin: outcomes[overrideKey] === selectionId }
     }
 
     // Virtuals Adapter: If it's a virtual match outcome

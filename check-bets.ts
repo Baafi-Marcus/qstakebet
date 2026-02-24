@@ -10,6 +10,7 @@ async function checkRecentBets() {
         const recentBets = await db.select({
             id: bets.id,
             status: bets.status,
+            mode: bets.mode,
             stake: bets.stake,
             potentialPayout: bets.potentialPayout,
             createdAt: bets.createdAt,

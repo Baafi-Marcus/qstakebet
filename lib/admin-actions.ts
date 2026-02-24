@@ -1108,3 +1108,29 @@ export async function adjustUserBalance(userId: string, amount: number, reason: 
         return { success: false, error: "Failed to adjust balance" }
     }
 }
+
+/**
+ * Detects which markets have pending bets for a specific match.
+ * Used in the Admin UI to highlight markets that need settlement.
+ */
+export async function getActiveMarketsAction(matchId: string) {
+    try {
+        const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
+
+        const activeMarkets = new Set<string>();
+
+        allPendingBets.forEach(bet => {
+            const selections = bet.selections as any[];
+            selections.forEach(s => {
+                if (s.matchId === matchId && s.status === 'pending') {
+                    if (s.marketName) activeMarkets.add(s.marketName);
+                }
+            });
+        });
+
+        return { success: true, activeMarkets: Array.from(activeMarkets) };
+    } catch (error) {
+        console.error("Error fetching active markets:", error);
+        return { success: false, error: "Failed to fetch active markets", activeMarkets: [] };
+    }
+}

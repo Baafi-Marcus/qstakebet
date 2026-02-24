@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
-import { updateMatchResult } from "@/lib/admin-actions"
+import { updateMatchResult, getActiveMarketsAction } from "@/lib/admin-actions"
 import { validateScores } from "@/lib/match-utils"
 
 interface MatchResultModalProps {
@@ -87,6 +87,16 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     const [manualOutcomes, setManualOutcomes] = useState<Record<string, string>>(() => {
         return match.metadata?.outcomes || {}
     })
+    const [activeMarkets, setActiveMarkets] = useState<string[]>([])
+
+    // Fetch active markets on mount
+    useEffect(() => {
+        const fetchActive = async () => {
+            const res = await getActiveMarketsAction(match.id)
+            if (res.success) setActiveMarkets(res.activeMarkets || [])
+        }
+        fetchActive()
+    }, [match.id])
 
     // ... (rest of state)
 
@@ -542,8 +552,11 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                 <div className="space-y-4 h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                     {Object.entries(match.extendedOdds || {}).map(([marketName, options]) => (
                                         <div key={marketName} className="p-6 bg-white/5 rounded-3xl border border-white/10 space-y-4">
-                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
                                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">{marketName}</span>
+                                                {activeMarkets.includes(marketName) && (
+                                                    <div className="px-2 py-0.5 bg-primary/20 border border-primary/50 rounded-full text-[8px] font-black text-primary uppercase animate-pulse">⚡ Active</div>
+                                                )}
                                                 {manualOutcomes[marketName] && (
                                                     <div className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-[8px] font-black text-green-400 uppercase">Clarified</div>
                                                 )}
