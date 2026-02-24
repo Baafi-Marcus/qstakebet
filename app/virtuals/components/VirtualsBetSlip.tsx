@@ -99,7 +99,7 @@ export function VirtualsBetSlip({
                                     "flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5",
                                     isSimulating ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50" :
                                         pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5" :
-                                            "bg-red-600 hover:bg-red-500 text-white shadow-red-600/20"
+                                            "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
                                 )}
                             >
                                 <span className="text-xs">{isSimulating ? "SIMULATING..." : "KICKOFF"}</span>
@@ -120,7 +120,7 @@ export function VirtualsBetSlip({
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <Zap className={cn("h-5 w-5 relative z-10", selections.length > 0 ? "fill-purple-400 text-purple-400" : "")} />
                                 {selections.length > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
+                                    <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
                                         {selections.length}
                                     </span>
                                 )}
@@ -168,7 +168,7 @@ export function VirtualsBetSlip({
                                 >
                                     Selections
                                     {selections.length > 0 && (
-                                        <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                        <span className="w-4 h-4 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px]">
                                             {selections.length}
                                         </span>
                                     )}
@@ -182,7 +182,7 @@ export function VirtualsBetSlip({
                                 >
                                     My Bets
                                     {pendingSlips.length > 0 && (
-                                        <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]">
+                                        <span className="w-4 h-4 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px]">
                                             {pendingSlips.length}
                                         </span>
                                     )}
@@ -441,7 +441,7 @@ export function VirtualsBetSlip({
                                             className={cn(
                                                 "w-full py-4 sm:py-2.5 rounded-2xl sm:rounded-xl font-black uppercase tracking-wider text-[11px] sm:text-[10px] shadow-lg transition-all active:scale-90",
                                                 (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
-                                                    ? "bg-red-600 hover:bg-red-500 text-white shadow-red-600/20"
+                                                    ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
                                                     : "bg-slate-700 text-slate-500 cursor-not-allowed"
                                             )}
                                         >
@@ -456,8 +456,8 @@ export function VirtualsBetSlip({
                                             <div key={slip.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
                                                 <div className="flex flex-col gap-1">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center">
-                                                            <Ticket className="h-4 w-4 text-red-500" />
+                                                        <div className="w-8 h-8 rounded-full bg-purple-600/20 flex items-center justify-center">
+                                                            <Ticket className="h-4 w-4 text-purple-500" />
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{slip.time}</span>
@@ -530,7 +530,7 @@ export function VirtualsBetSlip({
                                                 "flex-[2] py-3.5 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2",
                                                 isSimulating ? "bg-slate-800 text-slate-500" :
                                                     pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed" :
-                                                        "bg-red-600 text-white shadow-red-600/30"
+                                                        "bg-purple-600 text-white shadow-purple-600/30"
                                             )}
                                         >
                                             {isSimulating ? "LIVE" : "KICKOFF"}

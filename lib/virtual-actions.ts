@@ -134,25 +134,27 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         if (bet.status !== 'pending') return { success: true, message: "Already settled" }
         if (bet.userId !== session.user.id) return { success: false, error: "Forbidden" }
 
-        // 2. Regenerate Outcomes
+        // 2. Regenerate Outcomes with Parity
+        const schools = await getPlayableSchools();
+        const strengths = await getAIStrengths(schools.map(s => s.name));
+        const strengthMap = strengths.reduce((acc: any, s: any) => ({ ...acc, [s.name]: Number(s.form) || 1.0 }), {});
+
         // We need to determine category and region from the selections
         let category: 'national' | 'regional' = 'national'
         let queryRegion: string | undefined = undefined
         const selections = bet.selections as any[]
         const firstSelection = selections[0]
-        if (firstSelection?.matchId.startsWith('vmt-')) {
+        if (firstSelection?.matchId.startsWith('vr-')) {
             const parts = firstSelection.matchId.split('-')
             category = (parts[3] as 'national' | 'regional') || 'national'
             const regionSlug = parts[4]
             if (regionSlug && regionSlug !== 'all') {
-                // Approximate region name from slug or just use it if allowed
-                const schoolsData = await import("@/lib/virtuals").then(m => m.DEFAULT_SCHOOLS)
-                const schoolsInThisRegion = schoolsData.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
-                queryRegion = schoolsInThisRegion?.region;
+                const schoolsInThisRegion = schools.filter(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
+                queryRegion = schoolsInThisRegion[0]?.region;
             }
         }
 
-        const { outcomes } = generateVirtualMatches(15, [], roundId, category, queryRegion, {}, userSeed)
+        const { outcomes } = generateVirtualMatches(15, schools, roundId, category, queryRegion, strengthMap, userSeed)
 
         const MAX_GAME_PAYOUT = 3000
         const isMulti = bet.mode === 'multi'

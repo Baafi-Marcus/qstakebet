@@ -789,23 +789,48 @@ export function getRecentVirtualResults(
 export const getSchoolAcronym = (name: string, allParticipants: string[] = []) => {
     if (!name || typeof name !== 'string') return "";
 
-    // Generate basic acronym
-    const base = name
-        .split(/[\s/-]+/)
-        .map(word => word[0]?.toUpperCase())
-        .join('');
+    // Normalize and clean common suffixes/noise
+    const cleanName = name
+        .replace(/\s+(SHS|College|School|Academy|Sec Tech|SHST|Girls' SHS)$|'s|'/gi, '')
+        .trim();
+
+    const words = cleanName.split(/[\s/-]+/);
+    let base = "";
+
+    if (words.length === 1) {
+        // Single word: Take first 3 letters if long enough, else the whole word
+        base = words[0].length >= 3 ? words[0].substring(0, 3).toUpperCase() : words[0].toUpperCase();
+    } else {
+        // Multi-word: Take first letters of each significant word
+        base = words
+            .filter(w => !['the', 'of', 'and', 'for', 'at'].includes(w.toLowerCase()))
+            .map(word => word[0]?.toUpperCase())
+            .join('');
+
+        // If still 1 char (e.g. only one word significant), take more from that word
+        if (base.length === 1 && words[0].length >= 3) {
+            base = words[0].substring(0, 3).toUpperCase();
+        }
+    }
 
     if (allParticipants.length <= 1) return base;
 
     // Check for collisions and identical names
     const acronyms: string[] = [];
     allParticipants.forEach((pName, pIdx) => {
-        const ac = pName.split(/[\s/-]+/).map(w => w[0]?.toUpperCase()).join('');
+        // Repeat clean logic for others to check collisions
+        const cName = pName.replace(/\s+(SHS|College|School|Academy|Sec Tech|SHST|Girls' SHS)$|'s|'/gi, '').trim();
+        const wds = cName.split(/[\s/-]+/);
+        let ac = "";
+        if (wds.length === 1) {
+            ac = wds[0].length >= 3 ? wds[0].substring(0, 3).toUpperCase() : wds[0].toUpperCase();
+        } else {
+            ac = wds.filter(w => !['the', 'of', 'and', 'for', 'at'].includes(w.toLowerCase())).map(w => w[0]?.toUpperCase()).join('');
+            if (ac.length === 1 && wds[0].length >= 3) ac = wds[0].substring(0, 3).toUpperCase();
+        }
 
-        // Handle identical name collisions or acronym collisions
         let suffix = 0;
         let finalAc = ac;
-
         // Check if this specific name has appeared before in this list
         const occurrences = allParticipants.slice(0, pIdx).filter(n => n === pName).length;
         if (occurrences > 0) {
@@ -818,7 +843,6 @@ export const getSchoolAcronym = (name: string, allParticipants: string[] = []) =
             suffix++;
             finalAc = `${ac}${suffix}`;
         }
-
         acronyms.push(finalAc);
     });
 

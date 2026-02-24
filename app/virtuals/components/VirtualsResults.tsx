@@ -47,8 +47,8 @@ export function VirtualsResults({
             <div className="absolute inset-0 bg-black/95 backdrop-blur-md" />
             <div className="relative bg-[#1a1b1e] w-full max-w-lg h-full md:h-[90vh] md:rounded-b-2xl overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-300">
 
-                {/* Sticky Red Header */}
-                <div className="bg-red-600 px-4 py-3 flex items-center justify-between text-white shadow-md z-10">
+                {/* Sticky Branded Header */}
+                <div className="bg-purple-600 px-4 py-3 flex items-center justify-between text-white shadow-md z-10">
                     <div className="flex items-center gap-4">
                         <button onClick={() => { onClose(); onNextRound(); }} className="p-1 hover:bg-black/10 rounded-full transition-colors">
                             <ArrowLeft className="h-6 w-6" />
@@ -79,8 +79,8 @@ export function VirtualsResults({
                                 <span className="text-[10px] text-slate-500 font-bold block mb-1">{currentTime}</span>
                                 <div className={cn(
                                     "px-2 py-0.5 rounded-md text-[10px] font-black uppercase inline-block",
-                                    (lastOutcome?.resolvedSlips || []).every((s: ResolvedSlip) => s.status === 'WON') ? "bg-green-500/20 text-green-400" :
-                                        (lastOutcome?.resolvedSlips || []).some((s: ResolvedSlip) => s.status === 'WON') ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-500"
+                                    (lastOutcome?.resolvedSlips || []).every((s: ResolvedSlip) => s.status === 'WON') ? "bg-emerald-500/20 text-green-400" :
+                                        (lastOutcome?.resolvedSlips || []).some((s: ResolvedSlip) => s.status === 'WON') ? "bg-yellow-500/20 text-yellow-400" : "bg-purple-500/20 text-purple-400"
                                 )}>
                                     {(lastOutcome?.resolvedSlips || []).every((s: ResolvedSlip) => s.status === 'WON') ? 'Won' :
                                         (lastOutcome?.resolvedSlips || []).some((s: ResolvedSlip) => s.status === 'WON') ? 'Partial' : 'Lost'}
@@ -117,11 +117,11 @@ export function VirtualsResults({
                                 {/* Status Icon */}
                                 <div className="mt-1 flex-shrink-0">
                                     {r.won ? (
-                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                        <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                                             <span className="text-white text-[10px] font-bold">✓</span>
                                         </div>
                                     ) : (
-                                        <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                        <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
                                             <X className="h-3 w-3 text-white" />
                                         </div>
                                     )}
@@ -193,7 +193,6 @@ export function VirtualsResults({
                                             <span className="w-14 text-slate-500 font-bold flex-shrink-0">Outcome:</span>
                                             <span className="font-bold text-slate-300">
                                                 {(() => {
-                                                    const schoolsArr = [r.schoolA, r.schoolB, r.schoolC].filter(Boolean);
                                                     const market = r.marketName;
                                                     const outcome = r.outcome;
                                                     if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
@@ -252,7 +251,7 @@ export function VirtualsResults({
                 <div className="p-4 bg-slate-900 border-t border-white/5">
                     <button
                         onClick={() => { onClose(); onNextRound(); }}
-                        className="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black uppercase tracking-wider text-sm shadow-xl shadow-red-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                        className="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black uppercase tracking-wider text-sm shadow-xl shadow-purple-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                     >
                         <span>Continue to Next Round</span>
                         {autoNextRoundCountdown !== null && (

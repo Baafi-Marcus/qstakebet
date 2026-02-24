@@ -48,7 +48,7 @@ export function VirtualsHeader({
                     ) : (
                         <button
                             onClick={onSkip}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 animate-in fade-in"
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 animate-in fade-in"
                         >
                             Skip
                         </button>
@@ -113,7 +113,7 @@ export function VirtualsHeader({
                         >
                             <Ticket className="h-4 w-4" />
                             {hasPendingBets && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-purple-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
                                     <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
                                 </span>
                             )}

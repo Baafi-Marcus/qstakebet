@@ -117,29 +117,16 @@ export function VirtualsMatchList({
                             isFinished={!isSimulating && lastOutcome?.roundId === currentRound}
                             currentRoundIdx={Math.min(4, Math.floor((simulationProgress / 60) * 5))}
                             currentScores={(() => {
-                                if (!isSimulating && lastOutcome?.roundId !== currentRound) return undefined;
+                                // HIDE SCORES during active simulation to prevent spoilers
+                                if (isSimulating) return undefined;
 
                                 // If finished, show final scores from lastOutcome
-                                if (!isSimulating && lastOutcome?.roundId === currentRound) {
+                                if (lastOutcome?.roundId === currentRound) {
                                     const matchOutcome = lastOutcome.allRoundResults.find(r => r.id === match.id);
                                     return matchOutcome?.totalScores as [number, number, number];
                                 }
 
-                                // If simulating, current progress scores
-                                const parts = match.id.split("-");
-                                const category = parts[3] as 'regional' | 'national' | 'all'; // Adjusted for 'all'
-                                const catParam = category === 'all' ? 'national' : category; // Fallback or handle appropriately if sim logic requires specific
-                                const regionSlug = parts[4] || 'all';
-                                const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
-
-                                // We need to be careful with 'all' category here. 
-                                // In the list, the match ID typically has the category embedded: "vr-123-0-national-all"
-                                // So parts[3] should be 'national' or 'regional'.
-
-                                const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, parts[3] as 'regional' | 'national', regionName, aiStrengths, userSeed);
-                                const cRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
-                                const roundsToShow = outcome.rounds.slice(0, cRoundIdx + 1);
-                                return [0, 1, 2].map(sIdx => roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)) as [number, number, number];
+                                return undefined;
                             })()}
                         />
                     </div>

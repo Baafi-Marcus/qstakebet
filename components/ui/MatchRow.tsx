@@ -221,7 +221,7 @@ export function MatchRow({
                 {(internalIsLive || internalIsFinished || internalIsPending) ? (
                     <div className={cn(
                         "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        internalIsLive ? "bg-red-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
+                        internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
                     )}>
                         {internalIsPending ? (
                             <div className="flex flex-col items-center justify-center py-2">
@@ -241,7 +241,7 @@ export function MatchRow({
                                         </span>
                                         <span className={cn(
                                             "text-sm font-black font-mono tabular-nums leading-none",
-                                            internalIsLive ? "text-red-500" : "text-slate-300"
+                                            internalIsLive ? "text-purple-500" : "text-slate-300"
                                         )}>
                                             {internalScores ? internalScores[idx] : 0}
                                         </span>

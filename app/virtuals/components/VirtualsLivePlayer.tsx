@@ -44,7 +44,14 @@ export function VirtualsLivePlayer({
     );
 
     const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
-    const displayScores = outcome.rounds[currentRoundIdx]?.scores || [0, 0, 0];
+
+    // Improved Scoring: Don't show scores during countdown (simulationProgress === 0)
+    const roundsToShow = simulationProgress > 0 ? outcome.rounds.slice(0, currentRoundIdx + 1) : [];
+    const cumulativeScores = [0, 1, 2].map(sIdx =>
+        roundsToShow.reduce((acc, r) => acc + r.scores[sIdx], 0)
+    ) as [number, number, number];
+
+    const currentRoundScores = simulationProgress > 0 ? outcome.rounds[currentRoundIdx]?.scores : [0, 0, 0];
     const isFullTime = simulationProgress >= 60;
 
     const [isSticky, setIsSticky] = React.useState(false);
@@ -72,7 +79,7 @@ export function VirtualsLivePlayer({
                 )}>
                     <div className="max-w-xl mx-auto flex items-center justify-between">
                         {outcome.schools.map((school: string, sIdx: number) => {
-                            const isLeading = displayScores[sIdx] === Math.max(...displayScores) && displayScores[sIdx] > 0;
+                            const isLeading = cumulativeScores[sIdx] === Math.max(...cumulativeScores) && cumulativeScores[sIdx] > 0;
                             return (
                                 <div key={sIdx} className="flex items-center gap-3 flex-1 justify-center first:justify-start last:justify-end">
                                     <div className="flex flex-col items-center">
@@ -80,12 +87,12 @@ export function VirtualsLivePlayer({
                                             "text-xl font-black italic tabular-nums leading-none transition-all",
                                             isLeading ? "text-emerald-400 scale-110" : "text-white"
                                         )}>
-                                            {displayScores[sIdx]}
+                                            {cumulativeScores[sIdx]}
                                         </div>
                                         <span className={cn(
                                             "text-[6px] font-black uppercase tracking-widest mt-0.5 transition-colors",
                                             isLeading ? "text-emerald-400" : "text-white/40"
-                                        )}>{school.split(' ').pop()}</span>
+                                        )}>{school.split(' ').map(w => w[0]).join('')}</span>
                                     </div>
                                     {sIdx < outcome.schools.length - 1 && <div className="text-white/10 font-black italic text-[8px]">VS</div>}
                                 </div>
@@ -99,7 +106,7 @@ export function VirtualsLivePlayer({
             {countdown && (
                 <div className="absolute inset-0 z-[120] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
                     <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                        <div className="px-6 py-2 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.4em] rounded-full mb-8 shadow-2xl shadow-red-600/20">
+                        <div className="px-6 py-2 bg-purple-600 text-white text-[10px] font-black uppercase tracking-[0.4em] rounded-full mb-8 shadow-2xl shadow-purple-600/20">
                             Prepare to win
                         </div>
                         <div className={cn(
@@ -139,46 +146,56 @@ export function VirtualsLivePlayer({
                             </span>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </button>
+
+                    {/* Only show Close button if simulation is NOT active OR is finished */}
+                    {(!isSimulating || isFullTime) && (
+                        <button
+                            onClick={onClose}
+                            className="absolute right-4 top-4 p-2 bg-black/20 hover:bg-black/40 text-white/50 hover:text-white rounded-full transition-colors z-50"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="w-full max-w-2xl px-4 mb-4">
                     <div className="grid grid-cols-3 gap-2 md:gap-4 items-end">
                         {outcome.schools.map((school: string, sIdx: number) => {
-                            const isLeading = displayScores[sIdx] === Math.max(...displayScores) && displayScores[sIdx] > 0;
+                            const isLeading = cumulativeScores[sIdx] === Math.max(...cumulativeScores) && cumulativeScores[sIdx] > 0;
+                            const roundPoints = currentRoundScores[sIdx];
+
                             return (
                                 <div key={sIdx} className="flex flex-col items-center gap-1 group">
-                                    <span className={cn(
-                                        "text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-center mb-1 transition-colors duration-500",
-                                        isLeading ? "text-emerald-400" : "text-emerald-500/60"
-                                    )}>
-                                        School {sIdx + 1}
-                                    </span>
-                                    <div
-                                        key={displayScores[sIdx]}
-                                        className={cn(
-                                            "text-5xl md:text-7xl font-black italic tabular-nums leading-none transition-all duration-300",
-                                            isLeading ? "text-white drop-shadow-[0_0_20px_rgba(52,211,153,0.4)]" : "text-white/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]",
-                                            "animate-in zoom-in-75 duration-300"
+                                    <div className="flex flex-col items-center">
+                                        <span className={cn(
+                                            "text-[7px] md:text-[8px] font-black uppercase tracking-widest text-center truncate w-full px-1",
+                                            isLeading ? "text-emerald-400" : "text-emerald-500/60"
+                                        )}>
+                                            {school}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <div
+                                            key={cumulativeScores[sIdx]}
+                                            className={cn(
+                                                "text-5xl md:text-7xl font-black italic tabular-nums leading-none transition-all duration-300",
+                                                isLeading ? "text-white drop-shadow-[0_0_20px_rgba(52,211,153,0.4)]" : "text-white/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]",
+                                                "animate-in zoom-in-75 duration-300"
+                                            )}
+                                        >
+                                            {cumulativeScores[sIdx]}
+                                        </div>
+                                        {/* Hybrid Scoring: Show current round points as small indicator */}
+                                        {simulationProgress > 0 && !isFullTime && roundPoints > 0 && (
+                                            <span className="text-xs md:text-sm font-black text-emerald-400 animate-bounce">
+                                                +{roundPoints}
+                                            </span>
                                         )}
-                                    >
-                                        {displayScores[sIdx]}
                                     </div>
                                     <div className={cn(
                                         "h-0.5 rounded-full my-1 transition-all duration-500",
                                         isLeading ? "bg-emerald-400 w-12 shadow-[0_0_10px_rgba(52,211,153,0.5)]" : "bg-emerald-500/20 w-8 group-hover:w-12"
                                     )} />
-                                    <span className={cn(
-                                        "text-[8px] md:text-[9px] font-black uppercase tracking-widest text-center line-clamp-2 h-6 flex items-center justify-center leading-tight transition-colors duration-500",
-                                        isLeading ? "text-emerald-400" : "text-white"
-                                    )}>
-                                        {school}
-                                    </span>
                                 </div>
                             );
                         })}
@@ -189,11 +206,11 @@ export function VirtualsLivePlayer({
                     {outcome.rounds.slice(0, 5).map((r, rIdx) => (
                         <div key={rIdx} className={cn(
                             "flex flex-col items-center p-1 rounded border transition-all duration-300",
-                            rIdx === currentRoundIdx ? "bg-white/20 border-white/40 scale-110 shadow-lg" :
+                            rIdx === currentRoundIdx && simulationProgress > 0 ? "bg-white/20 border-white/40 scale-110 shadow-lg" :
                                 "bg-black/20 border-white/5 opacity-10"
                         )}>
                             <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                                <div className={cn("h-full", rIdx === currentRoundIdx ? "bg-emerald-400 w-full" : "w-0")} />
+                                <div className={cn("h-full", rIdx === currentRoundIdx && simulationProgress > 0 ? "bg-emerald-400 w-full" : "w-0")} />
                             </div>
                         </div>
                     ))}
@@ -201,7 +218,7 @@ export function VirtualsLivePlayer({
             </div>
 
             {/* Skip Button - Compact inside player */}
-            {isSimulating && simulationProgress < 60 && (
+            {isSimulating && !isFullTime && (
                 <button
                     onClick={onSkip}
                     className="absolute bottom-4 right-4 bg-black/40 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
