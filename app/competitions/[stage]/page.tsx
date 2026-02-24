@@ -106,8 +106,8 @@ export default async function CompetitionPage({ params }: Props) {
                                         />
                                     </div>
 
-                                    {/* Group Standings */}
-                                    {groups.length > 0 && (
+                                    {/* Group Standings OR Qualified Teams */}
+                                    {groups.length > 0 ? (
                                         <div className="space-y-4">
                                             {groups.map(group => {
                                                 const gFinished = tMatches.filter(m => m.group === group && (m.status === 'finished' || m.status === 'settled'))
@@ -155,9 +155,9 @@ export default async function CompetitionPage({ params }: Props) {
                                                                             <td className="px-5 py-3">
                                                                                 <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
                                                                             </td>
-                                                                            <td className="py-3 pr-4 font-bold text-white">{s.name}</td>
+                                                                            <td className="py-3 pr-4 font-bold text-white uppercase">{s.name}</td>
                                                                             {[s.p, s.w, s.d, s.l, s.gf - s.ga > 0 ? `+${s.gf - s.ga}` : s.gf - s.ga].map((v, i) => (
-                                                                                <td key={i} className="text-center px-2 py-3 text-slate-400">{v}</td>
+                                                                                <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
                                                                             ))}
                                                                             <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
                                                                         </tr>
@@ -169,6 +169,56 @@ export default async function CompetitionPage({ params }: Props) {
                                                 )
                                             })}
                                         </div>
+                                    ) : (
+                                        // Knockout Qualified Teams Display
+                                        (() => {
+                                            const finishedKnockouts = tMatches.filter(m => m.status === 'finished' || m.status === 'settled')
+                                            if (finishedKnockouts.length === 0) return null
+
+                                            // Determine latest finished stage
+                                            const stages = Array.from(new Set(finishedKnockouts.map(m => m.stage || "Tournament"))).reverse()
+                                            const latestStage = stages[0]
+                                            const latestMatches = finishedKnockouts.filter(m => (m.stage || "Tournament") === latestStage)
+
+                                            // Collect winners
+                                            const winners = latestMatches.reduce((acc: Array<{ id: string, name: string }>, m) => {
+                                                const res = m.result as any
+                                                if (res?.winner) {
+                                                    const winner = m.participants.find(p => p.schoolId === res.winner)
+                                                    if (winner) acc.push({ id: winner.schoolId, name: winner.name })
+                                                }
+                                                return acc
+                                            }, [])
+
+                                            if (winners.length === 0) return null
+
+                                            return (
+                                                <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 space-y-4">
+                                                    <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                                        <div>
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Round Progress</p>
+                                                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Teams Through to Next Round</h3>
+                                                        </div>
+                                                        <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                                            <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">{latestStage} Winners</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                        {winners.map(w => (
+                                                            <div key={w.id} className="flex items-center gap-2 p-3 bg-white/5 border border-white/5 rounded-2xl">
+                                                                <div className="p-1.5 rounded-lg bg-green-500/10">
+                                                                    <Trophy className="h-3 w-3 text-green-400" />
+                                                                </div>
+                                                                <span className="text-xs font-bold text-white uppercase truncate">{w.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic pt-2">
+                                                        Waiting for the admin to schedule the next round of fixtures...
+                                                    </p>
+                                                </div>
+                                            )
+                                        })()
                                     )}
 
                                     {/* Upcoming Fixtures with Bet Buttons */}
