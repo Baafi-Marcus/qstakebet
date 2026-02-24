@@ -92,7 +92,7 @@ export function VirtualsHeader({
                             )}
                         >
                             <Wallet className="h-3 w-3" />
-                            <span className="text-[10px] font-black font-mono">{balance.toFixed(0)}</span>
+                            <span className="text-[10px] font-black font-mono">{balance.toFixed(2)}</span>
                         </button>
                         <button
                             onClick={() => onBalanceTypeChange('gift')}
@@ -102,7 +102,7 @@ export function VirtualsHeader({
                             )}
                         >
                             <Zap className="h-3 w-3" />
-                            <span className="text-[10px] font-black font-mono">{bonusBalance.toFixed(0)}</span>
+                            <span className="text-[10px] font-black font-mono">{bonusBalance.toFixed(2)}</span>
                         </button>
                     </div>
 
