@@ -75,7 +75,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                     <div className="flex flex-col items-center relative w-full">
                         <div className="relative mb-6">
                             <img
-                                src="/icon.svg"
+                                src="/icon.png"
                                 alt="QSTAKE Logo"
                                 className="h-20 w-20 md:h-24 md:w-24 object-contain animate-float drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                             />
