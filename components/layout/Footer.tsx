@@ -73,12 +73,13 @@ export function Footer() {
                 </div>
 
                 {/* Compliance & Payment Icons area */}
-                <div className="py-12 border-y border-white/5 flex flex-wrap items-center justify-center gap-8 md:gap-16 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
-                    <span className="font-black text-xl tracking-tighter">VISA</span>
-                    <span className="font-black text-xl tracking-tighter">Mastercard</span>
-                    <span className="font-black text-xl tracking-tighter">MTN Mobile Money</span>
-                    <span className="font-black text-xl tracking-tighter">Telecel Cash</span>
-                    <span className="font-black text-xl tracking-tighter">18+</span>
+                <div className="py-12 border-y border-white/5 flex flex-wrap items-center justify-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+                    <div className="relative h-12 w-12">
+                        <img src="/18plus.png" alt="18+" className="object-contain h-full w-full" />
+                    </div>
+                    <div className="relative h-12 w-48">
+                        <img src="/paystack.png" alt="Paystack" className="object-contain h-full w-full" />
+                    </div>
                 </div>
 
                 {/* Bottom Bar */}

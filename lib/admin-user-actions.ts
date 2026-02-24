@@ -87,3 +87,33 @@ export async function updateUserStatus(userId: string, status: "active" | "suspe
         return { success: false, error: "Failed to update status" }
     }
 }
+
+export async function broadcastSMS(message: string) {
+    try {
+        // Fetch all active users with phone numbers
+        const activeUsers = await db.select({
+            phone: users.phone
+        })
+            .from(users)
+            .where(eq(users.status, "active"))
+
+        if (activeUsers.length === 0) {
+            return { success: false, error: "No active users found" }
+        }
+
+        const recipients = activeUsers.map(u => u.phone)
+
+        // Using Vynfy client to send broadcast
+        const { vynfy } = await import("@/lib/vynfy-client")
+        const result = await vynfy.sendSMS(recipients, message)
+
+        return {
+            success: result.success,
+            count: recipients.length,
+            error: result.error
+        }
+    } catch (error) {
+        console.error("Failed to send broadcast SMS:", error)
+        return { success: false, error: "Internal server error during broadcast" }
+    }
+}

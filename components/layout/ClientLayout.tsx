@@ -17,6 +17,7 @@ import { useBetSlip } from "@/lib/store/useBetSlip"
 import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 import { getActiveAnnouncements } from "@/lib/announcement-actions"
 import { PullToRefresh } from "@/components/ui/PullToRefresh"
+import { SplashScreen } from "@/components/ui/SplashScreen"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -50,64 +51,66 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     return (
         <SessionProvider>
             <BetSlipProvider>
-                <div className="min-h-screen flex flex-col bg-background">
-                    {/* Sticky Main Header */}
-                    {!isVirtuals && <Header />}
+                <SplashScreen>
+                    <div className="min-h-screen flex flex-col bg-background">
+                        {/* Sticky Main Header */}
+                        {!isVirtuals && <Header />}
 
-                    {/* Ad/Announcement Bar between Main Nav and SubNav */}
-                    {!isVirtuals && !isAuthPage && announcements.length > 0 && (
-                        <AdBannerCarousel announcements={announcements} />
-                    )}
+                        {/* Ad/Announcement Bar between Main Nav and SubNav */}
+                        {!isVirtuals && !isAuthPage && announcements.length > 0 && (
+                            <AdBannerCarousel announcements={announcements} />
+                        )}
 
-                    {/* Sticky Secondary Navigation (Sports/Regions) */}
-                    {!isVirtuals && !isAuthPage && <SubNavBar />}
+                        {/* Sticky Secondary Navigation (Sports/Regions) */}
+                        {!isVirtuals && !isAuthPage && <SubNavBar />}
 
-                    <div className="flex-1 flex flex-col">
-                        <PullToRefresh disabled={isAuthPage || isAdmin}>
-                            <main className="flex-1 min-w-0">
-                                {children}
-                            </main>
-                        </PullToRefresh>
-                    </div>
+                        <div className="flex-1 flex flex-col">
+                            <PullToRefresh disabled={isAuthPage || isAdmin}>
+                                <main className="flex-1 min-w-0">
+                                    {children}
+                                </main>
+                            </PullToRefresh>
+                        </div>
 
-                    {/* Standard Footer */}
-                    {!isVirtuals && !isAuthPage && <Footer />}
+                        {/* Standard Footer */}
+                        {!isVirtuals && !isAuthPage && <Footer />}
 
-                    {/* Overlay components */}
-                    {(() => {
-                        const noBetslipPaths = [
-                            '/auth',
-                            '/admin',
-                            '/virtuals',
-                            '/account',
-                            '/rewards',
-                            '/help',
-                            '/how-to-play',
-                            '/privacy',
-                            '/terms',
-                            '/cookies'
-                        ]
-                        const hideBetslip = noBetslipPaths.some(path => pathname?.startsWith(path))
+                        {/* Overlay components */}
+                        {(() => {
+                            const noBetslipPaths = [
+                                '/auth',
+                                '/admin',
+                                '/virtuals',
+                                '/account',
+                                '/rewards',
+                                '/help',
+                                '/how-to-play',
+                                '/privacy',
+                                '/terms',
+                                '/cookies'
+                            ]
+                            const hideBetslip = noBetslipPaths.some(path => pathname?.startsWith(path))
 
-                        if (hideBetslip) {
+                            if (hideBetslip) {
+                                return (
+                                    <>
+                                        {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
+                                        <InteractiveLayer />
+                                    </>
+                                )
+                            }
+
                             return (
                                 <>
-                                    {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
+                                    <BetSlipSidebar />
+                                    <BottomNav />
+                                    <GlobalMatchDetails />
                                     <InteractiveLayer />
                                 </>
                             )
-                        }
-
-                        return (
-                            <>
-                                <BetSlipSidebar />
-                                <BottomNav />
-                                <GlobalMatchDetails />
-                                <InteractiveLayer />
-                            </>
-                        )
-                    })()}
-                </div>
+                        })()}
+                    </div>
+                </SplashScreen>
             </BetSlipProvider>
         </SessionProvider>
     )

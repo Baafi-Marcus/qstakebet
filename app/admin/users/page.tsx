@@ -5,9 +5,14 @@ import { Search, Ban, CheckCircle, ArrowUpRight, Wallet } from "lucide-react"
 import Link from "next/link"
 import { getUsers, updateUserStatus } from "@/lib/admin-user-actions"
 import { BalanceAdjustmentModal } from "./BalanceAdjustmentModal"
+import { BroadcastSMSModal } from "./BroadcastSMSModal"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Send } from "lucide-react"
 
 interface AdminUser {
+    // ... existing interface ...
+    // (Note: The multi_replace_file_content would be better if I had more edits, but let's stick to this for now)
     id: string
     name: string | null
     phone: string
@@ -27,6 +32,7 @@ export default function UsersPage() {
 
     // Balance Adjustment Modal State
     const [adjustingUser, setAdjustingUser] = useState<AdminUser | null>(null)
+    const [showBroadcast, setShowBroadcast] = useState(false)
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -72,20 +78,29 @@ export default function UsersPage() {
                     <p className="text-slate-400 text-sm mt-1 uppercase tracking-widest font-bold">Monitor and manage platform users</p>
                 </div>
 
-                <div className="relative w-72">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                    <input
-                        type="text"
-                        placeholder="Search by phone/name..."
-                        className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all font-bold"
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value)
-                            if (e.target.value !== search) {
-                                setLoading(true) // Trigger loading feedback immediately on type
-                            }
-                        }}
-                    />
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={() => setShowBroadcast(true)}
+                        className="bg-white/5 hover:bg-primary/20 text-white hover:text-primary font-black uppercase tracking-widest px-6 h-12 rounded-2xl border border-white/5"
+                    >
+                        <Send className="h-4 w-4 mr-2" />
+                        Broadcast SMS
+                    </Button>
+                    <div className="relative w-72">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <input
+                            type="text"
+                            placeholder="Search by phone/name..."
+                            className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all font-bold h-12"
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value)
+                                if (e.target.value !== search) {
+                                    setLoading(true) // Trigger loading feedback immediately on type
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -203,6 +218,12 @@ export default function UsersPage() {
                             setUsers((refresh.users as unknown as AdminUser[]) || [])
                         }
                     }}
+                />
+            )}
+
+            {showBroadcast && (
+                <BroadcastSMSModal
+                    onClose={() => setShowBroadcast(false)}
                 />
             )}
         </div>

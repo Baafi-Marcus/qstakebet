@@ -9,9 +9,11 @@ import { useBetSlip } from "@/lib/store/useBetSlip"
 import { SkeletonMatch } from "@/components/ui/SkeletonComponents"
 import { cn } from "@/lib/utils"
 import { haptics } from "@/lib/haptics"
+import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 
 interface HomeClientProps {
     initialMatches: Match[]
+    announcements: any[]
 }
 
 // Helper to get ordinal suffix
@@ -48,7 +50,7 @@ function getDateGroupLabel(date: Date): string {
     }
 }
 
-export function HomeClient({ initialMatches }: HomeClientProps) {
+export function HomeClient({ initialMatches, announcements }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
     const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')
@@ -215,6 +217,9 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
+            {/* Promotional Ad Banner */}
+            <AdBannerCarousel announcements={announcements} />
+
             {/* Pull to Refresh Indicator */}
             <div
                 className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none transition-all duration-200"
@@ -254,72 +259,76 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                 </div>
             </div>
 
-            {/* Date Tabs */}
-            <div className="flex justify-center -mt-4">
-                <div className="flex gap-2 p-1 bg-slate-900/40 border border-white/5 rounded-xl">
-                    {[
-                        { id: 'today', label: 'Today' },
-                        { id: 'tomorrow', label: 'Tomorrow' },
-                        { id: 'upcoming', label: 'Upcoming' },
-                        { id: 'all', label: 'All' }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => {
-                                haptics.light();
-                                setActiveDateTab(tab.id as any);
-                            }}
-                            className={cn(
-                                "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                                activeDateTab === tab.id
-                                    ? "bg-slate-800 text-white shadow-sm"
-                                    : "text-slate-500 hover:text-slate-400"
-                            )}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-
-            {/* Market Controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-                <div className="flex bg-slate-950/80 border border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 w-full md:w-auto rounded-xl md:rounded-full">
-                    <div className="flex items-center gap-3 min-w-max">
-                        {availableMarkets.map((m) => (
-                            <button
-                                key={m.id}
-                                onClick={() => {
-                                    haptics.light();
-                                    setActiveMarket(m.id as any);
-                                }}
-                                className={cn(
-                                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border whitespace-nowrap",
-                                    activeMarket === m.id
-                                        ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20"
-                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                                )}
-                            >
-                                {m.label.toUpperCase()}
-                            </button>
-                        ))}
+            {/* Conditional Filters & Search */}
+            {initialMatches.length > 0 && (
+                <>
+                    {/* Date Tabs */}
+                    <div className="flex justify-center -mt-4">
+                        <div className="flex gap-2 p-1 bg-slate-900/40 border border-white/5 rounded-xl">
+                            {[
+                                { id: 'today', label: 'Today' },
+                                { id: 'tomorrow', label: 'Tomorrow' },
+                                { id: 'upcoming', label: 'Upcoming' },
+                                { id: 'all', label: 'All' }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        haptics.light();
+                                        setActiveDateTab(tab.id as any);
+                                    }}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        activeDateTab === tab.id
+                                            ? "bg-slate-800 text-white shadow-sm"
+                                            : "text-slate-500 hover:text-slate-400"
+                                    )}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search..."
-                            className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                        />
+                    {/* Market Controls */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+                        <div className="flex bg-slate-950/80 border border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 w-full md:w-auto rounded-xl md:rounded-full">
+                            <div className="flex items-center gap-3 min-w-max">
+                                {availableMarkets.map((m) => (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => {
+                                            haptics.light();
+                                            setActiveMarket(m.id as any);
+                                        }}
+                                        className={cn(
+                                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border whitespace-nowrap",
+                                            activeMarket === m.id
+                                                ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20"
+                                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                        )}
+                                    >
+                                        {m.label.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search..."
+                                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </>
+            )}
 
             {/* Matches List - Grouped by Date */}
             <div className="space-y-6 sm:space-y-8">

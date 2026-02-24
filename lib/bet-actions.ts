@@ -98,12 +98,32 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             const wallet = userWallets[0]
 
             // Calculate required cash stake
-            const cashAmount = Math.max(0, stake - bonusAmount)
+            // FEATURE: Cap bonus deduction at stake amount
+            const actualBonusStake = Math.min(stake, bonusAmount)
+            const cashAmount = Math.max(0, stake - actualBonusStake)
 
             // Validate Gift usage if applicable
-            if (bonusAmount > 0) {
-                if (wallet.bonusBalance < bonusAmount) {
+            if (actualBonusStake > 0) {
+                if (wallet.bonusBalance < actualBonusStake) {
                     throw new Error("Insufficient bonus balance for the selected gift amount.")
+                }
+
+                // Check bonus eligibility (min odds, min selections)
+                if (bonusId) {
+                    const { bonuses: bonusesTable } = await import("@/lib/db/schema")
+                    const bonusData = await tx.select().from(bonusesTable).where(eq(bonusesTable.id, bonusId)).limit(1)
+
+                    if (bonusData.length > 0) {
+                        const b = bonusData[0]
+                        const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
+
+                        if (b.minOdds && totalOdds < b.minOdds) {
+                            throw new Error(`This bonus requires minimum total odds of ${b.minOdds.toFixed(2)}. Your current odds are ${totalOdds.toFixed(2)}.`)
+                        }
+                        if (b.minSelections && selections.length < b.minSelections) {
+                            throw new Error(`This bonus requires at least ${b.minSelections} selections.`)
+                        }
+                    }
                 }
             }
 
@@ -174,31 +194,31 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             })
 
             // 4. Deduct balances
-            if (bonusAmount > 0) {
+            if (actualBonusStake > 0) {
                 // If a specific bonus voucher was used, update its individual record
                 if (bonusId) {
-                    const { bonuses } = await import("@/lib/db/schema")
-                    const bonusData = await tx.select().from(bonuses).where(eq(bonuses.id, bonusId)).limit(1)
+                    const { bonuses: bonusesTable } = await import("@/lib/db/schema")
+                    const bonusData = await tx.select().from(bonusesTable).where(eq(bonusesTable.id, bonusId)).limit(1)
 
                     if (bonusData.length > 0) {
                         const currentBonus = bonusData[0]
-                        const newBonusAmount = Math.max(0, currentBonus.amount - bonusAmount)
+                        const newBonusAmount = Math.max(0, currentBonus.amount - actualBonusStake)
 
-                        await tx.update(bonuses)
+                        await tx.update(bonusesTable)
                             .set({
                                 amount: newBonusAmount,
                                 status: newBonusAmount <= 0 ? "used" : "active",
                                 usedAt: new Date(),
                                 betId: betId
                             })
-                            .where(eq(bonuses.id, bonusId))
+                            .where(eq(bonusesTable.id, bonusId))
                     }
                 }
 
-                // ALWAYS deduct from the wallet's cumulative bonusBalance if bonusAmount > 0
+                // ALWAYS deduct from the wallet's cumulative bonusBalance if actualBonusStake > 0
                 await tx.update(wallets)
                     .set({
-                        bonusBalance: sql`${wallets.bonusBalance} - ${bonusAmount}`,
+                        bonusBalance: sql`${wallets.bonusBalance} - ${actualBonusStake}`,
                         updatedAt: new Date()
                     })
                     .where(eq(wallets.id, wallet.id))
@@ -215,7 +235,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             }
 
             // 5. Record the transaction
-            const isBonus = bonusAmount > 0
+            const isBonus = actualBonusStake > 0
             await tx.insert(transactions).values({
                 id: `txn-${Math.random().toString(36).substring(2, 11)}`,
                 userId,
@@ -223,9 +243,9 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 type: isBonus ? "bonus_stake" : "bet_stake",
                 amount: stake,
                 balanceBefore: isBonus ? wallet.bonusBalance : wallet.balance,
-                balanceAfter: isBonus ? wallet.bonusBalance - bonusAmount : wallet.balance - cashAmount,
+                balanceAfter: isBonus ? wallet.bonusBalance - actualBonusStake : wallet.balance - cashAmount,
                 paymentStatus: "success",
-                description: `Staked on bet ${betId}${isBonus ? ` (GHS ${bonusAmount} Gift)` : ""}`,
+                description: `Staked on bet ${betId}${isBonus ? ` (GHS ${actualBonusStake.toFixed(2)} Gift)` : ""}`,
                 createdAt: new Date()
             })
 

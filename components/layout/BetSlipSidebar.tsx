@@ -529,16 +529,19 @@ export function BetSlipSidebar() {
                                                 setError("")
                                                 try {
                                                     if (betMode === 'single') {
+                                                        const bonusPerSelection = bonusAmount / selections.length
                                                         for (const sel of selections) {
-                                                            if ((sel.stake || stake) >= FINANCE_LIMITS.BET.MIN_STAKE) {
-                                                                await placeBet(sel.stake || stake, [sel], bonusId, bonusAmount, 'single')
+                                                            const currentStake = sel.stake || stake
+                                                            if (currentStake >= FINANCE_LIMITS.BET.MIN_STAKE) {
+                                                                // Distribute bonus proportionately or equally
+                                                                await placeBet(currentStake, [sel], bonusId, bonusPerSelection, 'single')
 
                                                                 // Update local wallet for single bet
                                                                 if (wallet) {
-                                                                    const singleStake = sel.stake || stake
                                                                     setWallet(prev => prev ? ({
                                                                         ...prev,
-                                                                        balance: prev.balance - singleStake
+                                                                        balance: prev.balance - Math.max(0, currentStake - bonusPerSelection),
+                                                                        bonusBalance: prev.bonusBalance - bonusPerSelection
                                                                     }) : null)
                                                                 }
                                                             }
@@ -642,31 +645,43 @@ export function BetSlipSidebar() {
                                 </div>
 
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                                    {gifts.map((gift) => (
-                                        <div
-                                            key={gift.id}
-                                            className={cn(
-                                                "p-4 rounded-2xl border transition-all cursor-pointer group",
-                                                bonusId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-slate-900 border-white/5 hover:border-purple-500/50"
-                                            )}
-                                            onClick={() => {
-                                                setBonusId(gift.id)
-                                                setBonusAmount(Math.min(gift.amount, totalStake))
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", bonusId === gift.id ? "text-purple-200" : "text-slate-500")}>{gift.type}</span>
-                                                    <span className={cn("text-lg font-black", bonusId === gift.id ? "text-white" : "text-slate-200")}>GHS {gift.amount.toFixed(2)}</span>
-                                                </div>
-                                                {bonusId === gift.id && (
-                                                    <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
-                                                        <div className="h-2.5 w-2.5 bg-purple-600 rounded-full" />
-                                                    </div>
+                                    {gifts.map((gift) => {
+                                        const isOddsIneligible = gift.minOdds && totalOdds < gift.minOdds
+                                        const isSelectionIneligible = gift.minSelections && selections.length < gift.minSelections
+                                        const isIneligible = isOddsIneligible || isSelectionIneligible
+
+                                        return (
+                                            <div
+                                                key={gift.id}
+                                                className={cn(
+                                                    "p-4 rounded-2xl border transition-all cursor-pointer group",
+                                                    bonusId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-slate-900 border-white/5 hover:border-purple-500/50",
+                                                    isIneligible && "opacity-50 grayscale"
                                                 )}
+                                                onClick={() => {
+                                                    if (isIneligible) return
+                                                    setBonusId(gift.id)
+                                                    setBonusAmount(Math.min(gift.amount, totalStake))
+                                                }}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", bonusId === gift.id ? "text-purple-200" : "text-slate-500")}>
+                                                            {gift.type}
+                                                            {isOddsIneligible && " • Min Odds " + gift.minOdds.toFixed(2)}
+                                                            {isSelectionIneligible && " • Min " + gift.minSelections + " Selections"}
+                                                        </span>
+                                                        <span className={cn("text-lg font-black", bonusId === gift.id ? "text-white" : "text-slate-200")}>GHS {gift.amount.toFixed(2)}</span>
+                                                    </div>
+                                                    {bonusId === gift.id && (
+                                                        <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
+                                                            <div className="h-2.5 w-2.5 bg-purple-600 rounded-full" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
 
                                 {bonusId && (
