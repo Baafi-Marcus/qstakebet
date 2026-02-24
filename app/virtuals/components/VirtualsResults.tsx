@@ -133,14 +133,19 @@ export function VirtualsResults({
                                         Round {r.matchId.split('-')[1]} • {r.outcome.category}
                                     </div>
                                     <div className="text-sm font-bold text-white mb-2 truncate">
-                                        {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC])).join(' vs ')}
+                                        {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
                                     </div>
 
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="text-[10px] font-bold text-slate-400">Total Score:</span>
-                                        <span className="text-[10px] font-black text-white">
-                                            {r.outcome.totalScores.join(' : ')}
-                                        </span>
+                                    <div className="flex flex-col gap-1 mb-3">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Score Breakdown:</span>
+                                        <div className="grid grid-cols-3 gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
+                                            {r.outcome.schools.map((s, si) => (
+                                                <div key={si} className="flex flex-col items-center">
+                                                    <span className="text-[14px] font-black text-white tabular-nums">{r.outcome.totalScores[si]}</span>
+                                                    <span className="text-[6px] font-bold text-slate-500 uppercase tracking-tight text-center truncate w-full">{s}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Round Breakdown Table */}
@@ -191,7 +196,7 @@ export function VirtualsResults({
                                                     const schoolsArr = [r.schoolA, r.schoolB, r.schoolC].filter(Boolean);
                                                     const market = r.marketName;
                                                     const outcome = r.outcome;
-                                                    if (market === "Match Winner") return getSchoolAcronym(outcome.schools[outcome.winnerIndex], schoolsArr);
+                                                    if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
                                                     if (market === "Total Points") return `Total ${outcome.totalScores.reduce((a: number, b: number) => a + b, 0)} pts`;
                                                     if (market === "Winning Margin") {
                                                         const sorted = [...outcome.totalScores].sort((a: number, b: number) => b - a);

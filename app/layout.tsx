@@ -12,8 +12,22 @@ const russo = Russo_One({ weight: "400", subsets: ["latin"], variable: "--font-r
 export const metadata: Metadata = {
   title: "QSTAKEbet - NSMQ Prediction Platform",
   description: "Advanced betting platform for the National Science & Maths Quiz",
+  manifest: "/manifest.json",
+  themeColor: "#0f1115",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "QSTAKEbet",
+  },
   icons: {
-    icon: "/icon.png",
+    icon: "/file.svg",
+    apple: "/file.svg",
   },
 };
 

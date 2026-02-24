@@ -47,8 +47,54 @@ export function VirtualsLivePlayer({
     const displayScores = outcome.rounds[currentRoundIdx]?.scores || [0, 0, 0];
     const isFullTime = simulationProgress >= 60;
 
+    const [isSticky, setIsSticky] = React.useState(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsSticky(!entry.isIntersecting);
+            },
+            { threshold: 0, rootMargin: "-100px 0px 0px 0px" }
+        );
+
+        if (containerRef.current) observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <div className="shrink-0 bg-slate-950 border-b border-white/10 relative z-30">
+        <div ref={containerRef} className="shrink-0 bg-slate-950 border-b border-white/10 relative z-30">
+            {/* Sticky Scoreboard Overlay */}
+            {isSimulating && (
+                <div className={cn(
+                    "fixed top-[64px] left-0 right-0 z-[45] bg-slate-900/80 backdrop-blur-xl border-b border-white/10 px-4 py-2 transition-all duration-500 transform",
+                    isSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"
+                )}>
+                    <div className="max-w-xl mx-auto flex items-center justify-between">
+                        {outcome.schools.map((school: string, sIdx: number) => {
+                            const isLeading = displayScores[sIdx] === Math.max(...displayScores) && displayScores[sIdx] > 0;
+                            return (
+                                <div key={sIdx} className="flex items-center gap-3 flex-1 justify-center first:justify-start last:justify-end">
+                                    <div className="flex flex-col items-center">
+                                        <div className={cn(
+                                            "text-xl font-black italic tabular-nums leading-none transition-all",
+                                            isLeading ? "text-emerald-400 scale-110" : "text-white"
+                                        )}>
+                                            {displayScores[sIdx]}
+                                        </div>
+                                        <span className={cn(
+                                            "text-[6px] font-black uppercase tracking-widest mt-0.5 transition-colors",
+                                            isLeading ? "text-emerald-400" : "text-white/40"
+                                        )}>{school.split(' ').pop()}</span>
+                                    </div>
+                                    {sIdx < outcome.schools.length - 1 && <div className="text-white/10 font-black italic text-[8px]">VS</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Countdown Overlay */}
             {countdown && (
                 <div className="absolute inset-0 z-[120] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
@@ -101,18 +147,42 @@ export function VirtualsLivePlayer({
                     </button>
                 </div>
 
-                <div className="flex items-center gap-4 md:gap-10 w-full max-w-xl justify-center mb-4 px-4 overflow-x-auto no-scrollbar">
-                    {outcome.schools.map((school: string, sIdx: number) => (
-                        <React.Fragment key={sIdx}>
-                            <div className="flex flex-col items-center gap-2 flex-1 min-w-[60px]">
-                                <div className="text-4xl md:text-5xl font-black italic text-white drop-shadow-lg tabular-nums">
-                                    {displayScores[sIdx]}
+                <div className="w-full max-w-2xl px-4 mb-4">
+                    <div className="grid grid-cols-3 gap-2 md:gap-4 items-end">
+                        {outcome.schools.map((school: string, sIdx: number) => {
+                            const isLeading = displayScores[sIdx] === Math.max(...displayScores) && displayScores[sIdx] > 0;
+                            return (
+                                <div key={sIdx} className="flex flex-col items-center gap-1 group">
+                                    <span className={cn(
+                                        "text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-center mb-1 transition-colors duration-500",
+                                        isLeading ? "text-emerald-400" : "text-emerald-500/60"
+                                    )}>
+                                        School {sIdx + 1}
+                                    </span>
+                                    <div
+                                        key={displayScores[sIdx]}
+                                        className={cn(
+                                            "text-5xl md:text-7xl font-black italic tabular-nums leading-none transition-all duration-300",
+                                            isLeading ? "text-white drop-shadow-[0_0_20px_rgba(52,211,153,0.4)]" : "text-white/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]",
+                                            "animate-in zoom-in-75 duration-300"
+                                        )}
+                                    >
+                                        {displayScores[sIdx]}
+                                    </div>
+                                    <div className={cn(
+                                        "h-0.5 rounded-full my-1 transition-all duration-500",
+                                        isLeading ? "bg-emerald-400 w-12 shadow-[0_0_10px_rgba(52,211,153,0.5)]" : "bg-emerald-500/20 w-8 group-hover:w-12"
+                                    )} />
+                                    <span className={cn(
+                                        "text-[8px] md:text-[9px] font-black uppercase tracking-widest text-center line-clamp-2 h-6 flex items-center justify-center leading-tight transition-colors duration-500",
+                                        isLeading ? "text-emerald-400" : "text-white"
+                                    )}>
+                                        {school}
+                                    </span>
                                 </div>
-                                <span className="text-[9px] md:text-[10px] font-black uppercase text-emerald-400 tracking-widest text-center truncate w-full max-w-[100px]">{school}</span>
-                            </div>
-                            {sIdx < outcome.schools.length - 1 && <div className="text-white/20 font-black italic text-[10px] mb-6 px-2">VS</div>}
-                        </React.Fragment>
-                    ))}
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="w-full max-w-xs grid grid-cols-5 gap-1 mx-auto mb-2">

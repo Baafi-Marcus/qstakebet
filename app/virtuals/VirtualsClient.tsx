@@ -305,6 +305,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                 bonusBalance={profile?.bonusBalance || 0}
                 hasPendingBets={pendingSlips.length > 0}
                 onOpenHistory={() => setShowHistoryModal(true)}
+                isSimulationActive={isSimulationActive}
+                onSkip={skipToResult}
             />
 
             <div className="flex flex-1 overflow-hidden">

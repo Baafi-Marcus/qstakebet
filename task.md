@@ -18,6 +18,8 @@
 - [x] Fix: Prevent auto-submission on last step of tournament creator
 - [x] User UI: Repurpose Standings modal to Fixtures/Results modal
 - [x] User UI: Implement "Qualified Teams" section for knockouts
+- [x] User UI: Handle Group->Knockout transition (Standings to Button)
+- [x] AI Logic: Enhance odds and markets with tournament performance
 - [ ] Admin UI: Add ability to delete or manage global schools
 
 ## Phase 19: Multi-Sport Platform Transition [x]

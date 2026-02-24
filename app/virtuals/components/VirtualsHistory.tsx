@@ -100,18 +100,25 @@ export function VirtualsHistory({
                                     <div className="flex-1 min-w-0">
                                         <div className="text-[10px] text-slate-500 font-bold mb-1">Match Detail</div>
                                         <div className="text-sm font-bold text-white mb-2 truncate">
-                                            {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).map((s: string) => getSchoolAcronym(s, [r.schoolA, r.schoolB, r.schoolC].filter(Boolean))).join(' vs ')}
+                                            {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
                                         </div>
 
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-[10px] font-bold text-slate-400">FT Score:</span>
-                                            <span className="text-[10px] font-black text-white">
-                                                {r.outcome ? (
-                                                    `${r.outcome.totalScores[0]} : ${r.outcome.totalScores[1]} : ${r.outcome.totalScores[2]} `
-                                                ) : (
-                                                    <span className="text-green-400">Cashed Out</span>
-                                                )}
-                                            </span>
+                                        <div className="flex flex-col gap-1 mb-3">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Score Breakdown:</span>
+                                            {r.outcome ? (
+                                                <div className="grid grid-cols-3 gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
+                                                    {r.outcome.schools.map((s, si) => (
+                                                        <div key={si} className="flex flex-col items-center">
+                                                            <span className="text-[14px] font-black text-white tabular-nums">{r.outcome.totalScores[si]}</span>
+                                                            <span className="text-[6px] font-bold text-slate-500 uppercase tracking-tight text-center truncate w-full">{s}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/20 text-center">
+                                                    <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Cashed Out</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="bg-slate-950/50 rounded-lg p-3 space-y-2 border border-white/5 relative group overflow-hidden">
@@ -133,7 +140,7 @@ export function VirtualsHistory({
                                                         const outcome = r.outcome;
                                                         if (!outcome) return "Cashed Out";
 
-                                                        if (market === "Match Winner") return getSchoolAcronym(outcome.schools[outcome.winnerIndex], outcome.schools);
+                                                        if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
                                                         // ... (Reusing logic, slightly truncated for brevity as most is same as Results)
                                                         // Ideally extract this switch case too, but for refactor I'll keep it simple or minimal
                                                         return "View Details";

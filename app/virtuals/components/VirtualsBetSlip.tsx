@@ -111,11 +111,14 @@ export function VirtualsBetSlip({
                             <button
                                 onClick={() => setShowSlip(true)}
                                 className={cn(
-                                    "h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95",
-                                    selections.length > 0 ? "bg-purple-600 text-white shadow-purple-600/20" : "bg-slate-800 text-slate-500 border border-white/5"
+                                    "h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95 overflow-hidden group",
+                                    selections.length > 0
+                                        ? "bg-purple-600/20 backdrop-blur-xl border border-purple-500/50 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]"
+                                        : "bg-slate-900/40 backdrop-blur-xl text-slate-500 border border-white/10"
                                 )}
                             >
-                                <Zap className={cn("h-5 w-5", selections.length > 0 ? "fill-current" : "")} />
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Zap className={cn("h-5 w-5 relative z-10", selections.length > 0 ? "fill-purple-400 text-purple-400" : "")} />
                                 {selections.length > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
                                         {selections.length}
@@ -138,9 +141,13 @@ export function VirtualsBetSlip({
                             onClick={() => setShowSlip(false)}
                         />
 
-                        {/* Fullscreen Modal Content */}
-                        <div className="relative w-full h-full bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                        {/* Fullscreen Mobile Bottom Sheet */}
+                        <div className="relative w-full h-[92%] mt-auto bg-slate-950 rounded-t-[2.5rem] border-t border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-bottom-full duration-500 cubic-bezier(0.4, 0, 0.2, 1)">
+                            {/* Drag Handle */}
+                            <div className="flex justify-center pt-3 pb-1">
+                                <div className="w-10 h-1 bg-white/10 rounded-full" />
+                            </div>
+                            <div className="p-5 border-b border-white/5 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Zap className="h-5 w-5 text-purple-400" />
                                     <h2 className="font-black text-sm uppercase tracking-[0.2em] text-white">Instant Slip</h2>
@@ -264,15 +271,16 @@ export function VirtualsBetSlip({
                                                 {/* Compact single row layout */}
                                                 <div className="flex items-center justify-between gap-3 pl-5">
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-[9px] font-bold text-white leading-tight truncate">
+                                                        <div className="text-[10px] sm:text-[9px] font-bold text-white leading-tight">
                                                             {sel.label.replace(/^O /, 'Over ').replace(/^U /, 'Under ')}
                                                         </div>
-                                                        <div className="text-[8px] text-slate-400 leading-tight truncate mt-0.5">
-                                                            {sel.matchLabel.split(' vs ').map(name => getSchoolAcronym(name, [sel.schoolA, sel.schoolB])).join(' vs ')}
+                                                        <div className="text-[9px] sm:text-[8px] text-slate-400 leading-snug mt-1 break-words line-clamp-2">
+                                                            {[sel.schoolA, sel.schoolB, sel.schoolC].filter(Boolean).join(' vs ')}
                                                         </div>
-                                                        <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-0.5">
+                                                        <div className="text-[7px] text-slate-500 uppercase tracking-wide mt-1">
                                                             {sel.marketName}
                                                         </div>
+
                                                         {/* Individual Leg Stake (Singles Mode Overlay) */}
                                                         {betMode === 'single' && (
                                                             <div className="mt-2 pt-1 border-t border-white/5 flex items-center justify-between">
@@ -431,9 +439,9 @@ export function VirtualsBetSlip({
                                             onClick={onPlaceBet}
                                             disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
                                             className={cn(
-                                                "w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-[10px] shadow-lg transition-all active:scale-95",
+                                                "w-full py-4 sm:py-2.5 rounded-2xl sm:rounded-xl font-black uppercase tracking-wider text-[11px] sm:text-[10px] shadow-lg transition-all active:scale-90",
                                                 (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
-                                                    ? "bg-red-600 hover:bg-red-500 text-white"
+                                                    ? "bg-red-600 hover:bg-red-500 text-white shadow-red-600/20"
                                                     : "bg-slate-700 text-slate-500 cursor-not-allowed"
                                             )}
                                         >
@@ -463,6 +471,16 @@ export function VirtualsBetSlip({
                                                                 Cashed Out
                                                             </span>
                                                         )}
+                                                    </div>
+                                                    {/* Selection Details */}
+                                                    <div className="mt-2 space-y-1">
+                                                        {slip.selections.map((sel: any, sIdx: number) => (
+                                                            <div key={sIdx} className="text-[7px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-1">
+                                                                <span className="text-white">●</span>
+                                                                <span className="truncate">{[sel.schoolA, sel.schoolB, sel.schoolC].filter(Boolean).join(' vs ')}</span>
+                                                                <span className="text-slate-500 italic">({sel.label})</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                                 {slip.cashedOut ? (
@@ -552,8 +570,8 @@ export function VirtualsBetSlip({
                                     )}
                                 </div>
                             )}
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 )
             }
         </>

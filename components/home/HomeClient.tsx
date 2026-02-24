@@ -6,6 +6,7 @@ import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { useBetSlip } from "@/lib/store/useBetSlip"
+import { SkeletonMatch } from "@/components/ui/SkeletonComponents"
 import { cn } from "@/lib/utils"
 
 interface HomeClientProps {
@@ -171,8 +172,61 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [availableMarkets]);
 
+    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [pullDistance, setPullDistance] = useState(0)
+    const [startY, setStartY] = useState(0)
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (window.scrollY === 0) {
+            setStartY(e.touches[0].clientY)
+        }
+    }
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (startY === 0) return
+        const currentY = e.touches[0].clientY
+        const distance = currentY - startY
+        if (distance > 0 && distance < 150 && window.scrollY === 0) {
+            setPullDistance(distance)
+        }
+    }
+
+    const handleTouchEnd = () => {
+        if (pullDistance > 80) {
+            onRefresh()
+        }
+        setPullDistance(0)
+        setStartY(0)
+    }
+
+    const onRefresh = () => {
+        setIsRefreshing(true)
+        // Simulate background refresh
+        setTimeout(() => {
+            setIsRefreshing(false)
+        }, 1500)
+    }
+
     return (
-        <div className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10">
+        <div
+            className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10 relative"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* Pull to Refresh Indicator */}
+            <div
+                className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none transition-all duration-200"
+                style={{
+                    transform: `translateY(${pullDistance - 40}px)`,
+                    opacity: pullDistance / 80
+                }}
+            >
+                <div className="bg-purple-600 p-2 rounded-full shadow-lg shadow-purple-600/20">
+                    <Filter className={cn("h-4 w-4 text-white", pullDistance > 80 ? "animate-spin" : "rotate-180")} />
+                </div>
+            </div>
+
             {/* Level Switcher */}
             <div className="flex justify-center mb-2">
                 <div className="flex p-1 bg-slate-950/50 border border-white/5 rounded-2xl">
@@ -259,7 +313,17 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
             {/* Matches List - Grouped by Date */}
             <div className="space-y-6 sm:space-y-8">
-                {groupedMatches.length > 0 ? (
+                {isRefreshing ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 px-4">
+                            <Calendar className="h-5 w-5 text-purple-500 animate-pulse" />
+                            <div className="h-6 w-48 bg-slate-800 animate-pulse rounded" />
+                        </div>
+                        <div className="space-y-3">
+                            {[1, 2, 3].map(i => <SkeletonMatch key={i} />)}
+                        </div>
+                    </div>
+                ) : groupedMatches.length > 0 ? (
                     groupedMatches.map((group) => (
                         <div key={group.label} className="space-y-3 sm:space-y-4">
                             {/* Date Header */}

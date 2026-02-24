@@ -1,0 +1,29 @@
+{
+    "name": "QSTAKEbet Premium",
+    "short_name": "QSTAKEbet",
+    "description": "Premium Prediction and Sportsbook Platform",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f1115",
+    "theme_color": "#0f1115",
+    "icons": [
+        {
+            "src": "/file.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/file.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/file.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}

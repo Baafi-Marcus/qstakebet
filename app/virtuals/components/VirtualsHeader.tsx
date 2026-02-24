@@ -14,6 +14,8 @@ interface VirtualsHeaderProps {
     hasPendingBets: boolean;
     onOpenHistory: () => void;
     availableRegions: string[]; // Passed for logic if needed, though mostly used in resetting
+    isSimulationActive?: boolean;
+    onSkip?: () => void;
 }
 
 export function VirtualsHeader({
@@ -27,22 +29,33 @@ export function VirtualsHeader({
     bonusBalance,
     hasPendingBets,
     onOpenHistory,
-    availableRegions
+    availableRegions,
+    isSimulationActive,
+    onSkip
 }: VirtualsHeaderProps) {
     return (
         <div className="flex items-center bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 py-3 px-4 gap-4">
-            {/* Left: Back Button */}
-            <button
-                onClick={onBack}
-                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors shrink-0"
-            >
-                <ArrowLeft className="h-4 w-4" />
-            </button>
+            {/* Left: Back/Skip Button */}
+            {!isSimulationActive ? (
+                <button
+                    onClick={onBack}
+                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all shrink-0 active:scale-90"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                </button>
+            ) : (
+                <button
+                    onClick={onSkip}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-95 animate-in fade-in slide-in-from-left-2"
+                >
+                    Skip
+                </button>
+            )}
 
             <div className="h-6 w-px bg-white/10 shrink-0" />
 
             {/* Middle: Category Selector */}
-            <div className="flex-1 overflow-x-auto no-scrollbar">
+            <div className={cn("flex-1 overflow-x-auto no-scrollbar", isSimulationActive && "opacity-20 pointer-events-none")}>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => {
@@ -119,16 +132,18 @@ export function VirtualsHeader({
                     </span>
                 </div>
 
-                <button
-                    onClick={onOpenHistory}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors relative"
-                >
-                    <Ticket className="h-4 w-4" />
-                    {/* Dot indicator if active bets exist? */}
-                    {hasPendingBets && (
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
-                    )}
-                </button>
+                {!isSimulationActive && (
+                    <button
+                        onClick={onOpenHistory}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all relative active:scale-90"
+                    >
+                        <Ticket className="h-4 w-4" />
+                        {/* Dot indicator if active bets exist? */}
+                        {hasPendingBets && (
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-slate-900" />
+                        )}
+                    </button>
+                )}
             </div>
         </div>
     )
