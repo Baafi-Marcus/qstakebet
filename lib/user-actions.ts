@@ -48,14 +48,22 @@ export async function getUserBetsWithDetails() {
         const userBets = await db.query.bets.findMany({
             where: eq(bets.userId, userId),
             orderBy: [desc(bets.createdAt)],
-            limit: 50
+            limit: 100 // Increased limit to find more sports matches after filtering
         })
 
         if (!userBets.length) return { success: true, bets: [] }
 
+        // Filter out virtual bets for the main My Bets page
+        const sportsBets = userBets.filter(bet => {
+            const selections = bet.selections as any[]
+            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-'))
+        }).slice(0, 50) // Keep the top 50 sports bets
+
+        if (!sportsBets.length) return { success: true, bets: [] }
+
         // 1. Collect all unique match IDs from all selections
         const matchIds = new Set<string>()
-        userBets.forEach(bet => {
+        sportsBets.forEach(bet => {
             const selections = bet.selections as any[]
             selections.forEach(s => {
                 if (s.matchId) matchIds.add(s.matchId)

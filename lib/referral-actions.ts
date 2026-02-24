@@ -53,6 +53,7 @@ export async function trackLinkClick(referralCode: string, ip: string, userAgent
                 userId: user.id,
                 type: "referral_clicks",
                 amount: 2.00,
+                initialAmount: 2.00,
                 status: "active",
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
             })

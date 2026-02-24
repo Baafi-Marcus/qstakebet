@@ -109,33 +109,7 @@ export default function BetsPage() {
                     </button>
                 </div>
 
-                {/* Sub-Filter Bar (Only for Open Bets) */}
-                {activeTab === 'open' && (
-                    <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                        {[
-                            { id: 'all', label: 'All', icon: Layers },
-                            { id: 'cashout', label: 'Cashout', icon: Zap },
-                            { id: 'live', label: 'Live Games', icon: PlayCircle }
-                        ].map((btn) => {
-                            const Icon = btn.icon
-                            return (
-                                <button
-                                    key={btn.id}
-                                    onClick={() => setFilter(btn.id as any)}
-                                    className={cn(
-                                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border whitespace-nowrap",
-                                        filter === btn.id
-                                            ? "bg-white/10 text-white border-white/20 shadow-lg"
-                                            : "bg-transparent text-slate-500 border-white/5 hover:border-white/10 hover:text-slate-300"
-                                    )}
-                                >
-                                    <Icon className={cn("h-3 w-3", filter === btn.id ? "text-primary" : "text-slate-600")} />
-                                    {btn.label}
-                                </button>
-                            )
-                        })}
-                    </div>
-                )}
+
 
                 {/* Bet List */}
                 {filteredBets.length > 0 ? (

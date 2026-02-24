@@ -150,14 +150,30 @@ export default function BonusesPage() {
                                         {bonus.expiresAt && ` Expires: ${new Date(bonus.expiresAt).toLocaleDateString()}`}
                                     </p>
 
-                                    <div className="mt-auto w-full pt-6 border-t border-white/5 flex items-end justify-between">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Bonus Value</p>
-                                            <p className="text-2xl font-black text-white">GHS {bonus.amount.toFixed(2)}</p>
+                                    <div className="mt-auto w-full pt-6 border-t border-white/5 space-y-4">
+                                        {bonus.initialAmount > bonus.amount && (
+                                            <div className="w-full space-y-1.5">
+                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-slate-500">Usage Progress</span>
+                                                    <span className="text-purple-400">GHS {(bonus.initialAmount - bonus.amount).toFixed(2)} / {bonus.initialAmount.toFixed(2)} used</span>
+                                                </div>
+                                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)]"
+                                                        style={{ width: `${((bonus.initialAmount - bonus.amount) / bonus.initialAmount) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Available Balance</p>
+                                                <p className="text-2xl font-black text-white">GHS {bonus.amount.toFixed(2)}</p>
+                                            </div>
+                                            <Link href="/" className="bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                                                USE NOW
+                                            </Link>
                                         </div>
-                                        <Link href="/" className="bg-white text-black font-black px-6 py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
-                                            USE NOW
-                                        </Link>
                                     </div>
                                 </div>
                             )

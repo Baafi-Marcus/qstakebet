@@ -137,9 +137,27 @@ function VirtualBetTicket({ bet }: { bet: ClientVirtualBet }) {
                                         {r.label} @ {r.odds.toFixed(2)}
                                     </span>
                                     {r.outcome && (
-                                        <span className="text-[9px] font-bold text-slate-600">
-                                            Score: {r.outcome.totalScores.join('-')}
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                            <span className="text-[9px] font-bold text-slate-600">
+                                                Final Score: {r.outcome.totalScores.join('-')}
+                                            </span>
+                                            <span className={cn(
+                                                "text-[9px] font-black uppercase tracking-widest",
+                                                r.won ? "text-emerald-400" : "text-slate-500"
+                                            )}>
+                                                Outcome: {(() => {
+                                                    const o = r.outcome;
+                                                    const marketId = r.selectionId.split('-')[0];
+                                                    if (marketId === 'winner') return o.winnerIndex === 0 ? r.schoolA : o.winnerIndex === 1 ? r.schoolB : r.schoolC;
+                                                    if (marketId === 'total_points') return o.totalScores.reduce((a, b) => a + b, 0).toString();
+                                                    if (marketId === 'winning_margin') {
+                                                        const scores = [...o.totalScores].sort((a, b) => b - a);
+                                                        return (scores[0] - scores[1]).toString();
+                                                    }
+                                                    return r.won ? "Success" : "Lost";
+                                                })()}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -167,16 +185,6 @@ function VirtualBetTicket({ bet }: { bet: ClientVirtualBet }) {
                             {(bet.totalReturns ?? 0).toLocaleString()}
                         </p>
                     </div>
-                </div>
-
-                {/* Share/Actions */}
-                <div className="flex items-center gap-2 pt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all">
-                        Share Ticket
-                    </button>
-                    <button className="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-slate-400 transition-all">
-                        <Share2 className="h-3 w-3" />
-                    </button>
                 </div>
             </div>
         </div>

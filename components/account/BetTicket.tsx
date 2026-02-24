@@ -206,16 +206,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button className="p-2 bg-white/5 rounded-xl border border-white/5 text-slate-400 hover:text-white transition-colors">
-                                <Share2 className="h-4 w-4" />
-                            </button>
-                            {!isHistory && (
-                                <button className="p-2 bg-white/5 rounded-xl border border-white/5 text-slate-400 hover:text-white transition-colors">
-                                    <Edit2 className="h-4 w-4" />
-                                </button>
-                            )}
-                        </div>
+
                     </div>
 
                     {/* Ticket Metadata */}
@@ -224,13 +215,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                     </div>
                 </div>
 
-                {/* Cashout Button (Only for Open Bets) */}
-                {!isHistory && bet.status === 'pending' && (
-                    <button className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 transition-colors flex items-center justify-center gap-3">
-                        <span className="text-xs font-black uppercase text-white tracking-[0.2em] italic">Cashout</span>
-                        <span className="text-sm font-black text-white">GHS {(bet.stake * 0.9).toFixed(2)}</span>
-                    </button>
-                )}
+
             </div>
         </div>
     )

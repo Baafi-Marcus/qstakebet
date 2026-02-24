@@ -180,6 +180,7 @@ export const bonuses = pgTable("bonuses", {
     userId: text("user_id").notNull().references(() => users.id),
     type: text("type").notNull(), // "welcome", "deposit", "referral", "free_bet", "cashback"
     amount: real("amount").notNull(),
+    initialAmount: real("initial_amount").default(0), // Track original value for partial usage
     status: text("status").default("active").notNull(), // "active", "used", "expired"
 
     // Bonus Conditions

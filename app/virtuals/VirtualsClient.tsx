@@ -213,7 +213,12 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
             setTimeout(() => router.refresh(), 1000)
         }
 
-        setLastOutcome({ allRoundResults: outcomesRef.current, roundId: currentRound, results: resolvedSlips.flatMap(s => s.results || []) })
+        setLastOutcome({
+            allRoundResults: outcomesRef.current,
+            roundId: currentRound,
+            results: resolvedSlips.flatMap(s => s.results || []),
+            resolvedSlips: resolvedSlips
+        })
         setIsSimulating(false)
         isSimulatingRef.current = false
         setSimulationProgress(60)
@@ -338,6 +343,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0 }: VirtualsClien
                         selections={selections}
                         toggleSelection={toggleSelection}
                         lastOutcome={lastOutcome}
+                        outcomes={outcomes}
                         currentRound={currentRound}
                         simulationProgress={simulationProgress}
                         schools={activeSchools}

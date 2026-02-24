@@ -18,6 +18,7 @@ interface VirtualsMatchListProps {
     selections: VirtualSelection[];
     toggleSelection: (selection: VirtualSelection) => void;
     lastOutcome: { allRoundResults: VirtualMatchOutcome[], roundId: number } | null;
+    outcomes: VirtualMatchOutcome[];
     currentRound: number;
     simulationProgress: number;
     schools: VirtualSchool[];
@@ -39,6 +40,7 @@ export function VirtualsMatchList({
     selections,
     toggleSelection,
     lastOutcome,
+    outcomes,
     currentRound,
     simulationProgress,
     schools,
@@ -117,8 +119,20 @@ export function VirtualsMatchList({
                             isFinished={!isSimulating && lastOutcome?.roundId === currentRound}
                             currentRoundIdx={Math.min(4, Math.floor((simulationProgress / 60) * 5))}
                             currentScores={(() => {
-                                // HIDE SCORES during active simulation to prevent spoilers
-                                if (isSimulating) return undefined;
+                                // If simulating, show live progress for ALL matches
+                                if (isSimulating) {
+                                    const matchOutcome = outcomes.find(o => o.id === match.id);
+                                    if (matchOutcome) {
+                                        const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
+                                        const scores: [number, number, number] = [0, 0, 0];
+                                        for (let r = 0; r <= currentRoundIdx; r++) {
+                                            scores[0] += matchOutcome.rounds[r].scores[0];
+                                            scores[1] += matchOutcome.rounds[r].scores[1];
+                                            scores[2] += matchOutcome.rounds[r].scores[2];
+                                        }
+                                        return scores;
+                                    }
+                                }
 
                                 // If finished, show final scores from lastOutcome
                                 if (lastOutcome?.roundId === currentRound) {
