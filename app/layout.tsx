@@ -26,8 +26,8 @@ export const metadata: Metadata = {
     title: "QSTAKEbet",
   },
   icons: {
-    icon: "/file.svg",
-    apple: "/file.svg",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
 };
 

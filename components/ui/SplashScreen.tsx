@@ -73,7 +73,14 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                 )}>
 
                     <div className="flex flex-col items-center relative w-full">
-                        <h1 className="relative text-4xl md:text-6xl tracking-tighter text-white font-russo text-center">
+                        <div className="relative mb-6">
+                            <img
+                                src="/icon.svg"
+                                alt="QSTAKE Logo"
+                                className="h-20 w-20 md:h-24 md:w-24 object-contain animate-float drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                            />
+                        </div>
+                        <h1 className="relative text-4xl md:text-5xl tracking-tighter text-white font-russo text-center">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 bg-[length:200%_auto] animate-gradient-x">QSTAKEbet</span>
                         </h1>
 
