@@ -1,5 +1,5 @@
 import React from "react"
-import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft } from "lucide-react"
+import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft, Gift } from "lucide-react"
 import { Match } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { MULTI_BONUS } from "@/lib/constants"
@@ -11,6 +11,7 @@ import {
     ResolvedSlip,
     ResolvedSelection
 } from "@/lib/virtuals"
+import { GiftSelectionModal } from "@/components/ui/GiftSelectionModal"
 
 // Re-defining constants or importing if available
 const STAKE_LIMITS = {
@@ -47,6 +48,13 @@ interface VirtualsBetSlipProps {
     onConfirmCashout: () => void;
     hasConflicts: boolean;
     isAuthenticated: boolean;
+    gifts: any[];
+    bonusId?: string;
+    setBonusId: (id: string | undefined) => void;
+    bonusAmount: number;
+    setBonusAmount: (amount: number) => void;
+    showGiftModal: boolean;
+    setShowGiftModal: (show: boolean) => void;
 }
 
 export function VirtualsBetSlip({
@@ -75,7 +83,14 @@ export function VirtualsBetSlip({
     setConfirmCashoutSlipId,
     onConfirmCashout,
     hasConflicts,
-    isAuthenticated
+    isAuthenticated,
+    gifts,
+    bonusId,
+    setBonusId,
+    bonusAmount,
+    setBonusAmount,
+    showGiftModal,
+    setShowGiftModal
 }: VirtualsBetSlipProps) {
     return (
         <>
@@ -228,6 +243,31 @@ export function VirtualsBetSlip({
                                                 </span>
                                             </button>
                                         </div>
+
+                                        {/* Gift Selection Button */}
+                                        {balanceType === 'gift' && (
+                                            <div className="px-4 mb-3">
+                                                <button
+                                                    onClick={() => setShowGiftModal(true)}
+                                                    className={cn(
+                                                        "w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all group",
+                                                        bonusId ? "bg-purple-600/20 border-purple-500/50" : "bg-slate-800/40 border-white/5"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Gift className={cn("h-3 w-3", bonusId ? "text-purple-400" : "text-slate-500")} />
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-white">
+                                                            {bonusId ? "Change Gift" : "Select Gift"}
+                                                        </span>
+                                                    </div>
+                                                    {bonusId ? (
+                                                        <span className="text-[10px] font-black text-purple-300 font-mono">GHS {bonusAmount.toFixed(2)}</span>
+                                                    ) : (
+                                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Required for betting</span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
 
                                         {/* Singles/Multi/System Toggle */}
                                         <div className="flex bg-slate-900 rounded-lg p-1 border border-white/5 mb-2 mx-4 max-w-[180px] shadow-inner">
@@ -588,6 +628,21 @@ export function VirtualsBetSlip({
                     </div >
                 )
             }
+
+            {/* Gift Selection Modal */}
+            <GiftSelectionModal
+                isOpen={showGiftModal}
+                onClose={() => setShowGiftModal(false)}
+                gifts={gifts}
+                bonusId={bonusId}
+                totalOdds={calculateTotalOdds(selections)}
+                selectionsCount={selections.length}
+                totalStake={betMode === 'single' ? (globalStake * selections.length) : globalStake}
+                onApply={(gid: string | undefined, amt: number) => {
+                    setBonusId(gid)
+                    setBonusAmount(amt)
+                }}
+            />
         </>
     )
 }

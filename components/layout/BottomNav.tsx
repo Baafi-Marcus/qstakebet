@@ -92,31 +92,41 @@ export function BottomNav() {
                 </div>
 
                 {/* Central Action: Slip */}
-                <div className="relative -mt-8 flex flex-col items-center">
-                    <button
-                        onClick={handleSlipToggle}
-                        className={cn(
-                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-2xl relative overflow-hidden group",
-                            isOpen || selections.length > 0
-                                ? "bg-purple-600 text-white shadow-purple-600/40"
-                                : "bg-slate-800 text-slate-400 border border-white/5"
-                        )}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Ticket className={cn("h-6 w-6 relative z-10", (isOpen || selections.length > 0) && "animate-pulse")} />
+                {(() => {
+                    const isTournamentPage = pathname?.startsWith('/tournaments') || pathname?.startsWith('/competitions');
+                    if (isTournamentPage && selections.length === 0) return (
+                        <div className="flex flex-1 justify-around" /> // Use empty space to maintain layout
+                    )
 
-                        {/* Selection Count Badge */}
-                        {selections.length > 0 && (
-                            <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-purple-600 shadow-lg animate-in zoom-in">
-                                {selections.length}
-                            </div>
-                        )}
-                    </button>
-                    <span className={cn(
-                        "text-[8px] font-black uppercase tracking-widest mt-2",
-                        isOpen ? "text-purple-400" : "text-slate-500"
-                    )}>Slip</span>
-                </div>
+                    return (
+                        <div className="relative -mt-8 flex flex-col items-center">
+                            <button
+                                onClick={handleSlipToggle}
+                                data-betslip-toggle // Used for manual trigger from SubNav
+                                className={cn(
+                                    "h-14 w-14 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-2xl relative overflow-hidden group",
+                                    isOpen || selections.length > 0
+                                        ? "bg-purple-600 text-white shadow-purple-600/40"
+                                        : "bg-slate-800 text-slate-400 border border-white/5"
+                                )}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Ticket className={cn("h-6 w-6 relative z-10", (isOpen || selections.length > 0) && "animate-pulse")} />
+
+                                {/* Selection Count Badge */}
+                                {selections.length > 0 && (
+                                    <div className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-purple-600 shadow-lg animate-in zoom-in">
+                                        {selections.length}
+                                    </div>
+                                )}
+                            </button>
+                            <span className={cn(
+                                "text-[8px] font-black uppercase tracking-widest mt-2",
+                                isOpen ? "text-purple-400" : "text-slate-500"
+                            )}>Slip</span>
+                        </div>
+                    )
+                })()}
 
                 {/* Bets & Profile */}
                 <div className="flex flex-1 justify-around">

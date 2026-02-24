@@ -13,7 +13,8 @@ import {
     Timer,
     ChevronDown,
     LayoutGrid,
-    X
+    X,
+    Ticket
 } from "lucide-react"
 import { RegionsMenu } from "./RegionsMenu"
 
@@ -131,8 +132,25 @@ export function SubNavBar() {
                     </div>
                 </div>
 
-                {/* Pinned Regions Toggle */}
-                <div className="shrink-0">
+                {/* Pinned Regions Toggle & Load Code */}
+                <div className="shrink-0 flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            // Find the bet slip context and open it
+                            const toggleBtn = document.querySelector('[data-betslip-toggle]') as HTMLButtonElement;
+                            if (toggleBtn) toggleBtn.click();
+                            else {
+                                // Fallback: try to find any slip toggle via window/context if possible
+                                // For now, we'll assume the context is available or we use a custom event
+                                window.dispatchEvent(new CustomEvent('open-betslip'));
+                            }
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[9px] sm:text-[11px] font-black tracking-widest uppercase hover:bg-purple-500 hover:text-white transition-all"
+                    >
+                        <Ticket className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <span>LOAD CODE</span>
+                    </button>
+
                     <button
                         onClick={() => setIsRegionsOpen(!isRegionsOpen)}
                         className={cn(

@@ -196,7 +196,8 @@ export async function getUserGifts() {
         const activeGifts = await db.query.bonuses.findMany({
             where: and(
                 eq(bonuses.userId, session.user.id),
-                eq(bonuses.status, "active")
+                eq(bonuses.status, "active"),
+                sql`${bonuses.amount} > 0`
             ),
             orderBy: [desc(bonuses.expiresAt)]
         })

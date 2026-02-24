@@ -6,6 +6,7 @@ import { BetSlipSidebar } from "./BetSlipSidebar"
 import { Header } from "./Header"
 import { SubNavBar } from "./SubNavBar"
 import { Footer } from "./Footer"
+import { FloatingBetSlipButton } from "./FloatingBetSlipButton"
 import { InteractiveLayer } from "./InteractiveLayer"
 import { SessionProvider } from "next-auth/react"
 import React, { useEffect, useState, useContext } from "react"
@@ -107,6 +108,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                             return (
                                 <>
                                     <BetSlipSidebar />
+                                    <FloatingBetSlipButton />
                                     <BottomNav />
                                     <GlobalMatchDetails />
                                     <InteractiveLayer />

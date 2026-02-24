@@ -72,6 +72,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
     const [countdown, setCountdown] = useState<string | null>(null)
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
+    const [gifts, setGifts] = useState<any[]>([])
+    const [bonusId, setBonusId] = useState<string | undefined>(undefined)
+    const [bonusAmount, setBonusAmount] = useState<number>(0)
+    const [showGiftModal, setShowGiftModal] = useState(false)
 
     const isSimulatingRef = useRef(false)
     const outcomesRef = useRef<VirtualMatchOutcome[]>([])
@@ -114,7 +118,16 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                     setBetHistory(virtualBets)
                 }
             })
-    }, [])
+
+        // Fetch Gifts if authenticated
+        if (isAuthenticated) {
+            import("@/lib/user-actions").then(m => {
+                m.getUserGifts().then(res => {
+                    if (res.success) setGifts(res.gifts)
+                })
+            })
+        }
+    }, [isAuthenticated])
 
     // Memos
     const { matches, outcomes } = useMemo(() => {
@@ -268,9 +281,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const addToSlip = async () => {
         const totalStake = betMode === 'single' ? globalStake * selections.length : globalStake
         const balance = balanceType === 'cash' ? (profile?.balance || 0) : (profile?.bonusBalance || 0)
+
+        // Use selected bonus if balanceType is 'gift'
+        const finalBonusId = balanceType === 'gift' ? bonusId : undefined
+        const finalBonusAmount = balanceType === 'gift' ? bonusAmount : 0
+
         if (totalStake > balance) return alert("Insufficient balance")
 
-        const res = await placeBet(totalStake, selections, undefined, balanceType === 'gift' ? totalStake : 0, betMode) as any
+        const res = await placeBet(totalStake, selections, finalBonusId, finalBonusAmount, betMode) as any
         if (res.success) {
             setPendingSlips(prev => [...prev, {
                 id: res.betId,
@@ -384,6 +402,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 onConfirmCashout={handleConfirmCashout}
                 hasConflicts={hasConflicts}
                 isAuthenticated={isAuthenticated}
+                gifts={gifts}
+                bonusId={bonusId}
+                setBonusId={setBonusId}
+                bonusAmount={bonusAmount}
+                setBonusAmount={setBonusAmount}
+                showGiftModal={showGiftModal}
+                setShowGiftModal={setShowGiftModal}
             />
 
             <VirtualsResults
