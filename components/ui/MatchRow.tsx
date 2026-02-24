@@ -8,6 +8,7 @@ import { normalizeMarketName, cn } from "@/lib/utils"
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
+import { haptics } from "@/lib/haptics"
 
 
 
@@ -314,6 +315,7 @@ export function MatchRow({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            haptics.light();
                                             setIsDropdownOpen(!isDropdownOpen);
                                         }}
                                         className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -339,6 +341,7 @@ export function MatchRow({
                                                             key={line}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
+                                                                haptics.light();
                                                                 setSelectedTotalLine(line);
                                                                 setIsDropdownOpen(false);
                                                             }}
@@ -436,6 +439,7 @@ export function MatchRow({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            haptics.light();
                                             setIsDropdownOpen(!isDropdownOpen);
                                         }}
                                         className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -456,6 +460,7 @@ export function MatchRow({
                                                     key={r}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
+                                                        haptics.light();
                                                         setSelectedRound(r);
                                                         setIsDropdownOpen(false);
                                                     }}
@@ -573,6 +578,7 @@ export function MatchRow({
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
+                        haptics.light();
                         onMoreClick?.(match);
                     }}
                     className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch group/more"

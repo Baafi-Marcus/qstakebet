@@ -6,6 +6,7 @@ import React from "react"
 import { BetSlipContext } from "@/lib/store/context"
 import type { Selection } from "@/lib/store/context"
 import { Lock } from "lucide-react"
+import { haptics } from "@/lib/haptics"
 
 interface OddsButtonProps {
     label: string
@@ -54,6 +55,10 @@ export function OddsButton({
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
         if (!odds || odds === 0 || isLocked) return; // Add isLocked check
+
+        // Trigger haptic feedback
+        haptics.light()
+
         const selection = {
             matchId,
             selectionId,

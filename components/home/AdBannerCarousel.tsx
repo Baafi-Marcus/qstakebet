@@ -52,7 +52,7 @@ export function AdBannerCarousel({ announcements }: AdBannerCarouselProps) {
 
     return (
         <div
-            className="w-full bg-[#0f1115] overflow-hidden border-b border-white/5 relative group h-[120px] md:h-[200px]"
+            className="w-full bg-[#0f1115] overflow-hidden border-b border-white/5 relative group h-[140px] md:h-[220px]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >
@@ -65,9 +65,9 @@ export function AdBannerCarousel({ announcements }: AdBannerCarouselProps) {
 
                     // Smart Font Sizing based on content length
                     const contentLength = ad.content?.length || 0
-                    let fontSize = "text-xl md:text-4xl"
-                    if (contentLength > 50) fontSize = "text-lg md:text-2xl"
-                    else if (contentLength > 30) fontSize = "text-xl md:text-3xl"
+                    let fontSize = "text-2xl md:text-5xl"
+                    if (contentLength > 50) fontSize = "text-base md:text-2xl"
+                    else if (contentLength > 30) fontSize = "text-lg md:text-3xl"
 
                     return (
                         <div
@@ -78,32 +78,36 @@ export function AdBannerCarousel({ announcements }: AdBannerCarouselProps) {
                             )}
                         >
                             {ad.type === "image" ? (
-                                <div className="w-full h-full relative cursor-pointer">
+                                <div className="w-full h-full relative cursor-pointer group/ad">
                                     {ad.link ? (
                                         <Link href={ad.link} className="block w-full h-full">
                                             <Image
                                                 src={ad.imageUrl || ""}
                                                 alt="Promotion"
                                                 fill
-                                                className="object-cover"
+                                                className="object-cover md:object-fill"
+                                                priority={index === 0}
                                             />
+                                            {/* Overlay for better mobile visibility if needed */}
+                                            <div className="absolute inset-0 bg-black/10 group-hover/ad:bg-black/0 transition-colors" />
                                         </Link>
                                     ) : (
                                         <Image
                                             src={ad.imageUrl || ""}
                                             alt="Promotion"
                                             fill
-                                            className="object-cover"
+                                            className="object-cover md:object-fill"
+                                            priority={index === 0}
                                         />
                                     )}
                                 </div>
                             ) : (
                                 <div className={cn(
-                                    "w-full h-full flex flex-col items-center justify-center text-center px-8 sm:px-12 md:px-20",
+                                    "w-full h-full flex flex-col items-center justify-center text-center px-4 sm:px-12 md:px-20",
                                     themeClass
                                 )}>
                                     <h3 className={cn(
-                                        "font-black tracking-tighter mb-2 leading-tight transition-transform duration-1000",
+                                        "font-black tracking-tighter mb-2 leading-[1.1] transition-transform duration-1000",
                                         textClass,
                                         fontSize,
                                         isActive ? "scale-100 opacity-100" : "scale-95 opacity-0"

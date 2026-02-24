@@ -8,6 +8,7 @@ import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { useBetSlip } from "@/lib/store/useBetSlip"
 import { SkeletonMatch } from "@/components/ui/SkeletonComponents"
 import { cn } from "@/lib/utils"
+import { haptics } from "@/lib/haptics"
 
 interface HomeClientProps {
     initialMatches: Match[]
@@ -236,7 +237,10 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                     ].map((level) => (
                         <button
                             key={level.id}
-                            onClick={() => setActiveLevel(level.id as any)}
+                            onClick={() => {
+                                haptics.light();
+                                setActiveLevel(level.id as any);
+                            }}
                             className={cn(
                                 "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
                                 activeLevel === level.id
@@ -261,7 +265,10 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                     ].map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveDateTab(tab.id as any)}
+                            onClick={() => {
+                                haptics.light();
+                                setActiveDateTab(tab.id as any);
+                            }}
                             className={cn(
                                 "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
                                 activeDateTab === tab.id
@@ -283,7 +290,10 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                         {availableMarkets.map((m) => (
                             <button
                                 key={m.id}
-                                onClick={() => setActiveMarket(m.id as any)}
+                                onClick={() => {
+                                    haptics.light();
+                                    setActiveMarket(m.id as any);
+                                }}
                                 className={cn(
                                     "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border whitespace-nowrap",
                                     activeMarket === m.id

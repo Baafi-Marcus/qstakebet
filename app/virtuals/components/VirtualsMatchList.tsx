@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 import { MatchRow } from "@/components/ui/MatchRow"
 import { Match } from "@/lib/types"
 import { VirtualSchool, VirtualMatchOutcome, simulateMatch, VirtualSelection } from "@/lib/virtuals"
+import { haptics } from "@/lib/haptics"
 
 interface VirtualsMatchListProps {
     isSimulationActive: boolean;
@@ -56,7 +57,10 @@ export function VirtualsMatchList({
                     {availableRegions.map(region => (
                         <button
                             key={region}
-                            onClick={() => setSelectedRegion(region)}
+                            onClick={() => {
+                                haptics.light();
+                                setSelectedRegion(region);
+                            }}
                             className={cn(
                                 "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                                 selectedRegion === region
@@ -89,7 +93,10 @@ export function VirtualsMatchList({
                         ].map((m) => (
                             <button
                                 key={m.id}
-                                onClick={() => setActiveMarket(m.id as any)}
+                                onClick={() => {
+                                    haptics.light();
+                                    setActiveMarket(m.id as any);
+                                }}
                                 className={cn(
                                     "px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] transition-all border whitespace-nowrap",
                                     activeMarket === m.id
