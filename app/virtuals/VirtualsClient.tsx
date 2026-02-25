@@ -313,6 +313,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
             setSelections([])
             setSlipTab('pending')
             router.refresh()
+        } else {
+            alert(res.error || "Failed to place bet. Please ensure stake is at least GHS 1.00")
         }
     }
 

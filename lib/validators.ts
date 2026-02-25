@@ -51,7 +51,7 @@ export const SelectionSchema = z.object({
 }).passthrough();
 
 export const PlaceBetSchema = z.object({
-    stake: z.number().min(1, "Minimum stake is GHS 1.00"),
+    stake: z.number().min(0.01, "Minimum stake is GHS 0.01"),
     selections: z.array(SelectionSchema).min(1, "At least one selection is required"),
     bonusId: z.string().optional(),
     bonusAmount: z.number().default(0),

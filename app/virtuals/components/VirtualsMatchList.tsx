@@ -50,7 +50,7 @@ export function VirtualsMatchList({
     setSelectedMatchForDetails
 }: VirtualsMatchListProps) {
     return (
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-44 md:pb-32">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-56 md:pb-32">
             {/* Region Scroller (Only if Regional selected) */}
             {!isSimulationActive && selectedCategory === 'regional' && (
                 <div className="flex bg-slate-950/40 p-2 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar mb-4 gap-2">

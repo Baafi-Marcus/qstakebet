@@ -83,16 +83,16 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
     }
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose} />
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
 
-            <div className="relative bg-[#0f1115] w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] flex flex-col">
+            <div className="relative bg-[#0f1115] w-full max-w-5xl h-[92dvh] sm:max-h-[95vh] overflow-hidden rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-white/10 shadow-[0_-10px_50px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-500">
 
                 {/* Visual Header Enhancement */}
                 <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-purple-600/10 to-transparent pointer-events-none" />
 
                 {/* Sticky Header */}
-                <div className="relative z-10 px-8 py-6 border-b border-white/5 flex items-center justify-between">
+                <div className="relative z-10 px-6 sm:px-8 py-4 sm:py-6 border-b border-white/5 flex items-center justify-between bg-slate-900/40 backdrop-blur-md">
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
                             <span className="px-2 py-0.5 bg-red-600 rounded text-[9px] font-black text-white uppercase tracking-widest">{match.stage}</span>
@@ -137,7 +137,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                 </div>
 
                 {/* Content Overlay grid */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 relative z-10 pb-20">
 
                     {/* ... (AI INSIGHTS BAR REMAINS SAME) */}
                     <div className="lg:col-span-12 mb-4 bg-slate-900/40 border border-white/5 p-6 rounded-[2rem]">

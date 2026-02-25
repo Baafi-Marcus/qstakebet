@@ -484,8 +484,8 @@ export function BetSlipSidebar() {
                             ))}
                         </div>
 
-                        {/* Unified Compact Summary Card */}
-                        <div className="bg-slate-900 border-t border-slate-800 p-2 pb-safe space-y-2">
+                        {/* Unified Compact Summary Card - Pinned to bottom */}
+                        <div className="mt-auto sticky bottom-0 z-10 bg-slate-900 border-t border-slate-800 p-2 pb-safe space-y-2 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
                             {/* Summary Grid */}
                             <div className="grid grid-cols-2 gap-2 bg-slate-800/50 rounded-lg p-2 border border-slate-800">
                                 <div>

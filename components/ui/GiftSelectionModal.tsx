@@ -45,12 +45,12 @@ export function GiftSelectionModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-            <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-purple-600/20 rounded-2xl">
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4 pb-0 sm:p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-t-[2.5rem] sm:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+                <div className="p-5 pt-7 sm:p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2.5 bg-purple-600/20 rounded-xl">
                             <Gift className="h-6 w-6 text-purple-400" />
                         </div>
                         <div>
