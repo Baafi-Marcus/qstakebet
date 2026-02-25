@@ -618,17 +618,16 @@ export function BetSlipSidebar() {
                                                 setError("")
                                                 try {
                                                     if (betMode === 'single') {
+                                                        let placedCount = 0
                                                         for (const sel of selections) {
                                                             const currentStake = sel.stake || stake
                                                             if (currentStake >= FINANCE_LIMITS.BET.MIN_STAKE) {
-                                                                // Calculate precise bonus for this leg
                                                                 const legBonus = useBonus ? (bonusAmount / selections.length) : 0
-                                                                // Ensure legBonus doesn't exceed currentStake
                                                                 const finalLegBonus = Math.min(legBonus, currentStake)
 
-                                                                await placeBet(currentStake, [sel], bonusId, finalLegBonus, 'single')
+                                                                const res = await placeBet(currentStake, [sel], bonusId, finalLegBonus, 'single')
+                                                                if (res.success) placedCount++
 
-                                                                // Update local wallet for single bet
                                                                 if (wallet) {
                                                                     setWallet(prev => prev ? ({
                                                                         ...prev,
@@ -638,13 +637,16 @@ export function BetSlipSidebar() {
                                                                 }
                                                             }
                                                         }
-                                                        clearSlip()
-                                                        closeSlip()
+
+                                                        if (placedCount > 0) {
+                                                            setLastBetId(`B-${Math.random().toString(36).substr(2, 6).toUpperCase()}`)
+                                                            setIsSuccess(true)
+                                                            clearSlip()
+                                                        }
                                                     } else {
                                                         const finalBonus = useBonus ? Math.min(bonusAmount, stake) : 0
                                                         const result = await placeBet(stake, selections, bonusId, finalBonus)
                                                         if (result.success) {
-                                                            // Update local wallet state immediately for better UX
                                                             if (wallet) {
                                                                 setWallet(prev => prev ? ({
                                                                     ...prev,
@@ -652,8 +654,6 @@ export function BetSlipSidebar() {
                                                                     bonusBalance: prev.bonusBalance - finalBonus
                                                                 }) : null)
                                                             }
-
-                                                            // Clear slip success
                                                             const successResult = result as { success: true; betId: string }
                                                             setLastBetId(successResult.betId || "B-" + Math.random().toString(36).substr(2, 6).toUpperCase())
                                                             setIsSuccess(true)
@@ -682,17 +682,6 @@ export function BetSlipSidebar() {
                                 )}
                             </div>
 
-                            {/* Deposit Link */}
-                            {status === "authenticated" && (
-                                <Link
-                                    href="/account/wallet"
-                                    onClick={closeSlip}
-                                    className="block text-center text-[9px] font-bold text-green-500 hover:text-green-400 transition-colors uppercase tracking-widest mt-1"
-                                >
-                                    Deposit Funds
-                                </Link>
-                            )}
-
                             {error && (
                                 <p className="text-xs text-red-500 text-center font-bold animate-pulse">
                                     {error}
@@ -701,7 +690,7 @@ export function BetSlipSidebar() {
                         </div>
                     </>
                 )}
-            </div >
+            </div>
 
             {/* Success Overlay */}
             {isSuccess && (
@@ -727,24 +716,22 @@ export function BetSlipSidebar() {
             )}
 
             {/* Booking Success Modal (Outside Sidebar to ignore transforms) */}
-            {
-                bookedCodeResult && (
-                    <BookingSuccessModal
-                        code={bookedCodeResult}
-                        selections={selections}
-                        totalOdds={totalOdds}
-                        onClose={() => setBookedCodeResult(null)}
-                        onLoadCode={(code) => {
-                            setBookingCode(code)
-                            handleLoadBooking()
-                            setBookedCodeResult(null)
-                            if (!isOpen) closeSlip() // Just to be safe, should be open though
-                            // We need to ensure the sidebar is open to show the loaded selections
-                            if (context?.openSlip) context.openSlip()
-                        }}
-                    />
-                )
-            }
+            {bookedCodeResult && (
+                <BookingSuccessModal
+                    code={bookedCodeResult}
+                    selections={selections}
+                    totalOdds={totalOdds}
+                    onClose={() => setBookedCodeResult(null)}
+                    onLoadCode={(code) => {
+                        setBookingCode(code)
+                        handleLoadBooking()
+                        setBookedCodeResult(null)
+                        if (!isOpen) closeSlip() // Just to be safe, should be open though
+                        // We need to ensure the sidebar is open to show the loaded selections
+                        if (context?.openSlip) context.openSlip()
+                    }}
+                />
+            )}
 
             {/* Gift Selection Modal */}
             <GiftSelectionModal
@@ -759,6 +746,15 @@ export function BetSlipSidebar() {
                     setBonusId(gid)
                     setBonusAmount(amt)
                     setUseBonus(!!gid)
+
+                    // Auto-adjust stake if bonus is higher than current stake
+                    if (gid && amt > totalStake) {
+                        if (betMode === 'single') {
+                            selections.forEach(s => updateSelectionStake(s.selectionId, amt / selections.length))
+                        } else {
+                            setStake(amt)
+                        }
+                    }
                 }}
             />
         </>

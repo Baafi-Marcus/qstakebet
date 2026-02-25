@@ -102,7 +102,7 @@ export async function registerUser(data: {
             id: walletId,
             userId: userId,
             balance: 0,
-            bonusBalance: 5, // Start with Welcome Bonus
+            bonusBalance: 10, // Start with Welcome Bonus
             currency: "GHS"
         })
 
@@ -112,7 +112,7 @@ export async function registerUser(data: {
             id: bonusId,
             userId: userId,
             type: "welcome",
-            amount: 5.00,
+            amount: 10.00,
             status: "active",
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
         })
@@ -121,7 +121,7 @@ export async function registerUser(data: {
         try {
             const { formatToInternational } = await import("@/lib/phone-utils")
             const formattedPhone = formatToInternational(data.phone)
-            const welcomeMessage = `Welcome to QSTAKEbet! Your account has been created successfully. You've received 5 GHS bonus to start betting. Good luck!`;
+            const welcomeMessage = `Welcome to QSTAKEbet! Your account has been created successfully. You've received 10 cedis free bet to start betting. Try out our instant virtual games: qstakebet.vercel.app/virtuals - Good luck!`;
             await vynfy.sendSMS([formattedPhone], welcomeMessage);
         } catch (smsError) {
             console.error("Failed to send welcome SMS:", smsError);

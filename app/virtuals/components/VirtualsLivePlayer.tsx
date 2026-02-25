@@ -110,8 +110,8 @@ export function VirtualsLivePlayer({
                             Prepare to win
                         </div>
                         <div className={cn(
-                            "text-8xl md:text-[10rem] font-black italic tracking-tighter transition-all duration-300",
-                            countdown === 'START' ? "text-emerald-400 scale-110 drop-shadow-[0_0_30px_rgba(52,211,153,0.5)]" : "text-white"
+                            "text-[10rem] md:text-[15rem] font-black italic tracking-tighter transition-all duration-300 drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]",
+                            countdown === 'START' ? "text-emerald-400 scale-110 drop-shadow-[0_0_60px_rgba(52,211,153,0.5)]" : "text-white"
                         )}>
                             {countdown}
                         </div>
@@ -119,11 +119,11 @@ export function VirtualsLivePlayer({
                 </div>
             )}
 
-            <div className="relative bg-emerald-950/80 overflow-hidden h-[200px] flex flex-col">
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-x-8 inset-y-8 border-2 border-white/20 rounded-lg" />
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white/20 rounded-full" />
+            <div className="relative bg-emerald-950/80 overflow-hidden h-[350px] md:h-[500px] flex flex-col">
+                <div className="absolute inset-0 opacity-15">
+                    <div className="absolute inset-x-12 inset-y-12 border-4 border-white/20 rounded-2xl" />
+                    <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-white/20" />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-4 border-white/20 rounded-full" />
                 </div>
 
                 <div className="relative z-10 p-4 flex flex-col items-center justify-center flex-1">
@@ -166,10 +166,10 @@ export function VirtualsLivePlayer({
 
                             return (
                                 <div key={sIdx} className="flex flex-col items-center gap-2 group w-full text-center">
-                                    <div className="flex flex-col items-center min-h-[2.5rem] justify-center">
+                                    <div className="flex flex-col items-center min-h-[4rem] justify-center">
                                         <span className={cn(
-                                            "text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] text-center leading-tight transition-colors duration-300",
-                                            isLeading ? "text-emerald-400" : "text-white/80"
+                                            "text-xs md:text-lg font-black uppercase tracking-[0.3em] text-center leading-tight transition-colors duration-300 drop-shadow-lg px-2",
+                                            isLeading ? "text-emerald-400" : "text-white"
                                         )}>
                                             {school}
                                         </span>
@@ -178,8 +178,8 @@ export function VirtualsLivePlayer({
                                         <div
                                             key={cumulativeScores[sIdx]}
                                             className={cn(
-                                                "text-6xl md:text-8xl font-black italic tabular-nums leading-none transition-all duration-300",
-                                                isLeading ? "text-white drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]" : "text-white/40 drop-shadow-[0_0_10px_rgba(255,255,255,0.05)]",
+                                                "text-7xl md:text-[10rem] font-black italic tabular-nums leading-none transition-all duration-300",
+                                                isLeading ? "text-white drop-shadow-[0_0_30px_rgba(52,211,153,0.6)]" : "text-white/40 drop-shadow-[0_0_15px_rgba(255,255,255,0.05)]",
                                                 "animate-in zoom-in-75 duration-300"
                                             )}
                                         >

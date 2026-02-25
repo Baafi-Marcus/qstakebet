@@ -12,6 +12,7 @@ export function Header() {
     const { data: session, status } = useSession()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
     const [balance, setBalance] = useState<number | null>(null)
     const pathname = usePathname()
 
@@ -20,6 +21,17 @@ export function Header() {
             getUserWalletBalance().then(data => setBalance(data.balance))
         }
     }, [status])
+
+    const handleLogout = () => {
+        setIsLogoutConfirmOpen(true)
+        setIsProfileOpen(false)
+        setIsMenuOpen(false)
+    }
+
+    const confirmLogout = () => {
+        signOut()
+        setIsLogoutConfirmOpen(false)
+    }
 
     const navLinks = [
         { href: "/", label: "Featured", icon: Star },
@@ -190,10 +202,7 @@ export function Header() {
                                                     <div className="h-px bg-white/5 my-2 mx-2" />
 
                                                     <button
-                                                        onClick={() => {
-                                                            setIsProfileOpen(false)
-                                                            signOut()
-                                                        }}
+                                                        onClick={handleLogout}
                                                         className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black text-red-400 hover:bg-red-500/10 transition-all"
                                                     >
                                                         <LogOut className="h-4 w-4" /> SECURE LOGOUT
@@ -301,7 +310,7 @@ export function Header() {
                                         <MessageSquare className="h-4 w-4" /> Support (WhatsApp)
                                     </a>
                                     <button
-                                        onClick={() => signOut()}
+                                        onClick={handleLogout}
                                         className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black text-red-500 hover:bg-red-500/10 transition-all"
                                     >
                                         <LogOut className="h-4 w-4" /> LOGOUT
@@ -328,6 +337,40 @@ export function Header() {
                                 </div>
                             )}
                         </nav>
+                    </div>
+                </div>
+            )}
+            {/* Logout Confirmation Modal */}
+            {isLogoutConfirmOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+                        onClick={() => setIsLogoutConfirmOpen(false)}
+                    />
+                    <div className="relative bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
+                        <div className="flex flex-col items-center text-center gap-6">
+                            <div className="p-4 bg-red-500/10 rounded-2xl">
+                                <LogOut className="h-8 w-8 text-red-500" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Confirm Logout</h3>
+                                <p className="text-slate-400 font-medium">Are you sure you want to end your session?</p>
+                            </div>
+                            <div className="w-full flex flex-col gap-3">
+                                <button
+                                    onClick={confirmLogout}
+                                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-500/20"
+                                >
+                                    YES, LOGOUT
+                                </button>
+                                <button
+                                    onClick={() => setIsLogoutConfirmOpen(false)}
+                                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/5"
+                                >
+                                    CANCEL
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

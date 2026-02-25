@@ -34,8 +34,8 @@ export function GiftSelectionModal({
             setSelectedGiftId(initialBonusId)
             const gift = gifts.find(g => g.id === initialBonusId)
             if (gift) {
-                // Ensure amount is still valid for current stake
-                setSelectedAmount(Math.min(gift.amount, totalStake))
+                // Ensure amount is still valid
+                setSelectedAmount(gift.amount)
             } else {
                 setSelectedAmount(0)
             }
@@ -84,7 +84,7 @@ export function GiftSelectionModal({
                                         onClick={() => {
                                             if (isIneligible) return
                                             setSelectedGiftId(gift.id)
-                                            setSelectedAmount(Math.min(gift.amount, totalStake))
+                                            setSelectedAmount(gift.amount)
                                         }}
                                     >
                                         <div className="flex justify-between items-center">
@@ -120,7 +120,7 @@ export function GiftSelectionModal({
                                         onChange={(e) => {
                                             const gift = gifts.find(g => g.id === selectedGiftId)
                                             if (gift) {
-                                                const val = Math.max(0, Math.min(gift.amount, totalStake, Number(e.target.value)))
+                                                const val = Math.max(0, Math.min(gift.amount, Number(e.target.value)))
                                                 setSelectedAmount(val)
                                             }
                                         }}
@@ -133,7 +133,7 @@ export function GiftSelectionModal({
                                     onClick={() => {
                                         const gift = gifts.find(g => g.id === selectedGiftId)
                                         if (gift) {
-                                            setSelectedAmount(Math.min(gift.amount, totalStake))
+                                            setSelectedAmount(gift.amount)
                                         }
                                     }}
                                     className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase rounded-lg transition-all"
