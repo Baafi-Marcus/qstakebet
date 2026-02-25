@@ -132,6 +132,8 @@ export function MatchRow({
                         isSelected={checkSelected(`${match.id}-${marketLabel}-${idx + 1}`)}
                         isCorrelated={checkIsCorrelated?.(match.id, marketLabel)}
                         sportType={match.sportType}
+                        tournamentName={match.tournamentName || undefined}
+                        stage={match.stage}
                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                     />
                 </div>
@@ -284,6 +286,8 @@ export function MatchRow({
                                             isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             sportType={match.sportType}
+                                            tournamentName={match.tournamentName || undefined}
+                                            stage={match.stage}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                         />
                                     </div>
@@ -301,6 +305,8 @@ export function MatchRow({
                                             isSelected={checkSelected(`${match.id}-Match Winner-X`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             sportType={match.sportType}
+                                            tournamentName={match.tournamentName || undefined}
+                                            stage={match.stage}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                         />
                                     </div>
@@ -370,6 +376,8 @@ export function MatchRow({
                                                 isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
                                                 sportType={match.sportType}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                             />
                                         </div>
@@ -385,6 +393,8 @@ export function MatchRow({
                                                 isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
                                                 sportType={match.sportType}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                             />
                                         </div>
@@ -424,6 +434,8 @@ export function MatchRow({
                                                 isSelected={checkSelected(`${match.id}-Handicap-${p.name}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Handicap")}
                                                 sportType={match.sportType}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                             />
                                         </div>
@@ -558,6 +570,8 @@ export function MatchRow({
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${key}`)} // Consistent ID
                                                         isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
                                                         sportType={match.sportType}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                                     />
                                                 </div>

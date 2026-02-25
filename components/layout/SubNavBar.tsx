@@ -145,9 +145,9 @@ export function SubNavBar() {
                                 window.dispatchEvent(new CustomEvent('open-betslip'));
                             }
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[9px] sm:text-[11px] font-black tracking-widest uppercase hover:bg-purple-500 hover:text-white transition-all"
+                        className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[11px] font-black tracking-widest uppercase hover:bg-purple-500 hover:text-white transition-all"
                     >
-                        <Ticket className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <Ticket className="h-3.5 w-3.5" />
                         <span>LOAD CODE</span>
                     </button>
 

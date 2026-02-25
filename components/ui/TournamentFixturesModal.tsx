@@ -115,7 +115,7 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                                                     ) : (
                                                         <div className={`grid gap-2 ${m.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                             {m.participants.map(p => (
-                                                                <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={matchLabel} marketName="Match Winner" showLabel={true} />
+                                                                <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={matchLabel} marketName="Match Winner" showLabel={true} tournamentName={tournamentName} stage={m.stage} />
                                                             ))}
                                                         </div>
                                                     )}

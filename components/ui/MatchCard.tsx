@@ -59,6 +59,8 @@ export function MatchCard({
                         showLabel={match.isVirtual}
                         onClick={onOddsClick}
                         isSelected={checkSelected?.(`${match.id}-Match Winner-${match.isVirtual ? (idx + 1).toString() : p.name}`)}
+                        tournamentName={match.tournamentName || undefined}
+                        stage={match.stage}
                     />
                 ))}
             </div>

@@ -11,6 +11,8 @@ export type Selection = {
     marketName: string
     matchLabel: string
     sportType?: string
+    tournamentName?: string
+    stage?: string
     stake?: number
 }
 
@@ -46,7 +48,7 @@ export const BetSlipContext = React.createContext<BetSlipContextType | undefined
 export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = React.useState(false)
     const [selections, setSelections] = React.useState<Selection[]>([])
-    const [stake, setStakeState] = React.useState(10)
+    const [stake, setStakeState] = React.useState(1)
     const [useBonus, setUseBonus] = React.useState(false)
     const [bonusId, setBonusId] = React.useState<string | undefined>(undefined)
     const [bonusAmount, setBonusAmount] = React.useState(0)

@@ -23,6 +23,8 @@ interface OddsButtonProps {
     id?: string // Explicit selection ID override
     sportType?: string // Added sportType
     tournamentId?: string // Added tournamentId for outrights
+    tournamentName?: string
+    stage?: string
 }
 
 export function OddsButton({
@@ -39,7 +41,9 @@ export function OddsButton({
     isLocked, // Destructure isLocked
     id: explicitId,
     sportType,
-    tournamentId
+    tournamentId,
+    tournamentName,
+    stage
 }: OddsButtonProps) {
     const context = React.useContext(BetSlipContext)
     // if (!context) throw new Error("Missing Context") // Optional: Context might be undefined if not wrapped, but shouldn't happen
@@ -69,7 +73,9 @@ export function OddsButton({
             marketName,
             matchLabel,
             sportType,
-            tournamentId
+            tournamentId,
+            tournamentName,
+            stage
         }
         if (onClick) {
             onClick(selection)

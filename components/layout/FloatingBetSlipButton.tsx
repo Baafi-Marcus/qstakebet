@@ -22,7 +22,7 @@ export function FloatingBetSlipButton() {
     if (selections.length === 0 || isOpen || isAuth || isAdmin || isAccount) return null
 
     return (
-        <div className="fixed right-6 bottom-32 lg:bottom-12 z-[90] flex flex-col items-center group">
+        <div className="hidden lg:flex fixed right-6 bottom-32 lg:bottom-12 z-[90] flex-col items-center group">
             <button
                 onClick={toggleSlip}
                 className={cn(

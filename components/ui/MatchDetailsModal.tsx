@@ -194,6 +194,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             isLocked={isLocked}
+                                            tournamentName={match.tournamentName || undefined}
+                                            stage={match.stage}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
                                         />
                                     </div>
@@ -211,6 +213,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             isSelected={checkSelected(`${match.id}-Match Winner-X`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             isLocked={isLocked}
+                                            tournamentName={match.tournamentName || undefined}
+                                            stage={match.stage}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
                                         />
                                     </div>
@@ -238,6 +242,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 isSelected={checkSelected(`${match.id}-Handicap-${p.name}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Handicap")}
                                                 isLocked={isLocked}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2 text-lg"
                                             />
                                         </div>
@@ -278,6 +284,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isSelected={checkSelected(`${match.id}-Total Points-Over ${group.line}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
                                                         isLocked={isLocked}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -293,6 +301,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isSelected={checkSelected(`${match.id}-Total Points-Under ${group.line}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
                                                         isLocked={isLocked}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -324,6 +334,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(`${round} Winner`)}-${sIdx + 1}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, `${round} Winner`)}
                                                         isLocked={isLocked}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
                                                     />
                                                 </div>
@@ -358,6 +370,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                             isSelected={checkSelected(`${match.id}-${normalizeMarketName("Winning Margin")}-${opt.label}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
                                             isLocked={isLocked}
+                                            tournamentName={match.tournamentName || undefined}
+                                            stage={match.stage}
                                             className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                         />
                                     </div>
@@ -382,6 +396,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Win")}-${val}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Win")}
                                                 isLocked={isLocked}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
                                         </div>
@@ -404,6 +420,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Team")}-${sIdx + 1}`)}
                                                 isCorrelated={checkIsCorrelated?.(match.id, "Comeback Team")}
                                                 isLocked={isLocked}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
                                                 className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                             />
                                         </div>
@@ -436,6 +454,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(prop.name)}-${opt}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, prop.name)}
                                                         isLocked={isLocked}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
@@ -483,6 +503,8 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isSelected={checkSelected(`${match.id}-${normalizeMarketName(marketTitle)}-${label}`)}
                                                         isCorrelated={checkIsCorrelated?.(match.id, marketTitle)}
                                                         isLocked={isLocked}
+                                                        tournamentName={match.tournamentName || undefined}
+                                                        stage={match.stage}
                                                         className="h-16 w-full bg-transparent border-0 hover:bg-white/[0.03]"
                                                     />
                                                 </div>

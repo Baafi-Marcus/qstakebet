@@ -229,6 +229,10 @@ export function BetSlipSidebar() {
     const { cappedBonus } = getBonusDetails();
     const totalPotential = potentialWin + cappedBonus;
 
+    // Conditional balance logic: Real only by default, includes bonus if useBonus is true
+    const relevantBalance = wallet ? (useBonus ? wallet.balance + bonusAmount : wallet.balance) : 0
+    const isInsufficient = totalStake > relevantBalance
+
     // GIFT RULE: If using a gift, winnings = (Stake * Odds) - Stake (Profit Only)
     const finalPotentialWin = useBonus
         ? Math.max(0, totalPotential - totalStake)
@@ -273,8 +277,17 @@ export function BetSlipSidebar() {
                             </div>
 
                             {/* REAL Badge (no toggle) */}
-                            <div className="px-3 py-1 bg-green-500 rounded-full">
-                                <span className="text-white text-xs font-black uppercase">REAL</span>
+                            <div className="flex items-center bg-green-500 rounded-full h-8 overflow-hidden">
+                                <span className="px-3 text-white text-xs font-black uppercase">REAL</span>
+                                {status === "authenticated" && (
+                                    <Link
+                                        href="/account/wallet"
+                                        onClick={closeSlip}
+                                        className="h-full px-3 bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase flex items-center border-l border-white/10"
+                                    >
+                                        Deposit
+                                    </Link>
+                                )}
                             </div>
                         </div>
 
@@ -539,6 +552,30 @@ export function BetSlipSidebar() {
                                 </div>
                             </div>
 
+                            {/* Reactive Balance Warning */}
+                            {isInsufficient && status === "authenticated" && (
+                                <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl animate-in fade-in slide-in-from-top-1 duration-300">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="h-3.5 w-3.5 text-red-500 animate-pulse" />
+                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-tighter">
+                                                Insufficient Balance
+                                            </span>
+                                        </div>
+                                        <Link
+                                            href="/account/wallet"
+                                            onClick={closeSlip}
+                                            className="text-[9px] font-black text-white bg-red-600 px-3 py-1 rounded-lg hover:bg-red-500 transition-colors uppercase tracking-widest"
+                                        >
+                                            Deposit Now
+                                        </Link>
+                                    </div>
+                                    <p className="text-[8px] text-red-400/60 font-bold uppercase mt-1">
+                                        You need GHS {(totalStake - relevantBalance).toFixed(2)} more to place this bet.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Action Buttons */}
                             <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden">
                                 {status === "unauthenticated" ? (
@@ -632,7 +669,7 @@ export function BetSlipSidebar() {
                                                     setIsProcessing(false)
                                                 }
                                             }}
-                                            disabled={isProcessing || totalStake < FINANCE_LIMITS.BET.MIN_STAKE}
+                                            disabled={isProcessing || totalStake < FINANCE_LIMITS.BET.MIN_STAKE || isInsufficient}
                                             className="py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-xs md:text-sm uppercase transition-all flex flex-col items-center justify-center"
                                         >
                                             {isProcessing ? (
@@ -697,6 +734,14 @@ export function BetSlipSidebar() {
                         selections={selections}
                         totalOdds={totalOdds}
                         onClose={() => setBookedCodeResult(null)}
+                        onLoadCode={(code) => {
+                            setBookingCode(code)
+                            handleLoadBooking()
+                            setBookedCodeResult(null)
+                            if (!isOpen) closeSlip() // Just to be safe, should be open though
+                            // We need to ensure the sidebar is open to show the loaded selections
+                            if (context?.openSlip) context.openSlip()
+                        }}
                     />
                 )
             }

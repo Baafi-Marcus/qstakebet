@@ -268,7 +268,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const toggleSelection = (selection: any) => {
         const match = matches.find(m => m.id === selection.matchId)
         if (!match) return
-        const virtualSelection = { ...selection, schoolA: match.participants[0]?.name, schoolB: match.participants[1]?.name, schoolC: match.participants[2]?.name }
+        const virtualSelection = { ...selection, schoolA: match.participants[0]?.name, schoolB: match.participants[1]?.name, schoolC: match.participants[2]?.name, stage: match.stage, tournamentName: match.tournamentName }
 
         setSelections(prev => {
             if (prev.find(s => s.selectionId === virtualSelection.selectionId)) {
