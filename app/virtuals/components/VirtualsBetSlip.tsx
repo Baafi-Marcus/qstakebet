@@ -95,16 +95,21 @@ export function VirtualsBetSlip({
     return (
         <>
             {/* Bottom Navigation - SportyBet Style Tab Bar (Non-fixed) */}
+            {/* Kickoff / Slip Bar - More integrated, less "fixed" looking */}
             {!isSimulationActive && (
-                <div className="inset-x-0 px-4 pb-6 pt-4 bg-slate-950/50 mt-auto border-t border-white/5">
+                <div className="px-4 pb-6 pt-2 bg-slate-950/80 border-t border-white/5 backdrop-blur-md">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
-                        {/* Left Side: Active Slips Counter */}
-                        <div className="flex -space-x-3 shrink-0">
-                            {pendingSlips.slice(0, 3).map((slip, i) => (
-                                <div key={slip.id} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center shadow-xl animate-in fade-in slide-in-from-left-4 duration-300" style={{ transitionDelay: `${i * 100}ms` }}>
-                                    <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400" />
+                        {/* Left Side: Pending Slips Indicators */}
+                        <div className="flex -space-x-2.5 shrink-0">
+                            {pendingSlips.length > 0 ? pendingSlips.slice(0, 3).map((slip, i) => (
+                                <div key={slip.id} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border-2 border-slate-950 flex items-center justify-center shadow-xl animate-in fade-in slide-in-from-left-4 duration-300" style={{ transitionDelay: `${i * 100}ms` }}>
+                                    <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900/50 border border-white/5 flex items-center justify-center">
+                                    <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-700" />
+                                </div>
+                            )}
                         </div>
 
                         {/* Center: Main Betting CTA */}
@@ -113,35 +118,33 @@ export function VirtualsBetSlip({
                                 onClick={onKickoff}
                                 disabled={isSimulating || pendingSlips.length === 0}
                                 className={cn(
-                                    "flex-1 h-12 sm:h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5",
+                                    "flex-1 h-12 rounded-2xl font-black uppercase tracking-wider shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2",
                                     isSimulating ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50" :
-                                        pendingSlips.length === 0 ? "bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5" :
-                                            "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20"
+                                        pendingSlips.length === 0 ? "bg-slate-800/40 text-slate-600 cursor-not-allowed border border-white/5" :
+                                            "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20"
                                 )}
                             >
+                                <Zap className={cn("h-3.5 w-3.5", pendingSlips.length > 0 ? "fill-white" : "text-slate-600")} />
                                 <span className="text-[10px] sm:text-xs">{isSimulating ? "SIMULATING..." : "KICKOFF"}</span>
                                 {!isSimulating && pendingSlips.length > 0 && (
-                                    <span className="text-[7px] sm:text-[8px] opacity-70">{pendingSlips.length} SLIPS PENDING</span>
+                                    <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-lg font-black">{pendingSlips.length}</span>
                                 )}
                             </button>
 
                             <button
                                 onClick={() => setShowSlip(true)}
                                 className={cn(
-                                    "h-12 sm:h-14 aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all active:scale-95 overflow-hidden group",
+                                    "h-12 px-4 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 overflow-hidden group border",
                                     selections.length > 0
-                                        ? "bg-purple-600/20 backdrop-blur-xl border border-purple-500/50 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]"
-                                        : "bg-slate-900/40 backdrop-blur-xl text-slate-500 border border-white/10"
+                                        ? "bg-purple-600/10 border-purple-500/50 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]"
+                                        : "bg-slate-900/40 text-slate-500 border-white/10"
                                 )}
                             >
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <Zap className={cn("h-4 w-4 sm:h-5 sm:w-5 relative z-10", selections.length > 0 ? "fill-purple-400 text-purple-400" : "")} />
+                                <Ticket className={cn("h-4 w-4", selections.length > 0 ? "text-purple-400" : "text-slate-600")} />
                                 {selections.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-black border-2 border-slate-900 shadow-lg animate-in zoom-in duration-200">
-                                        {selections.length}
-                                    </span>
+                                    <span className="text-[10px] font-black">{selections.length}</span>
                                 )}
-                                <span className="text-[6px] sm:text-[7px] font-black uppercase tracking-widest mt-0.5">SLIP</span>
+                                <span className="text-[8px] font-black uppercase tracking-widest">SLIP</span>
                             </button>
                         </div>
                     </div>
@@ -158,8 +161,8 @@ export function VirtualsBetSlip({
                             onClick={() => setShowSlip(false)}
                         />
 
-                        {/* Fullscreen Mobile Bottom Sheet */}
-                        <div className="relative w-full h-[92%] mt-auto bg-slate-950 rounded-t-[2.5rem] border-t border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-bottom-full duration-500 cubic-bezier(0.4, 0, 0.2, 1)">
+                        {/* Full-height Mobile Slip */}
+                        <div className="relative w-full h-full bg-slate-950 rounded-t-[2.5rem] lg:rounded-none border-t border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-bottom-full duration-500 cubic-bezier(0.4, 0, 0.2, 1) lg:max-w-md lg:ml-auto">
                             {/* Drag Handle */}
                             <div className="flex justify-center pt-3 pb-1">
                                 <div className="w-10 h-1 bg-white/10 rounded-full" />
@@ -244,27 +247,29 @@ export function VirtualsBetSlip({
                                             </button>
                                         </div>
 
-                                        {/* Gift Selection Button */}
+                                        {/* Simplified Gift Selection */}
                                         {balanceType === 'gift' && (
                                             <div className="px-4 mb-3">
                                                 <button
                                                     onClick={() => setShowGiftModal(true)}
                                                     className={cn(
-                                                        "w-full py-2 px-3 rounded-xl border flex items-center justify-between transition-all group",
-                                                        bonusId ? "bg-purple-600/20 border-purple-500/50" : "bg-slate-800/40 border-white/5"
+                                                        "w-full py-2.5 px-3 rounded-xl border flex items-center justify-between transition-all bg-slate-900 border-white/5",
+                                                        bonusId ? "ring-1 ring-purple-500/30 bg-purple-950/20" : "opacity-80"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <Gift className={cn("h-3 w-3", bonusId ? "text-purple-400" : "text-slate-500")} />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-white">
-                                                            {bonusId ? "Change Gift" : "Select Gift"}
+                                                        <Gift className={cn("h-4 w-4", bonusId ? "text-purple-400" : "text-slate-500")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                                                            {bonusId ? "Gift Active" : "Select Gift"}
                                                         </span>
                                                     </div>
-                                                    {bonusId ? (
-                                                        <span className="text-[10px] font-black text-purple-300 font-mono">GHS {bonusAmount.toFixed(2)}</span>
-                                                    ) : (
-                                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Required for betting</span>
-                                                    )}
+                                                    <div className="flex items-center gap-2 font-mono">
+                                                        {bonusId ? (
+                                                            <span className="text-xs font-black text-purple-400">GHS {bonusAmount.toFixed(2)}</span>
+                                                        ) : (
+                                                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">#---</span>
+                                                        )}
+                                                    </div>
                                                 </button>
                                             </div>
                                         )}

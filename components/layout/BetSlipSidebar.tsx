@@ -91,14 +91,16 @@ export function BetSlipSidebar() {
 
     // Listen for global open-betslip event
     React.useEffect(() => {
+        const toggleSlip = context?.toggleSlip;
+        const currentIsOpen = context?.isOpen;
         const handleOpen = () => {
-            if (context?.toggleSlip && !context.isOpen) {
-                context.toggleSlip();
+            if (toggleSlip && !currentIsOpen) {
+                toggleSlip();
             }
         };
         window.addEventListener('open-betslip', handleOpen);
         return () => window.removeEventListener('open-betslip', handleOpen);
-    }, [context]);
+    }, [context?.toggleSlip, context?.isOpen]);
 
     // Sync bonusAmount with totalStake to ensure we don't try to use more bonus than stake
     React.useEffect(() => {
@@ -254,7 +256,7 @@ export function BetSlipSidebar() {
                 className={cn(
                     "bg-slate-900 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-[150] fixed shadow-2xl overflow-hidden",
                     // Mobile: Bottom sheet
-                    "bottom-0 left-0 right-0 h-full rounded-t-3xl",
+                    "bottom-0 left-0 right-0 h-[100dvh] rounded-t-3xl",
                     isOpen ? "translate-y-0" : "translate-y-full",
                     // Desktop: Right sidebar
                     "lg:top-0 lg:bottom-0 lg:right-0 lg:left-auto lg:h-screen lg:w-[420px] lg:rounded-none lg:translate-y-0",

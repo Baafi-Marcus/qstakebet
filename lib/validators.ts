@@ -48,7 +48,7 @@ export const SelectionSchema = z.object({
     marketName: z.string(),
     matchLabel: z.string(),
     tournamentId: z.string().optional(),
-});
+}).passthrough();
 
 export const PlaceBetSchema = z.object({
     stake: z.number().min(1, "Minimum stake is GHS 1.00"),

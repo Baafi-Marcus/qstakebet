@@ -27,11 +27,13 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
     // Zod Validation
     const validation = PlaceBetSchema.safeParse({ stake, selections, bonusId, bonusAmount, mode });
     if (!validation.success) {
+        console.error("Bet validation failed:", validation.error.format());
         return { success: false, error: validation.error.issues[0].message };
     }
 
     const session = await auth()
     if (!session?.user?.id) {
+        console.warn("Bet placement attempt without session");
         return { success: false, error: "Please log in to place a bet" }
     }
 
