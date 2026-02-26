@@ -94,39 +94,52 @@ export function VirtualsBetSlip({
     return (
         <>
             {/* Quick Kickoff/Slip Bar (Fixed Bottom) */}
-            {!showSlip && !isSimulationActive && selections.length > 0 && (
+            {!showSlip && !isSimulationActive && (selections.length > 0 || pendingSlips.length > 0) && (
                 <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
                         <button
-                            onClick={() => setShowSlip(true)}
-                            className="flex-1 flex items-center justify-between bg-slate-900 border border-white/10 rounded-2xl px-5 py-4 transition-all hover:bg-slate-800 active:scale-95 group relative overflow-hidden"
+                            onClick={() => {
+                                if (pendingSlips.length > 0) {
+                                    onKickoff()
+                                }
+                            }}
+                            disabled={pendingSlips.length === 0}
+                            className={cn(
+                                "flex-1 flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 group relative overflow-hidden",
+                                pendingSlips.length > 0
+                                    ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20"
+                                    : "bg-slate-900 border border-white/10 text-slate-500 cursor-not-allowed opacity-80"
+                            )}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <Ticket className="h-5 w-5 text-purple-500" />
-                                    <span className="absolute -top-1.5 -right-1.5 bg-purple-600 text-[8px] font-black text-white w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-slate-950">
-                                        {selections.length}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] font-black text-white uppercase tracking-tighter">View Slip</span>
-                                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Edit Selections</span>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Total Odds</div>
-                                <div className="text-sm font-black text-accent font-mono">@{calculateTotalOdds(selections).toFixed(2)}</div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Zap className={cn("h-5 w-5", pendingSlips.length > 0 && "fill-white/20 animate-pulse")} />
+                            <div className="flex flex-col items-start leading-none text-left">
+                                <span className={cn("text-[11px] font-black uppercase tracking-tighter", pendingSlips.length === 0 && "text-slate-400")}>
+                                    Kickoff
+                                </span>
+                                <span className={cn("text-[8px] font-bold uppercase tracking-widest mt-0.5", pendingSlips.length > 0 ? "text-red-200" : "text-slate-600")}>
+                                    {pendingSlips.length > 0 ? `${pendingSlips.length} Bets Ready` : "No Active Bets"}
+                                </span>
                             </div>
                         </button>
 
                         <button
                             onClick={() => setShowSlip(true)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white p-4 rounded-2xl shadow-lg shadow-purple-600/20 transition-all active:scale-90 group relative flex flex-col items-center justify-center min-w-[100px]"
+                            className="bg-purple-600 hover:bg-purple-500 text-white p-4 rounded-2xl shadow-lg shadow-purple-600/20 transition-all active:scale-90 group relative flex flex-col items-center justify-center min-w-[120px]"
                         >
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Summary</span>
-                            <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest leading-none mt-0.5">Stake & Win</span>
+                            <div className="flex items-center gap-2 mb-0.5 relative">
+                                <Ticket className="h-4 w-4" />
+                                <span className="text-[11px] font-black uppercase tracking-tighter">Bet Slip</span>
+                                {selections.length > 0 && (
+                                    <span className="absolute -top-2 -right-4 bg-white text-[8px] font-black text-purple-600 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-purple-600">
+                                        {selections.length}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest leading-none mt-1">
+                                {selections.length > 0 ? "Place Bet" : "Open Slip"}
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -281,7 +294,7 @@ export function VirtualsBetSlip({
                                                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{sel.marketName}</span>
                                                                 <span className="text-[11px] font-black text-white mt-0.5">{sel.label}</span>
                                                             </div>
-                                                            <div className="text-xl font-black text-accent font-mono">@{sel.odds.toFixed(2)}</div>
+                                                            <div className="text-xl font-black text-accent font-mono">{sel.odds.toFixed(2)}</div>
                                                         </div>
                                                         <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
                                                             {[sel.schoolA, sel.schoolB, sel.schoolC].filter(Boolean).join(' vs ')}
@@ -356,7 +369,7 @@ export function VirtualsBetSlip({
                                         <div className="grid grid-cols-2 gap-4 pt-2">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Total Odds</span>
-                                                <span className="text-xl font-black text-white font-mono leading-none">@{calculateTotalOdds(selections).toFixed(2)}</span>
+                                                <span className="text-xl font-black text-white font-mono leading-none">{calculateTotalOdds(selections).toFixed(2)}</span>
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
                                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Potential Return</span>
