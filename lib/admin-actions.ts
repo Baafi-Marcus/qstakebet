@@ -363,7 +363,7 @@ export async function createMatch(data: {
     // Parse datetime if provided
     let scheduledAt: Date | null = null;
     let autoEndAt: Date | null = null;
-    let status = "draft";
+    const status: string = "draft";
     let displayTime = data.startTime || "TBD";
 
     if (data.startTime) {

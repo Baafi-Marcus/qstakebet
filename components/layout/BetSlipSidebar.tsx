@@ -29,7 +29,7 @@ export function BetSlipSidebar() {
     const context = React.useContext(BetSlipContext)
     const bookingInputRef = React.useRef<HTMLInputElement>(null)
 
-    const selections = context?.selections || []
+    const selections = React.useMemo(() => context?.selections || [], [context?.selections])
     const removeSelection = context?.removeSelection || (() => { })
     const clearSlip = context?.clearSlip || (() => { })
     const stake = context?.stake || 1
@@ -42,7 +42,10 @@ export function BetSlipSidebar() {
     const bonusId = context?.bonusId
     const setBonusId = context?.setBonusId || (() => { })
     const bonusAmount = context?.bonusAmount || 0
-    const setBonusAmount = context?.setBonusAmount || (() => { })
+    const setBonusAmount = React.useCallback(
+        (val: number) => { if (context?.setBonusAmount) context.setBonusAmount(val) },
+        [context?.setBonusAmount]
+    )
     const addSelection = context?.addSelection || (() => { })
 
     // Helper for sport icons
