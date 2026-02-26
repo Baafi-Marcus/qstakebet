@@ -44,7 +44,7 @@ export function BetSlipSidebar() {
     const bonusAmount = context?.bonusAmount || 0
     const setBonusAmount = React.useCallback(
         (val: number) => { if (context?.setBonusAmount) context.setBonusAmount(val) },
-        [context?.setBonusAmount]
+        [context, context?.setBonusAmount]
     )
     const addSelection = context?.addSelection || (() => { })
 

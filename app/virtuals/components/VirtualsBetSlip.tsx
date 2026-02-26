@@ -147,8 +147,8 @@ export function VirtualsBetSlip({
 
             {/* Instant Slip Overlay (The Modal-like View) */}
             <div className={cn(
-                "fixed inset-0 z-[100] bg-slate-950 flex flex-col transition-all duration-500",
-                showSlip ? "translate-y-0" : "translate-y-full"
+                "fixed inset-0 z-[100] bg-slate-950 flex flex-col transition-transform duration-500 ease-in-out",
+                showSlip ? "translate-y-0" : "translate-y-[100%]"
             )}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-slate-900/50 backdrop-blur-md">
