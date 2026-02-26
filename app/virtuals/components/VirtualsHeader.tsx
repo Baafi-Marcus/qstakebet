@@ -1,5 +1,5 @@
 import React from "react"
-import { ArrowLeft, Wallet, Zap, Ticket } from "lucide-react"
+import { ArrowLeft, Wallet, Zap, Ticket, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface VirtualsHeaderProps {
@@ -17,6 +17,7 @@ interface VirtualsHeaderProps {
     isSimulationActive?: boolean;
     onSkip?: () => void;
     isAuthenticated: boolean;
+    onNextRound: () => void;
 }
 
 export function VirtualsHeader({
@@ -33,7 +34,8 @@ export function VirtualsHeader({
     availableRegions,
     isSimulationActive,
     onSkip,
-    isAuthenticated
+    isAuthenticated,
+    onNextRound
 }: VirtualsHeaderProps) {
     return (
         <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
@@ -57,9 +59,20 @@ export function VirtualsHeader({
                     )}
                     <div className="h-6 w-px bg-white/10 hidden md:block" />
                     <span className="font-display font-black text-xs md:text-sm text-primary tracking-widest uppercase ml-1">
-                        INSTANT<span className="text-white"> VIRTUALS</span>
                     </span>
                 </div>
+
+                {/* Reshuffle / Next Round */}
+                {!isSimulationActive && (
+                    <button
+                        onClick={onNextRound}
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all active:scale-95 border border-white/5"
+                        title="Reshuffle Matches"
+                    >
+                        <RefreshCw className="h-3 w-3" />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Next Round</span>
+                    </button>
+                )}
 
                 {/* Desktop Category Selector (Moved to Second Row on Mobile) */}
                 <div className={cn("hidden md:flex items-center gap-2", isSimulationActive && "opacity-20 pointer-events-none")}>

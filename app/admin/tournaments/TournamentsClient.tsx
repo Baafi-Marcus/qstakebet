@@ -18,7 +18,7 @@ const SPORTS = [["football", "Football"], ["athletics", "Athletics"], ["basketba
 
 const DEFAULT_FORM = {
     name: "", region: "Ashanti", sportType: "football", gender: "male",
-    year: new Date().getFullYear().toString(), level: "shs", uniType: "hall",
+    year: new Date().getFullYear().toString(), level: "shs",
     format: "league", groups: "Group A, Group B, Group C", parentUniversityId: ""
 }
 
@@ -96,7 +96,7 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
         const meta = (t.metadata as any) || {}
         setFormData({
             name: t.name, region: t.region, sportType: t.sportType, gender: t.gender,
-            year: t.year, level: t.level || 'shs', uniType: meta.uniType || 'hall',
+            year: t.year, level: t.level || 'shs',
             format: meta.format || "league",
             groups: meta.groups ? meta.groups.join(", ") : "Group A, Group B, Group C",
             parentUniversityId: meta.parentUniversityId || ""
@@ -283,25 +283,6 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
                                         {/* University sub-options */}
                                         {formData.level === 'university' && (
                                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                                                <div>
-                                                    <label className={LABEL_CLS}>Tournament Type</label>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        {[
-                                                            { val: 'hall', icon: Building2, label: 'Hall-Based', desc: 'Teams represent halls / hostels' },
-                                                            { val: 'program', icon: GraduationCap, label: 'Program-Based', desc: 'Teams represent academic departments' }
-                                                        ].map(({ val, icon: Icon, label, desc }) => (
-                                                            <button key={val} type="button"
-                                                                onClick={() => set('uniType', val)}
-                                                                className={`flex flex-col items-start gap-2 p-4 rounded-2xl border text-left transition-all ${formData.uniType === val ? 'bg-purple-500/10 border-purple-500/50 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
-                                                                <Icon className={`h-5 w-5 ${formData.uniType === val ? 'text-purple-400' : ''}`} />
-                                                                <div>
-                                                                    <p className="font-black text-xs uppercase tracking-wide">{label}</p>
-                                                                    <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
-                                                                </div>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
                                                 <div>
                                                     <label className={LABEL_CLS}>University</label>
                                                     <select required={formData.level === 'university'} className={FIELD_CLS}

@@ -191,6 +191,25 @@ export function MatchesClient({
         }
     }
 
+    const handlePublishDraft = async (matchId: string) => {
+        try {
+            const result = await updateMatch(matchId, { status: "upcoming" });
+            if (result && result.length > 0) {
+                setMatches((prev: Match[]) => prev.map(m => m.id === matchId ? ({
+                    ...m,
+                    ...result[0],
+                    participants: result[0].participants as any
+                } as Match) : m));
+            } else {
+                setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: "upcoming" } : m));
+            }
+            router.refresh();
+        } catch (error) {
+            console.error("Publish error:", error);
+            alert("Failed to publish match.");
+        }
+    }
+
     const openEditMatchModal = (match: Match) => {
         setEditingMatch(match)
         setFormData({
@@ -218,12 +237,28 @@ export function MatchesClient({
 
     const filteredSchools = schools.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(schoolSearch.toLowerCase())
-        const matchesRegion = selectedTournament ? s.region === selectedTournament.region : true
+
+        let isValidForTournament = true;
+        if (selectedTournament) {
+            const matchesRegion = s.region === selectedTournament.region;
+            const matchesLevel = s.level === selectedTournament.level;
+            isValidForTournament = matchesRegion && matchesLevel;
+
+            // STRICT parent filter for Universities to prevent mixing campuses
+            if (isValidForTournament && selectedTournament.level === 'university') {
+                const parentId = (selectedTournament.metadata as any)?.parentUniversityId;
+                if (parentId) {
+                    isValidForTournament = s.parentId === parentId;
+                }
+            }
+        }
+
         // If group is selected AND tournament has pre-set assignments, filter by group
         const matchesGroup = (formData.group && hasGroupAssignments)
             ? groupAssignments[s.id] === formData.group
             : true
-        return matchesSearch && matchesRegion && matchesGroup
+
+        return matchesSearch && isValidForTournament && matchesGroup
     }).slice(0, 50)
 
     const toggleSchool = (id: string) => {
@@ -294,6 +329,7 @@ export function MatchesClient({
                         className="flex-1 md:flex-none bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 uppercase"
                     >
                         <option value="all">All Status</option>
+                        <option value="draft">Draft</option>
                         <option value="upcoming">Upcoming</option>
                         <option value="live">Live</option>
                         <option value="locked">Locked</option>
@@ -369,10 +405,11 @@ export function MatchesClient({
                                         {match.status && (
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${match.status === 'live' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                                                 match.status === 'finished' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                                    match.status === 'settled' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                                        match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
-                                                            match.status === 'locked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                                                'bg-slate-500/20 text-slate-400 border border-white/10'
+                                                    match.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
+                                                        match.status === 'settled' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                                            match.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                                                                match.status === 'locked' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                                    'bg-slate-500/20 text-slate-400 border border-white/10'
                                                 }`}>
                                                 {match.status}
                                             </span>
@@ -441,7 +478,25 @@ export function MatchesClient({
                                         </button>
                                     )}
 
-                                    {match.status !== 'finished' && match.status !== 'settled' && (
+                                    {match.status === 'draft' && (
+                                        <>
+                                            <button
+                                                onClick={() => setSelectedMatchForAI(match)}
+                                                className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20 text-xs font-bold rounded-lg transition-all uppercase tracking-wide flex items-center gap-2"
+                                            >
+                                                <Sparkles className="h-3 w-3" />
+                                                AI Markets
+                                            </button>
+                                            <button
+                                                onClick={() => handlePublishDraft(match.id)}
+                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide flex items-center gap-2"
+                                            >
+                                                Publish
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {match.status !== 'finished' && match.status !== 'settled' && match.status !== 'draft' && (
                                         <button
                                             onClick={() => setSelectedMatchForResult(match)}
                                             className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-xs font-bold rounded-lg transition-all uppercase tracking-wide"
@@ -653,6 +708,7 @@ export function MatchesClient({
                     match={selectedMatchForResult}
                     onClose={() => setSelectedMatchForResult(null)}
                     onSuccess={() => {
+                        window.alert("Match Result Entered Successfully!");
                         router.refresh()
                         setSelectedMatchForResult(null)
                     }}

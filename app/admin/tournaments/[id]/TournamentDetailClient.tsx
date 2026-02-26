@@ -22,6 +22,7 @@ export function TournamentDetailClient({
     const [roster, setRoster] = useState("")
     const [isSaving, setIsSaving] = useState(false)
     const format = tournament.metadata?.format || 'league'
+    const [uniType, setUniType] = useState<'hall' | 'program'>('hall')
     const [activeTab, setActiveTab] = useState<'standings' | 'roster' | 'fixtures' | 'results' | 'outrights'>(format === 'league' ? 'standings' : 'results')
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
 
@@ -228,6 +229,15 @@ export function TournamentDetailClient({
                             </h2>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{schools.length} Schools</span>
                         </div>
+                        {tournament.level === 'university' && (
+                            <div className="mb-4">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Entity Type</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button type="button" onClick={() => setUniType('hall')} className={`py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all ${uniType === 'hall' ? 'bg-purple-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>Halls / Hostels</button>
+                                    <button type="button" onClick={() => setUniType('program')} className={`py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all ${uniType === 'program' ? 'bg-purple-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>Departments</button>
+                                </div>
+                            </div>
+                        )}
                         <textarea
                             value={roster}
                             onChange={(e) => setRoster(e.target.value)}
@@ -239,7 +249,7 @@ export function TournamentDetailClient({
                                 if (!roster.trim()) return
                                 setIsSaving(true)
                                 try {
-                                    await upsertTournamentRoster(tournament.id, roster)
+                                    await upsertTournamentRoster(tournament.id, roster, tournament.level === 'university' ? uniType : undefined)
                                     setRoster("")
                                     router.refresh()
                                 } catch (error) {
@@ -525,6 +535,7 @@ export function TournamentDetailClient({
                     match={selectedMatchForResult}
                     onClose={() => setSelectedMatchForResult(null)}
                     onSuccess={() => {
+                        window.alert("Match Result Entered Successfully!");
                         router.refresh()
                         setSelectedMatchForResult(null)
                     }}

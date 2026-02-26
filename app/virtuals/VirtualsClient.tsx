@@ -164,6 +164,15 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         setIsSimulating(false)
     }
 
+    const handleNextRound = () => {
+        if (selections.length > 0) {
+            if (!window.confirm("Finding new matches will clear your current bet slip selections. Continue?")) {
+                return;
+            }
+        }
+        nextRound();
+    }
+
     const kickoff = async () => {
         if (isSimulating) return
         setIsSimulating(true)
@@ -287,28 +296,61 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     }
 
     const addToSlip = async () => {
-        const totalStake = betMode === 'single' ? globalStake * selections.length : globalStake
-        const balance = balanceType === 'cash' ? (profile?.balance || 0) : (profile?.bonusBalance || 0)
-
         // Use selected bonus if balanceType is 'gift'
         const finalBonusId = balanceType === 'gift' ? bonusId : undefined
         const finalBonusAmount = balanceType === 'gift' ? bonusAmount : 0
 
-        if (totalStake > balance) return alert("Insufficient balance")
+        let finalStake = 0
+        if (balanceType === 'gift') {
+            finalStake = bonusAmount
+        } else {
+            finalStake = betMode === 'single'
+                ? selections.reduce((acc, s) => acc + (s.stakeUsed || globalStake || 1.00), 0)
+                : (globalStake || 1.00)
+        }
 
-        const res = await placeBet(totalStake, selections, finalBonusId, finalBonusAmount, betMode) as any
+        const balance = balanceType === 'cash' ? (profile?.balance || 0) : (profile?.bonusBalance || 0)
+
+        if (finalStake > balance && balanceType !== 'gift') return alert("Insufficient cash balance")
+
+        const finalSelections = selections.map(s => ({
+            ...s,
+            stakeUsed: betMode === 'single'
+                ? (balanceType === 'gift' ? (finalStake / selections.length) : (s.stakeUsed || globalStake || 1.00))
+                : (finalStake / selections.length)
+        }))
+
+        const res = await placeBet(finalStake, finalSelections, finalBonusId, finalBonusAmount, betMode) as any
         if (res.success) {
+            // Recalculate potential payout for UI
+            let projectedPayout = 0
+            if (betMode === 'single') {
+                if (balanceType === 'gift') {
+                    // For single gifts, payout is net profit (odds - 1)
+                    projectedPayout = finalSelections.reduce((acc, sel) => acc + ((sel.odds - 1) * (sel.stakeUsed || 0)), 0)
+                } else {
+                    projectedPayout = finalSelections.reduce((acc, sel) => acc + (sel.odds * (sel.stakeUsed || 0)), 0)
+                }
+            } else {
+                const multiOdds = calculateTotalOdds(finalSelections)
+                if (balanceType === 'gift') {
+                    projectedPayout = (multiOdds - 1) * finalStake
+                } else {
+                    projectedPayout = multiOdds * finalStake
+                }
+            }
+
             setPendingSlips(prev => [...prev, {
                 id: res.betId,
-                selections: selections.map(s => ({ ...s, stakeUsed: betMode === 'single' ? globalStake : (totalStake / selections.length) })),
+                selections: finalSelections,
                 mode: betMode,
-                totalStake,
-                totalOdds: calculateTotalOdds(selections),
+                totalStake: finalStake,
+                totalOdds: calculateTotalOdds(finalSelections),
                 status: 'PENDING',
-                potentialPayout: calculateTotalOdds(selections) * totalStake,
+                potentialPayout: projectedPayout,
                 timestamp: Date.now(),
                 roundId: currentRound,
-                stake: totalStake // Fix for prop spreading
+                stake: finalStake
             } as any])
             setSelections([])
             setSlipTab('pending')
@@ -342,6 +384,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 isSimulationActive={isSimulationActive}
                 onSkip={skipToResult}
                 isAuthenticated={isAuthenticated}
+                onNextRound={handleNextRound}
             />
 
             <div className="flex flex-1 overflow-hidden">

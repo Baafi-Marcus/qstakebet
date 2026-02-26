@@ -84,16 +84,8 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
         // Handle Virtual Matches
         if (selection.matchId.startsWith('vmt-') || selection.matchId.startsWith('vr-')) {
-            const parts = selection.matchId.split('-');
-            const roundId = parseInt(parts[1]);
-            const currentRoundId = Math.floor(Date.now() / 60000);
-
-            if (roundId < currentRoundId) {
-                return {
-                    success: false,
-                    error: `The virtual match "${selection.matchLabel}" has already started. Please remove it.`
-                }
-            }
+            // For Instant Virtuals, we allow betting on any round ID. 
+            // Results are uniquely seeded per user, so they never expire.
             continue;
         }
 

@@ -95,7 +95,7 @@ export function VirtualsBetSlip({
         <>
             {/* Quick Kickoff/Slip Bar (Fixed Bottom) */}
             {!showSlip && !isSimulationActive && selections.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
+                <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
                         <button
                             onClick={() => setShowSlip(true)}
@@ -138,7 +138,7 @@ export function VirtualsBetSlip({
                 showSlip ? "translate-y-0" : "translate-y-full"
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-slate-900/50 backdrop-blur-md">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-slate-900/50 backdrop-blur-md">
                     <div className="flex items-center gap-3">
                         <Zap className="h-6 w-6 text-purple-500 fill-purple-500/20" />
                         <h2 className="text-xl font-black text-white uppercase tracking-tighter">Instant Slip</h2>
@@ -318,7 +318,7 @@ export function VirtualsBetSlip({
                                     </div>
 
                                     {/* Pinned Summary Footer */}
-                                    <div className="bg-slate-900 border-t border-white/10 p-5 space-y-4 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-20">
+                                    <div className="bg-slate-900 border-t border-white/10 p-4 space-y-3 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-20">
                                         {hasConflicts && (
                                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
                                                 <ShieldAlert className="h-4 w-4 text-red-500 shrink-0" />
@@ -381,7 +381,7 @@ export function VirtualsBetSlip({
                                         </div>
 
                                         {!isAuthenticated ? (
-                                            <button onClick={() => window.location.href = '/auth/login'} className="w-full py-5 rounded-2xl bg-purple-600 text-white font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-purple-900/40 active:scale-[0.98] transition-all">
+                                            <button onClick={() => window.location.href = '/auth/login'} className="w-full py-4 rounded-2xl bg-purple-600 text-white font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-purple-900/40 active:scale-[0.98] transition-all">
                                                 Login to Place Bet
                                             </button>
                                         ) : (
@@ -389,7 +389,7 @@ export function VirtualsBetSlip({
                                                 onClick={onPlaceBet}
                                                 disabled={globalStake <= 0 && selections.every(s => !s.stakeUsed || s.stakeUsed <= 0)}
                                                 className={cn(
-                                                    "w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-xl transition-all active:scale-[0.98] border-t border-white/10",
+                                                    "w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-xl transition-all active:scale-[0.98] border-t border-white/10",
                                                     (globalStake > 0 || selections.some(s => s.stakeUsed && s.stakeUsed > 0))
                                                         ? "bg-purple-600 text-white shadow-purple-600/30"
                                                         : "bg-slate-800 text-slate-600 cursor-not-allowed"
@@ -464,10 +464,10 @@ export function VirtualsBetSlip({
                                 )}
                             </div>
 
-                            <div className="p-5 border-t border-white/10 bg-slate-950 flex gap-3 pb-safe">
+                            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-3 pb-safe">
                                 <button
                                     onClick={() => setSlipTab('selections')}
-                                    className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-white/5"
+                                    className="flex-[0.5] py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all active:scale-95 border border-white/5"
                                 >
                                     Add More
                                 </button>

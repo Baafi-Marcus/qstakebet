@@ -43,7 +43,7 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
 }
 
 
-export async function upsertTournamentRoster(tournamentId: string, rosterText: string) {
+export async function upsertTournamentRoster(tournamentId: string, rosterText: string, uniTypeOverride?: 'hall' | 'program') {
     // 1. Fetch Tournament to get level and region
     const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
     if (tData.length === 0) throw new Error("Tournament not found");
@@ -88,9 +88,9 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
             // Create new
             const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
 
-            // Use metadata.uniType if available (Hall vs Department)
+            // Use uniTypeOverride or metadata.uniType if available
             const type = tournament.level === 'university'
-                ? (metadata.uniType || 'hall')
+                ? (uniTypeOverride || metadata.uniType || 'hall')
                 : 'school';
 
             const newEntity = await db.insert(schools).values({
@@ -363,7 +363,7 @@ export async function createMatch(data: {
     // Parse datetime if provided
     let scheduledAt: Date | null = null;
     let autoEndAt: Date | null = null;
-    let status = "upcoming";
+    let status = "draft";
     let displayTime = data.startTime || "TBD";
 
     if (data.startTime) {
@@ -371,7 +371,7 @@ export async function createMatch(data: {
             scheduledAt = new Date(data.startTime);
             if (!isNaN(scheduledAt.getTime())) {
                 const now = new Date();
-                status = scheduledAt <= now ? "live" : "upcoming";
+                // We do NOT set it to live automatically at creation. It remains draft until published.
                 displayTime = scheduledAt.toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -449,7 +449,8 @@ export async function updateMatch(id: string, data: {
     sportType?: string,
     gender?: string,
     group?: string,
-    matchday?: string
+    matchday?: string,
+    status?: string
 }) {
     // 1. Process Timing
     let scheduledAt: Date | null = undefined as any;
@@ -496,7 +497,8 @@ export async function updateMatch(id: string, data: {
         sportType: data.sportType,
         gender: data.gender,
         group: data.group,
-        matchday: data.matchday
+        matchday: data.matchday,
+        status: data.status
     };
 
     // 3. Handle School Changes (Participants & Odds)
