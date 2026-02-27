@@ -302,8 +302,21 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         const finalBonusId = balanceType === 'gift' ? bonusId : undefined
         const finalBonusAmount = balanceType === 'gift' ? bonusAmount : 0
 
+        // Guard: user must select a gift voucher before placing a gift bet
+        if (balanceType === 'gift' && !bonusId) {
+            setShowGiftModal(true)
+            return
+        }
+
+        // Guard: if gift selected but amount 0, open modal to pick an amount
+        if (balanceType === 'gift' && bonusAmount <= 0) {
+            setShowGiftModal(true)
+            return
+        }
+
         let finalStake = 0
         if (balanceType === 'gift') {
+            // For gift bets, the stake IS the bonus amount they confirmed
             finalStake = bonusAmount
         } else {
             finalStake = betMode === 'single'
@@ -311,9 +324,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 : (globalStake || 1.00)
         }
 
-        const balance = balanceType === 'cash' ? (profile?.balance || 0) : (profile?.bonusBalance || 0)
-
-        if (finalStake > balance && balanceType !== 'gift') return alert("Insufficient cash balance")
+        // Balance validation
+        if (balanceType === 'cash') {
+            const cashBalance = profile?.balance || 0
+            if (finalStake > cashBalance) return alert("Insufficient cash balance")
+        } else {
+            const giftBalance = profile?.bonusBalance || 0
+            if (finalBonusAmount > giftBalance) return alert("Insufficient gift balance")
+        }
 
         const finalSelections = selections.map(s => ({
             ...s,
