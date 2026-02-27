@@ -47,8 +47,15 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const router = useRouter()
 
     // Status / UI State
+    const initialSchools = useMemo(() => {
+        const source = schools?.length > 0 ? schools : DEFAULT_SCHOOLS;
+        const map = new Map();
+        source.forEach(s => map.set(s.name, s));
+        return Array.from(map.values());
+    }, [schools])
+
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points' | 'winning_margin' | 'highest_scoring_round' | 'round_winner' | 'perfect_round' | 'shutout_round' | 'first_bonus' | 'comeback_win' | 'comeback_team' | 'lead_changes' | 'late_surge'>('winner')
-    const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(schools || DEFAULT_SCHOOLS)
+    const [activeSchools, setActiveSchools] = useState<VirtualSchool[]>(initialSchools)
     const [selectedCategory, setSelectedCategory] = useState<'all' | 'regional' | 'national'>('national')
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
     const [betMode, setBetMode] = useState<'single' | 'multi'>('single')
@@ -81,11 +88,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const outcomesRef = useRef<VirtualMatchOutcome[]>([])
 
     const isAuthenticated = !!user
-
-    // Load dynamic data
-    useEffect(() => {
-        getPlayableSchools().then(s => s.length > 0 && setActiveSchools(s))
-    }, [])
 
     useEffect(() => {
         const names = activeSchools.map(s => s.name);

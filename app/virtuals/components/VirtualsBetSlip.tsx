@@ -97,36 +97,49 @@ export function VirtualsBetSlip({
 }: VirtualsBetSlipProps) {
     return (
         <>
-            {/* Quick Kickoff/Slip Bar (Fixed Bottom) */}
-            {!showSlip && !isSimulationActive && (
+            {/* Main Action Bar (Fixed Bottom) */}
+            {!showSlip && (!isSimulationActive || isFinished) && (
                 <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
-                        <button
-                            onClick={() => {
-                                if (pendingSlips.length > 0) {
-                                    onKickoff()
-                                }
-                            }}
-                            disabled={pendingSlips.length === 0}
-                            className={cn(
-                                "flex-1 flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 group relative overflow-hidden",
-                                pendingSlips.length > 0
-                                    ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20"
-                                    : "bg-slate-900 border border-white/10 text-slate-500 cursor-not-allowed opacity-80"
-                            )}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Zap className={cn("h-5 w-5", pendingSlips.length > 0 && "fill-white/20 animate-pulse")} />
-                            <div className="flex flex-col items-start leading-none text-left">
-                                <span className={cn("text-[11px] font-black uppercase tracking-tighter", pendingSlips.length === 0 && "text-slate-400")}>
-                                    Kickoff
-                                </span>
-                                <span className={cn("text-[8px] font-bold uppercase tracking-widest mt-0.5", pendingSlips.length > 0 ? "text-red-200" : "text-slate-600")}>
-                                    {pendingSlips.length > 0 ? `${pendingSlips.length} Bets Ready` : "No Active Bets"}
-                                </span>
-                            </div>
-                        </button>
 
+                        {/* Primary Action Button: Next Round OR Kickoff */}
+                        {isFinished && onNextRound ? (
+                            <button
+                                onClick={onNextRound}
+                                className="flex-1 flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20"
+                            >
+                                <span className="text-[11px] font-black uppercase tracking-tighter">Next Round</span>
+                                <ArrowRight className="h-5 w-5" />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    if (pendingSlips.length > 0) {
+                                        onKickoff()
+                                    }
+                                }}
+                                disabled={pendingSlips.length === 0}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 group relative overflow-hidden",
+                                    pendingSlips.length > 0
+                                        ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20"
+                                        : "bg-slate-900 border border-white/10 text-slate-500 cursor-not-allowed opacity-80"
+                                )}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Zap className={cn("h-5 w-5", pendingSlips.length > 0 && "fill-white/20 animate-pulse")} />
+                                <div className="flex flex-col items-start leading-none text-left">
+                                    <span className={cn("text-[11px] font-black uppercase tracking-tighter", pendingSlips.length === 0 && "text-slate-400")}>
+                                        Kickoff
+                                    </span>
+                                    <span className={cn("text-[8px] font-bold uppercase tracking-widest mt-0.5", pendingSlips.length > 0 ? "text-red-200" : "text-slate-600")}>
+                                        {pendingSlips.length > 0 ? `${pendingSlips.length} Bets Ready` : "No Active Bets"}
+                                    </span>
+                                </div>
+                            </button>
+                        )}
+
+                        {/* Bet Slip Button (Always visible when bar is shown) */}
                         <button
                             onClick={() => setShowSlip(true)}
                             className="bg-purple-600 hover:bg-purple-500 text-white p-4 rounded-2xl shadow-lg shadow-purple-600/20 transition-all active:scale-90 group relative flex flex-col items-center justify-center min-w-[120px]"
@@ -144,21 +157,6 @@ export function VirtualsBetSlip({
                             <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest leading-none mt-1">
                                 {selections.length > 0 ? "Place Bet" : "Open Slip"}
                             </span>
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Next Round Bar (Only visible when a simulation just finished) */}
-            {isFinished && onNextRound && (
-                <div className="fixed bottom-0 left-0 right-0 z-[60] px-4 pb-4 pt-2 bg-slate-950/95 border-t border-purple-500/30 backdrop-blur-md shadow-[0_-10px_40px_rgba(168,85,247,0.15)] animate-in slide-in-from-bottom-full duration-500">
-                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
-                        <button
-                            onClick={onNextRound}
-                            className="w-full flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20"
-                        >
-                            <span className="text-sm font-black uppercase tracking-widest">Next Round</span>
-                            <ArrowRight className="h-5 w-5" />
                         </button>
                     </div>
                 </div>
