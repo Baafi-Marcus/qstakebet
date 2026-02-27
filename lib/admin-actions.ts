@@ -1007,6 +1007,7 @@ export async function getMatchSuggestions(matchId: string) {
  */
 export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
     marketName: string,
+    helpInfo: string,
     selections: Array<{ label: string, odds: number }>
 }>) {
     try {
@@ -1014,16 +1015,25 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
         if (!matchData.length) throw new Error("Match not found")
 
         const currentOdds = (matchData[0].extendedOdds as Record<string, any>) || {}
+        const currentMetadata = (matchData[0].metadata as Record<string, any>) || {}
+        const marketHelp = currentMetadata.marketHelp || {}
 
-        // Merge new markets
+        // Merge new markets and their help info
         newMarkets.forEach(m => {
             const selectionsMap: Record<string, number> = {}
             m.selections.forEach((s) => selectionsMap[s.label] = s.odds)
             currentOdds[m.marketName] = selectionsMap
+
+            if (m.helpInfo) {
+                marketHelp[m.marketName] = m.helpInfo
+            }
         })
 
         await db.update(matches)
-            .set({ extendedOdds: currentOdds })
+            .set({
+                extendedOdds: currentOdds,
+                metadata: { ...currentMetadata, marketHelp }
+            })
             .where(eq(matches.id, matchId))
 
         return { success: true }

@@ -14,6 +14,7 @@ interface MarketReviewModalProps {
 type MarketDraft = {
     id: string
     marketName: string
+    helpInfo: string
     selections: Array<{
         label: string
         odds: number
@@ -140,7 +141,13 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
                                             <input
                                                 value={draft.marketName}
                                                 onChange={(e) => setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, marketName: e.target.value } : d))}
-                                                className="bg-transparent text-white font-bold text-lg focus:outline-none w-full border-b border-transparent focus:border-purple-500/50"
+                                                className="bg-transparent text-white font-bold text-lg focus:outline-none w-full border-b border-transparent focus:border-purple-500/50 mb-2"
+                                            />
+                                            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">Help Info / Tooltip</label>
+                                            <input
+                                                value={draft.helpInfo || ""}
+                                                onChange={(e) => setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, helpInfo: e.target.value } : d))}
+                                                className="bg-transparent text-slate-400 text-xs focus:outline-none w-full border-b border-transparent focus:border-purple-500/50"
                                             />
                                         </div>
                                         <button onClick={() => removeDraft(draft.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2">

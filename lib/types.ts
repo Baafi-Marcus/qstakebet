@@ -26,6 +26,7 @@ export interface Match {
             [optionLabel: string]: number | null
         }
     }
+    metadata?: Record<string, any>
     sportType: string
     gender: string
     group?: string | null

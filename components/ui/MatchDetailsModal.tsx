@@ -66,7 +66,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
             {expandedInfo === descriptionKey && (
                 <div className="mb-3 px-4 py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl animate-in zoom-in-95 duration-200">
                     <p className="text-[10px] font-medium text-purple-200 leading-relaxed italic">
-                        {MARKET_DESCRIPTIONS[descriptionKey || ""]}
+                        {MARKET_DESCRIPTIONS[descriptionKey || ""] || (match.metadata as Record<string, any>)?.marketHelp?.[descriptionKey || ""] || "Detailed explanation of this betting market."}
                     </p>
                 </div>
             )}
@@ -350,133 +350,13 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                     {/* Right Column: Props & Exotic Markets */}
                     <div className="lg:col-span-5 space-y-2">
 
-                        {/* Winning Margin */}
-                        {renderMarketSection("Winning Margin", <BarChart3 className="h-3.5 w-3.5" />, (
-                            <div className="flex divide-x divide-white/5 h-16">
-                                {[
-                                    { label: "1-10", odds: match.extendedOdds?.winningMargin?.["1-10"] },
-                                    { label: "11-25", odds: match.extendedOdds?.winningMargin?.["11-25"] },
-                                    { label: "26+", odds: match.extendedOdds?.winningMargin?.["26+"] }
-                                ].map((opt) => (
-                                    <div key={opt.label} className="flex-1 h-full">
-                                        <OddsButton
-                                            label={opt.label}
-                                            odds={opt.odds ?? 0}
-                                            matchId={match.id}
-                                            marketName="Winning Margin"
-                                            matchLabel={matchLabel}
-                                            showLabel={true}
-                                            onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-${normalizeMarketName("Winning Margin")}-${opt.label}`)}
-                                            isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
-                                            isLocked={isLocked}
-                                            tournamentName={match.tournamentName || undefined}
-                                            stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ), "Winning Margin")}
-
-                        {/* Comeback Markets - Expanded */}
-                        <div className="grid grid-cols-1 gap-4">
-                            {renderMarketSection("Comeback Win", <Zap className="h-3.5 w-3.5" />, (
-                                <div className="flex divide-x divide-white/5 h-16">
-                                    {["Yes", "No"].map(val => (
-                                        <div key={val} className="flex-1 h-full">
-                                            <OddsButton
-                                                label={val}
-                                                odds={match.extendedOdds?.comebackWin?.[val] ?? 0}
-                                                matchId={match.id}
-                                                marketName="Comeback Win"
-                                                matchLabel={matchLabel}
-                                                showLabel={true}
-                                                onClick={onOddsClick}
-                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Win")}-${val}`)}
-                                                isCorrelated={checkIsCorrelated?.(match.id, "Comeback Win")}
-                                                isLocked={isLocked}
-                                                tournamentName={match.tournamentName || undefined}
-                                                stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            ), "Comeback Win")}
-
-                            {match.sportType === 'quiz' && renderMarketSection("Comeback Team", <Trophy className="h-3.5 w-3.5" />, (
-                                <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
-                                    {participants.map((p, sIdx) => (
-                                        <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
-                                            <OddsButton
-                                                label={(sIdx + 1).toString()}
-                                                odds={match.extendedOdds?.comebackTeam?.[p.name] ?? 0}
-                                                matchId={match.id}
-                                                marketName="Comeback Team"
-                                                matchLabel={matchLabel}
-                                                showLabel={true}
-                                                onClick={onOddsClick}
-                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName("Comeback Team")}-${sIdx + 1}`)}
-                                                isCorrelated={checkIsCorrelated?.(match.id, "Comeback Team")}
-                                                isLocked={isLocked}
-                                                tournamentName={match.tournamentName || undefined}
-                                                stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            ), "Comeback Team")}
-                        </div>
-
-
-                        {/* High Randomness Props */}
-                        <div className="grid grid-cols-2 gap-4">
-                            {[
-                                { key: 'perfectRound', name: 'Perfect Round', options: ['Yes', 'No'] },
-                                { key: 'shutoutRound', name: 'Shutout Round', options: ['Yes', 'No'] },
-                                { key: 'leadChanges', name: 'Lead Changes', options: ['Under 2.5', 'Over 2.5'] }
-                            ].map(prop => (
-                                <div key={prop.key} className="w-full">
-                                    {renderMarketSection(prop.name, <HelpCircle className="h-3.5 w-3.5" />, (
-                                        <div className="flex divide-x divide-white/5 h-16">
-                                            {prop.options.map(opt => (
-                                                <div key={opt} className="flex-1 h-full">
-                                                    <OddsButton
-                                                        label={opt}
-                                                        odds={match.extendedOdds?.[prop.key]?.[opt] ?? 0}
-                                                        matchId={match.id}
-                                                        marketName={prop.name}
-                                                        matchLabel={matchLabel}
-                                                        showLabel={true}
-                                                        onClick={onOddsClick}
-                                                        isSelected={checkSelected(`${match.id}-${normalizeMarketName(prop.name)}-${opt}`)}
-                                                        isCorrelated={checkIsCorrelated?.(match.id, prop.name)}
-                                                        isLocked={isLocked}
-                                                        tournamentName={match.tournamentName || undefined}
-                                                        stage={match.stage}
-                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ), prop.name)}
-                                </div>
-                            ))}
-                        </div>
-
                         {/* Generic / AI-Generated Markets (Catch-All) */}
                         <div className="space-y-4">
                             {Object.entries(match.extendedOdds || {})
                                 .filter(([key]) => {
-                                    // List of already handled market keys (case-insensitive or normalized)
+                                    // List of core layout handled market keys
                                     const handled = [
-                                        'winningMargin', 'totalPoints', 'perfectRound', 'perfectRound1',
-                                        'perfectRound2', 'perfectRound3', 'perfectRound4', 'perfectRound5',
-                                        'shutoutRound', 'leaderAfterRound1', 'firstBonus', 'fastestBuzz',
-                                        'lateSurge', 'strongStart', 'highestPoints', 'comebackWin',
-                                        'comebackTeam', 'leadChanges', 'handicap', 'podium', 'h2h'
+                                        'winner', 'handicap', 'totalPoints'
                                     ];
                                     const isRoundWinner = key.toLowerCase().includes('round') && key.toLowerCase().includes('winner');
                                     return !handled.includes(key) && !isRoundWinner;
@@ -484,13 +364,14 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                 .map(([key, odds]) => {
                                     if (!odds || typeof odds !== 'object') return null;
                                     const marketTitle = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                    const optionsList = Object.entries(odds as Record<string, number>);
 
                                     return renderMarketSection(marketTitle, <Sparkles className="h-3.5 w-3.5 text-yellow-500" />, (
                                         <div className={cn(
                                             "grid gap-px bg-white/5",
-                                            Object.keys(odds).length <= 2 ? "grid-cols-2" : "grid-cols-3"
+                                            optionsList.length % 3 === 0 ? "grid-cols-3" : optionsList.length % 2 === 0 ? "grid-cols-2" : "grid-cols-1"
                                         )}>
-                                            {Object.entries(odds as Record<string, number>).map(([label, value]) => (
+                                            {optionsList.map(([label, value]) => (
                                                 <div key={label} className="bg-[#0f1115]">
                                                     <OddsButton
                                                         label={label}
@@ -510,7 +391,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 </div>
                                             ))}
                                         </div>
-                                    ), marketTitle);
+                                    ), marketTitle); // Pass marketTitle as descriptionKey to hook into AI helpInfo
                                 })
                             }
                         </div>

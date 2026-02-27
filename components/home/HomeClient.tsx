@@ -77,7 +77,9 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
         let dateMatch = false;
         if (activeDateTab === 'today') {
-            dateMatch = !matchDate || matchDate.getTime() === today.getTime() || m.isLive;
+            dateMatch = !matchDate || matchDate.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
+            // Hide finished matches from today view if they are already settled, unless specifically needed.
+            if (m.status === 'finished') dateMatch = false;
         } else if (activeDateTab === 'tomorrow') {
             dateMatch = matchDate?.getTime() === tomorrow.getTime();
         } else if (activeDateTab === 'upcoming') {
@@ -96,7 +98,9 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         filteredMatches.forEach(match => {
             let groupKey = "Live & Recent";
 
-            if (match.scheduledAt) {
+            if (match.status === 'finished') {
+                groupKey = "Match Logs"; // Or some other category, though they shouldn't trigger if filtered out
+            } else if (match.scheduledAt) {
                 const schedDate = new Date(match.scheduledAt);
                 groupKey = getDateGroupLabel(schedDate);
             } else if (match.isLive) {
@@ -143,21 +147,15 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         const markets = new Set<string>();
         markets.add('winner');
         markets.add('total_points');
+
         filteredMatches.forEach(m => {
             if (m.extendedOdds) {
                 Object.keys(m.extendedOdds).forEach(k => {
-                    // Map common keys to friendly IDs
-                    if (k === 'winningMargin') markets.add('winning_margin');
-                    else if (k === 'highestScoringRound') markets.add('highest_scoring_round');
-                    else if (k === 'roundWinner') markets.add('round_winner');
-                    else if (k === 'perfectRound') markets.add('perfect_round');
-                    else if (k === 'shutoutRound') markets.add('shutout_round');
-                    else if (k === 'comebackWin') markets.add('comeback_win');
-                    else if (k === 'leadChanges') markets.add('lead_changes');
-                    else markets.add(k);
+                    markets.add(k);
                 });
             }
         });
+
         return Array.from(markets).map(m => ({
             id: m,
             label: m === 'winner' ? 'Match Winner' :

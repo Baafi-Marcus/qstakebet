@@ -15,6 +15,7 @@ export default async function LivePage() {
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     const todayMatches = allMatches.filter(m => {
+        if (m.status === 'finished') return false // Hide finished matches from Live view
         if (!m.scheduledAt) return m.isLive // If no schedule but live, show it
         const sched = new Date(m.scheduledAt)
         return sched >= today && sched < tomorrow

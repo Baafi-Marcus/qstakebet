@@ -212,6 +212,17 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         // Validation only for Final Settlement
         if (!isLiveUpdate && !winner) { setError("Please select or confirm a winner"); return }
 
+        // Unresolved Markets Validation
+        if (!isLiveUpdate) {
+            const extendedMarkets = Object.keys(match.extendedOdds || {});
+            const unresolvedMarkets = extendedMarkets.filter(m => !manualOutcomes[m] && manualOutcomes[m] !== "void");
+            if (unresolvedMarkets.length > 0) {
+                setError(`Please resolve or void all custom markets. Unresolved: ${unresolvedMarkets.join(', ')}`);
+                setActiveTab("markets"); // Switch them to the markets tab
+                return;
+            }
+        }
+
         setLoading(true)
 
         try {
@@ -557,11 +568,14 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                 {activeMarkets.includes(marketName) && (
                                                     <div className="px-2 py-0.5 bg-primary/20 border border-primary/50 rounded-full text-[8px] font-black text-primary uppercase animate-pulse">⚡ Active</div>
                                                 )}
-                                                {manualOutcomes[marketName] && (
+                                                {manualOutcomes[marketName] && manualOutcomes[marketName] !== 'void' && (
                                                     <div className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-[8px] font-black text-green-400 uppercase">Clarified</div>
                                                 )}
+                                                {manualOutcomes[marketName] === 'void' && (
+                                                    <div className="px-2 py-0.5 bg-red-500/20 border border-red-500/50 rounded-full text-[8px] font-black text-red-400 uppercase">Voided</div>
+                                                )}
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                                 {Object.entries(options).map(([label, _]) => {
                                                     // selectionId is usually the label for custom props
                                                     const selectionId = label;
@@ -575,13 +589,26 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                 ...manualOutcomes,
                                                                 [marketName]: isSelected ? "" : selectionId
                                                             })}
-                                                            className={`h-12 px-4 rounded-xl border text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between ${isSelected ? "bg-primary text-slate-950 border-primary" : "bg-black/20 border-white/5 text-slate-500 hover:border-white/20"}`}
+                                                            className={`h-12 px-4 rounded-xl border text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between ${isSelected ? "bg-primary text-slate-950 border-primary shadow-lg shadow-primary/20" : "bg-black/20 border-white/5 text-slate-500 hover:border-white/20"}`}
                                                         >
-                                                            <span>{label}</span>
-                                                            {isSelected && <Zap className="h-3 w-3 fill-current" />}
+                                                            <span className="truncate">{label}</span>
+                                                            {isSelected && <Zap className="h-3 w-3 fill-current shrink-0" />}
                                                         </button>
                                                     );
                                                 })}
+                                                {/* Explicit Void Button */}
+                                                <button
+                                                    key="void-market"
+                                                    type="button"
+                                                    onClick={() => setManualOutcomes({
+                                                        ...manualOutcomes,
+                                                        [marketName]: manualOutcomes[marketName] === "void" ? "" : "void"
+                                                    })}
+                                                    className={`h-12 px-4 rounded-xl border text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between ${manualOutcomes[marketName] === "void" ? "bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20" : "bg-red-500/5 border-red-500/20 text-red-500 hover:bg-red-500/10"}`}
+                                                >
+                                                    <span>VOID MARKET</span>
+                                                    {manualOutcomes[marketName] === "void" && <X className="h-4 w-4 shrink-0" />}
+                                                </button>
                                             </div>
                                         </div>
                                     ))}

@@ -230,6 +230,7 @@ function levenshteinDistance(a: string, b: string): number {
 
 export type AIMarketSuggestion = {
     marketName: string
+    helpInfo: string
     selections: Array<{
         label: string
         odds: number
@@ -267,9 +268,9 @@ export async function getAIMarketSuggestions(
                             content: `You are a professional sports bookmaker for a diverse campus tournament. Generate 3-5 creative, high-engagement betting markets for this match.
                         
 Rules:
-1. **Sport Awareness**: The tournament includes Football, Basketball, Athletics, and Quiz competitions. Tailor your suggestions to the specific sport mentioned.
+1. **Sport Awareness**: The tournament includes Football, Basketball, Athletics, and Quiz competitions. Tailor your suggestions to the specific sport mentioned. Ensure you adapt your odds and market realism based on whether the match involves Senior High Schools (SHS) or Universities (Uni).
 2. **Standard Keys**: For common markets, use these EXACT keys in your JSON object:
-   - 'handicap' -> for point spreads
+   - 'handicap' -> for point spreads/handicaps
    - 'totalPoints' -> for over/under totals
    - 'podium' -> for Top 3 finishes (Athletics)
    - 'h2h' -> for head-to-head matchups
@@ -277,10 +278,11 @@ Rules:
 4. **Context Aware**: Do NOT suggest markets that are already listed: ${existingMarkets.join(", ")}.
 5. **Profitability**: You MUST build in a **15% House Margin (Vig)** into the odds. The implied probability of all options in a market should sum to ~115%.
    - Formula: FairProb = 1/FairOdd. VigProb = FairProb * 1.15. FinalOdd = 1/VigProb.
-6. **Format**: Return ONLY valid JSON array of objects.
-   [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
-7. **Realism**: Odds must be realistic for the specific schools and sports mentioned.
-8. **Tournament Awareness**: Use the provided 'Tournament Context' (recent results) to influence your markets. For example, if a team has been scoring high, suggest 'Over' markets or 'Next Goal' specials for them. If a team is on a losing streak, adjust their odds and suggest 'Double Chance' for their opponents.`
+6. **Tooltips (helpInfo)**: For EVERY market you generate, you MUST provide a short, 1-sentence 'helpInfo' explanation of how that market works to help novice bettors understand what they are betting on.
+7. **Format**: Return ONLY valid JSON array of objects.
+   [{"marketName": "Total Corners", "helpInfo": "Predict if the total number of corners will be over or under 10.5.", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
+8. **Realism**: Odds must be realistic for the specific schools, ages, and sports mentioned.
+9. **Tournament Awareness**: Use the provided 'Tournament Context' (recent results) to influence your markets. For example, if a team has been scoring high, suggest 'Over' markets or 'Next Goal' specials for them. If a team is on a losing streak, adjust their odds and suggest 'Double Chance' for their opponents.`
                         },
                         {
                             role: "user",

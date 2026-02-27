@@ -42,6 +42,7 @@ export const matches = pgTable("matches", {
     stage: text("stage").notNull(), // e.g. "Zone 1", "Quarter Final"
     odds: jsonb("odds").notNull(), // Maintain for backward compatibility or direct access
     extendedOdds: jsonb("extended_odds"),
+    metadata: jsonb("metadata"), // General market metadata, tooltips, etc.
     baseOdds: jsonb("base_odds").$type<Record<string, number>>(), // Original odds before adjustment
     lastRecalculatedAt: timestamp("last_recalculated_at"),
     currentRound: integer("current_round").default(0).notNull(),

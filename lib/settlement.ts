@@ -146,7 +146,9 @@ export async function settleMatch(matchId: string) {
 
                     if (resolution.resolved) {
                         betUpdated = true
-                        return { ...s, status: resolution.isWin ? 'won' : 'lost' }
+                        let newStatus = resolution.isWin ? 'won' : 'lost'
+                        if (resolution.isVoid) newStatus = 'void'
+                        return { ...s, status: newStatus }
                     }
                 }
                 return s
@@ -242,7 +244,7 @@ export function isSelectionWinner(
     label: string,
     match: Match,
     result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
-): { resolved: boolean, isWin: boolean } {
+): { resolved: boolean, isWin: boolean, isVoid?: boolean } {
     const sport = (match.sportType || 'football').toLowerCase()
     const metadata = (result.metadata || {}) as Record<string, any>
     const scores = result.scores || {}
@@ -255,6 +257,9 @@ export function isSelectionWinner(
     // Check for exact or normalized match in overrides
     const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
     if (overrideKey && outcomes[overrideKey]) {
+        if (outcomes[overrideKey] === 'void') {
+            return { resolved: true, isWin: false, isVoid: true }
+        }
         return { resolved: true, isWin: outcomes[overrideKey] === selectionId }
     }
 
@@ -409,11 +414,11 @@ export function isSelectionWinner(
         return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
     }
 
-    // Default Fallback for finished matches
-    if (match.status === 'finished') {
-        return { resolved: true, isWin: result.winner === selectionId || scores[selectionId] > 0 }
-    }
-
+    // Default Fallback
+    // If the system reaches this point, it means it's an exotic/AI-generated market 
+    // that the automated parser doesn't understand AND the admin didn't provide a manual override for.
+    // In this scenario, we return resolved: false, which keeps the bet strictly 'pending' 
+    // until the admin explicitly resolves it via the Match Result Modal.
     return { resolved: false, isWin: false }
 }
 
