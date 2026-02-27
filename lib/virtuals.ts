@@ -279,7 +279,8 @@ export function simulateMatch(
                     if (seededRandom(seed + q * 111 + idx * 37 + clue * 19 + 5000) < buzzChance) {
                         hasAnswered[idx] = true;
                         // Correct chance increases with later clues (easier hints)
-                        const pCorrect = clamp(strengths[idx] * 0.18 + clue * 0.08, 0.05, 0.88);
+                        // Floor at 0.40 — schools shouldn't buzz unless reasonably confident
+                        const pCorrect = clamp(strengths[idx] * 0.22 + clue * 0.10 + 0.18, 0.40, 0.90);
                         if (seededRandom(seed + q * 131 + idx * 41 + clue * 23 + 6000) < pCorrect) {
                             // Correct — award clue-tier points
                             const pts = clue === 1 ? 5 : clue === 2 ? 4 : 3;
@@ -337,7 +338,10 @@ export function simulateMatch(
         const numTFQs = 5 + Math.floor(seededRandom(seed + 8000) * 6); // 5–10
         const r4Scores: [number, number, number] = [0, 0, 0];
         for (let i = 0; i < 3; i++) {
-            const pCorrect = clamp(strengths[i] * 0.25, 0, 0.9);
+            // True/False is a binary question — even random guessing gives ~50% correct
+            // Floor at 0.47 ensures weak teams still get roughly half right, preventing
+            // extreme negative scores that make Under bets obvious exploits
+            const pCorrect = clamp(Math.max(0.47, strengths[i] * 0.30), 0, 0.90);
             let correct = 0, wrong = 0;
             for (let q = 0; q < numTFQs; q++) {
                 if (seededRandom(seed + i * 200 + q + 9000) < pCorrect) correct++;
@@ -602,15 +606,34 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const totalMargin = 0.165;
 
     const totalPointsOdds: Record<string, number | null> = {};
+    // Step 1: compute raw probabilities and raw odds for qualifying bands
+    const activeBands: { band: number; overOdds: number; underOdds: number }[] = [];
     NSMQ_BANDS.forEach(band => {
         const diff = projectedTotal - band;
         const probOver = 1 / (1 + Math.exp(-diff / totalSpread));
-        // Only generate odds where probability isn't too extreme (5%–95%)
-        // This reflects the SportyBet-style lock on near-certain lines
         if (probOver >= 0.05 && probOver <= 0.95) {
-            totalPointsOdds[`Over ${band}`] = getPropOdds(probOver, 0.15, totalMargin, 1.08, 3.00);
-            totalPointsOdds[`Under ${band}`] = getPropOdds(1 - probOver, 0.15, totalMargin, 1.08, 3.00);
+            activeBands.push({
+                band,
+                overOdds: getPropOdds(probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
+                underOdds: getPropOdds(1 - probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
+            });
         }
+    });
+    // Step 2: monotonic correction — Over odds must increase with band, Under odds must decrease
+    // This ensures Over 44.5 < Over 54.5 < Over 64.5 (logically: harder to clear a higher bar)
+    activeBands.sort((a, b) => a.band - b.band);
+    for (let i = 1; i < activeBands.length; i++) {
+        // Over: higher band must be >= previous band's Over odds
+        activeBands[i].overOdds = Math.max(activeBands[i].overOdds, activeBands[i - 1].overOdds + 0.02);
+    }
+    for (let i = activeBands.length - 2; i >= 0; i--) {
+        // Under: lower band must be >= next band's Under odds (Under 44.5 harder = higher odds)
+        activeBands[i].underOdds = Math.max(activeBands[i].underOdds, activeBands[i + 1].underOdds + 0.02);
+    }
+    // Step 3: cap all odds at 3.50 and round to 2dp
+    activeBands.forEach(({ band, overOdds, underOdds }) => {
+        totalPointsOdds[`Over ${band}`] = Math.min(3.50, Math.round(overOdds * 100) / 100);
+        totalPointsOdds[`Under ${band}`] = Math.min(3.50, Math.round(underOdds * 100) / 100);
     });
 
     // Winning Margin
