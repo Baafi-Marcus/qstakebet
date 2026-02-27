@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner } from "@/lib/admin-actions"
-import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator } from "lucide-react"
+import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner, forceDeleteTournament, removeSchoolFromRoster } from "@/lib/admin-actions"
+import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
@@ -64,35 +64,62 @@ export function TournamentDetailClient({
                     </div>
                 </div>
 
-                {/* Status Toggle */}
-                <button
-                    onClick={async () => {
-                        const newStatus = tournament.status === 'active' ? 'completed' : 'active'
-                        if (newStatus === 'completed' && !confirm("Mark this tournament as COMPLETED? This will move it to the archive.")) return
+                {/* Actions */}
+                <div className="flex flex-col md:flex-row items-center gap-3">
+                    <button
+                        onClick={async () => {
+                            if (!confirm(`WARNING: Are you absolutely sure you want to FORCE DELETE this tournament?\n\nThis action cannot be undone and will forcefully remove all associated matches & fixtures instantly.`)) return;
 
-                        setIsSaving(true)
-                        try {
-                            await updateTournament(tournament.id, { status: newStatus })
-                            router.refresh()
-                        } catch (e) {
-                            console.error(e)
-                            alert("Failed to update status")
-                        } finally {
-                            setIsSaving(false)
-                        }
-                    }}
-                    disabled={isSaving}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${tournament.status === 'active'
-                        ? "bg-slate-800 text-slate-400 hover:text-white border border-white/5"
-                        : "bg-green-600 text-white shadow-lg"
-                        }`}
-                >
-                    {tournament.status === 'active' ? (
-                        <>Complete Tournament</>
-                    ) : (
-                        <><CheckCircle2 className="h-4 w-4" /> Tournament Completed</>
-                    )}
-                </button>
+                            setIsSaving(true)
+                            try {
+                                const res = await forceDeleteTournament(tournament.id)
+                                if (res.success) {
+                                    router.push('/admin/tournaments')
+                                } else {
+                                    alert(res.error || "Failed to delete tournament")
+                                }
+                            } catch (e) {
+                                console.error(e)
+                                alert("Failed to delete tournament")
+                            } finally {
+                                setIsSaving(false)
+                            }
+                        }}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 shadow-lg"
+                    >
+                        <Trash2 className="h-4 w-4" /> Delete Tournament
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            const newStatus = tournament.status === 'active' ? 'completed' : 'active'
+                            if (newStatus === 'completed' && !confirm("Mark this tournament as COMPLETED? This will move it to the archive.")) return
+
+                            setIsSaving(true)
+                            try {
+                                await updateTournament(tournament.id, { status: newStatus })
+                                router.refresh()
+                            } catch (e) {
+                                console.error(e)
+                                alert("Failed to update status")
+                            } finally {
+                                setIsSaving(false)
+                            }
+                        }}
+                        disabled={isSaving}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${tournament.status === 'active'
+                            ? "bg-slate-800 text-slate-400 hover:text-white border border-white/5"
+                            : "bg-green-600 text-white shadow-lg"
+                            }`}
+                    >
+                        {tournament.status === 'active' ? (
+                            <>Complete Tournament</>
+                        ) : (
+                            <><CheckCircle2 className="h-4 w-4" /> Tournament Completed</>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Tab Navigation */}
@@ -227,7 +254,7 @@ export function TournamentDetailClient({
                                 <Users className="h-5 w-5 text-purple-500" />
                                 Roster
                             </h2>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{schools.length} Schools</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{schools.length} {tournament.level === 'university' ? 'Halls / Depts' : 'Schools'}</span>
                         </div>
                         {tournament.level === 'university' && (
                             <div className="mb-4">
@@ -241,7 +268,7 @@ export function TournamentDetailClient({
                         <textarea
                             value={roster}
                             onChange={(e) => setRoster(e.target.value)}
-                            placeholder="Add schools... (AI will organize groups even from messy text!)"
+                            placeholder={`Add ${tournament.level === 'university' ? 'halls/hostels or departments' : 'schools'}... (AI will organize groups even from messy text!)`}
                             className="w-full h-48 bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono"
                         />
                         <button
@@ -276,7 +303,24 @@ export function TournamentDetailClient({
                                                 {groupAssignments[s.id] && <span className="text-[10px] text-purple-400 uppercase tracking-widest">{groupAssignments[s.id]}</span>}
                                             </div>
                                         </div>
-                                        {s.type !== 'school' && <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-500 uppercase">{s.type}</span>}
+                                        {s.type !== 'school' && <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-500 uppercase mr-2">{s.type}</span>}
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm(`Remove ${s.name} from this tournament's roster?`)) return;
+                                                setIsSaving(true)
+                                                try {
+                                                    await removeSchoolFromRoster(tournament.id, s.id);
+                                                    router.refresh();
+                                                } finally {
+                                                    setIsSaving(false);
+                                                }
+                                            }}
+                                            disabled={isSaving}
+                                            className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20"
+                                            title="Remove from roster"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </button>
                                     </div>
                                 ))}
                             </div>

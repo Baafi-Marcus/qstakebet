@@ -349,6 +349,83 @@ export async function deleteTournament(id: string) {
     }
 }
 
+export async function forceDeleteTournament(id: string) {
+    try {
+        // 1. Check for active bets linked to this tournament's matches to be completely safe
+        const tMatches = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, id));
+        const matchIds = tMatches.map(m => m.id);
+
+        if (matchIds.length > 0) {
+            const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
+            const hasBets = allPendingBets.some(b => {
+                const selections = b.selections as any[];
+                return selections.some(s => matchIds.includes(s.matchId));
+            });
+
+            if (hasBets) {
+                return { success: false, error: "Cannot force delete tournament with active bets. Void the bets first." };
+            }
+
+            // 2. Cascade delete matches
+            for (const mId of matchIds) {
+                await db.delete(matches).where(eq(matches.id, mId));
+            }
+        }
+
+        // 3. Delete tournament itself
+        const result = await db.delete(tournaments).where(eq(tournaments.id, id)).returning({ deletedId: tournaments.id });
+        if (result.length === 0) {
+            return { success: false, error: "Tournament not found." };
+        }
+
+        revalidateTag("tournaments");
+        revalidateTag("matches");
+        return { success: true };
+    } catch (e) {
+        console.error("Force delete tournament error:", e);
+        return { success: false, error: "Failed to force delete tournament" };
+    }
+}
+
+export async function removeSchoolFromRoster(tournamentId: string, schoolId: string) {
+    try {
+        // 1. Fetch Tournament
+        const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+        if (tData.length === 0) throw new Error("Tournament not found");
+        const tournament = tData[0];
+
+        // 2. Safely parse metadata and groupAssignments
+        const metadata = (tournament.metadata as any) || {};
+        const groupAssignments = metadata.groupAssignments || {};
+
+        // 3. Remove the school from assignments
+        if (groupAssignments[schoolId]) {
+            delete groupAssignments[schoolId];
+
+            // Clean up empty groups if no longer used
+            const activeGroups = new Set(Object.values(groupAssignments));
+            const validGroups = (metadata.groups || []).filter((g: string) => activeGroups.has(g));
+
+            // 4. Update the DB
+            await db.update(tournaments).set({
+                metadata: {
+                    ...metadata,
+                    groupAssignments,
+                    groups: validGroups
+                }
+            }).where(eq(tournaments.id, tournamentId));
+
+            revalidateTag("tournaments");
+            return { success: true };
+        }
+
+        return { success: true, message: "School was not in roster" };
+    } catch (error) {
+        console.error("Remove school from roster error:", error);
+        return { success: false, error: "Failed to remove school from roster" };
+    }
+}
+
 export async function createMatch(data: {
     tournamentId: string,
     schoolIds: string[],

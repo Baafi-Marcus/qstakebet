@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2, Building2, GraduationCap, ChevronLeft, Users, Layers } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School } from "@/lib/types"
-import { createTournament, updateTournament, deleteTournament } from "@/lib/admin-actions"
+import { createTournament, updateTournament, forceDeleteTournament } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
 import { Pencil, Trash2 } from "lucide-react"
 
@@ -74,10 +74,10 @@ export function TournamentsClient({ initialTournaments, universities }: { initia
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Delete this tournament? This cannot be undone.")) return
+        if (!confirm("Delete this tournament AND ALL its matches? This cannot be undone.")) return
         setIsDeleting(id)
         try {
-            const result = await deleteTournament(id)
+            const result = await forceDeleteTournament(id)
             if (result.success) { setTournaments(prev => prev.filter(t => t.id !== id)); router.refresh() }
             else alert(result.error || "Failed to delete")
         } catch { alert("An error occurred") }
