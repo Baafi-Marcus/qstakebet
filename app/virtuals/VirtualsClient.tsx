@@ -197,8 +197,12 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         setSimulationProgress(0)
         setShowSlip(false)
 
-        const startMatch = pendingSlips.length > 0 ? pendingSlips[0].selections[0].matchId : matches[0]?.id
-        setActiveLiveMatchId(startMatch)
+        // Pick the match to show in the live player — always prefer the user's first selected game
+        // Store in a local variable so the simulation loop can reference it without stale closure issues
+        const liveMatchId: string | null = pendingSlips.length > 0
+            ? pendingSlips[0].selections[0].matchId   // user's placed bet match
+            : matches[0]?.id ?? null                   // fallback to first match if no bets
+        setActiveLiveMatchId(liveMatchId)
 
         // Countdown
         const phases: any[] = ['READY', '3', '2', '1', 'START']
@@ -208,14 +212,15 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         }
         setCountdown(null)
 
-        // Simulation
+        // Simulation — use the local liveMatchId (not the state variable) to avoid stale closure
         const duration = 60000; const steps = 60
         for (let i = 1; i <= steps; i++) {
             if (!isSimulatingRef.current) break
             await new Promise(r => setTimeout(r, duration / steps))
             setSimulationProgress(i)
 
-            const liveOutcome = outcomesRef.current.find(o => o.id === activeLiveMatchId)
+            // Use local variable (not state) to safely read commentary for the user's match
+            const liveOutcome = outcomesRef.current.find(o => o.id === liveMatchId)
             if (liveOutcome?.commentary) {
                 const latest = liveOutcome.commentary.filter(c => c.time <= i).sort((a, b) => b.time - a.time)[0]
                 if (latest) setCurrentCommentary(latest.text)
