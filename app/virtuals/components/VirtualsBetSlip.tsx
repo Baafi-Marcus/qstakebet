@@ -95,6 +95,14 @@ export function VirtualsBetSlip({
     onNextRound,
     isFinished
 }: VirtualsBetSlipProps) {
+    // Auto-sync globalStake to bonusAmount when a gift voucher is active
+    // This means the user never needs to manually enter a stake when using a gift
+    React.useEffect(() => {
+        if (balanceType === 'gift' && bonusId && bonusAmount > 0) {
+            setGlobalStake(bonusAmount);
+        }
+    }, [balanceType, bonusId, bonusAmount]);
+
     return (
         <>
             {/* Main Action Bar (Fixed Bottom) */}
@@ -329,7 +337,8 @@ export function VirtualsBetSlip({
                                                             {[sel.schoolA, sel.schoolB, sel.schoolC].filter(Boolean).join(' vs ')}
                                                         </div>
 
-                                                        {betMode === 'single' && (
+                                                        {/* Per-selection stake input — hidden when gift is active (gift amount is used as stake) */}
+                                                        {betMode === 'single' && !(balanceType === 'gift' && bonusId) && (
                                                             <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between bg-black/20 -mx-4 -mb-4 px-4 pb-4">
                                                                 <div className="flex flex-col">
                                                                     <span className="text-[8px] font-black text-slate-500 uppercase">Input Stake</span>
@@ -356,6 +365,7 @@ export function VirtualsBetSlip({
                                                     </div>
                                                 </div>
                                             ))}
+
                                         </div>
                                     </div>
 
@@ -368,8 +378,8 @@ export function VirtualsBetSlip({
                                             </div>
                                         )}
 
-                                        {/* Global Stake for Multi */}
-                                        {selections.length > 0 && (
+                                        {/* Global Stake — hidden when a gift is active (amount comes from gift selection) */}
+                                        {selections.length > 0 && !(balanceType === 'gift' && bonusId) && (
                                             <div className="flex items-center justify-between">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] font-black text-white uppercase tracking-widest">{betMode === 'multi' ? "Selection Stake" : "Quick Stake All"}</span>
@@ -394,6 +404,21 @@ export function VirtualsBetSlip({
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Gift stake read-only display — shown when a gift voucher is active */}
+                                        {selections.length > 0 && balanceType === 'gift' && bonusId && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Gift Stake</span>
+                                                    <span className="text-[8px] font-bold text-purple-400 uppercase tracking-widest mt-0.5">Amount from voucher</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 bg-purple-950/30 px-4 py-2.5 rounded-2xl border border-purple-500/30">
+                                                    <Gift className="h-3 w-3 text-purple-400" />
+                                                    <span className="text-base font-black text-purple-300 font-mono">GHS {bonusAmount.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
 
                                         <div className="grid grid-cols-2 gap-4 pt-2">
                                             <div className="flex flex-col gap-1">
@@ -549,12 +574,13 @@ export function VirtualsBetSlip({
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Gift Modal */}
-            <GiftSelectionModal
+            < GiftSelectionModal
                 isOpen={showGiftModal}
-                onClose={() => setShowGiftModal(false)}
+                onClose={() => setShowGiftModal(false)
+                }
                 gifts={gifts}
                 bonusId={bonusId}
                 totalOdds={calculateTotalOdds(selections)}
