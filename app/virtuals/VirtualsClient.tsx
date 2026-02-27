@@ -83,6 +83,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const [bonusId, setBonusId] = useState<string | undefined>(undefined)
     const [bonusAmount, setBonusAmount] = useState<number>(0)
     const [showGiftModal, setShowGiftModal] = useState(false)
+    // Live profile state — mirrors the server-passed prop but can be refreshed client-side
+    const [liveProfile, setLiveProfile] = useState(profile)
 
     const isSimulatingRef = useRef(false)
     const outcomesRef = useRef<VirtualMatchOutcome[]>([])
@@ -98,6 +100,26 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         });
     }, [currentRound, activeSchools])
 
+    // Refresh wallet balance from server to reflect wins immediately
+    const refreshWallet = async () => {
+        try {
+            const res = await fetch('/api/user/bets?type=wallet', { cache: 'no-store' })
+            // Use a direct wallet-actions import to get fresh balance
+            const { getUserWalletDetails } = await import('@/lib/user-actions')
+            const walletData = await getUserWalletDetails()
+            if (walletData.success && walletData.wallet) {
+                setLiveProfile(prev => ({
+                    balance: walletData.wallet!.balance,
+                    bonusBalance: walletData.wallet!.bonusBalance,
+                    currency: prev?.currency ?? 'GHS',
+                }))
+            }
+        } catch {
+            // Fallback: just trigger a router refresh to re-render the server component
+            router.refresh()
+        }
+    }
+
     // Load bet history
     useEffect(() => {
         fetch('/api/user/bets?type=virtual&limit=20')
@@ -107,6 +129,12 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                     const virtualBets = data.bets.map((bet: any) => ({
                         id: bet.id,
                         selections: bet.selections,
+                        // Map DB selections to include school labels for history display
+                        results: (bet.selections || []).map((sel: any) => ({
+                            ...sel,
+                            won: bet.status === 'won', // Approximate - exact per-leg result only available during live session
+                            outcome: null,
+                        })),
                         stake: bet.stake,
                         totalOdds: bet.totalOdds,
                         potentialPayout: bet.potentialPayout,
@@ -115,7 +143,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                         totalReturns: bet.status === 'won' ? bet.potentialPayout : 0,
                         totalStake: bet.stake,
                         timestamp: new Date(bet.createdAt).getTime(),
-                        mode: bet.mode || 'single'
+                        mode: bet.mode || 'multi'
                     }))
                     setBetHistory(virtualBets)
                 }
@@ -236,7 +264,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         if (resolvedSlips.length > 0) {
             setBetHistory(prev => [...resolvedSlips, ...prev])
             resolvedSlips.forEach(s => settleVirtualBet(s.id, currentRound, userSeed))
-            setTimeout(() => router.refresh(), 1000)
+            // Refresh wallet balance after settlement so wins reflect immediately
+            setTimeout(() => refreshWallet(), 1500)
         }
 
         setLastOutcome({
@@ -326,10 +355,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
 
         // Balance validation
         if (balanceType === 'cash') {
-            const cashBalance = profile?.balance || 0
+            const cashBalance = liveProfile?.balance || 0
             if (finalStake > cashBalance) return alert("Insufficient cash balance")
         } else {
-            const giftBalance = profile?.bonusBalance || 0
+            const giftBalance = liveProfile?.bonusBalance || 0
             if (finalBonusAmount > giftBalance) return alert("Insufficient gift balance")
         }
 
@@ -461,7 +490,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 setSlipTab={setSlipTab}
                 balanceType={balanceType}
                 setBalanceType={setBalanceType}
-                profile={profile}
+                profile={liveProfile}
                 betMode={betMode}
                 setBetMode={setBetMode}
                 toggleSelection={toggleSelection}

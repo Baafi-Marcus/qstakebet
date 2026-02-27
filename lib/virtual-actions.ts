@@ -164,7 +164,9 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         console.log(`Settling virtual bet ${betId}: round=${roundId}, category=${category}, region=${queryRegion}, matches=${outcomes.length}`)
 
         const MAX_GAME_PAYOUT = 3000
-        const isMulti = bet.mode === 'multi'
+        // IMPORTANT: Default to 'multi' if mode is anything other than 'single'
+        // This prevents partial payouts on corrupted/null mode values
+        const isMulti = bet.mode !== 'single'
         let isWon = false
         let totalReturns = 0
 
