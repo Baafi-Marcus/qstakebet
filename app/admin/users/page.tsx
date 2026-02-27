@@ -135,11 +135,11 @@ export default function UsersPage() {
                                 <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-xs font-black text-white">
-                                                {u.name?.[0]?.toUpperCase()}
+                                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-xs font-black text-white shrink-0">
+                                                {u.name ? u.name[0]?.toUpperCase() : '?'}
                                             </div>
-                                            <div>
-                                                <div className="text-sm font-black text-white">{u.name}</div>
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-black text-white truncate">{u.name || 'Unknown User'}</div>
                                                 <div className="text-[10px] font-bold text-slate-500 truncate max-w-[120px]">{u.id}</div>
                                             </div>
                                         </div>
@@ -160,6 +160,16 @@ export default function UsersPage() {
                                                 u.status === 'active' ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-500"
                                             )}>
                                                 {u.status}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-2">
+                                            <div className="px-2 py-0.5 rounded text-[10px] font-black bg-white/5 text-slate-400">
+                                                C: {u.linkClicks || 0}
+                                            </div>
+                                            <div className="px-2 py-0.5 rounded text-[10px] font-black bg-primary/10 text-primary">
+                                                R: {u.referralCount || 0}
                                             </div>
                                         </div>
                                     </td>

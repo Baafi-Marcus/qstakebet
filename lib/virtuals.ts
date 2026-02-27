@@ -36,15 +36,15 @@ export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Tepa SHS", region: "Ashanti" },
     { name: "Toase SHS", region: "Ashanti" },
     { name: "Konongo Odumase SHS", region: "Ashanti" },
-    { name: "Wesley Girls' High", region: "Central" },
+    { name: "Wesley Girls' High School", region: "Central" },
     { name: "Holy Child School", region: "Central" },
-    { name: "Mfantsiman Girls", region: "Central" },
+    { name: "Mfantsiman Girls' SHS", region: "Central" },
     { name: "Ghana National College", region: "Central" },
-    { name: "University Practice", region: "Central" },
+    { name: "University Practice SHS", region: "Central" },
     { name: "Winneba SHS", region: "Central" },
     { name: "Aburi Girls' SHS", region: "Eastern" },
     { name: "Pope John SHS", region: "Eastern" },
-    { name: "Koforidua Sec Tech", region: "Eastern" },
+    { name: "Koforidua Sec Tech (KSTS)", region: "Eastern" },
     { name: "St. Rose's SHS", region: "Eastern" },
     { name: "Ofori Panin SHS", region: "Eastern" },
     { name: "St. Thomas Aquinas", region: "Greater Accra" },
@@ -58,7 +58,7 @@ export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Keta SHTS", region: "Volta" },
     { name: "Sogakope SHS", region: "Volta" },
     { name: "GSTS", region: "Western" },
-    { name: "Archbishop Porter Girls", region: "Western" },
+    { name: "Archbishop Porter Girls'", region: "Western" },
     { name: "St. John's School", region: "Western" },
     { name: "Fijai SHS", region: "Western" },
     { name: "Tamale SHS", region: "Northern" },
@@ -66,7 +66,7 @@ export const DEFAULT_SCHOOLS: VirtualSchool[] = [
     { name: "Northern School of Biz", region: "Northern" },
     { name: "St. Francis Xavier", region: "Upper West" },
     { name: "Notre Dame Sem", region: "Upper East" },
-    { name: "St. James Sem.", region: "Bono" },
+    { name: "St. James Sem. & SHS", region: "Bono" },
     { name: "Sunyani SHS", region: "Bono" }
 ];
 
@@ -177,7 +177,18 @@ export function simulateMatch(
 
     if (category === 'national' || selectedSchools.length < 3) {
         // Pick from BEST_27_SCHOOLS
-        const bestSchools = schoolsList.filter(s => BEST_27_SCHOOLS.includes(s.name));
+        let bestSchools = schoolsList.filter(s => BEST_27_SCHOOLS.includes(s.name));
+
+        // Fallback or Force: Ensure absolutely all 27 best schools are in the pool bridging from DEFAULT_SCHOOLS
+        if (bestSchools.length < 27) {
+            const missingNames = BEST_27_SCHOOLS.filter(name => !bestSchools.some(s => s.name === name));
+            const missingSchools = missingNames.map(name => {
+                const found = DEFAULT_SCHOOLS.find(ds => ds.name === name);
+                return found || { name, region: "National" };
+            });
+            bestSchools = [...bestSchools, ...missingSchools];
+        }
+
         const pool = bestSchools.length >= 3 ? bestSchools : schoolsList;
 
         const shuffled = [...pool];

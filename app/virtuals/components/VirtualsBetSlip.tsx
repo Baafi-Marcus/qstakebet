@@ -1,5 +1,5 @@
 import React from "react"
-import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft, Gift, ArrowRight } from "lucide-react"
+import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft, Gift, ArrowRight, RefreshCw } from "lucide-react"
 import { Match } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { MULTI_BONUS } from "@/lib/constants"
@@ -101,6 +101,18 @@ export function VirtualsBetSlip({
             {!showSlip && (!isSimulationActive || isFinished) && (
                 <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
+
+                        {/* Secondary Action: Reshuffle (Only when not finished and no slips) */}
+                        {!isFinished && onNextRound && pendingSlips.length === 0 && (
+                            <button
+                                onClick={onNextRound}
+                                className="bg-slate-900 border border-white/10 hover:bg-slate-800 text-slate-300 p-4 rounded-2xl shadow-lg transition-all active:scale-95 flex flex-col items-center justify-center min-w-[72px]"
+                                title="Reshuffle Matches"
+                            >
+                                <RefreshCw className="h-4 w-4 mb-1 text-slate-400" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 leading-none">Shuffle</span>
+                            </button>
+                        )}
 
                         {/* Primary Action Button: Next Round OR Kickoff */}
                         {isFinished && onNextRound ? (

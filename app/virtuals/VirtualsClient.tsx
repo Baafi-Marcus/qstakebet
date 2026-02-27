@@ -386,6 +386,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 isSimulationActive={isSimulationActive}
                 onSkip={skipToResult}
                 isAuthenticated={isAuthenticated}
+                user={user}
                 onNextRound={handleNextRound}
             />
 

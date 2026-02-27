@@ -17,6 +17,7 @@ interface VirtualsHeaderProps {
     isSimulationActive?: boolean;
     onSkip?: () => void;
     isAuthenticated: boolean;
+    user?: { id?: string; email?: string; name?: string | null };
     onNextRound: () => void;
 }
 
@@ -35,6 +36,7 @@ export function VirtualsHeader({
     isSimulationActive,
     onSkip,
     isAuthenticated,
+    user,
     onNextRound
 }: VirtualsHeaderProps) {
     return (
@@ -58,21 +60,10 @@ export function VirtualsHeader({
                         </button>
                     )}
                     <div className="h-6 w-px bg-white/10 hidden md:block" />
-                    <span className="font-display font-black text-xs md:text-sm text-primary tracking-widest uppercase ml-1">
+                    <span className="font-display font-black text-[10px] md:text-sm text-primary tracking-widest uppercase ml-1 truncate max-w-[120px]">
+                        {user?.name || (isAuthenticated ? "Bettor" : "Guest")}
                     </span>
                 </div>
-
-                {/* Reshuffle / Next Round */}
-                {!isSimulationActive && (
-                    <button
-                        onClick={onNextRound}
-                        className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all active:scale-95 border border-white/5"
-                        title="Reshuffle Matches"
-                    >
-                        <RefreshCw className="h-3 w-3" />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Next Round</span>
-                    </button>
-                )}
 
                 {/* Desktop Category Selector (Moved to Second Row on Mobile) */}
                 <div className={cn("hidden md:flex items-center gap-2", isSimulationActive && "opacity-20 pointer-events-none")}>

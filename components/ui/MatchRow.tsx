@@ -157,38 +157,23 @@ export function MatchRow({
                         <Zap className="h-2 w-2 text-purple-400" />
                     )}
                 </div>
-                <div className={cn(
-                    "flex relative z-10 w-full",
-                    participants.length > 2 ? "flex-row items-center gap-2 justify-between mt-1" : "flex-col gap-0.5"
-                )}>
+                <div className="flex flex-col gap-0.5 relative z-10 w-full">
                     {participants.map((p, idx) => (
-                        <div key={p.schoolId} className={cn(
-                            "flex items-center justify-between group-hover:translate-x-0.5 transition-transform",
-                            participants.length > 2 && "flex-col justify-center flex-1 text-center group-hover:translate-x-0 group-hover:-translate-y-0.5"
-                        )} style={{ transitionDelay: `${idx * 50}ms` }}>
-                            <div className={cn(
-                                "flex items-center gap-2 min-w-0",
-                                participants.length > 2 ? "flex-col gap-1 w-full" : "flex-1"
-                            )}>
+                        <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 50}ms` }}>
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className={cn(
                                     "font-bold text-white truncate uppercase tracking-tighter",
-                                    participants.length > 2 ? "text-[8px] sm:text-[9px] w-full" : "text-[9px] sm:text-[10px]"
+                                    participants.length > 2 ? "text-[8px] sm:text-[9px]" : "text-[9px] sm:text-[10px]"
                                 )}>{p.name}</span>
                                 {(!internalIsFinished && winProbabilities[idx] !== undefined) && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <div className={cn(
-                                            "bg-white/5 rounded-full overflow-hidden",
-                                            participants.length > 2 ? "w-12 h-0.5" : "w-8 h-1"
-                                        )}>
+                                        <div className="bg-white/5 rounded-full overflow-hidden w-8 h-1 hidden sm:block">
                                             <div
                                                 className="h-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-all duration-1000"
                                                 style={{ width: `${winProbabilities[idx]}%` }}
                                             />
                                         </div>
-                                        <span className={cn(
-                                            "font-black text-purple-400 opacity-80",
-                                            participants.length > 2 ? "text-[6px]" : "text-[7px]"
-                                        )}>{winProbabilities[idx]}%</span>
+                                        <span className="font-black text-purple-400 opacity-80 text-[7px]">{winProbabilities[idx]}%</span>
                                     </div>
                                 )}
                             </div>

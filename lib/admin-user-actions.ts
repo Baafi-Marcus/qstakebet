@@ -90,12 +90,12 @@ export async function updateUserStatus(userId: string, status: "active" | "suspe
 
 export async function broadcastSMS(message: string) {
     try {
-        // Fetch all active users with phone numbers
+        // Fetch all active users with phone numbers, excluding admins
         const activeUsers = await db.select({
             phone: users.phone
         })
             .from(users)
-            .where(eq(users.status, "active"))
+            .where(and(eq(users.status, "active"), eq(users.role, "user")))
 
         if (activeUsers.length === 0) {
             return { success: false, error: "No active users found" }
