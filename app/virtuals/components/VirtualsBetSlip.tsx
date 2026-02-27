@@ -94,7 +94,7 @@ export function VirtualsBetSlip({
     return (
         <>
             {/* Quick Kickoff/Slip Bar (Fixed Bottom) */}
-            {!showSlip && !isSimulationActive && (selections.length > 0 || pendingSlips.length > 0) && (
+            {!showSlip && !isSimulationActive && (
                 <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-slate-950/95 border-t border-white/5 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500">
                     <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
                         <button
@@ -147,8 +147,8 @@ export function VirtualsBetSlip({
 
             {/* Instant Slip Overlay (The Modal-like View) */}
             <div className={cn(
-                "fixed inset-0 z-[100] bg-slate-950 flex flex-col transition-transform duration-500 ease-in-out",
-                showSlip ? "translate-y-0" : "translate-y-[100%]"
+                "fixed inset-x-0 bottom-0 z-[100] bg-slate-950 flex flex-col transition-all duration-500 ease-in-out h-[100dvh]",
+                showSlip ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
             )}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-slate-900/50 backdrop-blur-md">

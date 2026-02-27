@@ -23,9 +23,9 @@ export function VirtualsHistory({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
             <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
-            <div className="relative bg-slate-900 w-full max-w-2xl h-[85vh] md:h-auto md:max-h-[85vh] overflow-hidden rounded-t-[2.5rem] md:rounded-[2.5rem] border-t border-x md:border border-white/10 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom duration-500 cubic-bezier(0, 0, 0, 1) md:duration-200 md:zoom-in-95">
+            <div className="relative bg-slate-900 w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-t-[2.5rem] md:rounded-[2.5rem] border-t border-x md:border border-white/10 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom duration-500 md:duration-200 md:zoom-in-95">
                 {/* Visual Pull Bar for context */}
                 <div className="flex justify-center pt-3 pb-1 md:hidden">
                     <div className="w-10 h-1 bg-white/10 rounded-full" />

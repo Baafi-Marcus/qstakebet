@@ -73,7 +73,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
 
     return (
         <div
-            className="relative min-h-full"
+            className="relative flex-1 flex flex-col min-h-full"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -105,9 +105,9 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
 
             {/* Content with spring effect */}
             <div
-                className="transition-transform duration-200"
+                className="flex-1 flex flex-col transition-transform duration-200"
                 style={{
-                    transform: isRefreshing ? `translateY(0px)` : `translateY(${pullDistance * 0.5}px)`
+                    transform: (isRefreshing || pullDistance > 0) ? `translateY(${isRefreshing ? 0 : pullDistance * 0.5}px)` : undefined
                 }}
             >
                 {children}

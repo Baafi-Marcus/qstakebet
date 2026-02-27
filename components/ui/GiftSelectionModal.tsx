@@ -45,9 +45,9 @@ export function GiftSelectionModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4 pb-0 sm:p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-t-[2.5rem] sm:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+            <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 <div className="p-3 pt-5 sm:p-5">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2.5 bg-purple-600/20 rounded-xl">
@@ -62,7 +62,7 @@ export function GiftSelectionModal({
                         </button>
                     </div>
 
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar pr-1">
                         {gifts.length === 0 ? (
                             <div className="py-12 text-center">
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No gifts available</p>
