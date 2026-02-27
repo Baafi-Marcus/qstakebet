@@ -3,8 +3,7 @@
 import { db } from "@/lib/db"
 import { virtualSchoolStats, schools, schoolStrengths } from "@/lib/db/schema"
 import { eq, inArray, desc } from "drizzle-orm"
-import { VirtualMatchOutcome } from "@/lib/virtuals"
-import { VirtualSchool } from "@/lib/virtuals" // Ensure type is imported
+import { VirtualMatchOutcome, VirtualSchool, generateVirtualMatches, checkSelectionWin } from "@/lib/virtuals"
 
 // ... existing code ...
 
@@ -176,10 +175,10 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             const gameReturns: Record<string, number> = {}
 
             selections.forEach(s => {
-                const outcome = outcomes.find(o => o.id === s.matchId) as any
+                const outcome = outcomes.find(o => o.id === s.matchId) as VirtualMatchOutcome | undefined
                 if (outcome) {
-                    const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz', status: 'finished' } as any, outcome)
-                    if (winner && winner.isWin) {
+                    const won = checkSelectionWin(s as any, outcome)
+                    if (won) {
                         const amount = s.odds * stakePerSelection
                         gameReturns[s.matchId] = (gameReturns[s.matchId] || 0) + amount
                     }
@@ -197,13 +196,13 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
             // MULTI Mode logic (or 1 selection)
             let allWon = true
             selections.forEach(s => {
-                const outcome = outcomes.find(o => o.id === s.matchId) as any
+                const outcome = outcomes.find(o => o.id === s.matchId) as VirtualMatchOutcome | undefined
                 if (!outcome) {
                     allWon = false
                     return
                 }
-                const winner = isSelectionWinner(s.selectionId, s.marketName, s.label, { sportType: 'quiz', status: 'finished' } as any, outcome)
-                if (!winner || !winner.isWin) allWon = false
+                const won = checkSelectionWin(s as any, outcome)
+                if (!won) allWon = false
             })
 
             if (allWon) {

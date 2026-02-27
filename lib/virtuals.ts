@@ -359,9 +359,8 @@ export function simulateMatch(
     const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 3);
     const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 3);
 
-    // Award bonus points to totalScores
-    totalScores[firstBonusIndex] += 3;
-    totalScores[fastestBuzzIndex] += 5;
+    // NOTE: firstBonus and fastestBuzz are tracked as stats only — do NOT add to totalScores
+    // (adding to totalScores after winnerIndex is determined would corrupt settlement and displayed results)
 
     const lateSurgeScores: [number, number, number] = [0, 0, 0];
     const strongStartScores: [number, number, number] = [0, 0, 0];

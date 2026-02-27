@@ -130,43 +130,49 @@ export function VirtualsResults({
                                 {/* Selection Content */}
                                 <div className="flex-1 min-w-0">
                                     <div className="text-[10px] text-slate-500 font-bold mb-1">
-                                        Round {r.matchId.split('-')[1]} • {r.outcome.category}
+                                        Round {r.matchId?.split('-')[1]} • {r.outcome?.category ?? 'Virtual'}
                                     </div>
                                     <div className="text-sm font-bold text-white mb-2 truncate">
                                         {[r.schoolA, r.schoolB, r.schoolC].filter(Boolean).join(' vs ')}
                                     </div>
 
-                                    <div className="flex flex-col gap-1 mb-3">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Score Breakdown:</span>
-                                        <div className="grid grid-cols-3 gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
-                                            {r.outcome.schools.map((s, si) => (
-                                                <div key={si} className="flex flex-col items-center">
-                                                    <span className="text-[14px] font-black text-white tabular-nums">{r.outcome.totalScores[si]}</span>
-                                                    <span className="text-[6px] font-bold text-slate-500 uppercase tracking-tight text-center truncate w-full">{s}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Round Breakdown Table */}
-                                    <div className="bg-black/20 rounded-lg overflow-hidden border border-white/5 mb-3">
-                                        <div className="grid grid-cols-4 gap-px bg-white/5 text-[7px] font-black uppercase text-slate-500 text-center py-1">
-                                            <div>Round</div>
-                                            {r.outcome.schools.map((s, i) => (
-                                                <div key={i} className="truncate px-0.5">{getSchoolAcronym(s, r.outcome.schools)}</div>
-                                            ))}
-                                        </div>
-                                        <div className="divide-y divide-white/5">
-                                            {r.outcome.rounds.slice(0, 5).map((rd, ridx) => (
-                                                <div key={ridx} className="grid grid-cols-4 gap-px text-center py-1 bg-white/[0.01]">
-                                                    <div className="text-[7px] font-bold text-slate-600">R{ridx + 1}</div>
-                                                    {rd.scores.map((s, si) => (
-                                                        <div key={si} className="text-[9px] font-mono text-white/80">{s}</div>
+                                    {r.outcome ? (
+                                        <>
+                                            <div className="flex flex-col gap-1 mb-3">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Score Breakdown:</span>
+                                                <div className="grid grid-cols-3 gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
+                                                    {r.outcome.schools.map((s, si) => (
+                                                        <div key={si} className="flex flex-col items-center">
+                                                            <span className="text-[14px] font-black text-white tabular-nums">{r.outcome.totalScores[si]}</span>
+                                                            <span className="text-[6px] font-bold text-slate-500 uppercase tracking-tight text-center truncate w-full">{s}</span>
+                                                        </div>
                                                     ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                            </div>
+
+                                            {/* Round Breakdown Table */}
+                                            <div className="bg-black/20 rounded-lg overflow-hidden border border-white/5 mb-3">
+                                                <div className="grid grid-cols-4 gap-px bg-white/5 text-[7px] font-black uppercase text-slate-500 text-center py-1">
+                                                    <div>Round</div>
+                                                    {r.outcome.schools.map((s, i) => (
+                                                        <div key={i} className="truncate px-0.5">{getSchoolAcronym(s, r.outcome.schools)}</div>
+                                                    ))}
+                                                </div>
+                                                <div className="divide-y divide-white/5">
+                                                    {r.outcome.rounds.slice(0, 5).map((rd, ridx) => (
+                                                        <div key={ridx} className="grid grid-cols-4 gap-px text-center py-1 bg-white/[0.01]">
+                                                            <div className="text-[7px] font-bold text-slate-600">R{ridx + 1}</div>
+                                                            {rd.scores.map((s, si) => (
+                                                                <div key={si} className="text-[9px] font-mono text-white/80">{s}</div>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-[10px] text-slate-600 font-bold mb-3">Detailed results not available for historical bets</div>
+                                    )}
 
                                     {/* Details Box */}
                                     <div className="bg-slate-950/50 rounded-lg p-3 space-y-2 border border-white/5 relative group overflow-hidden">
@@ -189,57 +195,59 @@ export function VirtualsResults({
                                             <span className="font-bold text-slate-300">{r.marketName}</span>
                                         </div>
 
-                                        <div className="flex gap-3 text-[10px]">
-                                            <span className="w-14 text-slate-500 font-bold flex-shrink-0">Outcome:</span>
-                                            <span className="font-bold text-slate-300">
-                                                {(() => {
-                                                    const market = r.marketName;
-                                                    const outcome = r.outcome;
-                                                    if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
-                                                    if (market === "Total Points") return `Total ${outcome.totalScores.reduce((a: number, b: number) => a + b, 0)} pts`;
-                                                    if (market === "Winning Margin") {
-                                                        const sorted = [...outcome.totalScores].sort((a: number, b: number) => b - a);
-                                                        const margin = sorted[0] - sorted[1];
-                                                        if (margin >= 1 && margin <= 10) return "1-10";
-                                                        if (margin >= 11 && margin <= 25) return "11-25";
-                                                        return "26+";
-                                                    }
-                                                    if (market === "Highest Round" || market === "Highest Scoring Round") {
-                                                        const rScore = (rIdx: number) => outcome.rounds[rIdx].scores.reduce((a: number, b: number) => a + b, 0);
-                                                        const p1 = rScore(0);
-                                                        const p2 = rScore(1) + rScore(2);
-                                                        const p3 = rScore(3) + rScore(4);
-
-                                                        const max = Math.max(p1, p2, p3);
-                                                        if (p1 === max) return "Round 1";
-                                                        if (p2 === max) return "Rounds 2 & 3";
-                                                        if (p3 === max) return "Rounds 4 & 5";
-                                                        return "Round 1";
-                                                    }
-                                                    if (market === "Perfect Round") return outcome.stats.perfectRound.some((p: boolean) => p) ? "Yes" : "No";
-                                                    if (market === "Shutout Round") return outcome.stats.shutoutRound.some((s: boolean) => s) ? "Yes" : "No";
-                                                    if (market === "Comeback Win") {
-                                                        return (outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0) ? "Yes" : "No";
-                                                    }
-                                                    if (market === "Comeback Team") {
-                                                        const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
-                                                        return isComeback ? outcome.schools[outcome.winnerIndex] : "None";
-                                                    }
-                                                    if (market === "First Bonus") return outcome.schools[outcome.stats.firstBonusIndex];
-                                                    if (market === "Late Surge") return outcome.schools[outcome.stats.lateSurgeIndex];
-                                                    if (market === "Lead Changes") return `${outcome.stats.leadChanges} Changes`;
-                                                    if (market.includes("Winner")) {
-                                                        const roundNum = parseInt(market.split(" ")[1]);
-                                                        const roundIndex = roundNum - 1;
-                                                        const scores = outcome.rounds[roundIndex].scores;
-                                                        const max = Math.max(...scores);
-                                                        const winnerIdx = scores.indexOf(max);
-                                                        return outcome.schools[winnerIdx];
-                                                    }
-                                                    return "Settled";
-                                                })()}
-                                            </span>
-                                        </div>
+                                        {r.outcome && (
+                                            <div className="flex gap-3 text-[10px]">
+                                                <span className="w-14 text-slate-500 font-bold flex-shrink-0">Outcome:</span>
+                                                <span className="font-bold text-slate-300">
+                                                    {(() => {
+                                                        const market = r.marketName;
+                                                        const outcome = r.outcome;
+                                                        if (market === "Match Winner") return outcome.schools[outcome.winnerIndex];
+                                                        if (market === "Total Points") return `Total ${outcome.totalScores.reduce((a: number, b: number) => a + b, 0)} pts`;
+                                                        if (market === "Winning Margin") {
+                                                            const sorted = [...outcome.totalScores].sort((a: number, b: number) => b - a);
+                                                            const margin = sorted[0] - sorted[1];
+                                                            if (margin >= 1 && margin <= 10) return "1-10";
+                                                            if (margin >= 11 && margin <= 25) return "11-25";
+                                                            return "26+";
+                                                        }
+                                                        if (market === "Highest Round" || market === "Highest Scoring Round") {
+                                                            const rScore = (rIdx: number) => outcome.rounds[rIdx]?.scores.reduce((a: number, b: number) => a + b, 0) ?? 0;
+                                                            const p1 = rScore(0);
+                                                            const p2 = rScore(1) + rScore(2);
+                                                            const p3 = rScore(3) + rScore(4);
+                                                            const max = Math.max(p1, p2, p3);
+                                                            if (p1 === max) return "Round 1";
+                                                            if (p2 === max) return "Rounds 2 & 3";
+                                                            if (p3 === max) return "Rounds 4 & 5";
+                                                            return "Round 1";
+                                                        }
+                                                        if (market === "Perfect Round") return outcome.stats.perfectRound.some((p: boolean) => p) ? "Yes" : "No";
+                                                        if (market === "Shutout Round") return outcome.stats.shutoutRound.some((s: boolean) => s) ? "Yes" : "No";
+                                                        if (market === "Comeback Win") {
+                                                            return (outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0) ? "Yes" : "No";
+                                                        }
+                                                        if (market === "Comeback Team") {
+                                                            const isComeback = outcome.winnerIndex !== outcome.stats.strongStartIndex && outcome.stats.leadChanges > 0;
+                                                            return isComeback ? outcome.schools[outcome.winnerIndex] : "None";
+                                                        }
+                                                        if (market === "First Bonus") return outcome.schools[outcome.stats.firstBonusIndex];
+                                                        if (market === "Late Surge") return outcome.schools[outcome.stats.lateSurgeIndex];
+                                                        if (market === "Lead Changes") return `${outcome.stats.leadChanges} Changes`;
+                                                        if (market.includes("Winner")) {
+                                                            const roundNum = parseInt(market.split(" ")[1]);
+                                                            const roundIndex = roundNum - 1;
+                                                            const scores = outcome.rounds[roundIndex]?.scores;
+                                                            if (!scores) return "N/A";
+                                                            const max = Math.max(...scores);
+                                                            const winnerIdx = scores.indexOf(max);
+                                                            return outcome.schools[winnerIdx];
+                                                        }
+                                                        return "Settled";
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

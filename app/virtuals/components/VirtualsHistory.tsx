@@ -129,7 +129,7 @@ function VirtualBetTicket({ bet }: { bet: ClientVirtualBet }) {
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
-                                        Round {r.matchId.split('-')[1]} • {r.marketName}
+                                        Round {r.matchId?.split('-')[1] ?? '?'} • {r.marketName}
                                     </span>
                                     {r.won && <Trophy className="h-3 w-3 text-emerald-500" />}
                                 </div>
@@ -151,7 +151,7 @@ function VirtualBetTicket({ bet }: { bet: ClientVirtualBet }) {
                                             )}>
                                                 Outcome: {(() => {
                                                     const o = r.outcome;
-                                                    const marketId = r.selectionId.split('-')[0];
+                                                    const marketId = r.selectionId?.split('-')[0];
                                                     if (marketId === 'winner') return o.winnerIndex === 0 ? r.schoolA : o.winnerIndex === 1 ? r.schoolB : r.schoolC;
                                                     if (marketId === 'total_points') return o.totalScores.reduce((a, b) => a + b, 0).toString();
                                                     if (marketId === 'winning_margin') {

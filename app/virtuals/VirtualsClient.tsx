@@ -100,24 +100,11 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         });
     }, [currentRound, activeSchools])
 
-    // Refresh wallet balance from server to reflect wins immediately
+    // Refresh wallet balance from server after settlement wins
     const refreshWallet = async () => {
-        try {
-            const res = await fetch('/api/user/bets?type=wallet', { cache: 'no-store' })
-            // Use a direct wallet-actions import to get fresh balance
-            const { getUserWalletDetails } = await import('@/lib/user-actions')
-            const walletData = await getUserWalletDetails()
-            if (walletData.success && walletData.wallet) {
-                setLiveProfile(prev => ({
-                    balance: walletData.wallet!.balance,
-                    bonusBalance: walletData.wallet!.bonusBalance,
-                    currency: prev?.currency ?? 'GHS',
-                }))
-            }
-        } catch {
-            // Fallback: just trigger a router refresh to re-render the server component
-            router.refresh()
-        }
+        // router.refresh() re-renders the server component and re-reads wallet from DB
+        // The page is force-dynamic so this fetches fresh data
+        router.refresh()
     }
 
     // Load bet history
@@ -235,22 +222,24 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
             }
         }
 
-        // Settlement
+        // Settlement — fix: use activeSchools, await all settlements, use stored potentialPayout for multi
         const resolvedSlips: ResolvedSlip[] = pendingSlips.map(slip => {
             const results = slip.selections.map((sel: any) => {
                 const parts = sel.matchId.split("-")
-                const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), schools, parts[3] as any, parts[4] || undefined, aiStrengths, userSeed)
+                // Fix 11: use activeSchools (state) not schools prop
+                const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), activeSchools, parts[3] as any, parts[4] || undefined, aiStrengths, userSeed)
                 return { ...sel, won: checkSelectionWin(sel, outcome), outcome }
             })
 
             let totalReturns = 0
             if (slip.mode === 'multi') {
                 const allWon = results.every(r => r.won)
-                totalReturns = allWon ? (calculateTotalOdds(results) * slip.totalStake) : 0
-                // Simple bonus logic for brevity, matches original
-                if (slip.selections.length >= 5 && allWon) totalReturns *= 1.1;
+                // Fix 5: use stored potentialPayout so display matches server-side credit exactly
+                totalReturns = allWon ? (slip.potentialPayout || calculateTotalOdds(results) * slip.totalStake) : 0
             } else {
-                results.forEach(r => r.won && (totalReturns += Math.min(r.odds * (r.stakeUsed || 0), MAX_GAME_PAYOUT)))
+                // Fix 7: fall back to proportional stake per selection, not 0
+                const defaultStakePerSel = slip.totalStake / (results.length || 1)
+                results.forEach(r => r.won && (totalReturns += Math.min(r.odds * (r.stakeUsed || defaultStakePerSel), MAX_GAME_PAYOUT)))
             }
 
             if (slip.cashedOut) {
@@ -263,9 +252,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
 
         if (resolvedSlips.length > 0) {
             setBetHistory(prev => [...resolvedSlips, ...prev])
-            resolvedSlips.forEach(s => settleVirtualBet(s.id, currentRound, userSeed))
-            // Refresh wallet balance after settlement so wins reflect immediately
-            setTimeout(() => refreshWallet(), 1500)
+            // Fix 3: await all settlements before refreshing wallet — prevents race condition
+            await Promise.all(resolvedSlips.map(s => settleVirtualBet(s.id, currentRound, userSeed)))
+            // Refresh wallet now that all DB writes are confirmed complete
+            refreshWallet()
         }
 
         setLastOutcome({
@@ -298,6 +288,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
             }
         }
     }, [autoNextRoundCountdown]);
+
+    // Fix 10: Reset selectedRegion when switching away from regional category
+    useEffect(() => {
+        if (selectedCategory !== 'regional') {
+            setSelectedRegion(null)
+        }
+    }, [selectedCategory])
 
     const handleConfirmCashout = () => {
         if (!confirmCashoutSlipId) return
@@ -403,6 +400,12 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
             } as any])
             setSelections([])
             setSlipTab('pending')
+            // Fix 6: reset gift state after a successful bet so next bet starts clean
+            if (balanceType === 'gift') {
+                setBonusId(undefined)
+                setBonusAmount(0)
+                setBalanceType('cash')
+            }
             router.refresh()
         } else {
             alert(res.error || "Failed to place bet. Please ensure stake is at least GHS 1.00")
@@ -426,8 +429,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 availableRegions={availableRegions}
                 balanceType={balanceType}
                 onBalanceTypeChange={setBalanceType}
-                balance={profile?.balance || 0}
-                bonusBalance={profile?.bonusBalance || 0}
+                balance={liveProfile?.balance || 0}
+                bonusBalance={liveProfile?.bonusBalance || 0}
                 hasPendingBets={pendingSlips.length > 0}
                 onOpenHistory={() => setShowHistoryModal(true)}
                 isSimulationActive={isSimulationActive}

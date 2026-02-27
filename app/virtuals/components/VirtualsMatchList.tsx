@@ -83,6 +83,7 @@ export function VirtualsMatchList({
                                 { id: 'winner', label: 'Match Winner' },
                                 { id: 'total_points', label: 'Total Points' },
                                 { id: 'winning_margin', label: 'Winning Margin' },
+                                { id: 'highest_scoring_round', label: 'Highest Round' },
                                 { id: 'round_winner', label: 'Round Winners' },
                                 { id: 'perfect_round', label: 'Perfect Round' },
                                 { id: 'shutout_round', label: 'Shutout Round' },
