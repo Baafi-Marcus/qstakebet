@@ -225,94 +225,174 @@ export function simulateMatch(
     const perfectRound: boolean[] = [false, false, false]; // True if school had at least one perfect round
     const shutoutRound: boolean[] = [false, false, false]; // True if school had at least one shutout round
 
-    // Simplified simulation for brevity but keeping the 5 rounds logic
-    const roundNames = ["General", "Speed Race", "Problem of the Day", "True/False", "Riddles"];
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUTHENTIC NSMQ ROUND SIMULATION
+    // Each round follows the exact rules of the National Science & Maths Quiz
+    // ═══════════════════════════════════════════════════════════════════════
+    const finalRounds: RoundScores[] = [];
 
-    const finalRounds: RoundScores[] = roundNames.map((name, rIdx) => {
-        const scores: [number, number, number] = [0, 0, 0];
-        strengths.forEach((s, i) => {
-            const rSeed = seed + i + rIdx * 100;
-            const rand = seededRandom(rSeed);
-            let roundScore = 0;
+    // Helper: clamp a value to [min, max]
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
-            // CHAOS FACTOR: AI Reduced from 15% to 5% to prevent "Black Swan" events
-            // This ensures favorites win more consistently, protecting the house
-            let effectiveStrength = s;
-            if (seededRandom(rSeed + 999) < 0.05) {
-                effectiveStrength = 3.0 - s; // Invert strength (approximate range flip)
+    // ── ROUND 1: GENERAL QUESTIONS ──────────────────────────────────────────
+    // 10–15 questions rotating across Science, Maths, ICT, Engineering
+    // P(correct) = strength × 0.18  |  +3 per correct  |  no penalty
+    {
+        const numQs = 10 + Math.floor(seededRandom(seed + 2000) * 6); // 10–15
+        const r1Scores: [number, number, number] = [0, 0, 0];
+        for (let i = 0; i < 3; i++) {
+            const pCorrect = clamp(strengths[i] * 0.18, 0, 0.95);
+            let correct = 0;
+            for (let q = 0; q < numQs; q++) {
+                if (seededRandom(seed + i * 200 + q + 3000) < pCorrect) correct++;
             }
-
-            // ROUND-SPECIFIC PERFORMANCE VARIANCE
-            // Add a round modifier that can boost or reduce performance in specific rounds
-            // This ensures R1 doesn't always dominate
-            const roundModifierSeed = seededRandom(rSeed + 5000);
-            let roundPerformanceMultiplier = 1.0;
-
-            // 30% chance of "off day" in any round (0.5x-0.8x performance)
-            if (roundModifierSeed < 0.30) {
-                roundPerformanceMultiplier = 0.5 + (seededRandom(rSeed + 6000) * 0.3);
-            }
-            // 20% chance of "hot streak" in any round (1.2x-1.5x performance)
-            else if (roundModifierSeed > 0.70) {
-                roundPerformanceMultiplier = 1.2 + (seededRandom(rSeed + 7000) * 0.3);
-            }
-
-            // UNPREDICTABILITY: 90% randomness weighting (0.9 random, 0.1 strength)
-            // Increased from 80/20 to make outcomes harder to predict purely on paper stats
-            let performance = (effectiveStrength * 0.1) + (rand * 0.9);
-            performance = performance * roundPerformanceMultiplier; // Apply round variance
-            performance = Math.max(0, Math.min(1, performance)); // Clamp to [0,1]
-
-            if (name === "General") {
-                // ~10-15 questions, 3 pts each
-                const correct = Math.floor(15 * performance);
-                roundScore = correct * 3;
-                if (correct === 15) perfectRound[i] = true;
-            } else if (name === "Speed Race") {
-                // ~5-8 questions, 3 pts each, -2 for wrong
-                const correct = Math.floor(8 * performance);
-                const wrong = Math.floor(2 * seededRandom(rSeed + 1));
-                roundScore = Math.max(-5, (correct * 3) - (wrong * 2));
-                if (correct === 8 && wrong === 0) perfectRound[i] = true;
-            } else if (name === "Problem of the Day") {
-                // Max 10 pts
-                roundScore = Math.floor(10 * performance);
-                if (roundScore === 10) perfectRound[i] = true;
-            } else if (name === "True/False") {
-                // 10 questions, 2 pts each, -1 for wrong
-                // Even more randomness for T/F questions
-                const correct = Math.floor(10 * performance);
-                const wrong = Math.floor(3 * seededRandom(rSeed + 2));
-                roundScore = Math.max(-2, (correct * 2) - (wrong * 1));
-                if (correct === 10 && wrong === 0) perfectRound[i] = true;
-            } else if (name === "Riddles") {
-                // 4 riddles max
-                const riddlesWon = Math.floor(4 * performance);
-                roundScore = riddlesWon * 3;
-                if (riddlesWon === 4) perfectRound[i] = true;
-            }
-            scores[i] = roundScore;
-
-            if (roundScore === 0) shutoutRound[i] = true;
-        });
-
-
-        // Update cumulative scores and check for lead changes
-        scores.forEach((s, i) => cumulativeScores[i] += s);
-        const maxCumulative = Math.max(...cumulativeScores);
-        const currentLeaders = cumulativeScores.map((s, i) => s === maxCumulative ? i : -1).filter(i => i !== -1);
-
-        if (currentLeaders.length === 1) {
-            if (currentLeaderIndex !== -1 && currentLeaders[0] !== currentLeaderIndex) {
-                leadChanges++;
-            }
-            currentLeaderIndex = currentLeaders[0];
-        } else if (currentLeaders.length > 1) {
-            currentLeaderIndex = -1;
+            r1Scores[i] = correct * 3;
+            if (correct === numQs) perfectRound[i] = true;
         }
+        // Update cumulative + lead tracking
+        r1Scores.forEach((s, i) => cumulativeScores[i] += s);
+        const maxC1 = Math.max(...cumulativeScores);
+        const leaders1 = cumulativeScores.map((s, i) => s === maxC1 ? i : -1).filter(x => x !== -1);
+        if (leaders1.length === 1) currentLeaderIndex = leaders1[0];
+        finalRounds.push({ roundName: "General", scores: r1Scores });
+    }
 
-        return { roundName: name, scores };
-    });
+    // ── ROUND 2: SPEED RACE (Clue-based) ────────────────────────────────────
+    // 5 questions, each with up to 3 clues. Strongest schools buzz earlier.
+    // Correct on clue 1→+5, clue 2→+4, clue 3→+3  |  Wrong→−1
+    {
+        const r2Scores: [number, number, number] = [0, 0, 0];
+        for (let q = 0; q < 5; q++) {
+            // Buzz priority for this question (higher strength + noise = earlier buzz)
+            const buzzOrder = [0, 1, 2]
+                .map(i => ({ idx: i, pri: strengths[i] + seededRandom(seed + q * 77 + i + 4000) * 0.5 }))
+                .sort((a, b) => b.pri - a.pri);
+
+            const hasAnswered: boolean[] = [false, false, false];
+            let resolved = false;
+
+            for (let clue = 1; clue <= 3 && !resolved; clue++) {
+                for (const { idx } of buzzOrder) {
+                    if (hasAnswered[idx]) continue;
+                    // Chance this school buzzes on this clue (stronger schools buzz earlier)
+                    const buzzChance = clamp(strengths[idx] * 0.12 * clue + 0.15, 0.05, 0.92);
+                    if (seededRandom(seed + q * 111 + idx * 37 + clue * 19 + 5000) < buzzChance) {
+                        hasAnswered[idx] = true;
+                        // Correct chance increases with later clues (easier hints)
+                        const pCorrect = clamp(strengths[idx] * 0.18 + clue * 0.08, 0.05, 0.88);
+                        if (seededRandom(seed + q * 131 + idx * 41 + clue * 23 + 6000) < pCorrect) {
+                            // Correct — award clue-tier points
+                            const pts = clue === 1 ? 5 : clue === 2 ? 4 : 3;
+                            r2Scores[idx] += pts;
+                            resolved = true;
+                        } else {
+                            // Wrong — penalty
+                            r2Scores[idx] -= 1;
+                        }
+                        break; // Only one school buzzes per clue attempt
+                    }
+                }
+            }
+        }
+        // Update cumulative + lead tracking
+        r2Scores.forEach((s, i) => cumulativeScores[i] += s);
+        const maxC2 = Math.max(...cumulativeScores);
+        const leaders2 = cumulativeScores.map((s, i) => s === maxC2 ? i : -1).filter(x => x !== -1);
+        if (leaders2.length === 1) {
+            if (currentLeaderIndex !== -1 && leaders2[0] !== currentLeaderIndex) leadChanges++;
+            currentLeaderIndex = leaders2[0];
+        } else { currentLeaderIndex = -1; }
+        finalRounds.push({ roundName: "Speed Race", scores: r2Scores });
+    }
+
+    // ── ROUND 3: PROBLEM OF THE DAY ─────────────────────────────────────────
+    // 1 problem broken into 3 sub-parts worth 3 + 3 + 4 = 10 pts each school
+    // P(correct sub-part) = strength × 0.25  |  no penalty
+    {
+        const subPartPts = [3, 3, 4];
+        const r3Scores: [number, number, number] = [0, 0, 0];
+        for (let i = 0; i < 3; i++) {
+            const pCorrect = clamp(strengths[i] * 0.25, 0, 0.9);
+            for (let part = 0; part < 3; part++) {
+                if (seededRandom(seed + i * 150 + part + 7000) < pCorrect) {
+                    r3Scores[i] += subPartPts[part];
+                }
+            }
+            if (r3Scores[i] === 10) perfectRound[i] = true;
+        }
+        r3Scores.forEach((s, i) => cumulativeScores[i] += s);
+        const maxC3 = Math.max(...cumulativeScores);
+        const leaders3 = cumulativeScores.map((s, i) => s === maxC3 ? i : -1).filter(x => x !== -1);
+        if (leaders3.length === 1) {
+            if (currentLeaderIndex !== -1 && leaders3[0] !== currentLeaderIndex) leadChanges++;
+            currentLeaderIndex = leaders3[0];
+        } else { currentLeaderIndex = -1; }
+        finalRounds.push({ roundName: "Problem of the Day", scores: r3Scores });
+    }
+
+    // ── ROUND 4: TRUE / FALSE ────────────────────────────────────────────────
+    // 5–10 rapid-fire statements per school
+    // P(correct) = strength × 0.25  |  +3 correct  |  −1 wrong
+    {
+        const numTFQs = 5 + Math.floor(seededRandom(seed + 8000) * 6); // 5–10
+        const r4Scores: [number, number, number] = [0, 0, 0];
+        for (let i = 0; i < 3; i++) {
+            const pCorrect = clamp(strengths[i] * 0.25, 0, 0.9);
+            let correct = 0, wrong = 0;
+            for (let q = 0; q < numTFQs; q++) {
+                if (seededRandom(seed + i * 200 + q + 9000) < pCorrect) correct++;
+                else wrong++;
+            }
+            const raw = (correct * 3) - (wrong * 1);
+            r4Scores[i] = Math.max(-numTFQs, raw); // Floor at −numQs
+            if (r4Scores[i] <= 0) shutoutRound[i] = true;
+        }
+        r4Scores.forEach((s, i) => cumulativeScores[i] += s);
+        const maxC4 = Math.max(...cumulativeScores);
+        const leaders4 = cumulativeScores.map((s, i) => s === maxC4 ? i : -1).filter(x => x !== -1);
+        if (leaders4.length === 1) {
+            if (currentLeaderIndex !== -1 && leaders4[0] !== currentLeaderIndex) leadChanges++;
+            currentLeaderIndex = leaders4[0];
+        } else { currentLeaderIndex = -1; }
+        finalRounds.push({ roundName: "True/False", scores: r4Scores });
+    }
+
+    // ── ROUND 5: RIDDLES (Progressive Clues) ────────────────────────────────
+    // 5 riddles, each with 2 clues. Buzz order by strength. +3 if correct, no penalty.
+    {
+        const r5Scores: [number, number, number] = [0, 0, 0];
+        for (let r = 0; r < 5; r++) {
+            const buzzOrder = [0, 1, 2]
+                .map(i => ({ idx: i, pri: strengths[i] + seededRandom(seed + r * 53 + i + 10000) * 0.4 }))
+                .sort((a, b) => b.pri - a.pri);
+
+            let ridResolved = false;
+            for (let clue = 1; clue <= 2 && !ridResolved; clue++) {
+                for (const { idx } of buzzOrder) {
+                    const pBuzz = clamp(strengths[idx] * (0.14 + clue * 0.07), 0.05, 0.88);
+                    if (seededRandom(seed + r * 61 + idx * 43 + clue * 29 + 11000) < pBuzz) {
+                        const pCorrect = clamp(strengths[idx] * (0.20 + clue * 0.10), 0.05, 0.92);
+                        if (seededRandom(seed + r * 71 + idx * 47 + clue * 31 + 12000) < pCorrect) {
+                            r5Scores[idx] += 3;
+                            ridResolved = true;
+                        }
+                        break; // One school per clue attempt
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < 3; i++) {
+            if (r5Scores[i] === 15) perfectRound[i] = true; // All 5 riddles won
+        }
+        r5Scores.forEach((s, i) => cumulativeScores[i] += s);
+        const maxC5 = Math.max(...cumulativeScores);
+        const leaders5 = cumulativeScores.map((s, i) => s === maxC5 ? i : -1).filter(x => x !== -1);
+        if (leaders5.length === 1) {
+            if (currentLeaderIndex !== -1 && leaders5[0] !== currentLeaderIndex) leadChanges++;
+            currentLeaderIndex = leaders5[0];
+        } else { currentLeaderIndex = -1; }
+        finalRounds.push({ roundName: "Riddles", scores: r5Scores });
+    }
 
     const totalScores: [number, number, number] = [0, 0, 0];
     finalRounds.forEach(r => {
@@ -355,12 +435,11 @@ export function simulateMatch(
 
     const winnerIndex = totalScores.indexOf(maxScore);
 
-    // Calculate other props based on strengths/random for virtual determination
-    const firstBonusIndex = Math.floor(seededRandom(seed + 999) * 3);
-    const fastestBuzzIndex = Math.floor(seededRandom(seed + 888) * 3);
-
-    // NOTE: firstBonus and fastestBuzz are tracked as stats only — do NOT add to totalScores
-    // (adding to totalScores after winnerIndex is determined would corrupt settlement and displayed results)
+    // firstBonusIndex = school that scored highest in the Speed Race (Round 2)
+    // fastestBuzzIndex = same (strongest school buzzes first on average)
+    const r2RoundScores = finalRounds.find(r => r.roundName === "Speed Race")?.scores ?? [0, 0, 0];
+    const firstBonusIndex = r2RoundScores.indexOf(Math.max(...r2RoundScores));
+    const fastestBuzzIndex = strengths.indexOf(Math.max(...strengths)); // strongest typically buzzes first
 
     const lateSurgeScores: [number, number, number] = [0, 0, 0];
     const strongStartScores: [number, number, number] = [0, 0, 0];
@@ -513,18 +592,25 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const oddsB = calculateOddsFromProbability(probB, winnerMargin, startTimeMs + 2, 1.10, 6.00, 0.12)!;
     const oddsC = calculateOddsFromProbability(probC, winnerMargin, startTimeMs + 3, 1.10, 6.00, 0.12)!;
 
-    // Projected Total
-    const projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 45;
-    const centerLine = Math.round(projectedTotal / 10) * 10 + 0.5;
-    const lines = [centerLine - 20, centerLine - 10, centerLine, centerLine + 10, centerLine + 20];
+    // ── TOTAL POINTS: 9 NSMQ-calibrated Over/Under bands ────────────────────
+    // Projected total recalibrated for authentic NSMQ scoring ranges:
+    //   Weak school (~0.9 str) → ~14 pts | Average (~1.6) → ~43 pts | Strong (~2.4) → ~65 pts
+    //   3-team range: ~40 pts (all weak) → ~130+ pts (all strong elite)
+    const projectedTotal = outcome.strengths.reduce((a, b) => a + b, 0) * 22;
+    const NSMQ_BANDS = [44.5, 54.5, 64.5, 74.5, 84.5, 94.5, 104.5, 114.5, 124.5];
+    const totalSpread = 16; // Typical std-dev of match total points
+    const totalMargin = 0.165;
 
     const totalPointsOdds: Record<string, number | null> = {};
-    const totalMargin = 0.165;
-    lines.forEach(line => {
-        const diff = projectedTotal - line;
-        const probOver = 1 / (1 + Math.exp(-diff / 35));
-        totalPointsOdds[`Over ${line}`] = getPropOdds(probOver, 0.15, totalMargin, 1.20, 3.00);
-        totalPointsOdds[`Under ${line}`] = getPropOdds(1 - probOver, 0.15, totalMargin, 1.20, 3.00);
+    NSMQ_BANDS.forEach(band => {
+        const diff = projectedTotal - band;
+        const probOver = 1 / (1 + Math.exp(-diff / totalSpread));
+        // Only generate odds where probability isn't too extreme (5%–95%)
+        // This reflects the SportyBet-style lock on near-certain lines
+        if (probOver >= 0.05 && probOver <= 0.95) {
+            totalPointsOdds[`Over ${band}`] = getPropOdds(probOver, 0.15, totalMargin, 1.08, 3.00);
+            totalPointsOdds[`Under ${band}`] = getPropOdds(1 - probOver, 0.15, totalMargin, 1.08, 3.00);
+        }
     });
 
     // Winning Margin
