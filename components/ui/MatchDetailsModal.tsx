@@ -40,13 +40,13 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
     }, [match.participants, match.status, match.result, match.odds]);
 
     const renderMarketSection = (title: string, icon: React.ReactNode, content: React.ReactNode, descriptionKey?: string, customKey?: string) => (
-        <div key={customKey} className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center justify-between mb-3 px-1">
+        <div key={customKey} className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 bg-slate-800 rounded-lg text-slate-400">
+                    <div className="p-1.5 text-slate-400">
                         {icon}
                     </div>
-                    <h3 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.15em]">
+                    <h3 className="text-[12px] font-black text-white uppercase tracking-[0.1em]">
                         {title}
                     </h3>
                 </div>
@@ -55,23 +55,23 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                         onClick={() => toggleInfo(descriptionKey)}
                         className={cn(
                             "p-1.5 rounded-lg transition-all",
-                            expandedInfo === descriptionKey ? "bg-purple-500 text-white" : "bg-slate-800 text-slate-500 hover:text-slate-300"
+                            expandedInfo === descriptionKey ? "bg-purple-500 text-white" : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                         )}
                     >
-                        <HelpCircle className="h-3.5 w-3.5" />
+                        <HelpCircle className="h-4 w-4" />
                     </button>
                 )}
             </div>
 
             {expandedInfo === descriptionKey && (
-                <div className="mb-3 px-4 py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl animate-in zoom-in-95 duration-200">
-                    <p className="text-[10px] font-medium text-purple-200 leading-relaxed italic">
+                <div className="mb-4 px-4 py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl animate-in zoom-in-95 duration-200">
+                    <p className="text-[11px] font-medium text-purple-200 leading-relaxed italic">
                         {MARKET_DESCRIPTIONS[descriptionKey || ""] || (match.metadata as Record<string, any>)?.marketHelp?.[descriptionKey || ""] || "Detailed explanation of this betting market."}
                     </p>
                 </div>
             )}
 
-            <div className="bg-slate-950/40 rounded-2xl border border-white/5 overflow-hidden shadow-sm backdrop-blur-sm">
+            <div className="rounded-2xl overflow-hidden backdrop-blur-sm">
                 {content}
             </div>
         </div>
@@ -108,114 +108,137 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                 </span>
                             )}
                         </div>
-                        {/* ... (SCHOOL NAMES REMAINS SAME) */}
-                        <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
-                            {participants.map((p, idx) => (
-                                <React.Fragment key={p.schoolId}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="flex-shrink-0">{p.name}</span>
-                                        {(match.status === 'live' || match.status === 'finished') && (
-                                            <span className="text-xl md:text-2xl font-black text-purple-500 tabular-nums">
-                                                {(match.result as any)?.totalScores?.[idx] ?? 0}
-                                            </span>
-                                        )}
+
+                        {/* Classic Scoreboard Layout */}
+                        <div className="flex items-center justify-between w-[90%] xl:w-[80%] pt-2 px-2">
+                            {/* Team 1 (Home/Left) */}
+                            {participants[0] && (
+                                <div className="flex flex-col items-start flex-1 min-w-[80px]">
+                                    <span className="text-sm md:text-xl font-black text-white tracking-tight truncate w-full text-left">
+                                        {participants[0].name}
+                                    </span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-widest",
+                                            "text-purple-400"
+                                        )}>
+                                            {winProbabilities[0]}% <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span>
+                                        </span>
                                     </div>
-                                    {idx < participants.length - 1 && (
-                                        <span className="text-slate-600 text-xs font-medium shrink-0">vs</span>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </h2>
+                                </div>
+                            )}
+
+                            {/* Scores (Center) */}
+                            <div className="flex flex-col items-center justify-center px-4 shrink-0">
+                                {(match.status === 'live' || match.status === 'finished') ? (
+                                    <div className="flex items-center gap-3 bg-black/40 px-5 py-2.5 rounded-2xl border border-white/5 shadow-inner">
+                                        <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
+                                            {(match.result as any)?.totalScores?.[0] ?? 0}
+                                        </span>
+                                        <span className="text-slate-600 text-sm font-black">-</span>
+                                        <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
+                                            {(match.result as any)?.totalScores?.[1] ?? 0}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-600 text-sm font-black mx-4 italic">VS</span>
+                                )}
+                            </div>
+
+                            {/* Team 2 (Away/Right) */}
+                            {participants[1] ? (
+                                <div className="flex flex-col items-end flex-1 min-w-[80px]">
+                                    <span className="text-sm md:text-xl font-black text-white tracking-tight truncate w-full text-right">
+                                        {participants[1].name}
+                                    </span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-widest",
+                                            "text-indigo-400"
+                                        )}>
+                                            <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span> {winProbabilities[1]}%
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex-1" />
+                            )}
+                        </div>
                     </div>
                     {/* ... (CLOSE BUTTON REMAINS SAME) */}
                     <button
                         onClick={onClose}
-                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white shadow-xl hover:rotate-90"
+                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white shadow-xl hover:rotate-90 absolute right-6 sm:right-8 top-1/2 -translate-y-1/2"
                     >
                         <X className="h-5 w-5" />
                     </button>
+
+                    {/* Sleek AI Probability Bar (Bottom of Header) */}
+                    {participants.length >= 2 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 flex shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                            {participants.map((p, idx) => (
+                                <div
+                                    key={`ai-${p.schoolId}`}
+                                    className={cn(
+                                        "h-full transition-all duration-1000",
+                                        idx === 0 ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" :
+                                            idx === 1 ? "bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]" :
+                                                "bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.8)]"
+                                    )}
+                                    style={{ width: `${winProbabilities[idx]}%` }}
+                                    title={`${p.name}: ${winProbabilities[idx]}% AI Win Probability`}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Content Overlay grid */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 relative z-10 pb-20">
 
-                    {/* ... (AI INSIGHTS BAR REMAINS SAME) */}
-                    <div className="lg:col-span-12 mb-4 bg-slate-900/40 border border-white/5 p-6 rounded-[2rem]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4 text-purple-500" />
-                                AI WIN PROBABILITY
-                            </h3>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Live Prediction</span>
-                        </div>
-                        <div className="flex h-3 w-full bg-white/5 rounded-full overflow-hidden mb-6 shadow-inner">
-                            {participants.map((p, idx) => (
-                                <div
-                                    key={p.schoolId}
-                                    className={cn(
-                                        "h-full transition-all duration-1000",
-                                        idx === 0 ? "bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)]" :
-                                            idx === 1 ? "bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.5)]" :
-                                                "bg-pink-600 shadow-[0_0_15px_rgba(219,39,119,0.5)]"
-                                    )}
-                                    style={{ width: `${winProbabilities[idx]}%` }}
-                                />
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            {participants.map((p, idx) => (
-                                <div key={p.schoolId} className="space-y-1 text-center">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter truncate px-2">{p.name}</div>
-                                    <div className="text-xl font-black text-white">{winProbabilities[idx]}%</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* Left Column: Main Markets */}
                     <div className="lg:col-span-7 space-y-2">
 
                         {/* 1X2 Market */}
-                        {renderMarketSection(match.sportType === 'football' ? "Full Time Result" : "Match Winner", <Target className="h-3.5 w-3.5" />, (
-                            <div className="flex divide-x divide-white/5 h-20 overflow-x-auto custom-scrollbar">
+                        {renderMarketSection(match.sportType === 'football' ? "Full Time Result" : "Match Winner", <Target className="h-4 w-4 text-purple-400" />, (
+                            <div className="flex gap-2 h-14 overflow-x-auto custom-scrollbar pb-1">
                                 {participants.map((p, idx) => (
-                                    <div key={p.schoolId} className="flex-1 min-w-[80px] h-full relative group">
-                                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[9px] font-black text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase truncate w-full text-center px-1">
-                                            {p.name.split(' ').map(w => w[0]).join('')}
-                                        </div>
+                                    <div key={p.schoolId} className="flex-1 min-w-[100px] h-full relative group">
+                                        <div className="absolute top-1 left-4 text-[9px] font-black text-slate-500 uppercase z-10">{p.name}</div>
                                         <OddsButton
                                             label={(idx + 1).toString()}
                                             odds={p.odd || match.odds[p.schoolId] || null}
                                             matchId={match.id}
                                             matchLabel={matchLabel}
                                             marketName="Match Winner"
-                                            showLabel={true}
+                                            showLabel={false}
                                             onClick={onOddsClick}
                                             isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             isLocked={isLocked}
                                             tournamentName={match.tournamentName || undefined}
                                             stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
+                                            className="h-full w-full rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 pt-3 transition-all"
                                         />
                                     </div>
                                 ))}
                                 {(match.sportType === "football" || match.sportType === "handball") && (
                                     <div className="flex-1 min-w-[80px] h-full relative group">
+                                        <div className="absolute top-1 left-4 text-[9px] font-black text-slate-500 uppercase z-10">DRAW</div>
                                         <OddsButton
                                             label="X"
                                             odds={match.odds?.["X"] || null}
                                             matchId={match.id}
                                             matchLabel={matchLabel}
                                             marketName="Match Winner"
-                                            showLabel={true}
+                                            showLabel={false}
                                             onClick={onOddsClick}
                                             isSelected={checkSelected(`${match.id}-Match Winner-X`)}
                                             isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                             isLocked={isLocked}
                                             tournamentName={match.tournamentName || undefined}
                                             stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2"
+                                            className="h-full w-full rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 pt-3 transition-all"
                                         />
                                     </div>
                                 )}
@@ -224,13 +247,13 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                         {/* Point Spread / Handicap */}
                         {match.extendedOdds?.handicap && renderMarketSection("Point Spread / Handicap", <Target className="h-3.5 w-3.5" />, (
-                            <div className="grid grid-cols-2 divide-x divide-white/5 h-20">
+                            <div className="flex gap-2 h-14 overflow-x-auto custom-scrollbar pb-1">
                                 {participants.slice(0, 2).map((p, idx) => {
                                     const spread = match.extendedOdds?.handicap?.[p.name] || 0;
                                     const spreadLabel = spread >= 0 ? `+${spread}` : spread.toString();
                                     return (
-                                        <div key={p.schoolId} className="min-w-[120px] h-full relative group">
-                                            <div className="absolute top-2 left-4 text-[8px] font-black text-slate-500 uppercase tracking-widest">{p.name}</div>
+                                        <div key={p.schoolId} className="flex-1 min-w-[120px] h-full relative group">
+                                            <div className="absolute top-1 left-4 text-[9px] font-black text-slate-500 uppercase tracking-widest z-10">{p.name}</div>
                                             <OddsButton
                                                 label={spreadLabel}
                                                 odds={1.90} // Placeholder: In real scenario, this would come from the market logic
@@ -244,7 +267,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 isLocked={isLocked}
                                                 tournamentName={match.tournamentName || undefined}
                                                 stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 pt-2 text-lg"
+                                                className="h-full w-full rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 pt-3 text-lg transition-all"
                                             />
                                         </div>
                                     )
@@ -254,7 +277,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                         {/* Totals & Dynamic Lines */}
                         {renderMarketSection("Total Match Points", <BarChart3 className="h-3.5 w-3.5" />, (
-                            <div className="flex flex-col">
+                            <div className="flex flex-col gap-2">
                                 {Object.entries(match.extendedOdds?.totalPoints || {})
                                     .sort((a, b) => parseFloat(a[0].split(" ")[1]) - parseFloat(b[0].split(" ")[1]))
                                     .reduce((acc: { line: string, over: [string, number | null], under: [string, number | null] }[], [key], _index, array) => {
@@ -267,11 +290,11 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                         return acc;
                                     }, [])
                                     .map((group) => (
-                                        <div key={group.line} className="flex items-center h-14 border-b border-white/5 last:border-0 hover:bg-white/[0.01] transition-colors">
-                                            <div className="w-24 px-6 text-[11px] font-black text-slate-500 border-r border-white/5 flex items-center h-full bg-white/[0.02]">
+                                        <div key={group.line} className="flex items-center h-14 bg-white/[0.01] rounded-xl border border-white/5 overflow-hidden group">
+                                            <div className="w-24 px-6 text-[12px] font-black text-white/80 border-r border-white/5 flex items-center justify-center h-full bg-white/[0.03] group-hover:bg-white/[0.05] transition-colors">
                                                 {group.line}
                                             </div>
-                                            <div className="flex-1 flex divide-x divide-white/5 h-full">
+                                            <div className="flex-1 flex gap-1 p-1 h-full">
                                                 <div className="flex-1">
                                                     <OddsButton
                                                         label={`Over`}
@@ -286,7 +309,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isLocked={isLocked}
                                                         tournamentName={match.tournamentName || undefined}
                                                         stage={match.stage}
-                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
+                                                        className="h-full w-full rounded-lg bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
                                                 <div className="flex-1">
@@ -303,7 +326,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isLocked={isLocked}
                                                         tournamentName={match.tournamentName || undefined}
                                                         stage={match.stage}
-                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0"
+                                                        className="h-full w-full rounded-lg bg-transparent hover:bg-white/[0.03] border-0"
                                                     />
                                                 </div>
                                             </div>
@@ -319,10 +342,11 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                 {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map((round, idx) => {
                                     const odds = getRoundWinnerOdds(idx + 1);
                                     if (!odds) return null;
-                                    return renderMarketSection(`${round} Winner`, <Zap className="h-3.5 w-3.5" />, (
-                                        <div className="flex divide-x divide-white/5 h-16 overflow-x-auto custom-scrollbar">
+                                    return renderMarketSection(`${round} Winner`, <Zap className="h-4 w-4 text-amber-400" />, (
+                                        <div className="flex gap-2 h-14 overflow-x-auto custom-scrollbar pb-1">
                                             {participants.map((p, sIdx) => (
-                                                <div key={p.schoolId} className="flex-1 min-w-[60px] h-full">
+                                                <div key={p.schoolId} className="flex-1 min-w-[80px] h-full relative group">
+                                                    <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[9px] font-black text-slate-500 uppercase tracking-widest z-10">{p.name.split(' ').map(w => w[0]).join('')}</div>
                                                     <OddsButton
                                                         label={(sIdx + 1).toString()}
                                                         odds={odds[p.name] as number}
@@ -336,7 +360,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isLocked={isLocked}
                                                         tournamentName={match.tournamentName || undefined}
                                                         stage={match.stage}
-                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/[0.03] border-0 flex flex-col justify-center items-center"
+                                                        className="h-full w-full rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 pt-3 flex flex-col justify-center items-center transition-all"
                                                     />
                                                 </div>
                                             ))}
@@ -368,11 +392,11 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
 
                                     return renderMarketSection(marketTitle, <Sparkles className="h-3.5 w-3.5 text-yellow-500" />, (
                                         <div className={cn(
-                                            "grid gap-px bg-white/5",
+                                            "grid gap-2",
                                             optionsList.length % 3 === 0 ? "grid-cols-3" : optionsList.length % 2 === 0 ? "grid-cols-2" : "grid-cols-1"
                                         )}>
                                             {optionsList.map(([label, value]) => (
-                                                <div key={label} className="bg-[#0f1115]">
+                                                <div key={label} className="h-14">
                                                     <OddsButton
                                                         label={label}
                                                         odds={value}
@@ -386,7 +410,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                         isLocked={isLocked}
                                                         tournamentName={match.tournamentName || undefined}
                                                         stage={match.stage}
-                                                        className="h-16 w-full bg-transparent border-0 hover:bg-white/[0.03]"
+                                                        className="h-full w-full rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 transition-all text-sm"
                                                     />
                                                 </div>
                                             ))}
