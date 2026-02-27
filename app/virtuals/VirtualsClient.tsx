@@ -462,6 +462,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 setBonusAmount={setBonusAmount}
                 showGiftModal={showGiftModal}
                 setShowGiftModal={setShowGiftModal}
+                onNextRound={handleNextRound}
+                isFinished={isSimulationActive && simulationProgress >= 60}
             />
 
             <VirtualsResults

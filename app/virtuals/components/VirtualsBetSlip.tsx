@@ -1,5 +1,5 @@
 import React from "react"
-import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft, Gift } from "lucide-react"
+import { Ticket, Zap, X, Wallet, ShieldAlert, Trophy, Banknote, ChevronLeft, Gift, ArrowRight } from "lucide-react"
 import { Match } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { MULTI_BONUS } from "@/lib/constants"
@@ -54,6 +54,8 @@ interface VirtualsBetSlipProps {
     setBonusAmount: (amount: number) => void;
     showGiftModal: boolean;
     setShowGiftModal: (show: boolean) => void;
+    onNextRound?: () => void;
+    isFinished?: boolean;
 }
 
 export function VirtualsBetSlip({
@@ -89,7 +91,9 @@ export function VirtualsBetSlip({
     bonusAmount,
     setBonusAmount,
     showGiftModal,
-    setShowGiftModal
+    setShowGiftModal,
+    onNextRound,
+    isFinished
 }: VirtualsBetSlipProps) {
     return (
         <>
@@ -140,6 +144,21 @@ export function VirtualsBetSlip({
                             <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest leading-none mt-1">
                                 {selections.length > 0 ? "Place Bet" : "Open Slip"}
                             </span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Next Round Bar (Only visible when a simulation just finished) */}
+            {isFinished && onNextRound && (
+                <div className="fixed bottom-0 left-0 right-0 z-[60] px-4 pb-4 pt-2 bg-slate-950/95 border-t border-purple-500/30 backdrop-blur-md shadow-[0_-10px_40px_rgba(168,85,247,0.15)] animate-in slide-in-from-bottom-full duration-500">
+                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 pb-safe">
+                        <button
+                            onClick={onNextRound}
+                            className="w-full flex items-center justify-center gap-3 rounded-2xl px-5 py-4 transition-all active:scale-95 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20"
+                        >
+                            <span className="text-sm font-black uppercase tracking-widest">Next Round</span>
+                            <ArrowRight className="h-5 w-5" />
                         </button>
                     </div>
                 </div>
