@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Plus, Trash2, Megaphone, Image as ImageIcon, Link as LinkIcon, Save, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/announcement-actions"
+import { getAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement, uploadAdvertImage } from "@/lib/announcement-actions"
 import { Announcement } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -11,6 +11,8 @@ export default function AdminAnnouncementsPage() {
     const [ads, setAds] = useState<Announcement[]>([])
     const [loading, setLoading] = useState(true)
     const [isAdding, setIsAdding] = useState(false)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [formData, setFormData] = useState<Partial<Announcement>>({
         type: "text",
         content: "",
@@ -40,10 +42,43 @@ export default function AdminAnnouncementsPage() {
     async function handleCreate(e: React.FormEvent) {
         e.preventDefault()
         setLoading(true)
+
+        let finalImageUrl = formData.imageUrl
+
+        // Handle File Upload if an image was selected locally
+        if (formData.type === "image" && selectedFile) {
+            try {
+                // Read file as base64
+                const reader = new FileReader();
+                const base64Promise = new Promise<string>((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result as string)
+                    reader.onerror = reject
+                })
+                reader.readAsDataURL(selectedFile)
+                const base64Data = await base64Promise
+
+                // Upload to server
+                const uploadResult = await uploadAdvertImage(base64Data, selectedFile.name)
+
+                if (uploadResult.success && uploadResult.url) {
+                    finalImageUrl = uploadResult.url
+                } else {
+                    alert("Image upload failed.")
+                    setLoading(false)
+                    return
+                }
+            } catch (error) {
+                console.error("Upload error:", error)
+                alert("Failed to process local image.")
+                setLoading(false)
+                return
+            }
+        }
+
         const result = await createAnnouncement({
             type: formData.type as "text" | "image",
             content: formData.content || undefined,
-            imageUrl: formData.imageUrl || undefined,
+            imageUrl: finalImageUrl || undefined,
             link: formData.link || undefined,
             priority: formData.priority || 0,
             style: formData.style || "default"
@@ -52,6 +87,8 @@ export default function AdminAnnouncementsPage() {
         if (result.success) {
             setIsAdding(false)
             setFormData({ type: "text", content: "", imageUrl: "", link: "", priority: 0, style: "default" })
+            setSelectedFile(null)
+            setPreviewUrl(null)
             const data = await loadAds()
             setAds(data)
         }
@@ -181,19 +218,81 @@ export default function AdminAnnouncementsPage() {
                                 </>
                             ) : (
                                 <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banner Image URL</label>
-                                    <div className="relative">
-                                        <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banner Image</label>
+
+                                    {!previewUrl && !formData.imageUrl ? (
+                                        <div
+                                            className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group overflow-hidden"
+                                        >
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (file) {
+                                                        setSelectedFile(file)
+                                                        setPreviewUrl(URL.createObjectURL(file))
+                                                        setFormData({ ...formData, imageUrl: "" }) // Clear manual URL if using file
+                                                    }
+                                                }}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                required={!formData.imageUrl}
+                                            />
+                                            <ImageIcon className="h-6 w-6 text-slate-400 group-hover:text-primary transition-colors" />
+                                            <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
+                                                Click or drag image here
+                                            </span>
+                                            <span className="text-[10px] text-slate-600">Max size: 5MB</span>
+                                        </div>
+                                    ) : (
+                                        <div className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black/50 aspect-[5/1] w-full flex items-center justify-center">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={previewUrl || formData.imageUrl || ""}
+                                                alt="Banner preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedFile(null)
+                                                        setPreviewUrl(null)
+                                                        setFormData(prev => ({ ...prev, imageUrl: "" }))
+                                                    }}
+                                                    className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500 hover:text-white font-bold text-xs uppercase transition-colors"
+                                                >
+                                                    Remove Image
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <div className="h-[1px] flex-1 bg-white/5" />
+                                        <span className="text-[10px] font-black text-slate-600 uppercase">OR PASTE URL</span>
+                                        <div className="h-[1px] flex-1 bg-white/5" />
+                                    </div>
+
+                                    <div className="relative mt-2">
+                                        <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                                         <input
                                             type="url"
                                             value={formData.imageUrl || ""}
-                                            onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                                            onChange={e => {
+                                                setFormData({ ...formData, imageUrl: e.target.value })
+                                                if (e.target.value) {
+                                                    setSelectedFile(null)
+                                                    setPreviewUrl(null)
+                                                }
+                                            }}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-all text-sm"
                                             placeholder="https://example.com/banner.jpg"
-                                            required
+                                            required={!selectedFile}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-500 italic mt-1 px-1">Note: Recommended size 1200x220px for best results.</p>
+
+                                    <p className="text-[10px] text-slate-500 mt-2 px-1">Note: Recommended size 1200x220px for best results.</p>
                                 </div>
                             )}
 

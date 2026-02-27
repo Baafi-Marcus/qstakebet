@@ -5,6 +5,8 @@ import { announcements } from "@/lib/db/schema"
 import { eq, desc, and } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
+import fs from "fs"
+import path from "path"
 
 export async function getActiveAnnouncements() {
     try {
@@ -83,5 +85,33 @@ export async function deleteAnnouncement(id: string) {
     } catch (error) {
         console.error("Failed to delete announcement:", error)
         return { success: false, error: "Failed to delete announcement" }
+    }
+}
+
+export async function uploadAdvertImage(base64Data: string, filename: string) {
+    try {
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "adverts")
+
+        // Ensure directory exists
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true })
+        }
+
+        // Clean base64 string
+        const base64Image = base64Data.split(';base64,').pop()
+        if (!base64Image) throw new Error("Invalid base64 data")
+
+        // Create unique filename to prevent overwrites
+        const uniqueFilename = `${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+        const filepath = path.join(uploadDir, uniqueFilename)
+
+        // Write file
+        fs.writeFileSync(filepath, base64Image, { encoding: 'base64' })
+
+        // Return the public URL
+        return { success: true, url: `/uploads/adverts/${uniqueFilename}` }
+    } catch (error) {
+        console.error("Failed to upload advert image:", error)
+        return { success: false, error: "Failed to upload image" }
     }
 }

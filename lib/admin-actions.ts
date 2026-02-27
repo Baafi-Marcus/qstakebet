@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions, bets } from "./db/schema"
+import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions, bets, matchHistory } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
@@ -366,8 +366,9 @@ export async function forceDeleteTournament(id: string) {
                 return { success: false, error: "Cannot force delete tournament with active bets. Void the bets first." };
             }
 
-            // 2. Cascade delete matches
+            // 2. Cascade delete matchHistory and then matches
             for (const mId of matchIds) {
+                await db.delete(matchHistory).where(eq(matchHistory.matchId, mId));
                 await db.delete(matches).where(eq(matches.id, mId));
             }
         }
