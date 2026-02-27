@@ -109,61 +109,98 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             )}
                         </div>
 
-                        {/* Classic Scoreboard Layout */}
-                        <div className="flex items-center justify-between w-[90%] xl:w-[80%] pt-2 px-2">
-                            {/* Team 1 (Home/Left) */}
-                            {participants[0] && (
-                                <div className="flex flex-col items-start flex-1 min-w-[80px]">
-                                    <span className="text-sm md:text-xl font-black text-white tracking-tight truncate w-full text-left">
-                                        {participants[0].name}
-                                    </span>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-widest",
-                                            "text-purple-400"
+                        {/* Smart N-team Scoreboard Layout — handles both 2-team and 3-team virtual matches */}
+                        {participants.length >= 3 ? (
+                            // 3-team layout for virtual matches
+                            <div className="flex items-start gap-3 w-full pt-2 flex-wrap">
+                                {participants.map((p, idx) => {
+                                    const colors = ['text-purple-400', 'text-indigo-400', 'text-emerald-400']
+                                    const score = (match.result as any)?.totalScores?.[idx]
+                                    const hasScore = match.status === 'live' || match.status === 'finished'
+                                    const winnerIdx = (match.result as any)?.winnerIndex
+                                    const isWinner = hasScore && winnerIdx === idx
+                                    return (
+                                        <div key={p.schoolId} className={cn(
+                                            "flex flex-col items-center text-center flex-1 min-w-[90px] px-1 py-2 rounded-xl transition-all",
+                                            isWinner ? "bg-white/5 border border-white/10" : ""
                                         )}>
-                                            {winProbabilities[0]}% <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span>
+                                            {hasScore && (
+                                                <span className={cn(
+                                                    "text-2xl md:text-4xl font-black tabular-nums",
+                                                    isWinner ? "text-white" : "text-white/60"
+                                                )}>
+                                                    {score ?? 0}
+                                                </span>
+                                            )}
+                                            <span className={cn(
+                                                "text-[11px] md:text-sm font-black text-white leading-tight mt-1 break-words hyphens-auto",
+                                                isWinner && "text-white"
+                                            )}>
+                                                {p.name}
+                                            </span>
+                                            <span className={cn("text-[9px] font-bold uppercase tracking-widest mt-1", colors[idx] ?? 'text-slate-400')}>
+                                                {winProbabilities[idx] ?? '--'}% win
+                                            </span>
+                                            {isWinner && (
+                                                <span className="mt-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full">
+                                                    Winner
+                                                </span>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            // Standard 2-team layout
+                            <div className="flex items-center justify-between w-[90%] xl:w-[80%] pt-2 px-2">
+                                {/* Team 1 */}
+                                {participants[0] && (
+                                    <div className="flex flex-col items-start flex-1 min-w-[80px]">
+                                        <span className="text-sm md:text-xl font-black text-white tracking-tight break-words hyphens-auto text-left leading-tight">
+                                            {participants[0].name}
                                         </span>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">
+                                                {winProbabilities[0]}% <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Scores (Center) */}
-                            <div className="flex flex-col items-center justify-center px-4 shrink-0">
-                                {(match.status === 'live' || match.status === 'finished') ? (
-                                    <div className="flex items-center gap-3 bg-black/40 px-5 py-2.5 rounded-2xl border border-white/5 shadow-inner">
-                                        <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
-                                            {(match.result as any)?.totalScores?.[0] ?? 0}
+                                {/* Scores (Center) */}
+                                <div className="flex flex-col items-center justify-center px-4 shrink-0">
+                                    {(match.status === 'live' || match.status === 'finished') ? (
+                                        <div className="flex items-center gap-3 bg-black/40 px-5 py-2.5 rounded-2xl border border-white/5 shadow-inner">
+                                            <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
+                                                {(match.result as any)?.totalScores?.[0] ?? 0}
+                                            </span>
+                                            <span className="text-slate-600 text-sm font-black">-</span>
+                                            <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
+                                                {(match.result as any)?.totalScores?.[1] ?? 0}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-600 text-sm font-black mx-4 italic">VS</span>
+                                    )}
+                                </div>
+
+                                {/* Team 2 */}
+                                {participants[1] ? (
+                                    <div className="flex flex-col items-end flex-1 min-w-[80px]">
+                                        <span className="text-sm md:text-xl font-black text-white tracking-tight break-words hyphens-auto text-right leading-tight">
+                                            {participants[1].name}
                                         </span>
-                                        <span className="text-slate-600 text-sm font-black">-</span>
-                                        <span className="text-3xl md:text-5xl font-black text-white tabular-nums drop-shadow-md">
-                                            {(match.result as any)?.totalScores?.[1] ?? 0}
-                                        </span>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                                                <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span> {winProbabilities[1]}%
+                                            </span>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <span className="text-slate-600 text-sm font-black mx-4 italic">VS</span>
+                                    <div className="flex-1" />
                                 )}
                             </div>
-
-                            {/* Team 2 (Away/Right) */}
-                            {participants[1] ? (
-                                <div className="flex flex-col items-end flex-1 min-w-[80px]">
-                                    <span className="text-sm md:text-xl font-black text-white tracking-tight truncate w-full text-right">
-                                        {participants[1].name}
-                                    </span>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-widest",
-                                            "text-indigo-400"
-                                        )}>
-                                            <span className="opacity-50 text-slate-500 hidden sm:inline">AI Win Prob</span> {winProbabilities[1]}%
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex-1" />
-                            )}
-                        </div>
+                        )}
                     </div>
                     {/* ... (CLOSE BUTTON REMAINS SAME) */}
                     <button

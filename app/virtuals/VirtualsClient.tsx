@@ -252,10 +252,11 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
 
         if (resolvedSlips.length > 0) {
             setBetHistory(prev => [...resolvedSlips, ...prev])
-            // Fix 3: await all settlements before refreshing wallet — prevents race condition
-            await Promise.all(resolvedSlips.map(s => settleVirtualBet(s.id, currentRound, userSeed)))
-            // Refresh wallet now that all DB writes are confirmed complete
-            refreshWallet()
+            // Settle in background — don't await so results modal shows immediately
+            // Wallet refresh only fires AFTER all DB writes are confirmed done
+            Promise.all(resolvedSlips.map(s => settleVirtualBet(s.id, currentRound, userSeed)))
+                .then(() => refreshWallet())
+                .catch(console.error)
         }
 
         setLastOutcome({
