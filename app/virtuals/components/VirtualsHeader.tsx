@@ -60,8 +60,8 @@ export function VirtualsHeader({
                         </button>
                     )}
                     <div className="h-6 w-px bg-white/10 hidden md:block" />
-                    <span className="font-display font-black text-[10px] md:text-sm text-primary tracking-widest uppercase ml-1 truncate max-w-[120px]">
-                        {user?.name || (isAuthenticated ? "Bettor" : "Guest")}
+                    <span className="font-display font-black text-xs md:text-sm text-primary tracking-widest uppercase ml-1">
+                        INSTANT VIRTUALS
                     </span>
                 </div>
 
