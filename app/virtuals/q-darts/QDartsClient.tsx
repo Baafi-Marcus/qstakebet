@@ -117,14 +117,28 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
 
                     <QDartsLivePlayer outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
 
-                    {/* CENTER: Markets List (Only interactable during BETTING_OPEN) */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-40">
-                        {isLocked ? (
-                            <div className="flex-1 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
-                                <QDarts3DBoard outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
+                    {/* Scrollable Area for 3D Board & Markets */}
+                    <div className="flex-1 overflow-y-auto pb-40 scrollbar-hide">
+
+                        {/* 3D Board - Always visible during match, or at least sharing space */}
+                        <div className={cn(
+                            "w-full transition-all duration-700 ease-in-out px-4 pt-2",
+                            isLocked ? "h-[300px] md:h-[400px]" : "h-0 opacity-0 overflow-hidden"
+                        )}>
+                            <QDarts3DBoard outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
+                        </div>
+
+                        {/* Markets Section - Now always visible/scrollable */}
+                        <div className="p-4 space-y-6">
+                            <div className="flex items-center justify-between px-1 border-b border-white/5 pb-2 mb-4">
+                                <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-400">Available Markets</h2>
+                                {isLocked && <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/20 rounded-full border border-amber-500/30">
+                                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Betting Closed</span>
+                                </div>}
                             </div>
-                        ) : (
-                            markets.map(market => (
+
+                            {markets.map(market => (
                                 <div key={market.id} className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
                                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{market.name}</h3>
@@ -148,6 +162,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                             return (
                                                 <button
                                                     key={sel.id}
+                                                    disabled={isLocked}
                                                     onClick={() => {
                                                         if (isSelected) setSelections(prev => prev.filter(s => s.selectionId !== sel.id))
                                                         else setSelections(prev => [...prev, {
@@ -167,7 +182,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                         "p-2 rounded-xl border flex flex-col items-center justify-center transition-all min-h-[54px] relative overflow-hidden",
                                                         isSelected
                                                             ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[0.98]'
-                                                            : 'bg-slate-900 border-white/5 hover:bg-slate-800'
+                                                            : 'bg-slate-900 border-white/5 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed'
                                                     )}
                                                 >
                                                     <span className="text-[10px] font-black uppercase text-center leading-tight opacity-70 mb-0.5">{sel.label}</span>
@@ -177,8 +192,8 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         })}
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            ))}
+                        </div>
                     </div>
 
                 </div>
