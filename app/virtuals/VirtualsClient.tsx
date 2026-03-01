@@ -444,6 +444,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                 isAuthenticated={isAuthenticated}
                 user={user}
                 onNextRound={handleNextRound}
+                disableSkip={!!countdown}
             />
 
             <div className="flex flex-1 overflow-hidden">

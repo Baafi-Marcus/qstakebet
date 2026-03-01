@@ -133,6 +133,9 @@ export function VirtualsMatchList({
                                 if (isSimulating) {
                                     const matchOutcome = outcomes.find(o => o.id === match.id);
                                     if (matchOutcome) {
+                                        // Wait for countdown to finish before showing any scores
+                                        if (simulationProgress === 0) return undefined;
+
                                         const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
                                         const scores: [number, number, number] = [0, 0, 0];
                                         for (let r = 0; r <= currentRoundIdx; r++) {

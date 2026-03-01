@@ -348,7 +348,7 @@ export function simulateMatch(
                 else wrong++;
             }
             const raw = (correct * 3) - (wrong * 1);
-            r4Scores[i] = Math.max(-numTFQs, raw); // Floor at −numQs
+            r4Scores[i] = Math.max(-5, raw); // Hard floor at -5
             if (r4Scores[i] <= 0) shutoutRound[i] = true;
         }
         r4Scores.forEach((s, i) => cumulativeScores[i] += s);

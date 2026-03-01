@@ -19,6 +19,7 @@ interface VirtualsHeaderProps {
     isAuthenticated: boolean;
     user?: { id?: string; email?: string; name?: string | null };
     onNextRound: () => void;
+    disableSkip?: boolean;
 }
 
 export function VirtualsHeader({
@@ -37,7 +38,8 @@ export function VirtualsHeader({
     onSkip,
     isAuthenticated,
     user,
-    onNextRound
+    onNextRound,
+    disableSkip
 }: VirtualsHeaderProps) {
     return (
         <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
@@ -54,7 +56,13 @@ export function VirtualsHeader({
                     ) : (
                         <button
                             onClick={onSkip}
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 animate-in fade-in"
+                            disabled={disableSkip}
+                            className={cn(
+                                "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg animate-in fade-in",
+                                disableSkip
+                                    ? "bg-slate-800 text-white/30 cursor-not-allowed"
+                                    : "bg-purple-600 hover:bg-purple-500 text-white active:scale-95"
+                            )}
                         >
                             Skip
                         </button>
