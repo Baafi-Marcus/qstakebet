@@ -27,64 +27,52 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
         return sequence
     })
 
-    // Active throw index based on elapsed time inside the 25s window
-    const [activeThrowIdx, setActiveThrowIdx] = useState(-1)
+    // Derived state directly from timeRemaining without cascading renders
+    const elapsed = 25 - timeRemaining
+    const rawExpectedIdx = Math.floor((elapsed / 25) * 30)
 
-    // Track cumulative scores live during animation
-    const [liveScoreA, setLiveScoreA] = useState(0)
-    const [liveScoreB, setLiveScoreB] = useState(0)
-    const [currentRound, setCurrentRound] = useState(1)
-    const [lastHit, setLastHit] = useState<{ player: string, score: number, isBull: boolean } | null>(null)
+    // Cap indices safely between -1 and 29
+    const activeThrowIdx = isPlaying
+        ? Math.max(-1, Math.min(29, rawExpectedIdx))
+        : isSettlement ? 29 : -1
+
+    // Calculate current round
+    const currentRound = activeThrowIdx >= 0
+        ? throwsToPlay[activeThrowIdx].round
+        : (isSettlement ? 5 : 1)
+
+    // Calculate running scores
+    const throwsSoFar = throwsToPlay.slice(0, activeThrowIdx + 1)
+    const liveScoreA = throwsSoFar.filter(t => t.player === 'A').reduce((sum, t) => sum + t.throw.score, 0)
+    const liveScoreB = throwsSoFar.filter(t => t.player === 'B').reduce((sum, t) => sum + t.throw.score, 0)
+
+    // Last hit detail for the ticker
+    const lastThrow = activeThrowIdx >= 0 ? throwsToPlay[activeThrowIdx] : null
+    const lastHit = lastThrow ? {
+        player: lastThrow.player === 'A' ? outcome.playerA.name : outcome.playerB.name,
+        score: lastThrow.throw.score,
+        isBull: lastThrow.throw.isBullseye
+    } : null
+
+    // Track previous throw to fire haptics exactly once per new throw
+    // Haptics are purely an external side-effect
+    const prevThrowIdxRef = useRef(-2)
+    const prevPhaseRef = useRef(phase)
 
     useEffect(() => {
-        if (!isPlaying) {
-            if (isSettlement) {
-                // Instantly sync to final state
-                setLiveScoreA(outcome.totalScoreA)
-                setLiveScoreB(outcome.totalScoreB)
-                setCurrentRound(5)
-                setActiveThrowIdx(throwsToPlay.length - 1)
-
-                // Final win/loss vibration
-                haptics.success() // Simple hit for now
-            } else {
-                // Reset for betting phase
-                setLiveScoreA(0)
-                setLiveScoreB(0)
-                setCurrentRound(1)
-                setActiveThrowIdx(-1)
-                setLastHit(null)
-            }
-            return
-        }
-
-        // 25 seconds total. Time remaining counts down 25 -> 0.
-        // Elapsed = 25 - timeRemaining
-        const elapsed = 25 - timeRemaining
-        // 30 throws total. Each throw takes 25/30 = 0.833s
-        const expectedIdx = Math.floor(elapsed / (25 / 30))
-
-        if (expectedIdx !== activeThrowIdx && expectedIdx >= 0 && expectedIdx < throwsToPlay.length) {
-            setActiveThrowIdx(expectedIdx)
-            const currentThrow = throwsToPlay[expectedIdx]
-
-            // Update live scores
-            if (currentThrow.player === 'A') setLiveScoreA(prev => prev + currentThrow.throw.score)
-            else setLiveScoreB(prev => prev + currentThrow.throw.score)
-
-            setCurrentRound(currentThrow.round)
-            setLastHit({
-                player: currentThrow.player === 'A' ? outcome.playerA.name : outcome.playerB.name,
-                score: currentThrow.throw.score,
-                isBull: currentThrow.throw.isBullseye
-            })
-
-            // Haptics per throw
-            if (currentThrow.throw.isBullseye) haptics.medium()
+        if (isPlaying && activeThrowIdx > prevThrowIdxRef.current && activeThrowIdx >= 0 && lastThrow) {
+            // New throw just happened
+            if (lastThrow.throw.isBullseye) haptics.medium()
             else haptics.light()
         }
 
-    }, [timeRemaining, isPlaying, isSettlement])
+        if (isSettlement && prevPhaseRef.current === 'IN_PROGRESS') {
+            haptics.success()
+        }
+
+        prevThrowIdxRef.current = activeThrowIdx
+        prevPhaseRef.current = phase
+    }, [activeThrowIdx, isPlaying, isSettlement, lastThrow, phase])
 
     const pA = outcome.playerA
     const pB = outcome.playerB

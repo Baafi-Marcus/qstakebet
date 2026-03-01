@@ -25,8 +25,8 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
 
     // Base Win Prob (adjusted by skill difference)
     const totalS = sA + sB
-    let probA = sA / totalS
-    let probB = sB / totalS
+    const probA = sA / totalS
+    const probB = sB / totalS
 
     // 1. MATCH WINNER (12-15% margin)
     const marginWinner = 0.13

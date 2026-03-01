@@ -101,7 +101,7 @@ export function VirtualsBetSlip({
         if (balanceType === 'gift' && bonusId && bonusAmount > 0) {
             setGlobalStake(bonusAmount);
         }
-    }, [balanceType, bonusId, bonusAmount]);
+    }, [balanceType, bonusId, bonusAmount, setGlobalStake]);
 
     return (
         <>
