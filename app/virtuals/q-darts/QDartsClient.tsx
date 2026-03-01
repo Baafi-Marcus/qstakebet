@@ -13,6 +13,7 @@ import { QDartsBetSlip } from './components/QDartsBetSlip'
 import { QDarts3DBoard } from './components/QDarts3DBoard'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
+import { audio } from '@/lib/audio'
 
 interface QDartsClientProps {
     userProfile?: { balance: number; bonusBalance: number };
@@ -149,6 +150,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         }])
 
         haptics.success() // Success pulse
+        audio.success() // Success sound
         setSelections([])
         alert(`Bet Placed Successfully via ${balanceType === 'gift' ? 'Gift' : 'Cash'}!`)
     }
@@ -186,7 +188,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
 
                 <main className="flex-1 flex flex-col relative overflow-hidden">
                     <div className="flex-1 flex flex-col relative h-full overflow-hidden">
-                        <QDartsLivePlayer outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
+                        <QDartsLivePlayer outcome={outcome} gameState={gameState} phase={gameState.phase} />
 
                         {/* Scrollable Area for 3D Board & Markets */}
                         <div className="flex-1 overflow-y-auto scrollbar-nav flex flex-col">
@@ -237,6 +239,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                         disabled={isLocked}
                                                         onClick={() => {
                                                             haptics.light() // Soft click feedback
+                                                            audio.light() // Soft click sound
                                                             if (isSelected) setSelections(prev => prev.filter(s => s.selectionId !== sel.id))
                                                             else setSelections(prev => [...prev, {
                                                                 matchId: outcome.matchId,
@@ -348,10 +351,14 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                         <div className="flex flex-col">
                             <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Bet History</h2>
                             <button
-                                onClick={() => { haptics.bullseye(); alert("Vibration triggered! If you didn't feel it, your device/browser might not support haptics."); }}
+                                onClick={() => { 
+                                    haptics.bullseye(); 
+                                    audio.bullseye();
+                                    alert("Feedback triggered! If you didn't feel vibration, check your sound. Some browsers require interaction before playing audio."); 
+                                }}
                                 className="text-[9px] text-slate-500 uppercase font-black hover:text-white transition-colors text-left"
                             >
-                                (Test Vibration)
+                                (Test Feedback)
                             </button>
                         </div>
                         <button onClick={() => setIsHistoryOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">

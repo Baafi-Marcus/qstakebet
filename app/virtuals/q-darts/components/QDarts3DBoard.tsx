@@ -3,6 +3,7 @@ import { QDartsMatchOutcome } from '@/lib/q-darts-engine'
 import { Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
+import { audio } from '@/lib/audio'
 
 interface QDarts3DBoardProps {
     outcome: QDartsMatchOutcome
@@ -30,10 +31,13 @@ export function QDarts3DBoard({ outcome, timeRemaining, phase }: QDarts3DBoardPr
 
             if (currentThrow?.throw.isBullseye) {
                 haptics.bullseye() // Strong bullseye pulse
+                audio.bullseye() // Bullseye sound
             } else if (currentThrow?.throw.score >= 50) {
                 haptics.heavy() // Triple pulse
+                audio.hit() // Hit sound
             } else {
                 haptics.light() // Subtle hit
+                audio.hit() // Hit sound
             }
         }
     }, [activeThrowIdx, outcome])

@@ -7,6 +7,7 @@ import { BetSlipContext } from "@/lib/store/context"
 import type { Selection } from "@/lib/store/context"
 import { Lock } from "lucide-react"
 import { haptics } from "@/lib/haptics"
+import { audio } from "@/lib/audio"
 
 interface OddsButtonProps {
     label: string
@@ -62,8 +63,9 @@ export function OddsButton({
         e.stopPropagation()
         if (!odds || odds === 0 || isLocked) return; // Add isLocked check
 
-        // Trigger haptic feedback
+        // Trigger haptic and audio feedback
         haptics.light()
+        audio.light()
 
         const selection = {
             matchId,

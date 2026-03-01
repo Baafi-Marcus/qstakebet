@@ -1,34 +1,36 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
-import { QDartsMatchOutcome, QDartsThrow } from '@/lib/q-darts-engine'
+import { QDartsThrow } from '@/lib/q-darts-engine'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
+import { audio } from '@/lib/audio'
 import { Target } from 'lucide-react'
+import { QDartsMatchState } from '@/hooks/useQDartsMatchLoop'
 
 interface QDartsLivePlayerProps {
-    outcome: QDartsMatchOutcome
-    timeRemaining: number
+    outcome: any
+    gameState: QDartsMatchState
     phase: string
 }
 
-export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePlayerProps) {
+export function QDartsLivePlayer({ outcome, phase, gameState }: QDartsLivePlayerProps) {
     const isPlaying = phase === 'IN_PROGRESS'
     const isSettlement = phase === 'SETTLEMENT'
 
     // We have 25 seconds to play 5 rounds (3 darts per player per round = 6 throws)
     // 30 total throws. 25s / 30 = ~800ms per throw.
-    const throwsToPlay = outcome.rounds.flatMap((r, rIdx) => {
+    const throwsToPlay = outcome.rounds.flatMap((r: any, rIdx: number) => {
         const sequence = []
         for (let t = 0; t < 3; t++) {
-            sequence.push({ player: 'A', throw: r.playerAThrows[t], round: rIdx + 1 })
-            sequence.push({ player: 'B', throw: r.playerBThrows[t], round: rIdx + 1 })
+            sequence.push({ player: 'A', dartThrow: r.playerAThrows[t], round: rIdx + 1 })
+            sequence.push({ player: 'B', dartThrow: r.playerBThrows[t], round: rIdx + 1 })
         }
         return sequence
     })
 
     // Derived state directly from timeRemaining without cascading renders
-    const elapsed = 25 - timeRemaining
+    const elapsed = 25 - gameState.timeRemaining
     const rawExpectedIdx = Math.floor((elapsed / 25) * 30)
 
     // Cap indices safely between -1 and 29
@@ -42,16 +44,16 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
         : (isSettlement ? 5 : 1)
 
     // Calculate running scores
-    const throwsSoFar = throwsToPlay.slice(0, activeThrowIdx + 1)
-    const liveScoreA = throwsSoFar.filter(t => t.player === 'A').reduce((sum, t) => sum + t.throw.score, 0)
-    const liveScoreB = throwsSoFar.filter(t => t.player === 'B').reduce((sum, t) => sum + t.throw.score, 0)
+    const throwsSoFar = throwsToPlay.slice(0, activeThrowIdx + 1) as any[]
+    const liveScoreA = throwsSoFar.filter(t => t.player === 'A').reduce((sum: number, t: any) => sum + t.dartThrow.score, 0)
+    const liveScoreB = throwsSoFar.filter(t => t.player === 'B').reduce((sum: number, t: any) => sum + t.dartThrow.score, 0)
 
     // Last hit detail for the ticker
     const lastThrow = activeThrowIdx >= 0 ? throwsToPlay[activeThrowIdx] : null
     const lastHit = lastThrow ? {
         player: lastThrow.player === 'A' ? outcome.playerA.name : outcome.playerB.name,
-        score: lastThrow.throw.score,
-        isBull: lastThrow.throw.isBullseye
+        score: lastThrow.dartThrow.score,
+        isBull: lastThrow.dartThrow.isBullseye
     } : null
 
     // Track previous throw to fire haptics exactly once per new throw
@@ -62,13 +64,21 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
     useEffect(() => {
         if (isPlaying && activeThrowIdx > prevThrowIdxRef.current && activeThrowIdx >= 0 && lastThrow) {
             // New throw just happened
-            if (lastThrow.throw.isBullseye) haptics.bullseye()
-            else if (lastThrow.throw.score >= 50) haptics.heavy()
-            else haptics.light()
+            if (lastThrow.dartThrow.isBullseye) {
+                haptics.bullseye()
+                audio.bullseye()
+            } else if (lastThrow.dartThrow.score >= 50) {
+                haptics.heavy()
+                audio.hit()
+            } else {
+                haptics.light()
+                audio.hit()
+            }
         }
 
         if (isSettlement && prevPhaseRef.current === 'IN_PROGRESS') {
             haptics.success()
+            audio.success()
         }
 
         prevThrowIdxRef.current = activeThrowIdx
@@ -142,6 +152,12 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
                         <div className="flex flex-col items-center justify-center">
                             <Target className="w-12 h-12 text-slate-700 mb-2 opacity-50 animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Waiting for bets...</span>
+                            <span className={cn(
+                                "text-lg font-mono font-black mt-1",
+                                gameState.timeRemaining < 10 ? "text-red-500 animate-pulse" : "text-amber-400"
+                            )}>
+                                {gameState.timeRemaining}s
+                            </span>
                         </div>
                     )}
                 </div>
@@ -162,7 +178,7 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
             {/* Bottom Timeline */}
             <div className="h-1 w-full bg-slate-950">
                 <div className="h-full bg-purple-600 transition-all duration-1000 ease-linear"
-                    style={{ width: `${isPlaying ? ((25 - timeRemaining) / 25) * 100 : isSettlement ? 100 : 0}%` }} />
+                    style={{ width: `${isPlaying ? ((25 - gameState.timeRemaining) / 25) * 100 : isSettlement ? 100 : 0}%` }} />
             </div>
 
         </div>

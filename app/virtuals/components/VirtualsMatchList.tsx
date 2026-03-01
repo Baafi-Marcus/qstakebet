@@ -5,6 +5,7 @@ import { MatchRow } from "@/components/ui/MatchRow"
 import { Match } from "@/lib/types"
 import { VirtualSchool, VirtualMatchOutcome, simulateMatch, VirtualSelection } from "@/lib/virtuals"
 import { haptics } from "@/lib/haptics"
+import { audio } from "@/lib/audio"
 
 interface VirtualsMatchListProps {
     isSimulationActive: boolean;
@@ -59,6 +60,7 @@ export function VirtualsMatchList({
                             key={region}
                             onClick={() => {
                                 haptics.light();
+                                audio.light();
                                 setSelectedRegion(region);
                             }}
                             className={cn(
@@ -97,6 +99,7 @@ export function VirtualsMatchList({
                                     key={m.id}
                                     onClick={() => {
                                         haptics.light();
+                                        audio.light();
                                         setActiveMarket(m.id as any);
                                     }}
                                     className={cn(

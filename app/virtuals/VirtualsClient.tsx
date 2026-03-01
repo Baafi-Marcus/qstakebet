@@ -146,6 +146,34 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         }
     }, [isAuthenticated])
 
+    // Navigation Protection
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (pendingSlips.length > 0 || isSimulating || selections.length > 0) {
+                e.preventDefault()
+                e.returnValue = ''
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [pendingSlips.length, isSimulating, selections.length])
+
+    const handleLeaveGame = () => {
+        const hasActiveBets = pendingSlips.length > 0 || isSimulating
+        const isBetting = selections.length > 0
+        
+        let confirmMsg = "Are you sure you want to exit NSMQ Virtuals?"
+        if (hasActiveBets) {
+            confirmMsg = "You have active bets or a match in progress! Are you sure you want to leave?"
+        } else if (isBetting) {
+            confirmMsg = "Your current selections will be cleared. Are you sure you want to leave?"
+        }
+            
+        if (window.confirm(confirmMsg)) {
+            router.push('/virtuals')
+        }
+    }
+
     // Memos
     const { matches, outcomes } = useMemo(() => {
         const count = selectedCategory === 'regional' ? 15 : 9
@@ -428,7 +456,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <VirtualsHeader
-                onBack={() => router.back()}
+                onBack={handleLeaveGame}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
                 setSelectedRegion={setSelectedRegion}
