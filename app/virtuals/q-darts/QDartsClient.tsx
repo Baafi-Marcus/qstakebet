@@ -10,11 +10,14 @@ import { VirtualSelection } from '@/lib/virtuals'
 import { ShieldAlert, Info } from 'lucide-react'
 import { QDartsLivePlayer } from './components/QDartsLivePlayer'
 import { QDartsBetSlip } from './components/QDartsBetSlip'
+import { QDarts3DBoard } from './components/QDarts3DBoard'
 
-// Mock fetching user state
-const dummyProfile = { balance: 1540.20, bonusBalance: 12.00 }
+interface QDartsClientProps {
+    userProfile?: { balance: number; bonusBalance: number };
+    isAuthenticated?: boolean;
+}
 
-export default function QDartsClient() {
+export default function QDartsClient({ userProfile = { balance: 0, bonusBalance: 0 }, isAuthenticated = false }: QDartsClientProps) {
     const router = useRouter()
 
     // Hardcoded seed for development - in prod this comes from a backend epoch
@@ -25,6 +28,9 @@ export default function QDartsClient() {
 
     interface PlacedBet { id: string; stake: number; selections: VirtualSelection[]; status: string; payout: number }
     const [placedBets, setPlacedBets] = useState<PlacedBet[]>([])
+
+    // We track the exact historical match score to show on top during subsequent rounds
+    const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
 
     // Generate the one global match for this seed
     const { outcome, markets } = useMemo(() => {
@@ -37,6 +43,8 @@ export default function QDartsClient() {
     // Settlement Logic
     React.useEffect(() => {
         if (gameState.phase === 'SETTLEMENT') {
+            setPreviousScore(`${outcome.playerA.name} ${outcome.totalScoreA} - ${outcome.totalScoreB} ${outcome.playerB.name}`)
+
             setPlacedBets(prev => prev.map(bet => {
                 if (bet.status !== 'PENDING') return bet;
 
@@ -87,13 +95,19 @@ export default function QDartsClient() {
                 availableRegions={[]}
                 balanceType={balanceType}
                 onBalanceTypeChange={setBalanceType}
-                balance={dummyProfile.balance}
-                bonusBalance={dummyProfile.bonusBalance}
-                hasPendingBets={false}
+                balance={userProfile.balance}
+                bonusBalance={userProfile.bonusBalance}
+                hasPendingBets={placedBets.some(b => b.status === 'PENDING')}
                 onOpenHistory={() => { }}
-                isAuthenticated={true}
+                isAuthenticated={isAuthenticated}
                 onNextRound={() => { }}
                 disableSkip={true} // Q-DARTS is a fixed-time global game, no skipping
+                customSubNavNode={
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Pre-Match Result:</span>
+                        <span className="text-xs font-black text-amber-400">{previousScore}</span>
+                    </div>
+                }
             />
 
             <main className="flex-1 flex flex-col md:flex-row max-h-[calc(100vh-56px)] overflow-hidden">
@@ -104,8 +118,8 @@ export default function QDartsClient() {
                     {/* CENTER: Markets List (Only interactable during BETTING_OPEN) */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-40">
                         {isLocked ? (
-                            <div className="flex-1 flex items-center justify-center p-12 opacity-50">
-                                <span className="font-black uppercase tracking-widest">Markets Locked — Match in Progress</span>
+                            <div className="flex-1 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+                                <QDarts3DBoard outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
                             </div>
                         ) : (
                             markets.map(market => (
@@ -159,8 +173,8 @@ export default function QDartsClient() {
                             onRemove={(id) => setSelections(prev => prev.filter(s => s.selectionId !== id))}
                             onPlaceBet={handlePlaceBet}
                             isLocked={isLocked}
-                            balance={dummyProfile.balance}
-                            bonusBalance={dummyProfile.bonusBalance}
+                            balance={userProfile.balance}
+                            bonusBalance={userProfile.bonusBalance}
                             balanceType={balanceType}
                         />
                     </div>

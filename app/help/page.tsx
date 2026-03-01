@@ -72,7 +72,7 @@ export default function HelpCenterPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <a
-                                href="https://wa.me/233276019798"
+                                href="https://wa.me/2330276019796"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-4 p-4 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 rounded-xl transition-all group"
@@ -85,13 +85,13 @@ export default function HelpCenterPage() {
                             </a>
 
                             <a
-                                href="tel:+233276019798"
+                                href="tel:+2330276019796"
                                 className="flex items-center gap-4 p-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 rounded-xl transition-all group"
                             >
                                 <Phone className="h-6 w-6 text-blue-400" />
                                 <div>
                                     <p className="font-black text-white">Call Us</p>
-                                    <p className="text-xs text-blue-400">+233 27 601 9798</p>
+                                    <p className="text-xs text-blue-400">+233 027 601 9796</p>
                                 </div>
                             </a>
                         </div>

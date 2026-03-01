@@ -153,7 +153,7 @@ export default function HowToPlayPage() {
                 <div className="mt-12 text-center">
                     <p className="text-slate-400 mb-4">Need help? Our support team is here for you!</p>
                     <a
-                        href="https://wa.me/233276019798"
+                        href="https://wa.me/2330276019796"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black px-8 py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-sm uppercase tracking-wider"

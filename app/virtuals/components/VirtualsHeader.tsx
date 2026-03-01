@@ -20,6 +20,7 @@ interface VirtualsHeaderProps {
     user?: { id?: string; email?: string; name?: string | null };
     onNextRound: () => void;
     disableSkip?: boolean;
+    customSubNavNode?: React.ReactNode;
 }
 
 export function VirtualsHeader({
@@ -39,7 +40,8 @@ export function VirtualsHeader({
     isAuthenticated,
     user,
     onNextRound,
-    disableSkip
+    disableSkip,
+    customSubNavNode
 }: VirtualsHeaderProps) {
     return (
         <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
@@ -73,27 +75,33 @@ export function VirtualsHeader({
                     </span>
                 </div>
 
-                {/* Desktop Category Selector (Moved to Second Row on Mobile) */}
-                <div className={cn("hidden md:flex items-center gap-2", isSimulationActive && "opacity-20 pointer-events-none")}>
-                    {(['all', 'national', 'regional'] as const).map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => {
-                                onCategoryChange(cat);
-                                if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
-                                else setSelectedRegion(null);
-                            }}
-                            className={cn(
-                                "text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border",
-                                selectedCategory === cat
-                                    ? "bg-purple-600 border-purple-400 text-white shadow-lg"
-                                    : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                            )}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
+                {/* Desktop Category Selector or Custom Node */}
+                {customSubNavNode ? (
+                    <div className="hidden md:flex flex-1 items-center justify-center">
+                        {customSubNavNode}
+                    </div>
+                ) : (
+                    <div className={cn("hidden md:flex items-center gap-2", isSimulationActive && "opacity-20 pointer-events-none")}>
+                        {(['all', 'national', 'regional'] as const).map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => {
+                                    onCategoryChange(cat);
+                                    if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
+                                    else setSelectedRegion(null);
+                                }}
+                                className={cn(
+                                    "text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border",
+                                    selectedCategory === cat
+                                        ? "bg-purple-600 border-purple-400 text-white shadow-lg"
+                                        : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (
@@ -147,30 +155,36 @@ export function VirtualsHeader({
                 </div>
             </div>
 
-            {/* Bottom Row: Mobile Category Selector */}
-            <div className={cn(
-                "md:hidden flex items-center gap-2 px-4 py-2 border-b border-white/5 overflow-x-auto no-scrollbar bg-slate-900/50",
-                isSimulationActive && "opacity-20 pointer-events-none"
-            )}>
-                {(['all', 'national', 'regional'] as const).map((cat) => (
-                    <button
-                        key={cat}
-                        onClick={() => {
-                            onCategoryChange(cat);
-                            if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
-                            else setSelectedRegion(null);
-                        }}
-                        className={cn(
-                            "text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all border whitespace-nowrap flex-1",
-                            selectedCategory === cat
-                                ? "bg-purple-600 border-purple-400 text-white shadow-lg"
-                                : "bg-slate-900/60 border-white/5 text-slate-500"
-                        )}
-                    >
-                        {cat}
-                    </button>
-                ))}
-            </div>
+            {/* Bottom Row: Mobile Category Selector or Custom Node */}
+            {customSubNavNode ? (
+                <div className="md:hidden w-full flex items-center justify-center p-2 border-b border-white/5 bg-slate-900/50">
+                    {customSubNavNode}
+                </div>
+            ) : (
+                <div className={cn(
+                    "md:hidden flex items-center gap-2 px-4 py-2 border-b border-white/5 overflow-x-auto no-scrollbar bg-slate-900/50",
+                    isSimulationActive && "opacity-20 pointer-events-none"
+                )}>
+                    {(['all', 'national', 'regional'] as const).map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => {
+                                onCategoryChange(cat);
+                                if (cat === 'regional' && availableRegions.length > 0) setSelectedRegion(availableRegions[0]);
+                                else setSelectedRegion(null);
+                            }}
+                            className={cn(
+                                "text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl transition-all border whitespace-nowrap flex-1",
+                                selectedCategory === cat
+                                    ? "bg-purple-600 border-purple-400 text-white shadow-lg"
+                                    : "bg-slate-900/60 border-white/5 text-slate-500"
+                            )}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
