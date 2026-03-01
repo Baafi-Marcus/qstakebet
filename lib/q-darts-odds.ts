@@ -74,25 +74,75 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
                 id: `total_over_${band}`, 
                 label: `Over ${band}`, 
                 odds: calculatePropOdds(pOver, 0.05 + idx * 0.02, marginTotal, 1.08, 50.00, outcome.timestamp + 100 + idx) || 1.10, 
-                probability: pOver 
+                probability: pOver,
+                band // Helper for sorting
             })
             totalSelections.push({ 
                 id: `total_under_${band}`, 
                 label: `Under ${band}`, 
                 odds: calculatePropOdds(1 - pOver, 0.05 + idx * 0.02, marginTotal, 1.08, 50.00, outcome.timestamp + 200 + idx) || 1.10, 
-                probability: 1 - pOver 
+                probability: 1 - pOver,
+                band // Helper for sorting
             })
         }
     })
+
+    // Monotonic Correction for Total Match Score
+    if (totalSelections.length > 0) {
+        // Over: higher band -> higher odds
+        const overs = totalSelections.filter(s => s.id.includes('_over_')).sort((a, b) => a.band - b.band)
+        for (let i = 1; i < overs.length; i++) {
+            overs[i].odds = Math.max(overs[i].odds, overs[i-1].odds + 0.02)
+        }
+        // Under: lower band -> higher odds (e.g. Under 400.5 is harder than Under 600.5)
+        const unders = totalSelections.filter(s => s.id.includes('_under_')).sort((a, b) => a.band - b.band)
+        for (let i = unders.length - 2; i >= 0; i--) {
+            unders[i].odds = Math.max(unders[i].odds, unders[i+1].odds + 0.02)
+        }
+    }
 
     if (totalSelections.length > 0) {
         markets.push({
             id: 'total_score',
             name: 'Total Match Score',
             description: 'Total combined score of both players at the end of 5 rounds.',
-            selections: totalSelections
+            selections: totalSelections.map(({ band, ...rest }) => rest)
         })
     }
+
+    // 2.5 INDIVIDUAL PLAYER TOTALS (New)
+    [pA, pB].forEach(player => {
+        const skill = skillMap[player.skill]
+        const proj = skill * 5 * 105
+        const pBands = [
+            Math.floor(proj * 0.85 + jitter/10) + 0.5,
+            Math.floor(proj * 1.0 + jitter/10) + 0.5,
+            Math.floor(proj * 1.15 + jitter/10) + 0.5
+        ]
+        const pSells: any[] = []
+        pBands.forEach((band, idx) => {
+            const pOver = 1 / (1 + Math.exp(-(proj - band) / (50 / skill)))
+            if (pOver > 0.02 && pOver < 0.98) {
+                pSells.push({ id: `${player.id}_total_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pOver, 0.1, marginTotal, 1.08, 50.00, outcome.timestamp + 500 + idx) || 1.85, probability: pOver, band })
+                pSells.push({ id: `${player.id}_total_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pOver, 0.1, marginTotal, 1.08, 50.00, outcome.timestamp + 600 + idx) || 1.85, probability: 1 - pOver, band })
+            }
+        })
+        
+        // Monotonic Correction
+        const overs = pSells.filter(s => s.id.includes('_over_')).sort((a, b) => a.band - b.band)
+        for (let i = 1; i < overs.length; i++) overs[i].odds = Math.max(overs[i].odds, overs[i-1].odds + 0.02)
+        const unders = pSells.filter(s => s.id.includes('_under_')).sort((a, b) => a.band - b.band)
+        for (let i = unders.length - 2; i >= 0; i--) unders[i].odds = Math.max(unders[i].odds, unders[i+1].odds + 0.02)
+
+        if (pSells.length > 0) {
+            markets.push({
+                id: `${player.id}_total_points`,
+                name: `${player.name} Total Points`,
+                description: `Total points scored by ${player.name} in the match.`,
+                selections: pSells.map(({ band, ...rest }) => rest)
+            })
+        }
+    })
 
     // 3. PER ROUND MARKETS
     for (let r = 1; r <= 5; r++) {
@@ -125,16 +175,22 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
             const rDiff = projRound - band
             const pROver = 1 / (1 + Math.exp(-rDiff / (40 / skillSkew)))
             if (pROver > 0.02 && pROver < 0.98) {
-                roundSeels.push({ id: `round_${r}_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pROver, 0.1, marginRound, 1.08, 50.00, outcome.timestamp + r * 50 + bIdx) || 1.85, probability: pROver })
-                roundSeels.push({ id: `round_${r}_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pROver, 0.1, marginRound, 1.08, 50.00, outcome.timestamp + r * 60 + bIdx) || 1.85, probability: 1 - pROver })
+                roundSeels.push({ id: `round_${r}_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pROver, 0.1, marginRound, 1.08, 50.00, outcome.timestamp + r * 50 + bIdx) || 1.85, probability: pROver, band })
+                roundSeels.push({ id: `round_${r}_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pROver, 0.1, marginRound, 1.08, 50.00, outcome.timestamp + r * 60 + bIdx) || 1.85, probability: 1 - pROver, band })
             }
         })
+
+        // Monotonic Correction
+        const overs = roundSeels.filter(s => s.id.includes('_over_')).sort((a, b) => a.band - b.band)
+        for (let i = 1; i < overs.length; i++) overs[i].odds = Math.max(overs[i].odds, overs[i-1].odds + 0.02)
+        const unders = roundSeels.filter(s => s.id.includes('_under_')).sort((a, b) => a.band - b.band)
+        for (let i = unders.length - 2; i >= 0; i--) unders[i].odds = Math.max(unders[i].odds, unders[i+1].odds + 0.02)
 
         markets.push({
             id: `round_${r}_total`,
             name: `Round ${r} Points`,
             description: `Total points scored by both players in Round ${r}.`,
-            selections: roundSeels
+            selections: roundSeels.map(({ band, ...rest }) => rest)
         })
     }
 
@@ -167,16 +223,22 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
     tBands.forEach((band, idx) => {
         const pTOver = 1 / (1 + Math.exp(-(projTriples - band) / (sA + sB)))
         if (pTOver > 0.02 && pTOver < 0.98) {
-            tripleSeels.push({ id: `triples_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pTOver, 0.1, marginProps, 1.08, 50.00, outcome.timestamp + 300 + idx) || 1.8, probability: pTOver })
-            tripleSeels.push({ id: `triples_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pTOver, 0.1, marginProps, 1.08, 50.00, outcome.timestamp + 400 + idx) || 1.8, probability: 1 - pTOver })
+            tripleSeels.push({ id: `triples_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pTOver, 0.1, marginProps, 1.08, 50.00, outcome.timestamp + 300 + idx) || 1.8, probability: pTOver, band })
+            tripleSeels.push({ id: `triples_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pTOver, 0.1, marginProps, 1.08, 50.00, outcome.timestamp + 400 + idx) || 1.8, probability: 1 - pTOver, band })
         }
     })
+
+    // Monotonic Correction
+    const tOvers = tripleSeels.filter(s => s.id.includes('_over_')).sort((a, b) => a.band - b.band)
+    for (let i = 1; i < tOvers.length; i++) tOvers[i].odds = Math.max(tOvers[i].odds, tOvers[i-1].odds + 0.02)
+    const tUnders = tripleSeels.filter(s => s.id.includes('_under_')).sort((a, b) => a.band - b.band)
+    for (let i = tUnders.length - 2; i >= 0; i--) tUnders[i].odds = Math.max(tUnders[i].odds, tUnders[i+1].odds + 0.02)
     
     markets.push({
         id: 'total_triples',
         name: 'Total Triples',
         description: 'Combined number of triple rings hit by both players.',
-        selections: tripleSeels
+        selections: tripleSeels.map(({ band, ...rest }) => rest)
     })
 
     // 5. PROPS: PERFECT THROW (180 - 3 Triple 20s in a round)
@@ -228,6 +290,17 @@ export function evaluateQDartsBet(sel: VirtualSelection, outcome: QDartsMatchOut
         const type = parts[1] // over or under
         const band = parseFloat(parts[2])
         return type === 'over' ? total > band : total < band
+    }
+
+    if (sel.marketName.endsWith('Total Points')) {
+        const isA = sel.marketName.startsWith(outcome.playerA.name)
+        const isB = sel.marketName.startsWith(outcome.playerB.name)
+        if (!isA && !isB) return false
+        
+        const score = isA ? outcome.totalScoreA : outcome.totalScoreB
+        const parts = sel.selectionId.split('_')
+        const band = parseFloat(parts[parts.length - 1])
+        return sel.selectionId.includes('_over_') ? score > band : score < band
     }
 
     if (sel.marketName.includes('Round') && sel.marketName.includes('Winner')) {
