@@ -16,6 +16,11 @@ class AudioService {
         this.init()
         if (!this.ctx) return
 
+        // Resume context if it's suspended (browser policy)
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume()
+        }
+
         const osc = this.ctx.createOscillator()
         const gain = this.ctx.createGain()
 

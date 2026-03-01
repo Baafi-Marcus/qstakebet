@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react'
 import { VirtualSelection } from '@/lib/virtuals'
-import { ShieldAlert, Trash2, Zap, Ticket } from 'lucide-react'
+import { ShieldAlert, Trash2, Zap, Ticket, Wallet } from 'lucide-react'
 import { checkQDartsCorrelation } from '@/lib/q-darts-odds'
+import { cn } from '@/lib/utils'
 
 interface QDartsBetSlipProps {
     selections: VirtualSelection[]
@@ -14,6 +15,7 @@ interface QDartsBetSlipProps {
     balance: number
     bonusBalance: number
     balanceType: 'cash' | 'gift'
+    setBalanceType: (type: 'cash' | 'gift') => void
 }
 
 export function QDartsBetSlip({
@@ -24,7 +26,8 @@ export function QDartsBetSlip({
     isLocked,
     balance,
     bonusBalance,
-    balanceType
+    balanceType,
+    setBalanceType
 }: QDartsBetSlipProps) {
     const [stake, setStake] = useState<string>('1.00')
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -106,6 +109,40 @@ export function QDartsBetSlip({
 
             {/* Footer Summary & Action */}
             <div className="p-4 bg-slate-950 border-t border-white/5 flex flex-col gap-4">
+                {/* Balance Selector */}
+                <div className="flex gap-2 mb-2">
+                    <button
+                        onClick={() => setBalanceType('cash')}
+                        className={cn(
+                            "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                            balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                        )}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
+                        </div>
+                        <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                            {balance.toFixed(2)}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setBalanceType('gift')}
+                        className={cn(
+                            "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                            balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
+                        )}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
+                        </div>
+                        <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                            {bonusBalance.toFixed(2)}
+                        </span>
+                    </button>
+                </div>
+
                 <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Odds</span>
                     <span className="text-xl font-mono font-black text-emerald-400">{totalOdds.toFixed(2)}</span>

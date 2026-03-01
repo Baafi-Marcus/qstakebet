@@ -32,6 +32,8 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     const [selections, setSelections] = useState<VirtualSelection[]>([])
     const [isHistoryOpen, setIsHistoryOpen] = useState(false)
     const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
+    // We track the exact historical match score to show on top during subsequent rounds
+    const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
 
     interface PlacedBet {
         id: string;
@@ -50,9 +52,23 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         const savedBonus = localStorage.getItem('qdarts_bonus')
 
         if (savedBets) setPlacedBets(JSON.parse(savedBets))
-        if (savedBalance) setCurrentBalance(parseFloat(savedBalance))
-        if (savedBonus) setCurrentBonusBalance(parseFloat(savedBonus))
-    }, [])
+
+        // Balance Sync: prioritize higher value to account for both server deposits and local session winnings
+        if (userProfile) {
+            setCurrentBalance(Math.max(userProfile.balance, savedBalance ? parseFloat(savedBalance) : 0))
+            setCurrentBonusBalance(Math.max(userProfile.bonusBalance, savedBonus ? parseFloat(savedBonus) : 0))
+        }
+
+        // Derive Previous Result on mount
+        const prevRoundId = gameState.roundId - 1
+        const prevSeed = prevRoundId * 1337 // Simple seed derivation consistent with loop
+        const prevSim = simulateQDartsMatch(`Q-${prevRoundId}-${prevSeed}`, prevSeed, Date.now())
+        if (prevSim) {
+            const scoreA = prevSim.totalScoreA
+            const scoreB = prevSim.totalScoreB
+            setPreviousScore(`${prevSim.playerA.name} ${scoreA} - ${scoreB} ${prevSim.playerB.name}`)
+        }
+    }, [userProfile.balance, userProfile.bonusBalance, gameState.roundId])
 
     // Persistence: Save to localStorage on change
     React.useEffect(() => {
@@ -83,9 +99,6 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
             router.push('/virtuals')
         }
     }
-
-    // We track the exact historical match score to show on top during subsequent rounds
-    const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
 
     // Generate the one global match for this seed
     const { outcome, markets } = useMemo(() => {
@@ -336,6 +349,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         balance={currentBalance}
                                         bonusBalance={currentBonusBalance}
                                         balanceType={balanceType}
+                                        setBalanceType={setBalanceType}
                                     />
                                 </div>
                             </div>
