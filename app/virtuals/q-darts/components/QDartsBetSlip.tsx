@@ -41,7 +41,14 @@ export function QDartsBetSlip({
 
     const handlePlaceBet = async () => {
         if (numStake <= 0) return alert('Enter a valid stake')
-        if (balanceType === 'cash' && numStake > balance) return alert('Insufficient cash balance')
+
+        if (balanceType === 'cash' && numStake > balance) {
+            return alert('Insufficient cash balance')
+        }
+
+        if (balanceType === 'gift' && numStake > bonusBalance) {
+            return alert('Insufficient gift balance')
+        }
 
         setIsSubmitting(true)
         await onPlaceBet(numStake, totalOdds, potentialPayout)
@@ -85,7 +92,7 @@ export function QDartsBetSlip({
                             <span className="text-xs font-bold text-white leading-tight">{s.label}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-black text-emerald-400">@{s.odds.toFixed(2)}</span>
+                            <span className="font-mono text-xs font-black text-emerald-400">{s.odds.toFixed(2)}</span>
                             <button
                                 onClick={() => onRemove(s.selectionId)}
                                 className="text-slate-700 hover:text-red-400 transition-colors p-1"
@@ -111,7 +118,7 @@ export function QDartsBetSlip({
                         type="number"
                         value={stake}
                         onChange={e => setStake(e.target.value)}
-                        disabled={isLocked || balanceType === 'gift'}
+                        disabled={isLocked}
                         className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-14 pr-4 text-white font-mono font-black text-lg focus:outline-none focus:border-purple-500 transition-colors placeholder:text-slate-700"
                         placeholder="0.00"
                     />

@@ -26,12 +26,62 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     const gameState = useQDartsMatchLoop()
 
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
+    const [currentBalance, setCurrentBalance] = useState(userProfile.balance)
+    const [currentBonusBalance, setCurrentBonusBalance] = useState(userProfile.bonusBalance)
     const [selections, setSelections] = useState<VirtualSelection[]>([])
     const [isHistoryOpen, setIsHistoryOpen] = useState(false)
     const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
 
-    interface PlacedBet { id: string; stake: number; selections: VirtualSelection[]; status: string; payout: number }
+    interface PlacedBet {
+        id: string;
+        stake: number;
+        selections: VirtualSelection[];
+        status: string;
+        payout: number;
+        balanceType: 'cash' | 'gift';
+    }
     const [placedBets, setPlacedBets] = useState<PlacedBet[]>([])
+
+    // Persistence: Load from localStorage on mount
+    React.useEffect(() => {
+        const savedBets = localStorage.getItem('qdarts_placed_bets')
+        const savedBalance = localStorage.getItem('qdarts_balance')
+        const savedBonus = localStorage.getItem('qdarts_bonus')
+
+        if (savedBets) setPlacedBets(JSON.parse(savedBets))
+        if (savedBalance) setCurrentBalance(parseFloat(savedBalance))
+        if (savedBonus) setCurrentBonusBalance(parseFloat(savedBonus))
+    }, [])
+
+    // Persistence: Save to localStorage on change
+    React.useEffect(() => {
+        localStorage.setItem('qdarts_placed_bets', JSON.stringify(placedBets))
+        localStorage.setItem('qdarts_balance', currentBalance.toString())
+        localStorage.setItem('qdarts_bonus', currentBonusBalance.toString())
+    }, [placedBets, currentBalance, currentBonusBalance])
+
+    // Navigation Protection
+    React.useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (placedBets.some(b => b.status === 'PENDING') || selections.length > 0) {
+                e.preventDefault()
+                e.returnValue = ''
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [placedBets, selections.length])
+
+    const handleLeaveGame = () => {
+        const hasActiveBets = placedBets.some(b => b.status === 'PENDING')
+        const confirmMsg = hasActiveBets
+            ? "You have active bets! Are you sure you want to leave the game?"
+            : "Are you sure you want to exit Q-DARTS?"
+
+        if (window.confirm(confirmMsg)) {
+            router.push('/virtuals')
+        }
+    }
 
     // We track the exact historical match score to show on top during subsequent rounds
     const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
@@ -56,7 +106,17 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                 const allWon = bet.selections.every(sel => evaluateQDartsBet(sel, outcome))
 
                 if (allWon) {
-                    console.log(`Bet Won! You won GHS ${bet.payout.toFixed(2)}`)
+                    let winAmount = bet.payout
+
+                    // GIFT RULE: If it was a gift bet, winnings = (payout - stake) added to main balance
+                    if (bet.balanceType === 'gift') {
+                        winAmount = Math.max(0, bet.payout - bet.stake)
+                    }
+
+                    if (winAmount > 0) {
+                        setCurrentBalance(curr => curr + winAmount)
+                        console.log(`Bet Won! GHS ${winAmount.toFixed(2)} added to your main balance.`)
+                    }
                 }
 
                 return { ...bet, status: allWon ? 'WON' : 'LOST' }
@@ -69,20 +129,28 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     }, [gameState.phase, outcome])
 
     const handlePlaceBet = async (stake: number, totalOdds: number, potentialPayout: number) => {
-        // Mock API call
+        // Mock API call delay
         await new Promise(r => setTimeout(r, 500))
+
+        // Dynamic Balance Deduction
+        if (balanceType === 'cash') {
+            setCurrentBalance(prev => Math.max(0, prev - stake))
+        } else {
+            setCurrentBonusBalance(prev => Math.max(0, prev - stake))
+        }
 
         setPlacedBets(prev => [...prev, {
             id: `bet-${Date.now()}`,
             stake,
             selections: [...selections],
             status: 'PENDING',
-            payout: potentialPayout
+            payout: potentialPayout,
+            balanceType: balanceType // Track which balance was used for settlement
         }])
 
         haptics.success() // Success pulse
         setSelections([])
-        alert('Bet Placed Successfully! Good luck!')
+        alert(`Bet Placed Successfully via ${balanceType === 'gift' ? 'Gift' : 'Cash'}!`)
     }
 
     const hasConflicts = checkQDartsCorrelation(selections)
@@ -94,15 +162,15 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         <div className="min-h-screen bg-background flex flex-col text-white overflow-hidden h-screen bg-slate-950">
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 <VirtualsHeader
-                    onBack={() => router.push('/virtuals')}
+                    onBack={handleLeaveGame}
                     selectedCategory={'all'}
                     onCategoryChange={() => { }}
                     setSelectedRegion={() => { }}
                     availableRegions={[]}
                     balanceType={balanceType}
                     onBalanceTypeChange={setBalanceType}
-                    balance={userProfile.balance}
-                    bonusBalance={userProfile.bonusBalance}
+                    balance={currentBalance}
+                    bonusBalance={currentBonusBalance}
                     hasPendingBets={placedBets.some(b => b.status === 'PENDING')}
                     onOpenHistory={() => setIsHistoryOpen(true)}
                     isAuthenticated={isAuthenticated}
@@ -262,8 +330,8 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                             setIsBetSlipOpen(false);
                                         }}
                                         isLocked={isLocked}
-                                        balance={userProfile.balance}
-                                        bonusBalance={userProfile.bonusBalance}
+                                        balance={currentBalance}
+                                        bonusBalance={currentBonusBalance}
                                         balanceType={balanceType}
                                     />
                                 </div>
@@ -277,7 +345,15 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
             {isHistoryOpen && (
                 <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex flex-col animate-in slide-in-from-right duration-300">
                     <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-900/50">
-                        <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Bet History</h2>
+                        <div className="flex flex-col">
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Bet History</h2>
+                            <button
+                                onClick={() => { haptics.bullseye(); alert("Vibration triggered! If you didn't feel it, your device/browser might not support haptics."); }}
+                                className="text-[9px] text-slate-500 uppercase font-black hover:text-white transition-colors text-left"
+                            >
+                                (Test Vibration)
+                            </button>
+                        </div>
                         <button onClick={() => setIsHistoryOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                             <ShieldAlert className="h-5 w-5 rotate-45 text-slate-400" />
                         </button>
@@ -312,7 +388,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">{sel.marketName}</span>
                                                     <span className="text-xs font-bold text-white">{sel.label}</span>
                                                 </div>
-                                                <span className="font-mono text-xs font-black text-emerald-400">@{sel.odds.toFixed(2)}</span>
+                                                <span className="font-mono text-xs font-black text-emerald-400">{sel.odds.toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
