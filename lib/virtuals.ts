@@ -112,9 +112,13 @@ export interface VirtualResult {
 }
 
 // Deterministic random based on seed
-function seededRandom(seed: number) {
+export function seededRandom(seed: number) {
     const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
+}
+
+export function clamp(val: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, val))
 }
 
 export function simulateMatch(
@@ -558,7 +562,7 @@ function calculateSmartOdds(
 }
 
 // Legacy wrapper to keep signature compatible if needed, but we replace usage
-function calculateOddsFromProbability(
+export function calculateOddsFromProbability(
     probability: number,
     margin: number = 0.25,
     seed: number = 0,
@@ -569,6 +573,19 @@ function calculateOddsFromProbability(
     return calculateSmartOdds(probability, margin, seed, minOdds, maxOdds, noiseRange);
 }
 
+export function calculatePropOdds(
+    baseProb: number,
+    volatility: number = 0.25,
+    customMargin: number = 0.20,
+    min: number = 1.20,
+    max: number = 6.00,
+    startTimeMs: number = 0
+): number | null {
+    const chaos = (seededRandom(startTimeMs + baseProb * 1000) - 0.5) * volatility;
+    const finalProb = Math.max(0.01, Math.min(0.99, baseProb * (1 + chaos)));
+    return calculateOddsFromProbability(finalProb, customMargin, startTimeMs + baseProb * 777, min, max);
+}
+
 export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: number): Match {
     // Sharpen probabilities
     const sharpenedStrengths = outcome.strengths.map(s => Math.pow(s, 1.8));
@@ -577,18 +594,6 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const probA = sharpenedStrengths[0] / totalSharpened;
     const probB = sharpenedStrengths[1] / totalSharpened;
     const probC = sharpenedStrengths[2] / totalSharpened;
-
-    const getPropOdds = (
-        baseProb: number,
-        volatility: number = 0.25,
-        customMargin: number = 0.20,
-        min: number = 1.20,
-        max: number = 6.00
-    ) => {
-        const chaos = (seededRandom(startTimeMs + baseProb * 1000) - 0.5) * volatility;
-        const finalProb = Math.max(0.01, Math.min(0.99, baseProb * (1 + chaos)));
-        return calculateOddsFromProbability(finalProb, customMargin, startTimeMs + baseProb * 777, min, max);
-    };
 
     // Tier 1: Match Winner
     const winnerMargin = 0.125;
@@ -614,8 +619,8 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         if (probOver >= 0.05 && probOver <= 0.95) {
             activeBands.push({
                 band,
-                overOdds: getPropOdds(probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
-                underOdds: getPropOdds(1 - probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
+                overOdds: calculatePropOdds(probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
+                underOdds: calculatePropOdds(1 - probOver, 0.08, totalMargin, 1.08, 3.50) ?? 1.08,
             });
         }
     });
@@ -647,14 +652,14 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
     const prob26_Plus = 0.15 + (shiftFactor * 0.20);
 
     const winningMarginOdds = {
-        "1-10": getPropOdds(prob1_10, 0.20, 0.18, 1.20, 5.00),
-        "11-25": getPropOdds(prob11_25, 0.20, 0.18, 1.20, 5.00),
-        "26+": getPropOdds(prob26_Plus, 0.20, 0.18, 1.20, 5.00)
+        "1-10": calculatePropOdds(prob1_10, 0.20, 0.18, 1.20, 5.00),
+        "11-25": calculatePropOdds(prob11_25, 0.20, 0.18, 1.20, 5.00),
+        "26+": calculatePropOdds(prob26_Plus, 0.20, 0.18, 1.20, 5.00)
     };
 
     const getYesNoOdds = (yesProb: number) => ({
-        "Yes": getPropOdds(yesProb, 0.25, 0.25, 1.10, 15.00),
-        "No": getPropOdds(1 - yesProb, 0.25, 0.25, 1.10, 15.00)
+        "Yes": calculatePropOdds(yesProb, 0.25, 0.25, 1.10, 15.00),
+        "No": calculatePropOdds(1 - yesProb, 0.25, 0.25, 1.10, 15.00)
     });
 
     const matchNoise = (seededRandom(startTimeMs) * 0.06) - 0.03;
@@ -685,60 +690,60 @@ export function mapOutcomeToMatch(outcome: VirtualMatchOutcome, startTimeMs: num
         const phaseMult = roundIndex >= 3 ? 1.05 : 0.95;
 
         return {
-            [outcome.schools[0]]: getPropOdds(probA * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
-            [outcome.schools[1]]: getPropOdds(probB * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
-            [outcome.schools[2]]: getPropOdds(probC * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
+            [outcome.schools[0]]: calculatePropOdds(probA * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
+            [outcome.schools[1]]: calculatePropOdds(probB * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
+            [outcome.schools[2]]: calculatePropOdds(probC * phaseMult + rNoise, 0.25, 0.18, 1.15, 6.00),
         };
     };
 
     const firstBonusOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.4 + 0.2),
-        [outcome.schools[1]]: getPropOdds(probB * 0.4 + 0.2),
-        [outcome.schools[2]]: getPropOdds(probC * 0.4 + 0.2),
+        [outcome.schools[0]]: calculatePropOdds(probA * 0.4 + 0.2),
+        [outcome.schools[1]]: calculatePropOdds(probB * 0.4 + 0.2),
+        [outcome.schools[2]]: calculatePropOdds(probC * 0.4 + 0.2),
     };
 
     const fastestBuzzOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.5 + 0.16),
-        [outcome.schools[1]]: getPropOdds(probB * 0.5 + 0.16),
-        [outcome.schools[2]]: getPropOdds(probC * 0.5 + 0.16),
+        [outcome.schools[0]]: calculatePropOdds(probA * 0.5 + 0.16),
+        [outcome.schools[1]]: calculatePropOdds(probB * 0.5 + 0.16),
+        [outcome.schools[2]]: calculatePropOdds(probC * 0.5 + 0.16),
     };
 
     const comebackWinProb = 0.18 - (shiftFactor * 0.13);
     const comebackWinOdds = getYesNoOdds(comebackWinProb);
     const leadChangesHighProb = 0.65 - (shiftFactor * 0.40);
     const leadChangesOdds = {
-        "Over 2.5": getPropOdds(leadChangesHighProb),
-        "Under 2.5": getPropOdds(1 - leadChangesHighProb)
+        "Over 2.5": calculatePropOdds(leadChangesHighProb),
+        "Under 2.5": calculatePropOdds(1 - leadChangesHighProb)
     };
 
     const comebackTeamOdds = {
-        [outcome.schools[0]]: getPropOdds(probA * 0.3),
-        [outcome.schools[1]]: getPropOdds(probB * 0.3),
-        [outcome.schools[2]]: getPropOdds(probC * 0.3),
+        [outcome.schools[0]]: calculatePropOdds(probA * 0.3),
+        [outcome.schools[1]]: calculatePropOdds(probB * 0.3),
+        [outcome.schools[2]]: calculatePropOdds(probC * 0.3),
     }
 
     const lateSurgeOdds = {
-        [outcome.schools[0]]: getPropOdds(probA, 0.4),
-        [outcome.schools[1]]: getPropOdds(probB, 0.4),
-        [outcome.schools[2]]: getPropOdds(probC, 0.4),
+        [outcome.schools[0]]: calculatePropOdds(probA, 0.4),
+        [outcome.schools[1]]: calculatePropOdds(probB, 0.4),
+        [outcome.schools[2]]: calculatePropOdds(probC, 0.4),
     };
 
     const strongStartOdds = {
-        [outcome.schools[0]]: getPropOdds(probA, 0.1),
-        [outcome.schools[1]]: getPropOdds(probB, 0.1),
-        [outcome.schools[2]]: getPropOdds(probC, 0.1),
+        [outcome.schools[0]]: calculatePropOdds(probA, 0.1),
+        [outcome.schools[1]]: calculatePropOdds(probB, 0.1),
+        [outcome.schools[2]]: calculatePropOdds(probC, 0.1),
     };
 
     const highestPointsOdds = {
-        [outcome.schools[0]]: getPropOdds(probA),
-        [outcome.schools[1]]: getPropOdds(probB),
-        [outcome.schools[2]]: getPropOdds(probC),
+        [outcome.schools[0]]: calculatePropOdds(probA),
+        [outcome.schools[1]]: calculatePropOdds(probB),
+        [outcome.schools[2]]: calculatePropOdds(probC),
     };
 
     const leaderAfterRound1Odds = {
-        [outcome.schools[0]]: getPropOdds(probA),
-        [outcome.schools[1]]: getPropOdds(probB),
-        [outcome.schools[2]]: getPropOdds(probC),
+        [outcome.schools[0]]: calculatePropOdds(probA),
+        [outcome.schools[1]]: calculatePropOdds(probB),
+        [outcome.schools[2]]: calculatePropOdds(probC),
     };
 
     const round1WinnerOdds = getRoundWinnerOdds(0);
