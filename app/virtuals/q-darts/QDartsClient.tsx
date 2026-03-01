@@ -7,10 +7,11 @@ import { simulateQDartsMatch } from '@/lib/q-darts-engine'
 import { generateQDartsMarkets, QDartsMarket, checkQDartsCorrelation, evaluateQDartsBet } from '@/lib/q-darts-odds'
 import { useQDartsMatchLoop } from '@/hooks/useQDartsMatchLoop'
 import { VirtualSelection } from '@/lib/virtuals'
-import { ShieldAlert, Info } from 'lucide-react'
+import { ShieldAlert, Info, Target } from 'lucide-react'
 import { QDartsLivePlayer } from './components/QDartsLivePlayer'
 import { QDartsBetSlip } from './components/QDartsBetSlip'
 import { QDarts3DBoard } from './components/QDarts3DBoard'
+import { cn } from '@/lib/utils'
 
 interface QDartsClientProps {
     userProfile?: { balance: number; bonusBalance: number };
@@ -25,6 +26,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
 
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const [selections, setSelections] = useState<VirtualSelection[]>([])
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
     interface PlacedBet { id: string; stake: number; selections: VirtualSelection[]; status: string; payout: number }
     const [placedBets, setPlacedBets] = useState<PlacedBet[]>([])
@@ -98,7 +100,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                 balance={userProfile.balance}
                 bonusBalance={userProfile.bonusBalance}
                 hasPendingBets={placedBets.some(b => b.status === 'PENDING')}
-                onOpenHistory={() => { }}
+                onOpenHistory={() => setIsHistoryOpen(true)}
                 isAuthenticated={isAuthenticated}
                 onNextRound={() => { }}
                 disableSkip={true} // Q-DARTS is a fixed-time global game, no skipping
@@ -110,7 +112,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                 }
             />
 
-            <main className="flex-1 flex flex-col md:flex-row max-h-[calc(100vh-56px)] overflow-hidden">
+            <main className="flex-1 flex flex-col md:flex-row max-h-[calc(100vh-56px)] overflow-hidden relative">
                 <div className="flex-1 flex flex-col bg-slate-950/40 relative">
 
                     <QDartsLivePlayer outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
@@ -125,15 +127,22 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                             markets.map(market => (
                                 <div key={market.id} className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{market.name}</h3>
+                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{market.name}</h3>
                                         <div className="group/tip relative">
-                                            <Info className="h-3 w-3 text-slate-600 hover:text-slate-400 cursor-help" />
-                                            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-slate-900 border border-white/10 rounded-lg text-[10px] font-bold text-slate-300 hidden group-hover/tip:block z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                                            <Info className="h-3.5 w-3.5 text-slate-700 hover:text-emerald-500 cursor-help transition-colors" />
+                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-slate-300 hidden group-hover/tip:block z-[100] shadow-[0_0_30px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="text-emerald-400 uppercase mb-1 flex items-center gap-1.5">
+                                                    <ShieldAlert className="h-3 w-3" />
+                                                    Market Info
+                                                </div>
                                                 {market.description}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className={cn(
+                                        "grid gap-2",
+                                        market.selections.length === 3 ? "grid-cols-3" : "grid-cols-2"
+                                    )}>
                                         {market.selections.map(sel => {
                                             const isSelected = selections.some(s => s.selectionId === sel.id)
                                             return (
@@ -154,13 +163,15 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                             timestamp: Date.now()
                                                         }])
                                                     }}
-                                                    className={`p-3 rounded-xl border flex justify-between items-center transition-all ${isSelected
-                                                        ? 'bg-purple-600 border-purple-400 shadow-lg'
-                                                        : 'bg-slate-900 border-white/5 hover:bg-slate-800'
-                                                        }`}
+                                                    className={cn(
+                                                        "p-2 rounded-xl border flex flex-col items-center justify-center transition-all min-h-[54px] relative overflow-hidden",
+                                                        isSelected
+                                                            ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[0.98]'
+                                                            : 'bg-slate-900 border-white/5 hover:bg-slate-800'
+                                                    )}
                                                 >
-                                                    <span className="text-xs font-bold">{sel.label}</span>
-                                                    <span className="font-mono font-black">{sel.odds.toFixed(2)}</span>
+                                                    <span className="text-[10px] font-black uppercase text-center leading-tight opacity-70 mb-0.5">{sel.label}</span>
+                                                    <span className="font-mono font-black text-sm">{sel.odds.toFixed(2)}</span>
                                                 </button>
                                             )
                                         })}
@@ -185,6 +196,62 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                             bonusBalance={userProfile.bonusBalance}
                             balanceType={balanceType}
                         />
+                    </div>
+                )}
+
+                {/* BET HISTORY OVERLAY */}
+                {isHistoryOpen && (
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex flex-col animate-in slide-in-from-right duration-300">
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-900/50">
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Bet History</h2>
+                            <button onClick={() => setIsHistoryOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <ShieldAlert className="h-5 w-5 rotate-45" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {placedBets.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50 space-y-2">
+                                    <Target className="h-12 w-12" />
+                                    <p className="text-xs font-bold uppercase tracking-widest">No bets placed yet</p>
+                                </div>
+                            ) : (
+                                placedBets.slice().reverse().map(bet => (
+                                    <div key={bet.id} className="bg-slate-900 border border-white/5 rounded-2xl p-4 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Accumulator</p>
+                                                <p className="text-xs font-bold">GHS {bet.stake.toFixed(2)}</p>
+                                            </div>
+                                            <div className={cn(
+                                                "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider",
+                                                bet.status === 'WON' ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
+                                                    bet.status === 'LOST' ? "bg-red-500/20 text-red-400 border border-red-500/30" :
+                                                        "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                            )}>
+                                                {bet.status}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 pt-2 border-t border-white/5">
+                                            {bet.selections.map((sel, idx) => (
+                                                <div key={idx} className="flex justify-between items-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sel.marketName}</span>
+                                                        <span className="text-xs font-bold text-white">{sel.label}</span>
+                                                    </div>
+                                                    <span className="font-mono text-xs font-black text-emerald-400">@{sel.odds.toFixed(2)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {bet.status === 'WON' && (
+                                            <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex justify-between items-center">
+                                                <span className="text-[10px] font-black uppercase text-emerald-500/60">Payout</span>
+                                                <span className="text-sm font-black text-emerald-400">GHS {bet.payout.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 )}
 
