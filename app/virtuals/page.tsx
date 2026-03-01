@@ -4,10 +4,10 @@ import { ArrowLeft, Target, GraduationCap } from "lucide-react"
 
 export default function VirtualsHubPage() {
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4 md:p-8">
-            <div className="w-full max-w-2xl mx-auto space-y-8">
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-4 md:p-12 lg:p-20">
+            <div className="w-full max-w-5xl mx-auto space-y-6">
 
-                <header className="flex items-center gap-4 border-b border-white/10 pb-6">
+                <header className="flex items-center gap-4 border-b border-white/10 pb-6 mb-4">
                     <Link href="/" className="p-3 bg-slate-900 hover:bg-slate-800 rounded-2xl transition-all border border-white/5 active:scale-95">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
