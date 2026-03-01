@@ -47,6 +47,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         status: string;
         payout: number;
         balanceType: 'cash' | 'gift';
+        selectionOutcomes?: boolean[]; // Individual selection results
     }
     const [placedBets, setPlacedBets] = useState<PlacedBet[]>([])
 
@@ -59,9 +60,10 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         if (!hasSyncedOnMount.current) {
             if (savedBets) setPlacedBets(JSON.parse(savedBets))
 
-            // On Mount: Pick the highest value (likely local if winnings haven't been synced to server yet)
-            setCurrentBalance(Math.max(userProfile.balance, savedBalance ? parseFloat(savedBalance) : 0))
-            setCurrentBonusBalance(Math.max(userProfile.bonusBalance, savedBonus ? parseFloat(savedBonus) : 0))
+            // On Mount: Trust the saved balance if it exists (preserves local deductions)
+            // If no save, use the server value
+            setCurrentBalance(savedBalance ? parseFloat(savedBalance) : userProfile.balance)
+            setCurrentBonusBalance(savedBonus ? parseFloat(savedBonus) : userProfile.bonusBalance)
             hasSyncedOnMount.current = true
 
             // Derive Previous Result on mount
@@ -134,7 +136,8 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                 if (bet.status !== 'PENDING') return bet;
 
                 // Q-Darts is strictly accumulator: ALL must win
-                const allWon = bet.selections.every(sel => evaluateQDartsBet(sel, outcome))
+                const selResults = bet.selections.map(sel => evaluateQDartsBet(sel, outcome))
+                const allWon = selResults.every(res => res === true)
 
                 if (allWon) {
                     let winAmount = bet.payout
@@ -150,7 +153,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                     }
                 }
 
-                return { ...bet, status: allWon ? 'WON' : 'LOST' }
+                return { ...bet, status: allWon ? 'WON' : 'LOST', selectionOutcomes: selResults }
             }))
         }
 
@@ -420,15 +423,30 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         </div>
                                     </div>
                                     <div className="space-y-2 pt-2 border-t border-white/5">
-                                        {bet.selections.map((sel, idx) => (
-                                            <div key={idx} className="flex justify-between items-center">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">{sel.marketName}</span>
-                                                    <span className="text-xs font-bold text-white">{sel.label}</span>
+                                        {bet.selections.map((sel, idx) => {
+                                            const isSettled = bet.status !== 'PENDING'
+                                            const isWin = bet.selectionOutcomes ? bet.selectionOutcomes[idx] : false
+                                            
+                                            return (
+                                                <div key={idx} className="flex justify-between items-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">{sel.marketName}</span>
+                                                        <span className={cn(
+                                                            "text-xs font-bold",
+                                                            isSettled ? (isWin ? "text-emerald-400" : "text-red-400") : "text-white"
+                                                        )}>
+                                                            {sel.label}
+                                                        </span>
+                                                    </div>
+                                                    <span className={cn(
+                                                        "font-mono text-xs font-black",
+                                                        isSettled ? (isWin ? "text-emerald-400" : "text-red-400") : "text-emerald-400/60"
+                                                    )}>
+                                                        {sel.odds.toFixed(2)}
+                                                    </span>
                                                 </div>
-                                                <span className="font-mono text-xs font-black text-emerald-400">{sel.odds.toFixed(2)}</span>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                     {bet.status === 'WON' && (
                                         <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex justify-between items-center">
