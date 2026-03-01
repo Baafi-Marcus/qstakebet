@@ -17,26 +17,30 @@ export default function VirtualsHubPage() {
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-
+                <div className="flex flex-wrap justify-center gap-10 md:gap-16 pt-8">
                     {/* NSMQ Virtuals Card */}
-                    <Link href="/virtuals/nsmq" className="group relative bg-slate-900 border border-white/10 rounded-[2.5rem] transition-all hover:bg-slate-800 hover:border-emerald-500/50 hover:shadow-[0_0_80px_rgba(16,185,129,0.15)] overflow-hidden aspect-[16/10]">
-                        <img
-                            src="/images/virtuals/nsmq-hub.png"
-                            alt="NSMQ Showdown"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
+                    <Link href="/virtuals/nsmq" className="group flex flex-col items-center gap-4 transition-transform active:scale-95">
+                        <div className="w-40 h-40 md:w-56 md:h-56 relative bg-slate-900 border border-white/10 rounded-[2.5rem] transition-all group-hover:border-emerald-500/50 group-hover:shadow-[0_0_60px_rgba(16,185,129,0.2)] overflow-hidden">
+                            <img
+                                src="/images/virtuals/nsmq-hub.jpg"
+                                alt="NSMQ Showdown"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                        </div>
+                        <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-emerald-400 transition-colors">NSMQ Showdown</span>
                     </Link>
 
                     {/* Q-DARTS Card */}
-                    <Link href="/virtuals/q-darts" className="group relative bg-slate-900 border border-white/10 rounded-[2.5rem] transition-all hover:bg-slate-800 hover:border-purple-500/50 hover:shadow-[0_0_80px_rgba(168,85,247,0.15)] overflow-hidden aspect-[16/10]">
-                        <img
-                            src="/images/virtuals/q-darts-hub.png"
-                            alt="Q-DARTS"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
+                    <Link href="/virtuals/q-darts" className="group flex flex-col items-center gap-4 transition-transform active:scale-95">
+                        <div className="w-40 h-40 md:w-56 md:h-56 relative bg-slate-900 border border-white/10 rounded-[2.5rem] transition-all group-hover:border-purple-500/50 group-hover:shadow-[0_0_60px_rgba(168,85,247,0.2)] overflow-hidden">
+                            <img
+                                src="/images/virtuals/q-darts-hub.jpg"
+                                alt="Q-DARTS"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                        </div>
+                        <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-purple-400 transition-colors">Q-DARTS</span>
                     </Link>
-
                 </div>
             </div>
         </div>
