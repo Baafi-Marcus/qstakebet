@@ -17,58 +17,51 @@ const PHASE_DURATIONS: Record<QDartsPhase, number> = {
     'RESET': 3
 }
 
-export function useQDartsMatchLoop(initialSeed: number) {
-    const [state, setState] = useState<QDartsMatchState>({
-        phase: 'BETTING_OPEN',
-        timeRemaining: PHASE_DURATIONS['BETTING_OPEN'],
-        matchSeed: initialSeed,
-        roundId: 1
-    })
+export function useQDartsMatchLoop() {
+    const TOTAL_CYCLE = 22 + 2 + 25 + 3 + 3 // 55 seconds
 
-    const stateRef = useRef(state)
-    stateRef.current = state
+    const calculateState = (): QDartsMatchState => {
+        const now = Date.now()
+        const totalSeconds = Math.floor(now / 1000)
+        const roundId = Math.floor(totalSeconds / TOTAL_CYCLE)
+        const secondInRound = totalSeconds % TOTAL_CYCLE
+
+        let phase: QDartsPhase = 'BETTING_OPEN'
+        let timeRemaining = 0
+
+        if (secondInRound < 22) {
+            phase = 'BETTING_OPEN'
+            timeRemaining = 22 - secondInRound
+        } else if (secondInRound < 24) {
+            phase = 'BETTING_LOCKED'
+            timeRemaining = 24 - secondInRound
+        } else if (secondInRound < 49) {
+            phase = 'IN_PROGRESS'
+            timeRemaining = 49 - secondInRound
+        } else if (secondInRound < 52) {
+            phase = 'SETTLEMENT'
+            timeRemaining = 52 - secondInRound
+        } else {
+            phase = 'RESET'
+            timeRemaining = 55 - secondInRound
+        }
+
+        return {
+            phase,
+            timeRemaining,
+            matchSeed: (roundId * 12345) % 1000000, // Deterministic seed per round
+            roundId
+        }
+    }
+
+    const [state, setState] = useState<QDartsMatchState>(calculateState())
 
     useEffect(() => {
-        const tickInterval = setInterval(() => {
-            const current = stateRef.current
-            let newTime = current.timeRemaining - 1
-            let newPhase = current.phase
-            let newSeed = current.matchSeed
-            let newRound = current.roundId
+        const timer = setInterval(() => {
+            setState(calculateState())
+        }, 500) // Update more frequently to avoid lag
 
-            if (newTime <= 0) {
-                // Transition phase
-                switch (current.phase) {
-                    case 'BETTING_OPEN':
-                        newPhase = 'BETTING_LOCKED'
-                        break
-                    case 'BETTING_LOCKED':
-                        newPhase = 'IN_PROGRESS'
-                        break
-                    case 'IN_PROGRESS':
-                        newPhase = 'SETTLEMENT'
-                        break
-                    case 'SETTLEMENT':
-                        newPhase = 'RESET'
-                        break
-                    case 'RESET':
-                        newPhase = 'BETTING_OPEN'
-                        newSeed = current.matchSeed + 1000 // deterministic jump
-                        newRound = current.roundId + 1
-                        break
-                }
-                newTime = PHASE_DURATIONS[newPhase]
-            }
-
-            setState({
-                phase: newPhase,
-                timeRemaining: newTime,
-                matchSeed: newSeed,
-                roundId: newRound
-            })
-        }, 1000)
-
-        return () => clearInterval(tickInterval)
+        return () => clearInterval(timer)
     }, [])
 
     return state

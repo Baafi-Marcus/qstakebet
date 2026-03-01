@@ -21,8 +21,8 @@ interface QDartsClientProps {
 export default function QDartsClient({ userProfile = { balance: 0, bonusBalance: 0 }, isAuthenticated = false }: QDartsClientProps) {
     const router = useRouter()
 
-    // Hardcoded seed for development - in prod this comes from a backend epoch
-    const gameState = useQDartsMatchLoop(10000)
+    // Deterministic match loop synchronized to global epoch
+    const gameState = useQDartsMatchLoop()
 
     const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
     const [selections, setSelections] = useState<VirtualSelection[]>([])
@@ -88,7 +88,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     const isLocked = gameState.phase !== 'BETTING_OPEN'
 
     return (
-        <div className="min-h-screen bg-background flex flex-col text-white">
+        <div className="min-h-screen bg-background flex flex-col text-white overflow-hidden h-screen">
             <VirtualsHeader
                 onBack={() => router.push('/virtuals')}
                 selectedCategory={'all'}
@@ -112,29 +112,29 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                 }
             />
 
-            <main className="flex-1 flex flex-col md:flex-row max-h-[calc(100vh-56px)] overflow-hidden relative">
-                <div className="flex-1 flex flex-col bg-slate-950/40 relative">
+            <main className="flex-1 flex flex-col md:grid md:grid-cols-[1fr_360px] relative bg-slate-950 overflow-hidden">
+                <div className="flex-1 flex flex-col relative h-full overflow-hidden">
 
                     <QDartsLivePlayer outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
 
                     {/* Scrollable Area for 3D Board & Markets */}
-                    <div className="flex-1 overflow-y-auto pb-40 scrollbar-hide">
+                    <div className="flex-1 overflow-y-auto scrollbar-nav flex flex-col">
 
-                        {/* 3D Board - Always visible during match, or at least sharing space */}
+                        {/* 3D Board - Sticky at top during match */}
                         <div className={cn(
-                            "w-full transition-all duration-700 ease-in-out px-4 pt-2",
-                            isLocked ? "h-[300px] md:h-[400px]" : "h-0 opacity-0 overflow-hidden"
+                            "w-full transition-all duration-700 ease-in-out px-4 pt-2 shrink-0 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-20",
+                            isLocked ? "h-[320px] md:h-[420px] border-b border-white/5" : "h-0 opacity-0 overflow-hidden pt-0"
                         )}>
                             <QDarts3DBoard outcome={outcome} timeRemaining={gameState.timeRemaining} phase={gameState.phase} />
                         </div>
 
-                        {/* Markets Section - Now always visible/scrollable */}
-                        <div className="p-4 space-y-6">
+                        {/* Markets Section */}
+                        <div className="p-4 space-y-6 pb-40">
                             <div className="flex items-center justify-between px-1 border-b border-white/5 pb-2 mb-4">
                                 <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-400">Available Markets</h2>
                                 {isLocked && <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/20 rounded-full border border-amber-500/30">
                                     <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Betting Closed</span>
+                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Live Action</span>
                                 </div>}
                             </div>
 
@@ -142,12 +142,12 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                 <div key={market.id} className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
                                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{market.name}</h3>
-                                        <div className="group/tip relative">
+                                        <div className="group/tip relative flex items-center">
                                             <Info className="h-3.5 w-3.5 text-slate-700 hover:text-emerald-500 cursor-help transition-colors" />
-                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-slate-300 hidden group-hover/tip:block z-[100] shadow-[0_0_30px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-slate-900 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-slate-300 hidden group-hover/tip:block z-[1000] shadow-[0_0_50px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 pointer-events-none">
                                                 <div className="text-emerald-400 uppercase mb-1 flex items-center gap-1.5">
                                                     <ShieldAlert className="h-3 w-3" />
-                                                    Market Info
+                                                    Market Guide
                                                 </div>
                                                 {market.description}
                                             </div>
@@ -182,7 +182,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                         "p-2 rounded-xl border flex flex-col items-center justify-center transition-all min-h-[54px] relative overflow-hidden",
                                                         isSelected
                                                             ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[0.98]'
-                                                            : 'bg-slate-900 border-white/5 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed'
+                                                            : 'bg-slate-900 border-white/5 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed'
                                                     )}
                                                 >
                                                     <span className="text-[10px] font-black uppercase text-center leading-tight opacity-70 mb-0.5">{sel.label}</span>
@@ -195,12 +195,14 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                             ))}
                         </div>
                     </div>
-
                 </div>
 
-                {/* RIGHT/BOTTOM: Bet Slip Placeholder */}
-                {selections.length > 0 && (
-                    <div className="w-full md:w-96 absolute md:relative bottom-0 z-40 max-h-[50vh] md:max-h-none flex flex-col">
+                {/* RIGHT PANEL: Bet Slip (Sidebar on MD+, Popup on Mobile) */}
+                <div className={cn(
+                    "bg-slate-950 border-l border-white/5 flex flex-col overflow-hidden transition-all duration-300",
+                    selections.length > 0 ? "h-[50vh] md:h-full translate-y-0" : "h-0 md:h-full translate-y-full md:translate-y-0 opacity-0 md:opacity-100"
+                )}>
+                    {selections.length > 0 ? (
                         <QDartsBetSlip
                             selections={selections}
                             onClear={() => setSelections([])}
@@ -211,8 +213,14 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                             bonusBalance={userProfile.bonusBalance}
                             balanceType={balanceType}
                         />
-                    </div>
-                )}
+                    ) : (
+                        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-700 p-8 text-center space-y-4">
+                            <Target className="h-12 w-12 opacity-20" />
+                            <p className="text-xs font-black uppercase tracking-widest opacity-40">Your betslip is empty</p>
+                            <p className="text-[10px] font-bold text-slate-500 leading-relaxed">Select odds from the left to start building your bet</p>
+                        </div>
+                    )}
+                </div>
 
                 {/* BET HISTORY OVERLAY */}
                 {isHistoryOpen && (
