@@ -7,18 +7,19 @@ export interface QDartsMatchState {
     timeRemaining: number // seconds remaining in CURRENT phase
     matchSeed: number     // deterministic seed for the current match
     roundId: number       // overall epoch counter
+    timestamp: number     // stable unix timestamp for this round
 }
 
 const PHASE_DURATIONS: Record<QDartsPhase, number> = {
-    'BETTING_OPEN': 22,
-    'BETTING_LOCKED': 2,
+    'BETTING_OPEN': 60,
+    'BETTING_LOCKED': 5,
     'IN_PROGRESS': 25,
-    'SETTLEMENT': 3,
-    'RESET': 3
+    'SETTLEMENT': 5,
+    'RESET': 5
 }
 
 export function useQDartsMatchLoop() {
-    const TOTAL_CYCLE = 22 + 2 + 25 + 3 + 3 // 55 seconds
+    const TOTAL_CYCLE = 60 + 5 + 25 + 5 + 5 // 100 seconds
 
     const calculateState = (): QDartsMatchState => {
         const now = Date.now()
@@ -29,28 +30,29 @@ export function useQDartsMatchLoop() {
         let phase: QDartsPhase = 'BETTING_OPEN'
         let timeRemaining = 0
 
-        if (secondInRound < 22) {
+        if (secondInRound < 60) {
             phase = 'BETTING_OPEN'
-            timeRemaining = 22 - secondInRound
-        } else if (secondInRound < 24) {
+            timeRemaining = 60 - secondInRound
+        } else if (secondInRound < 65) {
             phase = 'BETTING_LOCKED'
-            timeRemaining = 24 - secondInRound
-        } else if (secondInRound < 49) {
+            timeRemaining = 65 - secondInRound
+        } else if (secondInRound < 90) {
             phase = 'IN_PROGRESS'
-            timeRemaining = 49 - secondInRound
-        } else if (secondInRound < 52) {
+            timeRemaining = 90 - secondInRound
+        } else if (secondInRound < 95) {
             phase = 'SETTLEMENT'
-            timeRemaining = 52 - secondInRound
+            timeRemaining = 95 - secondInRound
         } else {
             phase = 'RESET'
-            timeRemaining = 55 - secondInRound
+            timeRemaining = 100 - secondInRound
         }
 
         return {
             phase,
             timeRemaining,
-            matchSeed: (roundId * 12345) % 1000000, // Deterministic seed per round
-            roundId
+            matchSeed: (roundId * 12345) % 1000000,
+            roundId,
+            timestamp: (roundId * TOTAL_CYCLE) * 1000 // Stable start time of the round
         }
     }
 

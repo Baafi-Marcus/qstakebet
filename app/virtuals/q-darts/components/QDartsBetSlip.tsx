@@ -69,28 +69,28 @@ export function QDartsBetSlip({
             </div>
 
             {/* Selections List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {hasConflicts && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-3 text-[10px] font-black uppercase text-red-400">
-                        <ShieldAlert className="h-4 w-4 shrink-0" />
-                        <span>Correlated selections detected. This combination is blocked.</span>
+                    <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2 text-[9px] font-black uppercase text-red-400">
+                        <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                        <span>Correlated selections blocked.</span>
                     </div>
                 )}
 
                 {selections.map(s => (
-                    <div key={s.selectionId} className="bg-slate-950 p-3 rounded-xl border border-white/5 flex justify-between items-center group relative overflow-hidden">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-600" />
-                        <div className="flex flex-col pl-2">
-                            <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">{s.marketName}</span>
-                            <span className="text-sm font-bold text-white">{s.label}</span>
+                    <div key={s.selectionId} className="bg-slate-950 p-2.5 rounded-xl border border-white/5 flex justify-between items-center group relative overflow-hidden transition-colors hover:bg-slate-900">
+                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-purple-600/50" />
+                        <div className="flex flex-col pl-1.5">
+                            <span className="text-[8px] text-slate-500 uppercase font-black tracking-tight">{s.marketName}</span>
+                            <span className="text-xs font-bold text-white leading-tight">{s.label}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <span className="font-mono text-sm font-black text-emerald-400">{s.odds.toFixed(2)}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-emerald-400">@{s.odds.toFixed(2)}</span>
                             <button
                                 onClick={() => onRemove(s.selectionId)}
-                                className="text-slate-600 hover:text-red-400 transition-colors p-1"
+                                className="text-slate-700 hover:text-red-400 transition-colors p-1"
                             >
-                                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                                <svg width="8" height="8" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
                             </button>
                         </div>
                     </div>
@@ -132,8 +132,8 @@ export function QDartsBetSlip({
                     disabled={hasConflicts || isLocked || isSubmitting || numStake <= 0}
                     onClick={handlePlaceBet}
                     className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all relative overflow-hidden ${hasConflicts || isLocked || numStake <= 0
-                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                         }`}
                 >
                     {isSubmitting ? 'Processing...' : isLocked ? 'Betting Locked' : 'Place Bet'}

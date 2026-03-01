@@ -117,7 +117,8 @@ const simulateThrow = (seed: number, skill: QDartsSkill, turnIndex: number): QDa
 
 export function simulateQDartsMatch(
     matchId: string,
-    seed: number
+    seed: number,
+    timestamp?: number
 ): QDartsMatchOutcome {
     // 1. Pick 2 unique players
     const allIds = Object.keys(Q_DARTS_PLAYERS) as QDartsPlayerID[]
@@ -214,7 +215,7 @@ export function simulateQDartsMatch(
 
     return {
         matchId,
-        timestamp: Date.now(),
+        timestamp: timestamp || Date.now(),
         playerA,
         playerB,
         rounds,
