@@ -108,6 +108,18 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [placedBets, selections.length])
 
+    // Body Scroll Lock for Overlays
+    React.useEffect(() => {
+        if (isBetSlipOpen || isHistoryOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isBetSlipOpen, isHistoryOpen])
+
     const handleLeaveGame = () => {
         const hasActiveBets = placedBets.some(b => b.status === 'PENDING')
         const confirmMsg = hasActiveBets
