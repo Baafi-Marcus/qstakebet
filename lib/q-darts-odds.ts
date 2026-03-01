@@ -23,6 +23,7 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
     const skillMap = { 'Low': 0.8, 'Medium': 1.0, 'High': 1.2 }
     const sA = skillMap[pA.skill]
     const sB = skillMap[pB.skill]
+    const skillSkew = (sA + sB) / 2
 
     // Base Win Prob (adjusted by skill difference)
     const totalS = sA + sB
@@ -53,20 +54,34 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
     // 2. TOTAL MATCH SCORE (Over/Under) - 15-18% margin
     const marginTotal = 0.16
     const projectedTotal = (sA + sB) * 5 * 105
+    // Add jitter to bands based on seed
+    const jitter = (outcome.timestamp % 100) - 50 
     const bands = [
-        Math.floor(projectedTotal * 0.7) + 0.5,
-        Math.floor(projectedTotal * 0.85) + 0.5,
-        Math.floor(projectedTotal * 1.0) + 0.5,
-        Math.floor(projectedTotal * 1.15) + 0.5
+        Math.floor(projectedTotal * 0.7 + jitter) + 0.5,
+        Math.floor(projectedTotal * 0.85 + jitter) + 0.5,
+        Math.floor(projectedTotal * 1.0 + jitter) + 0.5,
+        Math.floor(projectedTotal * 1.15 + jitter) + 0.5
     ]
 
     const totalSelections: any[] = []
-    bands.forEach(band => {
-        const diff = (projectedTotal - band) / 100
-        const pOver = 1 / (1 + Math.exp(-diff))
-        if (pOver > 0.1 && pOver < 0.9) {
-            totalSelections.push({ id: `total_over_${band}`, label: `Over ${band}`, odds: calculatePropOdds(pOver, 0.10, marginTotal, 1.10, 8.00) || 1.10, probability: pOver })
-            totalSelections.push({ id: `total_under_${band}`, label: `Under ${band}`, odds: calculatePropOdds(1 - pOver, 0.10, marginTotal, 1.10, 8.00) || 1.10, probability: 1 - pOver })
+    bands.forEach((band, idx) => {
+        // Skew probability based on skill (favorites likely to go over)
+        const spread = projectedTotal - band
+        const pOver = 1 / (1 + Math.exp(-spread / (100 / skillSkew)))
+        
+        if (pOver > 0.05 && pOver < 0.95) {
+            totalSelections.push({ 
+                id: `total_over_${band}`, 
+                label: `Over ${band}`, 
+                odds: calculatePropOdds(pOver, 0.05 + idx * 0.02, marginTotal, 1.10, 10.00) || 1.10, 
+                probability: pOver 
+            })
+            totalSelections.push({ 
+                id: `total_under_${band}`, 
+                label: `Under ${band}`, 
+                odds: calculatePropOdds(1 - pOver, 0.05 + idx * 0.02, marginTotal, 1.10, 10.00) || 1.10, 
+                probability: 1 - pOver 
+            })
         }
     })
 
@@ -82,29 +97,34 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
     // 3. PER ROUND MARKETS
     for (let r = 1; r <= 5; r++) {
         const marginRound = 0.18
-        // Round Winner
+        // Round Winner - add jitter per round
+        const rJitter = ((outcome.timestamp + r) % 10) / 100
+        const pWinA = clamp(probA_raw + rJitter - 0.05, 0.1, 0.9)
+        const pWinB = 1 - pWinA
+
         markets.push({
             id: `round_${r}_winner`,
             name: `Round ${r} Winner`,
             description: `Which player will score more points in Round ${r}?`,
             selections: [
-                { id: `round_${r}_winner_A`, label: pA.name, odds: calculateOddsFromProbability(probA_raw, marginRound, outcome.timestamp + r * 10) || 1.80, probability: probA_raw },
-                { id: `round_${r}_winner_B`, label: pB.name, odds: calculateOddsFromProbability(probB_raw, marginRound, outcome.timestamp + r * 10 + 1) || 1.80, probability: probB_raw }
+                { id: `round_${r}_winner_A`, label: pA.name, odds: calculateOddsFromProbability(pWinA, marginRound, outcome.timestamp + r * 10) || 1.80, probability: pWinA },
+                { id: `round_${r}_winner_B`, label: pB.name, odds: calculateOddsFromProbability(pWinB, marginRound, outcome.timestamp + r * 10 + 1) || 1.80, probability: pWinB }
             ]
         })
 
         // Round Score O/U
         const projRound = (sA + sB) * 105
-        const rBand = Math.floor(projRound) + 0.5
-        const diff = (projRound - rBand) / 50
-        const pROver = 1 / (1 + Math.exp(-diff))
+        const rBand = Math.floor(projRound + jitter/5) + 0.5
+        const rDiff = projRound - rBand
+        const pROver = 1 / (1 + Math.exp(-rDiff / (40 / skillSkew)))
+
         markets.push({
             id: `round_${r}_total`,
             name: `Round ${r} Points`,
             description: `Total points scored by both players in Round ${r}.`,
             selections: [
-                { id: `round_${r}_over_${rBand}`, label: `Over ${rBand}`, odds: calculatePropOdds(pROver, 0.15, marginRound) || 1.85, probability: pROver },
-                { id: `round_${r}_under_${rBand}`, label: `Under ${rBand}`, odds: calculatePropOdds(1 - pROver, 0.15, marginRound) || 1.85, probability: 1 - pROver }
+                { id: `round_${r}_over_${rBand}`, label: `Over ${rBand}`, odds: calculatePropOdds(pROver, 0.1, marginRound, 1.20, 8.00) || 1.85, probability: pROver },
+                { id: `round_${r}_under_${rBand}`, label: `Under ${rBand}`, odds: calculatePropOdds(1 - pROver, 0.1, marginRound, 1.20, 8.00) || 1.85, probability: 1 - pROver }
             ]
         })
     }
@@ -112,29 +132,32 @@ export function generateQDartsMarkets(outcome: QDartsMatchOutcome): QDartsMarket
     // 4. PROPS
     const marginProps = 0.22
 
-    // Any Bullseye
-    const pAnyBull = clamp((sA + sB) * 0.35, 0.1, 0.9)
+    // Any Bullseye - skew heavily by skill and add jitter
+    const bullJitter = ((outcome.timestamp % 15) / 100)
+    const pAnyBull = clamp(((sA + sB) * 0.35) + bullJitter, 0.15, 0.85)
+    
     markets.push({
         id: 'any_bullseye',
         name: 'Any Bullseye in Match',
         description: 'Will any player hit a Bullseye (25 or 50) during the match?',
         selections: [
-            { id: 'any_bull_yes', label: 'Yes', odds: calculatePropOdds(pAnyBull, 0, marginProps) || 1.5, probability: pAnyBull },
-            { id: 'any_bull_no', label: 'No', odds: calculatePropOdds(1 - pAnyBull, 0, marginProps) || 2.5, probability: 1 - pAnyBull }
+            { id: 'any_bull_yes', label: 'Yes', odds: calculatePropOdds(pAnyBull, 0.05, marginProps, 1.20, 10.00) || 1.5, probability: pAnyBull },
+            { id: 'any_bull_no', label: 'No', odds: calculatePropOdds(1 - pAnyBull, 0.05, marginProps, 1.20, 10.00) || 2.5, probability: 1 - pAnyBull }
         ]
     })
 
     // Total Triples
     const projTriples = (sA + sB) * 1.5
-    const tBand = Math.floor(projTriples) + 0.5
-    const pTOver = 1 / (1 + Math.exp(-(projTriples - tBand)))
+    const tBand = Math.floor(projTriples + jitter/50) + 0.5
+    const pTOver = 1 / (1 + Math.exp(-(projTriples - tBand) / (sA + sB)))
+    
     markets.push({
         id: 'total_triples',
         name: 'Total Triples',
         description: 'Combined number of triple rings hit by both players.',
         selections: [
-            { id: `triples_over_${tBand}`, label: `Over ${tBand}`, odds: calculatePropOdds(pTOver, 0.1, marginProps) || 1.8, probability: pTOver },
-            { id: `triples_under_${tBand}`, label: `Under ${tBand}`, odds: calculatePropOdds(1 - pTOver, 0.1, marginProps) || 1.8, probability: 1 - pTOver }
+            { id: `triples_over_${tBand}`, label: `Over ${tBand}`, odds: calculatePropOdds(pTOver, 0.1, marginProps, 1.30, 12.00) || 1.8, probability: pTOver },
+            { id: `triples_under_${tBand}`, label: `Under ${tBand}`, odds: calculatePropOdds(1 - pTOver, 0.1, marginProps, 1.30, 12.00) || 1.8, probability: 1 - pTOver }
         ]
     })
 
