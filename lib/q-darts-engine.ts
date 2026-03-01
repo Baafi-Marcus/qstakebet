@@ -206,25 +206,11 @@ export function simulateQDartsMatch(
     }
 
     // In Darts, matches can tie on points unless it's leg-based, but here we count total match score across 5 rounds.
-    // To ensure a decisive Match Winner market, we apply a tie-breaker 1-dart shootout if total scores tie.
     let matchWinner: 'A' | 'B' | 'Tie' = 'Tie'
 
     if (totalScoreA > totalScoreB) matchWinner = 'A'
     else if (totalScoreB > totalScoreA) matchWinner = 'B'
-    else {
-        // Sudden death single dart tiebreaker (hidden from rounds, just added to total)
-        let tieBrkScoreA = 0
-        let tieBrkScoreB = 0
-        let attempts = 0
-        while (tieBrkScoreA === tieBrkScoreB && attempts < 10) {
-            attempts++
-            tieBrkScoreA = simulateThrow(seed + 9000 + attempts, playerA.skill, 99).score
-            tieBrkScoreB = simulateThrow(seed + 9100 + attempts, playerB.skill, 99).score
-        }
-        totalScoreA += tieBrkScoreA
-        totalScoreB += tieBrkScoreB
-        matchWinner = totalScoreA > totalScoreB ? 'A' : 'B'
-    }
+    else matchWinner = 'Tie'
 
     return {
         matchId,

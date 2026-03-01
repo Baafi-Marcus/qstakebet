@@ -32,11 +32,27 @@ export function QDarts3DBoard({ outcome, timeRemaining, phase }: QDarts3DBoardPr
     const activeThrow = activeThrowIdx >= 0 ? throwsToPlay[activeThrowIdx] : null
 
     // Determine position based on score (mock visualization)
-    const getPosForScore = (score: number, isBull: boolean) => {
-        if (isBull) return { top: '50%', left: '50%' }
-        if (score > 40) return { top: '30%', left: '70%' }
-        if (score > 20) return { top: '70%', left: '30%' }
-        return { top: '40%', left: '40%' }
+    const getPosForThrow = (t: any, idx: number) => {
+        // Seeded randomness for position based on index to keep it consistent
+        const s = (idx * 1337) % 100
+        const angle = (idx * 45) % 360
+        const dist = t.throw.isBullseye ? Math.min(5, (idx % 8)) : (20 + (idx % 60))
+
+        if (t.throw.isBullseye) {
+            return {
+                top: `${50 + (Math.cos(angle) * (idx % 3))}%`,
+                left: `${50 + (Math.sin(angle) * (idx % 3))}%`
+            }
+        }
+
+        // Map scores to rings roughly
+        const radius = t.throw.score > 40 ? 35 : (t.throw.score > 20 ? 65 : 85)
+        const finalAngle = angle + (s % 20)
+
+        return {
+            top: `${50 + Math.cos(finalAngle * Math.PI / 180) * radius * 0.4}%`,
+            left: `${50 + Math.sin(finalAngle * Math.PI / 180) * radius * 0.4}%`
+        }
     }
 
     return (
@@ -53,41 +69,55 @@ export function QDarts3DBoard({ outcome, timeRemaining, phase }: QDarts3DBoardPr
                 <div className="absolute w-[20%] h-[20%] rounded-full border-4 border-green-500/30" />
 
                 {/* Bullseye */}
-                <div className="absolute w-8 h-8 rounded-full bg-red-600 border-2 border-yellow-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] z-10 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-white/50" />
+                <div className={cn(
+                    "absolute w-8 h-8 rounded-full border-2 border-yellow-500 z-10 flex items-center justify-center transition-all duration-300",
+                    activeThrow?.throw.isBullseye ? "bg-yellow-400 scale-125 shadow-[0_0_30px_rgba(250,204,21,0.8)]" : "bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                )}>
+                    <Target className={cn("w-4 h-4", activeThrow?.throw.isBullseye ? "text-red-600" : "text-white/50")} />
                 </div>
 
-                {/* Animated Dart Hit */}
-                {isPlaying && activeThrow && (
+                {/* Persistent Hit Markers */}
+                {isPlaying && throwsToPlay.slice(0, activeThrowIdx + 1).map((t, idx) => (
                     <div
-                        key={`throw-${activeThrowIdx}`}
+                        key={`hit-${idx}`}
                         className={cn(
-                            "absolute w-4 h-4 rounded-full shadow-[0_0_20px_4px] animate-in zoom-in spin-in-12 duration-300 z-20",
-                            activeThrow.throw.isBullseye ? "bg-yellow-400 shadow-yellow-500/50" :
-                                activeThrow.player === 'A' ? "bg-purple-500 shadow-purple-500/50" : "bg-emerald-500 shadow-emerald-500/50"
+                            "absolute w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 z-20",
+                            t.throw.isBullseye ? "bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]" :
+                                t.player === 'A' ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.6)]" : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)]",
+                            idx === activeThrowIdx ? "scale-150 ring-4 ring-white animate-pulse z-30" : "opacity-80"
                         )}
-                        style={getPosForScore(activeThrow.throw.score, activeThrow.throw.isBullseye)}
+                        style={getPosForThrow(t, idx)}
                     />
-                )}
+                ))}
             </div>
 
             {/* Overlays */}
             {isPlaying && activeThrow && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 text-center animate-pulse">
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{activeThrow.player === 'A' ? outcome.playerA.name : outcome.playerB.name} just threw</p>
                     <p className={cn(
                         "text-2xl font-black italic",
                         activeThrow.throw.isBullseye ? "text-yellow-400" : "text-white"
                     )}>
-                        {activeThrow.throw.isBullseye ? "BULLSEYE!" : `${activeThrow.throw.score} Points`}
+                        {activeThrow.throw.isBullseye ? "BULLSEYE!" : (activeThrow.throw.score === 60 ? "TRIPLE 20!" : `${activeThrow.throw.score} Points`)}
                     </p>
                 </div>
             )}
 
             {isSettlement && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
-                    <h2 className="text-4xl font-black text-white uppercase tracking-widest drop-shadow-2xl mb-4">MATCH OVER</h2>
-                    <p className="text-xl text-slate-300 font-bold">{outcome.playerA.name} <span className="text-purple-400">{outcome.totalScoreA}</span> - <span className="text-emerald-400">{outcome.totalScoreB}</span> {outcome.playerB.name}</p>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-in fade-in duration-500">
+                    <h2 className="text-4xl font-black text-emerald-400 uppercase tracking-widest drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4">MATCH OVER</h2>
+                    <div className="flex items-center gap-8 bg-slate-900/80 p-6 rounded-3xl border border-white/10 shadow-2xl">
+                        <div className="text-center">
+                            <p className="text-[10px] uppercase font-black text-slate-500 mb-1">{outcome.playerA.name}</p>
+                            <p className="text-4xl font-black text-purple-400">{outcome.totalScoreA}</p>
+                        </div>
+                        <div className="h-12 w-px bg-white/10" />
+                        <div className="text-center">
+                            <p className="text-[10px] uppercase font-black text-slate-500 mb-1">{outcome.playerB.name}</p>
+                            <p className="text-4xl font-black text-emerald-400">{outcome.totalScoreB}</p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

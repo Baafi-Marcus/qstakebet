@@ -124,7 +124,15 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                         ) : (
                             markets.map(market => (
                                 <div key={market.id} className="space-y-3">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">{market.name}</h3>
+                                    <div className="flex items-center gap-2 px-1">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{market.name}</h3>
+                                        <div className="group/tip relative">
+                                            <Info className="h-3 w-3 text-slate-600 hover:text-slate-400 cursor-help" />
+                                            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-slate-900 border border-white/10 rounded-lg text-[10px] font-bold text-slate-300 hidden group-hover/tip:block z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                                                {market.description}
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         {market.selections.map(sel => {
                                             const isSelected = selections.some(s => s.selectionId === sel.id)
