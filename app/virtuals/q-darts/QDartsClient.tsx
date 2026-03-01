@@ -35,6 +35,11 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     // We track the exact historical match score to show on top during subsequent rounds
     const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
 
+    // Track the last seen server values specifically to detect deposits
+    const lastServerBalance = React.useRef(userProfile.balance)
+    const lastServerBonus = React.useRef(userProfile.bonusBalance)
+    const hasSyncedOnMount = React.useRef(false)
+
     interface PlacedBet {
         id: string;
         stake: number;
@@ -45,30 +50,42 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     }
     const [placedBets, setPlacedBets] = useState<PlacedBet[]>([])
 
-    // Persistence: Load from localStorage on mount
+    // Persistence: Load from localStorage on mount & Sync with server
     React.useEffect(() => {
         const savedBets = localStorage.getItem('qdarts_placed_bets')
         const savedBalance = localStorage.getItem('qdarts_balance')
         const savedBonus = localStorage.getItem('qdarts_bonus')
 
-        if (savedBets) setPlacedBets(JSON.parse(savedBets))
+        if (!hasSyncedOnMount.current) {
+            if (savedBets) setPlacedBets(JSON.parse(savedBets))
 
-        // Balance Sync: prioritize higher value to account for both server deposits and local session winnings
-        if (userProfile) {
+            // On Mount: Pick the highest value (likely local if winnings haven't been synced to server yet)
             setCurrentBalance(Math.max(userProfile.balance, savedBalance ? parseFloat(savedBalance) : 0))
             setCurrentBonusBalance(Math.max(userProfile.bonusBalance, savedBonus ? parseFloat(savedBonus) : 0))
+            hasSyncedOnMount.current = true
+
+            // Derive Previous Result on mount
+            const prevRoundId = gameState.roundId - 1
+            const prevSeed = prevRoundId * 1337
+            const prevSim = simulateQDartsMatch(`Q-${prevRoundId}-${prevSeed}`, prevSeed, Date.now())
+            if (prevSim) {
+                setPreviousScore(`${prevSim.playerA.name} ${prevSim.totalScoreA} - ${prevSim.totalScoreB} ${prevSim.playerB.name}`)
+            }
+        } else {
+            // Subsequent updates: ONLY sync if server values INCREASE (deposit or external refresh)
+            if (userProfile.balance > lastServerBalance.current) {
+                const diff = userProfile.balance - lastServerBalance.current
+                setCurrentBalance(prev => prev + diff)
+            }
+            if (userProfile.bonusBalance > lastServerBonus.current) {
+                const diff = userProfile.bonusBalance - lastServerBonus.current
+                setCurrentBonusBalance(prev => prev + diff)
+            }
         }
 
-        // Derive Previous Result on mount
-        const prevRoundId = gameState.roundId - 1
-        const prevSeed = prevRoundId * 1337 // Simple seed derivation consistent with loop
-        const prevSim = simulateQDartsMatch(`Q-${prevRoundId}-${prevSeed}`, prevSeed, Date.now())
-        if (prevSim) {
-            const scoreA = prevSim.totalScoreA
-            const scoreB = prevSim.totalScoreB
-            setPreviousScore(`${prevSim.playerA.name} ${scoreA} - ${scoreB} ${prevSim.playerB.name}`)
-        }
-    }, [userProfile.balance, userProfile.bonusBalance, gameState.roundId])
+        lastServerBalance.current = userProfile.balance
+        lastServerBonus.current = userProfile.bonusBalance
+    }, [userProfile.balance, userProfile.bonusBalance])
 
     // Persistence: Save to localStorage on change
     React.useEffect(() => {
