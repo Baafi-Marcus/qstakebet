@@ -2,6 +2,7 @@ import React from 'react'
 import { QDartsMatchOutcome } from '@/lib/q-darts-engine'
 import { Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { haptics } from '@/lib/haptics'
 
 interface QDarts3DBoardProps {
     outcome: QDartsMatchOutcome
@@ -18,6 +19,24 @@ export function QDarts3DBoard({ outcome, timeRemaining, phase }: QDarts3DBoardPr
     const elapsed = 25 - timeRemaining
     const rawExpectedIdx = Math.floor((elapsed / 25) * 30)
     const activeThrowIdx = isPlaying ? Math.max(-1, Math.min(29, rawExpectedIdx)) : -1
+
+    // Haptic feedback logic
+    React.useEffect(() => {
+        if (activeThrowIdx >= 0) {
+            const currentThrow = outcome.rounds.flatMap(r => [
+                ...r.playerAThrows.map(t => ({ player: 'A', throw: t })),
+                ...r.playerBThrows.map(t => ({ player: 'B', throw: t }))
+            ])[activeThrowIdx]
+
+            if (currentThrow?.throw.isBullseye) {
+                haptics.bullseye() // Strong bullseye pulse
+            } else if (currentThrow?.throw.score >= 50) {
+                haptics.heavy() // Triple pulse
+            } else {
+                haptics.light() // Subtle hit
+            }
+        }
+    }, [activeThrowIdx, outcome])
 
     // Get the sequence of throws
     const throwsToPlay = outcome.rounds.flatMap((r, rIdx) => {

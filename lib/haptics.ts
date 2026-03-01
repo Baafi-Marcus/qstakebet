@@ -37,5 +37,32 @@ export const haptics = {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate([50, 100, 50, 100, 50]);
         }
+    },
+
+    /**
+     * Strong bullseye pulse.
+     */
+    bullseye: () => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+        }
+    },
+
+    /**
+     * Heavy tap for big hits.
+     */
+    heavy: () => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    },
+
+    /**
+     * Generic wrapper for custom patterns.
+     */
+    vibrate: (pattern: number | number[]) => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(pattern);
+        }
     }
 };

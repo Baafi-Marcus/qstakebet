@@ -62,7 +62,8 @@ export function QDartsLivePlayer({ outcome, timeRemaining, phase }: QDartsLivePl
     useEffect(() => {
         if (isPlaying && activeThrowIdx > prevThrowIdxRef.current && activeThrowIdx >= 0 && lastThrow) {
             // New throw just happened
-            if (lastThrow.throw.isBullseye) haptics.medium()
+            if (lastThrow.throw.isBullseye) haptics.bullseye()
+            else if (lastThrow.throw.score >= 50) haptics.heavy()
             else haptics.light()
         }
 

@@ -12,6 +12,7 @@ import { QDartsLivePlayer } from './components/QDartsLivePlayer'
 import { QDartsBetSlip } from './components/QDartsBetSlip'
 import { QDarts3DBoard } from './components/QDarts3DBoard'
 import { cn } from '@/lib/utils'
+import { haptics } from '@/lib/haptics'
 
 interface QDartsClientProps {
     userProfile?: { balance: number; bonusBalance: number };
@@ -79,6 +80,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
             payout: potentialPayout
         }])
 
+        haptics.success() // Success pulse
         setSelections([])
         alert('Bet Placed Successfully! Good luck!')
     }
@@ -166,6 +168,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                                         key={sel.id}
                                                         disabled={isLocked}
                                                         onClick={() => {
+                                                            haptics.light() // Soft click feedback
                                                             if (isSelected) setSelections(prev => prev.filter(s => s.selectionId !== sel.id))
                                                             else setSelections(prev => [...prev, {
                                                                 matchId: outcome.matchId,
@@ -249,12 +252,12 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                     <QDartsBetSlip
                                         selections={selections}
                                         onClear={() => { setSelections([]); setIsBetSlipOpen(false); }}
-                                        onRemove={(id) => {
+                                        onRemove={(id: string) => {
                                             const newSels = selections.filter(s => s.selectionId !== id);
                                             setSelections(newSels);
                                             if (newSels.length === 0) setIsBetSlipOpen(false);
                                         }}
-                                        onPlaceBet={async (s, o, p) => {
+                                        onPlaceBet={async (s: number, o: number, p: number) => {
                                             await handlePlaceBet(s, o, p);
                                             setIsBetSlipOpen(false);
                                         }}
