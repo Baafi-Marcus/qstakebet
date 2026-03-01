@@ -452,9 +452,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                     {activeLiveMatch && (
                         <VirtualsLivePlayer
                             match={activeLiveMatch}
-                            schools={activeSchools}
-                            aiStrengths={aiStrengths}
-                            userSeed={userSeed}
+                            outcome={outcomes[matches.findIndex(m => m.id === activeLiveMatch.id)]}
                             simulationProgress={simulationProgress}
                             currentCommentary={currentCommentary}
                             countdown={countdown}

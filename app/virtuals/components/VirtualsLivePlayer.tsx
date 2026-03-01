@@ -6,9 +6,7 @@ import { Match } from "@/lib/types"
 
 interface VirtualsLivePlayerProps {
     match: Match;
-    schools: VirtualSchool[];
-    aiStrengths: Record<string, number>;
-    userSeed: number;
+    outcome: VirtualMatchOutcome;
     simulationProgress: number;
     currentCommentary: string;
     countdown: string | null;
@@ -19,9 +17,7 @@ interface VirtualsLivePlayerProps {
 
 export function VirtualsLivePlayer({
     match,
-    schools,
-    aiStrengths,
-    userSeed,
+    outcome,
     simulationProgress,
     currentCommentary,
     countdown,
@@ -29,19 +25,6 @@ export function VirtualsLivePlayer({
     onSkip,
     isSimulating
 }: VirtualsLivePlayerProps) {
-    const stage = match.id.split("-")[3] as 'regional' | 'national';
-    const regionSlug = match.id.split("-")[4] || 'all';
-    const regionName = schools.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug)?.region;
-
-    const outcome = simulateMatch(
-        parseInt(match.id.split("-")[1]),
-        parseInt(match.id.split("-")[2]),
-        schools,
-        stage,
-        regionName,
-        aiStrengths,
-        userSeed
-    );
 
     const currentRoundIdx = Math.min(4, Math.floor((simulationProgress / 60) * 5));
 
