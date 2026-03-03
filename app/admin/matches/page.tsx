@@ -8,7 +8,7 @@ import { desc } from "drizzle-orm"
 export const dynamic = 'force-dynamic'
 
 export default async function MatchesPage() {
-    const allMatches = await db.select().from(matches).orderBy(desc(matches.createdAt))
+    const allMatches = await db.select().from(matches).orderBy(desc(matches.scheduledAt))
     const allTournaments = await db.select().from(tournaments).orderBy(desc(tournaments.createdAt))
     const allSchools = await db.select().from(schools).orderBy(schools.name)
 
