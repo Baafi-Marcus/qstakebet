@@ -154,12 +154,12 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                     ) : error ? (
                         <div className="text-red-400 text-center p-8 bg-red-500/10 rounded-xl border border-red-500/20">
                             <p className="font-bold">{error}</p>
-                            <button onClick={fetchSuggestions} className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg text-sm font-bold uppercase">Try Again</button>
+                            <button onClick={() => fetchSuggestions(false)} className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg text-sm font-bold uppercase">Try Again</button>
                         </div>
                     ) : drafts.length === 0 ? (
                         <div className="text-center p-12 text-slate-500">
                             <p>No new markets suggested.</p>
-                            <button onClick={() => { setRegenerating(true); fetchSuggestions(); }} className="mt-4 text-purple-400 underline cursor-pointer">Generate Different Markets</button>
+                            <button onClick={() => { setRegenerating(true); fetchSuggestions(true); }} className="mt-4 text-purple-400 underline cursor-pointer">Generate Different Markets</button>
                         </div>
                     ) : (
                         <div className="space-y-6">
