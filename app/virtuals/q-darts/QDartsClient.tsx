@@ -87,6 +87,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
 
         lastServerBalance.current = userProfile.balance
         lastServerBonus.current = userProfile.bonusBalance
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userProfile.balance, userProfile.bonusBalance])
 
     // Persistence: Save to localStorage on change
@@ -397,10 +398,10 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                         <div className="flex flex-col">
                             <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Bet History</h2>
                             <button
-                                onClick={() => { 
-                                    haptics.bullseye(); 
+                                onClick={() => {
+                                    haptics.bullseye();
                                     audio.bullseye();
-                                    alert("Feedback triggered! If you didn't feel vibration, check your sound. Some browsers require interaction before playing audio."); 
+                                    alert("Feedback triggered! If you didn't feel vibration, check your sound. Some browsers require interaction before playing audio.");
                                 }}
                                 className="text-[9px] text-slate-500 uppercase font-black hover:text-white transition-colors text-left"
                             >
@@ -438,7 +439,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         {bet.selections.map((sel, idx) => {
                                             const isSettled = bet.status !== 'PENDING'
                                             const isWin = bet.selectionOutcomes ? bet.selectionOutcomes[idx] : false
-                                            
+
                                             return (
                                                 <div key={idx} className="flex justify-between items-center">
                                                     <div className="flex flex-col">

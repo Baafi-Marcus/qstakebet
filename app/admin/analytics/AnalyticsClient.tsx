@@ -9,18 +9,42 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     PieChart,
-    BarChart3
+    BarChart3,
+    ShieldAlert,
+    ArrowRight,
+    Brain
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 export function AnalyticsClient({ data }: { data: any }) {
     const { summary, matchBreakdown } = data
 
     return (
         <div className="space-y-8 pb-20">
-            <div>
-                <h1 className="text-3xl font-black text-white tracking-tight uppercase">Platform Intelligence</h1>
-                <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Real-time financial and operational insights</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">Platform Intelligence</h1>
+                    <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Real-time financial and operational insights</p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/admin/virtual-health"
+                        className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                    >
+                        <Brain className="h-4 w-4" />
+                        Simulation Health
+                    </Link>
+
+                    <Link
+                        href="/admin/analytics/liabilities"
+                        className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-orange-500 text-black font-black uppercase tracking-widest text-[10px] hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20"
+                    >
+                        <ShieldAlert className="h-4 w-4" />
+                        Monitor Liabilities
+                    </Link>
+                </div>
             </div>
 
             {/* Primary Stats */}

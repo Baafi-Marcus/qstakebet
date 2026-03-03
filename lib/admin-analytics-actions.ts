@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { bets, transactions, users, matches, wallets, withdrawalRequests, tournaments, schools } from "@/lib/db/schema"
-import { eq, sum, count, desc, sql, and, gte } from "drizzle-orm"
+import { bets, transactions, users, matches, wallets, withdrawalRequests, tournaments, schools, schoolStrengths } from "@/lib/db/schema"
+import { eq, sum, count, desc, sql, and, gte, or } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
 export async function getAdminAnalytics() {
@@ -20,7 +20,6 @@ export async function getAdminAnalytics() {
         }).from(bets)
 
         // 2. Revenue/Profit Calculation
-        // Profit = Stakes from Lost Bets - Payouts for Won Bets
         const wonBetsStats = await db.select({
             payout: sum(bets.potentialPayout)
         }).from(bets).where(eq(bets.status, "won"))
@@ -78,6 +77,196 @@ export async function getAdminAnalytics() {
 
     } catch (error) {
         console.error("Failed to fetch admin analytics:", error)
+        return { success: false, error: "Internal server error" }
+    }
+}
+
+export async function getLiabilityAnalytics() {
+    const session = await auth()
+    if (session?.user?.role !== 'admin') {
+        return { success: false, error: "Unauthorized" }
+    }
+
+    try {
+        // 1. Fetch all pending bets
+        const pendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
+
+        // 2. Fetch matches involved in those bets (upcoming & live)
+        const activeMatches = await db.select({
+            id: matches.id,
+            participants: matches.participants,
+            status: matches.status,
+            sportType: matches.sportType
+        }).from(matches).where(or(eq(matches.status, "upcoming"), eq(matches.status, "live")))
+
+        // 3. Map to store liability per match
+        const exposureMap: Record<string, {
+            matchId: string;
+            matchName: string;
+            status: string;
+            sportType: string;
+            totalStaked: number;
+            outcomes: Record<string, { selectionName: string; totalStake: number; potentialPayout: number }>;
+            maxLiability: number;
+        }> = {}
+
+        // Initialize map with active matches
+        activeMatches.forEach(m => {
+            const p = m.participants as any[]
+            const matchName = p ? `${p[0]?.name} vs ${p[1]?.name}` : "Unknown Match"
+
+            exposureMap[m.id] = {
+                matchId: m.id,
+                matchName,
+                status: m.status,
+                sportType: m.sportType,
+                totalStaked: 0,
+                outcomes: {},
+                maxLiability: 0
+            }
+        })
+
+        let largeBetsCount = 0
+        const LARGE_BET_THRESHOLD = 500
+
+        // Process bets to calculate liability
+        pendingBets.forEach(bet => {
+            if (bet.stake >= LARGE_BET_THRESHOLD) largeBetsCount++
+
+            const selections = bet.selections as any[]
+            selections.forEach(sel => {
+                const matchId = sel.matchId
+                if (exposureMap[matchId]) {
+                    const outcomeKey = sel.selectionId || sel.id
+                    if (!exposureMap[matchId].outcomes[outcomeKey]) {
+                        exposureMap[matchId].outcomes[outcomeKey] = {
+                            selectionName: sel.name || sel.selectionName,
+                            totalStake: 0,
+                            potentialPayout: 0
+                        }
+                    }
+
+                    const stake = bet.mode === 'single' ? bet.stake : (bet.stake / selections.length) // Simplification for multis
+                    exposureMap[matchId].totalStaked += stake
+                    exposureMap[matchId].outcomes[outcomeKey].totalStake += stake
+
+                    // Payout is tricky for multis. For this dashboard, we show "Potential Payout if this leg wins"
+                    // which is (Total Bet Payout) but that overstates risk if other legs lose.
+                    // Better to show the specific leg's contribution to risk.
+                    const payout = bet.mode === 'single' ? bet.potentialPayout : (bet.potentialPayout / selections.length)
+                    exposureMap[matchId].outcomes[outcomeKey].potentialPayout += payout
+                }
+            })
+        })
+
+        // Calculate max liability (worst case scenario) for each match
+        const finalExposure = Object.values(exposureMap).map(match => {
+            let maxRisk = 0
+            Object.values(match.outcomes).forEach(outcome => {
+                if (outcome.potentialPayout > maxRisk) maxRisk = outcome.potentialPayout
+            })
+            return {
+                ...match,
+                maxLiability: maxRisk
+            }
+        }).filter(m => m.totalStaked > 0) // Only show matches with bets
+
+        return {
+            success: true,
+            exposure: finalExposure.sort((a, b) => b.maxLiability - a.maxLiability),
+            stats: {
+                totalPendingVolume: pendingBets.reduce((acc, b) => acc + b.stake, 0),
+                largeBetsCount
+            }
+        }
+
+    } catch (error) {
+        console.error("Failed to fetch liability analytics:", error)
+        return { success: false, error: "Internal server error" }
+    }
+}
+
+export async function getVirtualHealthAnalytics() {
+    const session = await auth()
+    if (session?.user?.role !== 'admin') {
+        return { success: false, error: "Unauthorized" }
+    }
+
+    try {
+        // 1. Fetch finished virtual matches
+        const virtualMatches = await db.select().from(matches)
+            .where(and(eq(matches.isVirtual, true), eq(matches.status, "finished")))
+            .orderBy(desc(matches.createdAt))
+            .limit(100)
+
+        // 2. Fetch school ratings (strengths)
+        const ratingsList = await db.select().from(schoolStrengths)
+
+        // 3. Analytics: School Performance
+        const schoolPerformance: Record<string, { wins: number; matches: number; avgRating: number }> = {}
+
+        virtualMatches.forEach(m => {
+            const result = m.result as any
+            const winnerId = result?.winner
+
+            const participants = m.participants as any[]
+            participants.forEach(p => {
+                const schoolId = p.schoolId.replace('v-', '') // Remove virtual prefix if present
+                if (!schoolPerformance[schoolId]) {
+                    const ratingObj = ratingsList.find(r => r.schoolId === schoolId)
+                    schoolPerformance[schoolId] = {
+                        wins: 0,
+                        matches: 0,
+                        avgRating: (ratingObj?.rating as any)?.overall || 50
+                    }
+                }
+                schoolPerformance[schoolId].matches++
+                if (p.schoolId === winnerId || p.name === winnerId) {
+                    schoolPerformance[schoolId].wins++
+                }
+            })
+        })
+
+        // 4. Financial: Virtual RTP
+        const virtualBets = await db.select({
+            stake: sum(bets.stake),
+            payout: sum(bets.potentialPayout),
+            status: bets.status
+        })
+            .from(bets)
+            .leftJoin(matches, sql`${bets.selections}->0->>'matchId' = ${matches.id}`)
+            .where(eq(matches.isVirtual, true))
+            .groupBy(bets.status)
+
+        let totalStaked = 0
+        let totalPaidOut = 0
+
+        virtualBets.forEach(group => {
+            totalStaked += Number(group.stake || 0)
+            if (group.status === 'won') {
+                totalPaidOut += Number(group.payout || 0)
+            }
+        })
+
+        const rtp = totalStaked > 0 ? (totalPaidOut / totalStaked) * 100 : 0
+
+        return {
+            success: true,
+            schoolStats: Object.entries(schoolPerformance)
+                .map(([name, stats]) => ({
+                    name,
+                    ...stats,
+                    winRate: (stats.wins / stats.matches) * 100
+                }))
+                .sort((a, b) => b.winRate - a.winRate),
+            financials: {
+                totalStaked,
+                totalPaidOut,
+                rtp
+            }
+        }
+    } catch (error) {
+        console.error("Failed to fetch virtual health analytics:", error)
         return { success: false, error: "Internal server error" }
     }
 }

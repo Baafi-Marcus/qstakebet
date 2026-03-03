@@ -3,6 +3,7 @@ import { Inter, Outfit, Russo_One } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { MaintenanceGuard } from "@/components/layout/MaintenanceGuard";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -46,7 +47,9 @@ export default function RootLayout({
           russo.variable
         )}
       >
-        <ClientLayout>{children}</ClientLayout>
+        <MaintenanceGuard>
+          <ClientLayout>{children}</ClientLayout>
+        </MaintenanceGuard>
       </body>
     </html>
   );

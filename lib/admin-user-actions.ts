@@ -88,17 +88,48 @@ export async function updateUserStatus(userId: string, status: "active" | "suspe
     }
 }
 
-export async function broadcastSMS(message: string) {
+export async function broadcastSMS(message: string, filters?: {
+    minBalance?: number;
+    maxBalance?: number;
+    lastBetDays?: number;
+}) {
     try {
-        // Fetch all active users with phone numbers, excluding admins
-        const activeUsers = await db.select({
+        // Fetch users based on filters
+        let usersQuery = db.select({
             phone: users.phone
         })
             .from(users)
-            .where(and(eq(users.status, "active"), eq(users.role, "user")))
+            .leftJoin(wallets, eq(users.id, wallets.userId))
+            .where(and(eq(users.status, "active"), eq(users.role, "user")));
+
+        if (filters?.minBalance !== undefined) {
+            // @ts-expect-error - balance might be null but real() handles it
+            usersQuery = usersQuery.where(sql`${wallets.balance} >= ${filters.minBalance}`);
+        }
+
+        if (filters?.maxBalance !== undefined) {
+            // @ts-expect-error - balance might be null but real() handles it
+            usersQuery = usersQuery.where(sql`${wallets.balance} <= ${filters.maxBalance}`);
+        }
+
+        // Idle users logic (no bets in X days)
+        if (filters?.lastBetDays !== undefined) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - filters.lastBetDays);
+
+            // Subquery for users who HAVE bet since cutoff
+            const recentBetters = db.select({ userId: bets.userId })
+                .from(bets)
+                .where(sql`${bets.createdAt} >= ${cutoff}`);
+
+            // @ts-expect-error - notIn with subquery
+            usersQuery = usersQuery.where(sql`${users.id} NOT IN (${recentBetters})`);
+        }
+
+        const activeUsers = await usersQuery;
 
         if (activeUsers.length === 0) {
-            return { success: false, error: "No active users found" }
+            return { success: false, error: "No users found matching these filters" }
         }
 
         const recipients = activeUsers.map(u => u.phone)

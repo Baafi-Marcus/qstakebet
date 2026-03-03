@@ -330,6 +330,13 @@ export const smsLogs = pgTable("sms_logs", {
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const platformSettings = pgTable("platform_settings", {
+    key: text("key").primaryKey(), // e.g. "maintenance_mode", "min_bet"
+    value: jsonb("value").notNull(), // Stoes any JSON data
+    description: text("description"),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;
