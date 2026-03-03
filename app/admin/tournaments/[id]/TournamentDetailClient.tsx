@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner, forceDeleteTournament, removeSchoolFromRoster } from "@/lib/admin-actions"
-import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator, Trash2 } from "lucide-react"
+import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator, Trash2, Layers } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
@@ -342,7 +342,7 @@ export function TournamentDetailClient({
                             </div>
                         </div>
 
-                        {/* List of drafts and upcoming */}
+                        {/* Grouped fixtures */}
                         {(() => {
                             const fixtures = matches.filter(m => m.status === 'draft' || m.status === 'upcoming');
                             if (fixtures.length === 0) {
@@ -353,35 +353,61 @@ export function TournamentDetailClient({
                                     </div>
                                 );
                             }
-                            return fixtures.sort((a, b) => {
-                                const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-                                const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-                                return dateA - dateB;
-                            }).map(m => (
-                                <div key={m.id} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2rem] hover:bg-slate-800/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.status === 'draft' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-500/10 text-blue-400'}`}>
-                                            {m.status === 'draft' ? <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> : <Clock className="h-5 w-5" />}
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                {m.matchday && <span className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">{m.matchday}</span>}
-                                                {m.group && m.group !== 'Knockout' && <span className="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">{m.group}</span>}
-                                                <span className={`px-1.5 py-0.5 rounded ${m.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>{m.status}</span>
-                                            </div>
-                                            <div className="text-lg font-bold text-white mt-1 uppercase tracking-tight flex items-center gap-3">
-                                                {m.participants[0].name}
-                                                <span className="text-slate-600 font-black italic text-xs">VS</span>
-                                                {m.participants[1].name}
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-right">
-                                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Planned For</div>
-                                            <div className="text-xs font-bold text-slate-400">{m.startTime}</div>
-                                        </div>
+                            // Grouping logic
+                            const grouped: Record<string, Match[]> = {};
+                            fixtures.forEach(m => {
+                                const gName = m.group || 'Other';
+                                if (!grouped[gName]) grouped[gName] = [];
+                                grouped[gName].push(m);
+                            });
+
+                            // Sort keys (Groups first, then Knockout, then Other)
+                            const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+                                if (a.startsWith('Group') && b.startsWith('Group')) return a.localeCompare(b);
+                                if (a.startsWith('Group')) return -1;
+                                if (b.startsWith('Group')) return 1;
+                                return a.localeCompare(b);
+                            });
+
+                            return sortedGroupKeys.map(groupName => (
+                                <div key={groupName} className="space-y-4">
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5 w-fit">
+                                        <Layers className="h-3 w-3 text-purple-400" />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{groupName}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {grouped[groupName].sort((a, b) => {
+                                            const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+                                            const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+                                            return dateA - dateB;
+                                        }).map(m => (
+                                            <div key={m.id} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2rem] hover:bg-slate-800/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.status === 'draft' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                        {m.status === 'draft' ? <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> : <Clock className="h-5 w-5" />}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                            {m.matchday && <span className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">{m.matchday}</span>}
+                                                            <span className={`px-1.5 py-0.5 rounded ${m.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>{m.status}</span>
+                                                        </div>
+                                                        <div className="text-lg font-bold text-white mt-1 uppercase tracking-tight flex items-center gap-3">
+                                                            {m.participants[0].name}
+                                                            <span className="text-slate-600 font-black italic text-xs">VS</span>
+                                                            {m.participants[1].name}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-6">
+                                                    <div className="text-right">
+                                                        <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Planned For</div>
+                                                        <div className="text-xs font-bold text-slate-400">{m.startTime}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             ));
