@@ -162,7 +162,7 @@ export default async function VirtualHealthPage() {
                     <div className="flex-1">
                         <h4 className="text-lg font-black text-white uppercase tracking-tight mb-1">Equilibrium Monitoring</h4>
                         <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">
-                            The Equilibrium system monitors the variance between a school's predefined strength rating and its actual win-rate in virtual simulations. A fairness index below 75% indicates significant deviation from expected probability, triggering an automatic re-calibration alert.
+                            The Equilibrium system monitors the variance between a school&apos;s predefined strength rating and its actual win-rate in virtual simulations. A fairness index below 75% indicates significant deviation from expected probability, triggering an automatic re-calibration alert.
                         </p>
                     </div>
                     <button className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 hover:bg-indigo-400 transition-all group">

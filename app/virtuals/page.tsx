@@ -1,5 +1,6 @@
 import React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, Target, GraduationCap } from "lucide-react"
 
 export default function VirtualsHubPage() {
@@ -21,10 +22,12 @@ export default function VirtualsHubPage() {
                     {/* NSMQ Virtuals Card */}
                     <Link href="/virtuals/nsmq" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
                         <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-emerald-500/50 group-hover:shadow-[0_0_60px_rgba(16,185,129,0.2)] overflow-hidden">
-                            <img
+                            <Image
                                 src="/images/virtuals/nsmq-hub.jpg"
                                 alt="NSMQ Showdown"
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, 25vw"
                             />
                         </div>
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-emerald-400 transition-colors text-center">NSMQ Showdown</span>
@@ -33,10 +36,12 @@ export default function VirtualsHubPage() {
                     {/* Q-DARTS Card */}
                     <Link href="/virtuals/q-darts" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
                         <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-purple-500/50 group-hover:shadow-[0_0_60px_rgba(168,85,247,0.2)] overflow-hidden">
-                            <img
+                            <Image
                                 src="/images/virtuals/q-darts-hub.jpg"
                                 alt="Q-DARTS"
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, 25vw"
                             />
                         </div>
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-purple-400 transition-colors text-center">Q-DARTS</span>
@@ -45,10 +50,12 @@ export default function VirtualsHubPage() {
                     {/* University Virtuals Card */}
                     <Link href="/virtuals/university" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
                         <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-blue-500/50 group-hover:shadow-[0_0_60px_rgba(59,130,246,0.2)] overflow-hidden">
-                            <img
+                            <Image
                                 src="/images/virtuals/university-hub.jpg"
                                 alt="University Quiz"
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, 25vw"
                             />
                         </div>
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-blue-400 transition-colors text-center">University Quiz</span>
