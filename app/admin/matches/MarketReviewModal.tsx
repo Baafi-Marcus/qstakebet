@@ -30,10 +30,28 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
     const [regenerating, setRegenerating] = useState(false)
 
     // Helper to get suggestions
-    const fetchSuggestions = useCallback(async () => {
+    const fetchSuggestions = useCallback(async (forceAI = false) => {
         try {
             setLoading(true)
             setError("")
+
+            // If we have existing markets and are not forcing AI, load them
+            if (!forceAI && match.extendedOdds && Object.keys(match.extendedOdds).length > 0) {
+                const currentOdds = match.extendedOdds as Record<string, Record<string, number>>;
+                const marketHelp = (match.metadata as any)?.marketHelp || {};
+
+                const loadedDrafts: MarketDraft[] = Object.entries(currentOdds).map(([marketName, selections]) => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    marketName,
+                    helpInfo: marketHelp[marketName] || "",
+                    selections: Object.entries(selections).map(([label, odds]) => ({ label, odds }))
+                }));
+
+                setDrafts(loadedDrafts);
+                return;
+            }
+
+            // Fallback to AI
             const res = await getMatchSuggestions(match.id)
             if (res.success && res.suggestions) {
                 // Add unique IDs for UI handling
@@ -46,16 +64,17 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                 setError(res.error || "Failed to generate suggestions")
             }
         } catch (err) {
+            console.error("Fetch Error:", err);
             setError("An unexpected error occurred")
         } finally {
             setLoading(false)
             setRegenerating(false)
         }
-    }, [match.id])
+    }, [match.id, match.extendedOdds, match.metadata])
 
     // Initial Fetch
     useEffect(() => {
-        fetchSuggestions()
+        fetchSuggestions(false)
     }, [fetchSuggestions])
 
     const handlePublish = async () => {
@@ -111,8 +130,10 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                             <Sparkles className="h-6 w-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">AI Market Generator</h2>
-                            <p className="text-xs text-purple-300 font-bold uppercase tracking-wide">Review & Edit Proposals</p>
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                                {match.participants.map(p => p.name).join(" vs ")}
+                            </h2>
+                            <p className="text-xs text-purple-300 font-bold uppercase tracking-wide">Market Review & Scaling</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
@@ -198,7 +219,7 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                 {/* Footer */}
                 <div className="p-6 border-t border-white/10 bg-slate-900 flex justify-between items-center gap-4 shrink-0">
                     <button
-                        onClick={() => { setRegenerating(true); fetchSuggestions(); }}
+                        onClick={() => { setRegenerating(true); fetchSuggestions(true); }}
                         disabled={loading || publishing}
                         className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-wide transition-all disabled:opacity-50"
                     >

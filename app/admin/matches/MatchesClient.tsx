@@ -218,32 +218,8 @@ export function MatchesClient({
 
     const handlePublishDraft = async (matchId: string) => {
         const match = matches.find(m => m.id === matchId);
-        const hasMarkets = match?.extendedOdds && Object.keys(match.extendedOdds as any).length > 0;
-
-        if (!hasMarkets && match) {
+        if (match) {
             setPendingPublishMatch(match);
-            return;
-        }
-
-        try {
-            const result = await updateMatch(matchId, { status: "upcoming" }) as any;
-            if (result && result.error) {
-                alert(result.error);
-                return;
-            }
-            if (result && result.length > 0) {
-                setMatches((prev: Match[]) => prev.map(m => m.id === matchId ? ({
-                    ...m,
-                    ...result[0],
-                    participants: result[0].participants as any
-                } as Match) : m));
-            } else {
-                setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: "upcoming" } : m));
-            }
-            router.refresh();
-        } catch (error) {
-            console.error("Publish error:", error);
-            alert("Failed to publish match.");
         }
     }
 
