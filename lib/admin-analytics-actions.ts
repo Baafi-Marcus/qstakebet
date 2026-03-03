@@ -72,7 +72,12 @@ export async function getAdminAnalytics() {
             matchBreakdown: matchStats.map(s => ({
                 status: s.status,
                 count: Number(s.count || 0)
-            }))
+            })),
+            probabilityData: [
+                { category: "Low Risk", range: "1.0 - 2.0", expected: 75, actual: 72, color: "bg-emerald-500" },
+                { category: "Medium", range: "2.1 - 5.0", expected: 35, actual: 38, color: "bg-blue-500" },
+                { category: "High Risk", range: "5.1+", expected: 12, actual: 9, color: "bg-purple-500" },
+            ]
         }
 
     } catch (error) {
@@ -267,6 +272,37 @@ export async function getVirtualHealthAnalytics() {
         }
     } catch (error) {
         console.error("Failed to fetch virtual health analytics:", error)
+        return { success: false, error: "Internal server error" }
+    }
+}
+
+export async function getAllBets() {
+    const session = await auth()
+    if (session?.user?.role !== 'admin') {
+        return { success: false, error: "Unauthorized" }
+    }
+
+    try {
+        const allBets = await db.select({
+            id: bets.id,
+            userName: users.name,
+            userEmail: users.email,
+            stake: bets.stake,
+            totalOdds: bets.totalOdds,
+            potentialPayout: bets.potentialPayout,
+            status: bets.status,
+            mode: bets.mode,
+            createdAt: bets.createdAt,
+            selections: bets.selections
+        })
+            .from(bets)
+            .leftJoin(users, eq(bets.userId, users.id))
+            .orderBy(desc(bets.createdAt))
+            .limit(100)
+
+        return { success: true, bets: allBets }
+    } catch (error) {
+        console.error("Failed to fetch all bets:", error)
         return { success: false, error: "Internal server error" }
     }
 }

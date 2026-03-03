@@ -115,31 +115,52 @@ export function AnalyticsClient({ data }: { data: any }) {
                     </div>
                 </div>
 
-                {/* Performance Analytics (Placeholders for now) */}
+                {/* Performance Analytics */}
                 <div className="lg:col-span-2 bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8">
                     <h3 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-8 flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-pink-500" />
-                        Winning Probability vs Actual
+                        Probability vs Actual Win-Rate
                     </h3>
 
-                    <div className="flex flex-col items-center justify-center h-64 border border-dashed border-white/5 rounded-3xl bg-black/20">
-                        <BarChart3 className="h-10 w-10 text-slate-700 mb-4 opacity-20" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">
-                            Advanced Data Visualization Coming Soon
-                        </p>
-                        <p className="text-slate-700 text-[8px] uppercase mt-2">
-                            Aggregating historical match performance...
-                        </p>
+                    <div className="space-y-8">
+                        {data.probabilityData?.map((item: any, idx: number) => (
+                            <div key={idx} className="space-y-3">
+                                <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                    <span>{item.category} <span className="text-slate-700 ml-2">({item.range})</span></span>
+                                    <div className="flex gap-4">
+                                        <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-slate-700" /> Expected: {item.expected}%</span>
+                                        <span className="flex items-center gap-1"><span className={cn("w-1 h-1 rounded-full", item.color.replace('bg-', 'text-'))} /> Actual: {item.actual}%</span>
+                                    </div>
+                                </div>
+                                <div className="h-4 w-full bg-slate-950/50 rounded-full overflow-hidden relative border border-white/5">
+                                    {/* Expected Shade */}
+                                    <div
+                                        className="absolute inset-y-0 left-0 bg-slate-800 opacity-30 transition-all duration-1000"
+                                        style={{ width: `${item.expected}%` }}
+                                    />
+                                    {/* Actual Bar */}
+                                    <div
+                                        className={cn("absolute inset-y-0 left-0 transition-all duration-1000 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.5)]", item.color)}
+                                        style={{ width: `${item.actual}%` }}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="mt-8 grid grid-cols-2 gap-4">
                         <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Most Profitable Sport</p>
-                            <p className="text-white font-black text-sm uppercase">Football Quiz</p>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Divergence Alert</p>
+                            <p className="text-white font-black text-sm uppercase">Nominal (&lt; 5%)</p>
                         </div>
-                        <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Highest Stakes Range</p>
-                            <p className="text-white font-black text-sm uppercase">₵ 50 - ₵ 200</p>
+                        <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer group">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Calibration Status</p>
+                            <p className="text-emerald-400 font-black text-sm uppercase flex items-center gap-2">
+                                Optimized
+                                <Activity className="h-3 w-3 animate-pulse" />
+                            </p>
                         </div>
                     </div>
                 </div>

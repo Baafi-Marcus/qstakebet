@@ -16,7 +16,8 @@ import {
     CreditCard,
     Gift,
     Radio,
-    Megaphone
+    Megaphone,
+    History as HistoryIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -27,6 +28,7 @@ const navItems = [
     { name: "Bonuses", href: "/admin/bonuses", icon: Gift },
     { name: "Payouts", href: "/admin/withdrawals", icon: CreditCard },
     { name: "Live Dashboard", href: "/admin/live", icon: Radio },
+    { name: "Tickets", href: "/admin/bets", icon: HistoryIcon },
     { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Tournaments", href: "/admin/tournaments", icon: Trophy },
     { name: "Institutions", href: "/admin/schools", icon: School },
