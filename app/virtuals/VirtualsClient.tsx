@@ -39,11 +39,12 @@ interface VirtualsClientProps {
     profile?: { balance: number; currency: string; bonusBalance?: number };
     schools: VirtualSchool[];
     userSeed?: number;
+    level?: string;
 }
 
 const MAX_GAME_PAYOUT = 3000;
 
-export function VirtualsClient({ profile, schools, userSeed = 0, user }: VirtualsClientProps) {
+export function VirtualsClient({ profile, schools, userSeed = 0, user, level = 'shs' }: VirtualsClientProps) {
     const router = useRouter()
 
     // Status / UI State
@@ -126,7 +127,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
                         totalOdds: bet.totalOdds,
                         potentialPayout: bet.potentialPayout,
                         status: bet.status,
-                        roundId: bet.selections?.[0]?.matchId ? parseInt(bet.selections[0].matchId.split('-')[1]) : 0,
+                        roundId: bet.selections?.[0]?.matchId ? parseInt(bet.selections[0].matchId.split('-')[2]) : 0,
                         totalReturns: bet.status === 'won' ? bet.potentialPayout : 0,
                         totalStake: bet.stake,
                         timestamp: new Date(bet.createdAt).getTime(),
@@ -161,14 +162,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     const handleLeaveGame = () => {
         const hasActiveBets = pendingSlips.length > 0 || isSimulating
         const isBetting = selections.length > 0
-        
+
         let confirmMsg = "Are you sure you want to exit NSMQ Virtuals?"
         if (hasActiveBets) {
             confirmMsg = "You have active bets or a match in progress! Are you sure you want to leave?"
         } else if (isBetting) {
             confirmMsg = "Your current selections will be cleared. Are you sure you want to leave?"
         }
-            
+
         if (window.confirm(confirmMsg)) {
             router.push('/virtuals')
         }
@@ -177,10 +178,10 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
     // Memos
     const { matches, outcomes } = useMemo(() => {
         const count = selectedCategory === 'regional' ? 15 : 9
-        const gen = generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed);
+        const gen = generateVirtualMatches(count, activeSchools, currentRound, selectedCategory, selectedRegion || undefined, aiStrengths, userSeed, level);
         outcomesRef.current = gen.outcomes
         return gen
-    }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion])
+    }, [currentRound, activeSchools, aiStrengths, userSeed, selectedCategory, selectedRegion, level])
 
     const availableRegions = useMemo(() => [...new Set(activeSchools.map(s => s.region))].sort(), [activeSchools])
 
@@ -259,8 +260,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user }: Virtual
         const resolvedSlips: ResolvedSlip[] = pendingSlips.map(slip => {
             const results = slip.selections.map((sel: any) => {
                 const parts = sel.matchId.split("-")
-                // Fix 11: use activeSchools (state) not schools prop
-                const outcome = simulateMatch(parseInt(parts[1]), parseInt(parts[2]), activeSchools, parts[3] as any, parts[4] || undefined, aiStrengths, userSeed)
+                // vmt-{level}-{roundId}-{index}-{category}-{regionSlug}
+                const matchLevel = parts[1] || level
+                const matchRoundId = parseInt(parts[2])
+                const matchIndex = parseInt(parts[3])
+                const matchCategory = parts[4] as any
+                const matchRegion = parts[5] === 'all' ? undefined : parts[5]
+
+                const outcome = simulateMatch(matchRoundId, matchIndex, activeSchools, matchCategory, matchRegion, aiStrengths, userSeed, matchLevel)
                 return { ...sel, won: checkSelectionWin(sel, outcome), outcome }
             })
 

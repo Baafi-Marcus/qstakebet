@@ -362,55 +362,76 @@ export function TournamentDetailClient({
                                 grouped[gName].push(m);
                             });
 
-                            // Sort keys (Groups first, then Knockout, then Other)
+                            // Sort keys (by earliest match in group)
                             const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+                                const earliestA = Math.min(...grouped[a].map(m => m.scheduledAt ? new Date(m.scheduledAt).getTime() : Infinity));
+                                const earliestB = Math.min(...grouped[b].map(m => m.scheduledAt ? new Date(m.scheduledAt).getTime() : Infinity));
+
+                                if (earliestA !== earliestB) return earliestA - earliestB;
+
+                                // Fallback to alphabetical if times are same (or both Infinity)
                                 if (a.startsWith('Group') && b.startsWith('Group')) return a.localeCompare(b);
                                 if (a.startsWith('Group')) return -1;
                                 if (b.startsWith('Group')) return 1;
                                 return a.localeCompare(b);
                             });
 
-                            return sortedGroupKeys.map(groupName => (
-                                <div key={groupName} className="space-y-4">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5 w-fit">
-                                        <Layers className="h-3 w-3 text-purple-400" />
-                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{groupName}</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {grouped[groupName].sort((a, b) => {
-                                            const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-                                            const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-                                            return dateA - dateB;
-                                        }).map(m => (
-                                            <div key={m.id} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2rem] hover:bg-slate-800/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.status === 'draft' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-500/10 text-blue-500'}`}>
-                                                        {m.status === 'draft' ? <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> : <Clock className="h-5 w-5" />}
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                            {m.matchday && <span className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">{m.matchday}</span>}
-                                                            <span className={`px-1.5 py-0.5 rounded ${m.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>{m.status}</span>
-                                                        </div>
-                                                        <div className="text-lg font-bold text-white mt-1 uppercase tracking-tight flex items-center gap-3">
-                                                            {m.participants[0].name}
-                                                            <span className="text-slate-600 font-black italic text-xs">VS</span>
-                                                            {m.participants[1].name}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                            return sortedGroupKeys.map(groupName => {
+                                const groupMatches = grouped[groupName].sort((a, b) => {
+                                    const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+                                    const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+                                    return dateA - dateB;
+                                });
 
-                                                <div className="flex items-center gap-6">
-                                                    <div className="text-right">
-                                                        <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Planned For</div>
-                                                        <div className="text-xs font-bold text-slate-400">{m.startTime}</div>
+                                const earliestMatch = groupMatches[0];
+                                const groupDate = earliestMatch?.scheduledAt ? new Date(earliestMatch.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+
+                                return (
+                                    <div key={groupName} className="space-y-4">
+                                        <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5 w-fit">
+                                            <Layers className="h-3 w-3 text-purple-400" />
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">{groupName}</span>
+                                                {groupDate && (
+                                                    <>
+                                                        <span className="h-1 w-1 rounded-full bg-slate-700" />
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{groupDate}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {groupMatches.map(m => (
+                                                <div key={m.id} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2rem] hover:bg-slate-800/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.status === 'draft' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                            {m.status === 'draft' ? <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> : <Clock className="h-5 w-5" />}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                                {m.matchday && <span className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">{m.matchday}</span>}
+                                                                <span className={`px-1.5 py-0.5 rounded ${m.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>{m.status}</span>
+                                                            </div>
+                                                            <div className="text-lg font-bold text-white mt-1 uppercase tracking-tight flex items-center gap-3">
+                                                                {m.participants[0].name}
+                                                                <span className="text-slate-600 font-black italic text-xs">VS</span>
+                                                                {m.participants[1].name}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="text-right">
+                                                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Planned For</div>
+                                                            <div className="text-xs font-bold text-slate-400">{m.startTime}</div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ));
+                                );
+                            });
                         })()}
                     </div>
                 )}

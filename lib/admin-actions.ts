@@ -478,17 +478,20 @@ export async function createMatch(data: {
     // 1. Calculate Odds
     const initialOdds = await calculateInitialOdds(data.schoolIds, data.sportType, data.gender, data.tournamentId);
 
-    // 2. Fetch School Names (for simplified display/redundancy in JSON)
+    // 2. Generate Extended Markets (11+ markets)
+    const extendedOdds = await generateExtendedMarkets(data.schoolIds, initialOdds, data.sportType);
+
+    // 3. Fetch School Names
     const schoolDetails = await db.select().from(schools)
         .where(sql`${schools.id} IN ${data.schoolIds}`);
 
-    // 3. Construct Participants JSON
+    // 4. Construct Participants JSON
     const participants = data.schoolIds.map(id => {
         const school = schoolDetails.find(s => s.id === id);
         return {
             schoolId: id,
             name: school?.name || "Unknown School",
-            odd: initialOdds[id] || 2.00, // Fallback
+            odd: initialOdds[id] || 2.00,
             result: null
         };
     });
@@ -509,6 +512,7 @@ export async function createMatch(data: {
         group: data.group,
         matchday: data.matchday,
         odds: initialOdds,
+        extendedOdds: extendedOdds as any,
         sportType: data.sportType,
         gender: data.gender,
         margin: 0.1
@@ -601,6 +605,23 @@ export async function updateMatch(id: string, data: {
 
         updateData.participants = participants;
         updateData.odds = initialOdds;
+        updateData.extendedOdds = await generateExtendedMarkets(data.schoolIds, initialOdds, data.sportType || 'football') as any;
+    }
+
+    // 4. Publication Validation: Prevent moving out of 'draft' if markets don't exist
+    if (data.status && !['draft', 'cancelled'].includes(data.status)) {
+        const current = await db.select({
+            extendedOdds: matches.extendedOdds,
+        }).from(matches).where(eq(matches.id, id)).limit(1);
+
+        if (current.length > 0) {
+            const hasMarkets = current[0].extendedOdds && Object.keys(current[0].extendedOdds as any).length > 0;
+            const updatingMarkets = updateData.extendedOdds && Object.keys(updateData.extendedOdds).length > 0;
+
+            if (!hasMarkets && !updatingMarkets) {
+                return { success: false, error: "Cannot publish match without betting markets. Please generate AI markets first." };
+            }
+        }
     }
 
     // Remove undefined
@@ -1331,4 +1352,73 @@ export async function recalculateTournamentOutrightOdds(tournamentId: string) {
     } catch (error) {
         console.error("Error recalculating tournament odds:", error);
     }
+}
+/**
+ * Generates extended markets (Over/Under, BTTS, etc.) based on main 1X2 odds.
+ */
+export async function generateExtendedMarkets(schoolIds: string[], odds: Record<string, number>, sportType: string) {
+    const markets: any = {};
+    const margin = 0.12; // Slightly higher margin for props
+
+    if (sportType === 'football' || sportType === 'handball') {
+        const homeId = schoolIds[0];
+        const awayId = schoolIds[1];
+        const homeOdd = odds[homeId] || 2.0;
+        const awayOdd = odds[awayId] || 2.0;
+        const drawOdd = odds['X'] || 3.2;
+
+        // 1. Match Winner (Duplicate for convenience in extendedOdds)
+        markets.matchWinner = {
+            [homeId]: homeOdd,
+            [awayId]: awayOdd,
+            X: drawOdd
+        };
+
+        // 2. Both Teams to Score (BTTS)
+        // Derived from win odds - if both have high win odds (e.g. 2.5/2.5), BTTS Yes is likely
+        const bttsYesProb = (1 / homeOdd + 1 / awayOdd) * 0.55;
+        markets.btts = {
+            Yes: parseFloat((1 / (bttsYesProb * (1 - margin))).toFixed(2)),
+            No: parseFloat((1 / ((1 - bttsYesProb) * (1 - margin))).toFixed(2))
+        };
+
+        // 3. Over/Under Markets (Poisson-ish estimation)
+        // Total Expected Goals (ExpG) roughly 2.5 - 3.0
+        const expG = (1 / homeOdd * 1.5) + (1 / awayOdd * 1.5) + 0.5;
+        const lines = [0.5, 1.5, 2.5, 3.5, 4.5];
+        lines.forEach(line => {
+            // Very simplified Poisson cumulative distribution heuristic
+            const overProb = Math.max(0.1, Math.min(0.9, 1 - Math.exp(-expG / (line + 0.5))));
+            markets[`overUnder${line.toString().replace('.', '_')}`] = {
+                Over: parseFloat((1 / (overProb * (1 - margin))).toFixed(2)),
+                Under: parseFloat((1 / ((1 - overProb) * (1 - margin))).toFixed(2))
+            };
+        });
+
+        // 4. Double Chance
+        markets.doubleChance = {
+            "1X": parseFloat((1 / ((1 / homeOdd + 1 / drawOdd) * (1 - margin))).toFixed(2)),
+            "12": parseFloat((1 / ((1 / homeOdd + 1 / awayOdd) * (1 - margin))).toFixed(2)),
+            "X2": parseFloat((1 / ((1 / awayOdd + 1 / drawOdd) * (1 - margin))).toFixed(2))
+        };
+
+        // 5. Draw No Bet
+        const dnbHomeProb = (1 / homeOdd) / (1 / homeOdd + 1 / awayOdd);
+        markets.drawNoBet = {
+            [homeId]: parseFloat((1 / (dnbHomeProb * (1 - margin))).toFixed(2)),
+            [awayId]: parseFloat((1 / ((1 - dnbHomeProb) * (1 - margin))).toFixed(2))
+        };
+
+        // 6. Half Time Result (Roughly 1/3 of full time probability for home/away, higher for draw)
+        const htHomeProb = (1 / homeOdd) * 0.7;
+        const htAwayProb = (1 / awayOdd) * 0.7;
+        const htDrawProb = 1 - htHomeProb - htAwayProb;
+        markets.halfTimeResult = {
+            [homeId]: parseFloat((1 / (htHomeProb * (1 - margin))).toFixed(2)),
+            [awayId]: parseFloat((1 / (htAwayProb * (1 - margin))).toFixed(2)),
+            X: parseFloat((1 / (htDrawProb * (1 - margin))).toFixed(2))
+        };
+    }
+
+    return markets;
 }

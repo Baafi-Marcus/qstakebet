@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { bets, transactions, wallets, matches, tournaments } from "@/lib/db/schema"
-import { eq, sql } from "drizzle-orm"
+import { eq, sql, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
 import { PlaceBetSchema } from "@/lib/validators"
@@ -97,7 +97,30 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             return { success: false, error: "One or more matches in your betslip were not found." }
         }
 
-        const lockStatus = getMatchLockStatus(matchData[0] as any)
+        const match = matchData[0] as any
+
+        // Find the earliest match of the same day for this tournament
+        let dayFirstMatchStart: Date | undefined = undefined;
+        if (match.scheduledAt) {
+            const matchDate = new Date(match.scheduledAt);
+            const startOfDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate(), 0, 0, 0);
+            const endOfDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate(), 23, 59, 59);
+
+            const dayMatches = await db.select({ scheduledAt: matches.scheduledAt })
+                .from(matches)
+                .where(and(
+                    eq(matches.tournamentId, match.tournamentId),
+                    sql`${matches.scheduledAt} >= ${startOfDay.toISOString()}`,
+                    sql`${matches.scheduledAt} <= ${endOfDay.toISOString()}`
+                ))
+                .orderBy(matches.scheduledAt);
+
+            if (dayMatches.length > 0 && dayMatches[0].scheduledAt) {
+                dayFirstMatchStart = new Date(dayMatches[0].scheduledAt);
+            }
+        }
+
+        const lockStatus = getMatchLockStatus(match, dayFirstMatchStart)
 
         if (lockStatus.isLocked) {
             return {

@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from "react"
 import { X, Loader2, Sparkles, Check, Trash2, RotateCcw, Save } from "lucide-react"
 import { Match } from "@/lib/types"
-import { getMatchSuggestions, publishMatchMarkets } from "@/lib/admin-actions"
+import { getMatchSuggestions, publishMatchMarkets, updateMatch } from "@/lib/admin-actions"
 
 interface MarketReviewModalProps {
     match: Match
     onClose: () => void
     onSuccess: () => void
+    publishAfter?: boolean
 }
 
 type MarketDraft = {
@@ -21,7 +22,7 @@ type MarketDraft = {
     }>
 }
 
-export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewModalProps) {
+export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: MarketReviewModalProps) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [drafts, setDrafts] = useState<MarketDraft[]>([])
@@ -64,6 +65,14 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
             setPublishing(true)
             const res = await publishMatchMarkets(match.id, drafts)
             if (res.success) {
+                if (publishAfter) {
+                    const publishRes = await updateMatch(match.id, { status: "upcoming" }) as any;
+                    if (!publishRes || publishRes.error) {
+                        alert("Markets saved but match publication failed: " + (publishRes?.error || "Unknown error"));
+                        setPublishing(false);
+                        return;
+                    }
+                }
                 onSuccess()
                 onClose()
             } else {
@@ -208,7 +217,7 @@ export function MarketReviewModal({ match, onClose, onSuccess }: MarketReviewMod
                             className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50"
                         >
                             {publishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                            {publishing ? "Publishing..." : "Publish to Users"}
+                            {publishing ? "Publishing..." : publishAfter ? "Publish & Set Upcoming" : "Publish to Users"}
                         </button>
                     </div>
                 </div>

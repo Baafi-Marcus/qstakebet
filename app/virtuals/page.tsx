@@ -41,6 +41,18 @@ export default function VirtualsHubPage() {
                         </div>
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-purple-400 transition-colors text-center">Q-DARTS</span>
                     </Link>
+
+                    {/* University Virtuals Card */}
+                    <Link href="/virtuals/university" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
+                        <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-blue-500/50 group-hover:shadow-[0_0_60px_rgba(59,130,246,0.2)] overflow-hidden">
+                            <img
+                                src="/images/virtuals/university-hub.jpg"
+                                alt="University Quiz"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-blue-400 transition-colors text-center">University Quiz</span>
+                    </Link>
                 </div>
             </div>
         </div>

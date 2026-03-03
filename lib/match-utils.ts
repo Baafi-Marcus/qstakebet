@@ -5,7 +5,7 @@ import { Match } from "./types"
  * Determines if a match should be locked for betting.
  * Cutoff is 5 minutes before the scheduled start time.
  */
-export function getMatchLockStatus(match: Match): {
+export function getMatchLockStatus(match: Match, dayFirstMatchStart?: Date): {
     isLocked: boolean,
     reason?: string,
     timeUntilLock?: number, // in minutes
@@ -20,6 +20,21 @@ export function getMatchLockStatus(match: Match): {
     const startTime = new Date(match.scheduledAt)
     const diffMs = startTime.getTime() - now.getTime()
     const minutesUntilStart = diffMs / 60000
+
+    // NEW: Day-level lock (2 hours before first match of the day)
+    if (dayFirstMatchStart) {
+        const firstMatchTime = new Date(dayFirstMatchStart);
+        const lockTime = firstMatchTime.getTime() - (2 * 60 * 60 * 1000); // 2 hours before
+        if (now.getTime() >= lockTime) {
+            return {
+                isLocked: true,
+                reason: 'Day-level lock active',
+                timeUntilLock: 0,
+                isOverdue: minutesUntilStart < 0,
+                minutesOverdue: minutesUntilStart < 0 ? Math.abs(minutesUntilStart) : 0
+            }
+        }
+    }
 
     // Overdue metrics
     const isOverdue = minutesUntilStart < 0

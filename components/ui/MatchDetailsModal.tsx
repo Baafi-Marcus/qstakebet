@@ -8,12 +8,12 @@ import { getMatchLockStatus } from "@/lib/match-utils"
 
 // ... (PROPS AND DESCRIPTIONS REMAIN SAME)
 
-export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, checkIsCorrelated }: MatchDetailsModalProps) {
+export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, checkIsCorrelated, dayFirstMatchStart }: MatchDetailsModalProps) {
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
     const participants = match.participants || []
     const matchLabel = participants.map(p => p.name).join(' vs ')
 
-    const { isLocked } = getMatchLockStatus(match)
+    const { isLocked } = getMatchLockStatus(match, dayFirstMatchStart ? new Date(dayFirstMatchStart) : undefined)
 
     const toggleInfo = (market: string) => {
         if (expandedInfo === market) setExpandedInfo(null);
@@ -477,6 +477,7 @@ interface MatchDetailsModalProps {
     onOddsClick: (selection: Selection) => void;
     checkSelected: (selectionId: string) => boolean;
     checkIsCorrelated?: (matchId: string, marketName: string) => boolean;
+    dayFirstMatchStart?: string | null;
 }
 
 const MARKET_DESCRIPTIONS: Record<string, string> = {

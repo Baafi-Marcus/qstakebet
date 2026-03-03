@@ -109,6 +109,7 @@ export interface VirtualResult {
     category: 'regional' | 'national';
     region?: string;
     roundId: number;
+    level?: string;
 }
 
 // Deterministic random based on seed
@@ -128,7 +129,8 @@ export function simulateMatch(
     category: 'regional' | 'national' = 'national',
     queryRegion?: string,
     aiStrengths: Record<string, number> = {}, // New Param for AI Memory
-    userSeed: number = 0 // New Param for Uniqueness per User
+    userSeed: number = 0, // New Param for Uniqueness per User
+    level: string = 'shs' // New Param for Arena Separation
 ): VirtualMatchOutcome {
     const regionSlug = queryRegion ? queryRegion.toLowerCase().replace(/\s+/g, '-') : 'all';
     // Base seed for school selection (same for all matches in a round)
@@ -504,7 +506,7 @@ export function simulateMatch(
     commentary.push({ time: 60, text: `Full Time! ${schoolNames[winnerIndex]} are the champions!` });
 
     return {
-        id: `vmt-${roundId}-${index}-${category}-${regionSlug}`,
+        id: `vmt-${level}-${roundId}-${index}-${category}-${regionSlug}`,
         schools: schoolNames,
         rounds: finalRounds,
         totalScores,
@@ -810,7 +812,8 @@ export function generateVirtualMatches(
     category: 'regional' | 'national' | 'all' = 'national',
     queryRegion?: string,
     aiStrengths: Record<string, number> = {},
-    userSeed: number = 0
+    userSeed: number = 0,
+    level: string = 'shs'
 ): { matches: Match[], outcomes: VirtualMatchOutcome[] } {
     const matches: Match[] = [];
     const outcomes: VirtualMatchOutcome[] = [];
@@ -830,7 +833,8 @@ export function generateVirtualMatches(
             matchCategory,
             queryRegion,
             aiStrengths as Record<string, number>,
-            userSeed
+            userSeed,
+            level === 'all' ? 'shs' : level // Default or specific level
         );
         matches.push(mapOutcomeToMatch(outcome, roundId * cycleTime));
         outcomes.push(outcome);
@@ -842,12 +846,14 @@ export function generateVirtualMatches(
 export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = DEFAULT_SCHOOLS, userSeed: number = 0): Match | undefined {
     if (!id.startsWith("vmt-")) return undefined;
     const parts = id.split("-");
-    if (parts.length < 3) return undefined;
+    // Format: vmt-{level}-{roundId}-{index}-{category}-{regionSlug}
+    if (parts.length < 6) return undefined;
 
-    const roundId = parseInt(parts[1]);
-    const index = parseInt(parts[2]);
-    const category = (parts[3] as 'regional' | 'national') || 'national';
-    const regionSlug = parts[4] || 'all';
+    const level = parts[1] || 'shs';
+    const roundId = parseInt(parts[2]);
+    const index = parseInt(parts[3]);
+    const category = (parts[4] as 'regional' | 'national') || 'national';
+    const regionSlug = parts[5] || 'all';
 
     // Find regional name from slug (Reverse mapping or just pass slug if handled)
     const schoolsInThisRegion = schoolsList.find(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
@@ -862,7 +868,8 @@ export function getVirtualMatchById(id: string, schoolsList: VirtualSchool[] = D
         category as 'regional' | 'national',
         regionName,
         {} as Record<string, number>,
-        userSeed
+        userSeed,
+        level
     );
     return mapOutcomeToMatch(outcome, roundId * cycleTime);
 }
@@ -891,7 +898,8 @@ export function getRecentVirtualResults(
             matchCategory,
             queryRegion,
             {} as Record<string, number>,
-            userSeed
+            userSeed,
+            'shs' // Default for legacy results
         );
 
         results.push({

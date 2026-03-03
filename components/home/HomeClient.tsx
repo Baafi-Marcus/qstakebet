@@ -138,6 +138,21 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         }));
     }, [filteredMatches]);
 
+    // Map each day to its first match start time
+    const dayToFirstMatchMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        initialMatches.forEach(m => {
+            if (!m.scheduledAt || m.isVirtual) return;
+            const scheduledStr = m.scheduledAt instanceof Date ? m.scheduledAt.toISOString() : (m.scheduledAt as string);
+            const date = new Date(scheduledStr);
+            const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+            if (!map[dayKey] || scheduledStr < map[dayKey]) {
+                map[dayKey] = scheduledStr;
+            }
+        });
+        return map;
+    }, [initialMatches]);
+
     // Check if a selection is in the bet slip
     const checkSelected = (selectionId: string) => {
         return selections.some(s => s.selectionId === selectionId)
@@ -353,16 +368,23 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
                             {/* Matches in this group */}
                             <div className="bg-slate-900/20 border border-white/5 rounded-2xl sm:rounded-[2.5rem] overflow-hidden divide-y divide-white/5">
-                                {group.matches.map((match) => (
-                                    <MatchRow
-                                        key={match.id}
-                                        match={match}
-                                        activeMarket={activeMarket}
-                                        onOddsClick={addSelection}
-                                        checkSelected={checkSelected}
-                                        onMoreClick={(m) => setSelectedMatchForDetails(m)}
-                                    />
-                                ))}
+                                {group.matches.map((match) => {
+                                    const matchDate = match.scheduledAt ? new Date(match.scheduledAt) : null;
+                                    const dayKey = matchDate ? `${matchDate.getFullYear()}-${matchDate.getMonth() + 1}-${matchDate.getDate()}` : null;
+                                    const dayFirstMatchStart = dayKey ? dayToFirstMatchMap[dayKey] : null;
+
+                                    return (
+                                        <MatchRow
+                                            key={match.id}
+                                            match={match}
+                                            activeMarket={activeMarket}
+                                            onOddsClick={addSelection}
+                                            checkSelected={checkSelected}
+                                            onMoreClick={(m) => setSelectedMatchForDetails(m)}
+                                            dayFirstMatchStart={dayFirstMatchStart}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
                     ))
@@ -385,6 +407,13 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                     onClose={() => setSelectedMatchForDetails(null)}
                     onOddsClick={addSelection}
                     checkSelected={checkSelected}
+                    dayFirstMatchStart={(() => {
+                        const m = selectedMatchForDetails;
+                        if (!m.scheduledAt || m.isVirtual) return null;
+                        const date = new Date(m.scheduledAt instanceof Date ? m.scheduledAt.toISOString() : (m.scheduledAt as string));
+                        const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                        return dayToFirstMatchMap[dayKey] || null;
+                    })()}
                 />
             )}
         </div>

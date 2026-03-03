@@ -202,13 +202,17 @@ export async function getMatchesByStage(stageSlug: string): Promise<Match[]> {
     return results.map(mapDbMatchToMatch)
 }
 
-export async function getAllSchools() {
+export async function getAllSchools(level?: string) {
     if (!process.env.DATABASE_URL) {
         console.error("❌ DATABASE_URL is missing in technical environment");
     }
     try {
-        const result = await db.select().from(schools);
-        console.log(`✅ Successfully fetched ${result.length} schools`);
+        const query = db.select().from(schools);
+        if (level) {
+            query.where(eq(schools.level, level));
+        }
+        const result = await query;
+        console.log(`✅ Successfully fetched ${result.length} schools${level ? ` for level: ${level}` : ''}`);
         return result;
     } catch (error) {
         console.error("❌ Failed to fetch schools from database:", error);

@@ -29,13 +29,14 @@ export function MatchesClient({
     const [isCreating, setIsCreating] = useState(false)
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
     const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
+    const [pendingPublishMatch, setPendingPublishMatch] = useState<Match | null>(null)
     const [selectedMatchForHistory, setSelectedMatchForHistory] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
 
     // Bulk Start/Lock State
     const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([])
     const [isBulkStarting, setIsBulkStarting] = useState(false)
-    const [isBulkLocking, setIsBulkLocking] = useState(false)
+    const [isBulkPublishing, setIsBulkPublishing] = useState(false)
     const [editingMatch, setEditingMatch] = useState<Match | null>(null)
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
@@ -69,20 +70,40 @@ export function MatchesClient({
         }
     }
 
-    const handleBulkLock = async () => {
-        if (!confirm(`Are you sure you want to LOCK betting for ${selectedMatchIds.length} matches?`)) return;
-        setIsBulkLocking(true)
+    const handleBulkPublish = async () => {
+        const matchesToPublish = matches.filter(m => selectedMatchIds.includes(m.id));
+        const missingMarkets = matchesToPublish.filter(m => !m.extendedOdds || Object.keys(m.extendedOdds as any).length === 0);
+
+        if (missingMarkets.length > 0) {
+            alert(`Cannot publish ${missingMarkets.length} matches because they are missing betting markets. Please generate markets for them first individually.`);
+            if (missingMarkets.length === matchesToPublish.length) return;
+        }
+
+        const validIds = matchesToPublish
+            .filter(m => m.extendedOdds && Object.keys(m.extendedOdds as any).length > 0)
+            .map(m => m.id);
+
+        if (!confirm(`Are you sure you want to PUBLISH ${validIds.length} draft matches?`)) return;
+        setIsBulkPublishing(true)
         try {
-            await lockMatches(selectedMatchIds)
+            // We'll update the status to upcoming for all selected matches
+            const promises = validIds.map(id => updateMatch(id, { status: 'upcoming' }));
+            const results = await Promise.all(promises) as any[];
+
+            const errors = results.filter(r => r.error);
+            if (errors.length > 0) {
+                alert(`Some matches failed to publish: ${errors[0].error}`);
+            }
+
             // Update local state optimistically
-            setMatches(prev => prev.map(m => selectedMatchIds.includes(m.id) ? { ...m, status: 'locked' } : m))
+            setMatches(prev => prev.map(m => validIds.includes(m.id) ? { ...m, status: 'upcoming' } : m))
             setSelectedMatchIds([])
             router.refresh()
         } catch (e) {
             console.error(e)
-            alert("Failed to lock matches")
+            alert("Failed to publish matches")
         } finally {
-            setIsBulkLocking(false)
+            setIsBulkPublishing(false)
         }
     }
 
@@ -136,7 +157,11 @@ export function MatchesClient({
         setIsCreating(true)
         try {
             if (editingMatch) {
-                const result = await updateMatch(editingMatch.id, formData)
+                const result = await updateMatch(editingMatch.id, formData) as any
+                if (result && result.error) {
+                    alert(result.error);
+                    return;
+                }
                 if (result) {
                     setMatches((prev: Match[]) => prev.map(m => m.id === editingMatch.id ? ({
                         ...m,
@@ -192,8 +217,20 @@ export function MatchesClient({
     }
 
     const handlePublishDraft = async (matchId: string) => {
+        const match = matches.find(m => m.id === matchId);
+        const hasMarkets = match?.extendedOdds && Object.keys(match.extendedOdds as any).length > 0;
+
+        if (!hasMarkets && match) {
+            setPendingPublishMatch(match);
+            return;
+        }
+
         try {
-            const result = await updateMatch(matchId, { status: "upcoming" });
+            const result = await updateMatch(matchId, { status: "upcoming" }) as any;
+            if (result && result.error) {
+                alert(result.error);
+                return;
+            }
             if (result && result.length > 0) {
                 setMatches((prev: Match[]) => prev.map(m => m.id === matchId ? ({
                     ...m,
@@ -359,16 +396,16 @@ export function MatchesClient({
                         </div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={handleBulkLock}
-                                disabled={isBulkLocking || isBulkStarting}
-                                className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                                onClick={handleBulkPublish}
+                                disabled={isBulkPublishing || isBulkStarting}
+                                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
                             >
-                                {isBulkLocking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                                Lock Bets
+                                {isBulkPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                Publish Selected
                             </button>
                             <button
                                 onClick={handleBulkStart}
-                                disabled={isBulkStarting || isBulkLocking}
+                                disabled={isBulkStarting || isBulkPublishing}
                                 className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2"
                             >
                                 {isBulkStarting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
@@ -705,6 +742,19 @@ export function MatchesClient({
                     onSuccess={() => {
                         router.refresh()
                         setSelectedMatchForAI(null)
+                    }}
+                />
+            )}
+
+            {/* Publication Interception Modal */}
+            {pendingPublishMatch && (
+                <MarketReviewModal
+                    match={pendingPublishMatch}
+                    publishAfter={true}
+                    onClose={() => setPendingPublishMatch(null)}
+                    onSuccess={() => {
+                        router.refresh()
+                        setPendingPublishMatch(null)
                     }}
                 />
             )}

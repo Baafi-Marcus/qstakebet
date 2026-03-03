@@ -1,15 +1,14 @@
 import React from "react"
 import { getAllSchools } from "@/lib/data"
 import { VirtualsClient } from "../VirtualsClient"
-
-export const dynamic = "force-dynamic"
-
 import { auth } from "@/lib/auth"
 import { getUserWalletBalance } from "@/lib/wallet-actions"
 
-export default async function VirtualsPage() {
-    // Fetch SHS schools on the server
-    const schoolsData = await getAllSchools('shs')
+export const dynamic = "force-dynamic"
+
+export default async function UniversityVirtualsPage() {
+    // Fetch University schools (Halls/Departments) on the server
+    const schoolsData = await getAllSchools('university')
     const schools = schoolsData.map(s => ({
         name: s.name,
         region: s.region
@@ -27,10 +26,17 @@ export default async function VirtualsPage() {
             currency: "GHS"
         }
 
-        // Simple numeric seed from user ID
         const userId = session.user.id || "0"
         userSeed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
     }
 
-    return <VirtualsClient schools={schools} profile={profile} userSeed={userSeed} user={session?.user} level="shs" />
+    return (
+        <VirtualsClient
+            schools={schools}
+            profile={profile}
+            userSeed={userSeed}
+            user={session?.user}
+            level="university"
+        />
+    )
 }

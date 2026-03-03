@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react"
 import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
 import { updateMatchResult, getActiveMarketsAction } from "@/lib/admin-actions"
 import { validateScores } from "@/lib/match-utils"
+import { cn } from "@/lib/utils"
 
 interface MatchResultModalProps {
     match: {
@@ -10,6 +11,7 @@ interface MatchResultModalProps {
         participants: Array<{
             schoolId: string
             name: string
+            odd?: number
         }>
         extendedOdds?: Record<string, Record<string, number | null>>
         metadata?: any
@@ -88,6 +90,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         return match.metadata?.outcomes || {}
     })
     const [activeMarkets, setActiveMarkets] = useState<string[]>([])
+    const [isConfirmed, setIsConfirmed] = useState(false)
 
     // Fetch active markets on mount
     useEffect(() => {
@@ -204,6 +207,27 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         if (!isFootball) return
         setTimerData({ minute: 90, period: "2H" })
     }
+
+    // --- DERIVED OUTCOMES FOR CONFIRMATION ---
+    const derivedOutcomes = useMemo(() => {
+        if (isLiveUpdate) return [];
+        const outcomes: { market: string, result: string, type: 'auto' | 'manual' }[] = [];
+
+        // Winner (Standard)
+        if (winner) {
+            const winnerName = winner === 'X' ? 'Draw' : match.participants.find(p => p.schoolId === winner)?.name || winner;
+            outcomes.push({ market: 'Match Winner', result: winnerName, type: 'auto' });
+        }
+
+        // Add manual ones
+        Object.entries(manualOutcomes).forEach(([market, selection]) => {
+            if (selection) {
+                outcomes.push({ market, result: selection, type: 'manual' });
+            }
+        });
+
+        return outcomes;
+    }, [isLiveUpdate, winner, manualOutcomes, match.participants]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -430,6 +454,28 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                         {/* 1. TAB CONTENT */}
                         {activeTab === "scores" ? (
                             <>
+                                {/* Odds Display Header */}
+                                <div className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <Target className="h-4 w-4 text-primary" />
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Market Odds</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        {match.participants.map((p, idx) => (
+                                            <div key={p.schoolId} className="flex items-center gap-2">
+                                                <span className="text-[8px] font-bold text-slate-600 uppercase">P{idx + 1}</span>
+                                                <span className="text-xs font-black text-white">{p.odd?.toFixed(2) || '1.00'}</span>
+                                            </div>
+                                        ))}
+                                        {isFootball && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[8px] font-bold text-slate-600 uppercase">Draw</span>
+                                                <span className="text-xs font-black text-white">{(match.extendedOdds?.matchWinner?.X || 3.20).toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {isQuiz && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {match.participants.map(p => (
@@ -690,9 +736,39 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                 </>
                             )}
 
+                            {/* Outcome Summary Section (Final Settle Only) */}
+                            {!isLiveUpdate && (
+                                <div className="p-6 bg-slate-950/40 rounded-3xl border border-white/5 space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="h-4 w-4 text-primary" />
+                                        <span className="text-xs font-black text-white uppercase tracking-widest">Confirm Derived Outcomes</span>
+                                    </div>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                        {derivedOutcomes.map((o, idx) => (
+                                            <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{o.market}</span>
+                                                <span className={cn(
+                                                    "text-[10px] font-black uppercase tracking-tight",
+                                                    o.type === 'auto' ? "text-primary" : "text-amber-400"
+                                                )}>{o.result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <label className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl cursor-pointer hover:bg-primary/10 transition-all group">
+                                        <input
+                                            type="checkbox"
+                                            checked={isConfirmed}
+                                            onChange={(e) => setIsConfirmed(e.target.checked)}
+                                            className="h-5 w-5 rounded border-white/20 bg-black/50 checked:bg-primary focus:ring-primary transition-all"
+                                        />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest group-hover:text-primary transition-colors">I confirm all match results are correct</span>
+                                    </label>
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || (!isLiveUpdate && !isConfirmed)}
                                 className={`flex-1 h-16 rounded-3xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] shadow-xl disabled:opacity-50 ${isLiveUpdate ? "bg-red-600 text-white shadow-red-900/20" : "bg-primary text-slate-950 shadow-primary/20"}`}
                             >
                                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : isLiveUpdate ? "Update Live Score" : "Authorize Settlement"}

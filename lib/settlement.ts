@@ -414,11 +414,37 @@ export function isSelectionWinner(
         return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
     }
 
+    // 6. BTTS (Both Teams to Score)
+    if (market.includes("btts") || market.includes("both teams to score")) {
+        if (match.status !== 'finished' && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
+
+        const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
+        if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored }
+        if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored }
+    }
+
+    // 7. DOUBLE CHANCE
+    if (market.includes("double chance")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+
+        const homeId = participants[0]?.schoolId
+        const awayId = participants[1]?.schoolId
+        const winner = result.winner
+
+        if (selectionId === "1X" || label === "1X") return { resolved: true, isWin: winner === homeId || winner === 'X' }
+        if (selectionId === "12" || label === "12") return { resolved: true, isWin: winner === homeId || winner === awayId }
+        if (selectionId === "X2" || label === "X2") return { resolved: true, isWin: winner === awayId || winner === 'X' }
+    }
+
+    // 8. DRAW NO BET
+    if (market.includes("draw no bet") || market.includes("dnb")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+
+        if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
+        return { resolved: true, isWin: result.winner === selectionId }
+    }
+
     // Default Fallback
-    // If the system reaches this point, it means it's an exotic/AI-generated market 
-    // that the automated parser doesn't understand AND the admin didn't provide a manual override for.
-    // In this scenario, we return resolved: false, which keeps the bet strictly 'pending' 
-    // until the admin explicitly resolves it via the Match Result Modal.
     return { resolved: false, isWin: false }
 }
 

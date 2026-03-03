@@ -7,15 +7,18 @@ import { VirtualMatchOutcome, VirtualSchool, generateVirtualMatches, checkSelect
 
 // ... existing code ...
 
-export async function getPlayableSchools(): Promise<VirtualSchool[]> {
+export async function getPlayableSchools(level?: string): Promise<VirtualSchool[]> {
     try {
-        // Fetch all schools from the DB
-        // If DB is empty, this returns empty. 
-        // In a real app we might seed it.
-        const allSchools = await db.select({
+        const query = db.select({
             name: schools.name,
             region: schools.region
         }).from(schools);
+
+        if (level) {
+            query.where(eq(schools.level, level));
+        }
+
+        const allSchools = await query;
 
         if (allSchools.length > 0) {
             return allSchools;
@@ -133,32 +136,43 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         if (bet.status !== 'pending') return { success: true, message: "Already settled" }
         if (bet.userId !== session.user.id) return { success: false, error: "Forbidden" }
 
-        // 2. Regenerate Outcomes with Parity
-        const schools = await getPlayableSchools();
-        const strengths = await getAIStrengths(schools.map(s => s.name));
-        const strengthMap = strengths.reduce((acc: any, s: any) => ({ ...acc, [s.name]: Number(s.form) || 1.0 }), {});
-
-        // We need to determine category and region from the selections
         let category: 'national' | 'regional' = 'national'
         let queryRegion: string | undefined = undefined
+        let level: string = 'shs'
         const selections = bet.selections as any[]
         const firstSelection = selections[0]
         const matchId = firstSelection?.matchId || ""
 
         if (matchId.startsWith('vr-') || matchId.startsWith('vmt-')) {
             const parts = matchId.split('-')
-            category = (parts[3] as 'national' | 'regional') || 'national'
-            const regionSlug = parts[4]
-            if (regionSlug && regionSlug !== 'all') {
-                // Find regional name from slug
-                const schoolsInThisRegion = schools.filter(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
-                queryRegion = schoolsInThisRegion[0]?.region;
+            // Format: vmt-{level}-{roundId}-{index}-{category}-{regionSlug}
+            if (parts[0] === 'vmt') {
+                level = parts[1] || 'shs'
+                category = (parts[4] as 'national' | 'regional') || 'national'
+                const regionSlug = parts[5]
+                if (regionSlug && regionSlug !== 'all') {
+                    const schoolsInThisRegion = (await getPlayableSchools(level)).filter(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
+                    queryRegion = schoolsInThisRegion[0]?.region;
+                }
+            } else {
+                // Legacy or regional prefix
+                category = (parts[3] as 'national' | 'regional') || 'national'
+                const regionSlug = parts[4]
+                if (regionSlug && regionSlug !== 'all') {
+                    const schoolsInThisRegion = (await getPlayableSchools()).filter(s => s.region.toLowerCase().replace(/\s+/g, '-') === regionSlug);
+                    queryRegion = schoolsInThisRegion[0]?.region;
+                }
             }
         }
 
+        // 2. Regenerate Outcomes with Parity
+        const schoolsList = await getPlayableSchools(level);
+        const strengths = await getAIStrengths(schoolsList.map(s => s.name));
+        const strengthMap = strengths.reduce((acc: any, s: any) => ({ ...acc, [s.name]: Number(s.form) || 1.0 }), {});
+
         // Parity: National uses 9 matches, Regional uses 15 (sync with VirtualsClient.tsx)
         const matchCount = category === 'national' ? 9 : 15
-        const { outcomes } = generateVirtualMatches(matchCount, schools, roundId, category, queryRegion, strengthMap, userSeed)
+        const { outcomes } = generateVirtualMatches(matchCount, schoolsList, roundId, category, queryRegion, strengthMap, userSeed, level)
 
         console.log(`Settling virtual bet ${betId}: round=${roundId}, category=${category}, region=${queryRegion}, matches=${outcomes.length}`)
 

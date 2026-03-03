@@ -24,6 +24,7 @@ interface MatchRowProps {
     checkSelected: (selectionId: string) => boolean
     checkIsCorrelated?: (matchId: string, marketName: string) => boolean
     onMoreClick?: (match: Match) => void
+    dayFirstMatchStart?: string | null
 }
 
 export function MatchRow({
@@ -36,13 +37,14 @@ export function MatchRow({
     isSimulating,
     isFinished,
     currentScores,
-    currentRoundIdx
+    currentRoundIdx,
+    dayFirstMatchStart
 }: MatchRowProps) {
     const participants = useMemo(() => match.participants || [], [match.participants])
     const matchLabel = participants.map(p => p.name).join(' vs ')
 
     // NEW: Calculate lock status
-    const lockStatus = getMatchLockStatus(match)
+    const lockStatus = getMatchLockStatus(match, dayFirstMatchStart ? new Date(dayFirstMatchStart) : undefined)
     const isLocked = lockStatus.isLocked
 
     // Internal resolution of live state for Global Engine matches
@@ -129,8 +131,17 @@ export function MatchRow({
 
     return (
         <div
-            onClick={() => onMoreClick?.(match)}
-            className="flex items-center border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group cursor-pointer"
+            onClick={(e) => {
+                if (isLocked) {
+                    e.stopPropagation();
+                    return;
+                }
+                onMoreClick?.(match);
+            }}
+            className={cn(
+                "flex items-center border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group",
+                isLocked ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+            )}
         >
             {/* Left side: Teams & Info */}
             <div className="flex-1 py-1.5 px-3 min-w-0">
@@ -434,14 +445,25 @@ export function MatchRow({
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
+                        if (isLocked) return;
                         haptics.light();
                         audio.light();
                         onMoreClick?.(match);
                     }}
-                    className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch group/more"
+                    disabled={isLocked}
+                    className={cn(
+                        "w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 transition-colors self-stretch group/more",
+                        isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5 cursor-pointer"
+                    )}
                 >
-                    <ChevronRight className="h-4 w-4 text-slate-500 group-hover/more:text-purple-400 group-hover/more:translate-x-0.5 transition-all" />
-                    <span className="text-[7px] text-slate-500 font-black group-hover/more:text-white transition-colors mt-0.5">MORE</span>
+                    <ChevronRight className={cn(
+                        "h-4 w-4 text-slate-500 transition-all",
+                        !isLocked && "group-hover/more:text-purple-400 group-hover/more:translate-x-0.5"
+                    )} />
+                    <span className={cn(
+                        "text-[7px] text-slate-500 font-black transition-colors mt-0.5",
+                        !isLocked && "group-hover/more:text-white"
+                    )}>MORE</span>
                 </button>
             </div>
         </div>
