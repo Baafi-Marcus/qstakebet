@@ -475,11 +475,11 @@ export async function createMatch(data: {
         }
     }
 
-    // 1. Calculate Odds
-    const initialOdds = await calculateInitialOdds(data.schoolIds, data.sportType, data.gender, data.tournamentId);
+    // 1. Calculate Odds (Now default to empty)
+    const initialOdds = {};
 
-    // 2. Generate Extended Markets (11+ markets)
-    const extendedOdds = await generateExtendedMarkets(data.schoolIds, initialOdds, data.sportType);
+    // 2. Generate Extended Markets
+    const extendedOdds = {};
 
     // 3. Fetch School Names
     const schoolDetails = await db.select().from(schools)
@@ -491,7 +491,7 @@ export async function createMatch(data: {
         return {
             schoolId: id,
             name: school?.name || "Unknown School",
-            odd: initialOdds[id] || 2.00,
+            odd: null,
             result: null
         };
     });

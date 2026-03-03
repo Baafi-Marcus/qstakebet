@@ -260,7 +260,7 @@ export function MatchRow({
                             </>
                         )}
                     </div>
-                ) : match.status === 'upcoming' ? (
+                ) : match.status === 'upcoming' && Object.keys(match.odds || {}).length === 0 && Object.keys(match.extendedOdds || {}).length === 0 ? (
                     <div className="flex items-center px-6 bg-slate-900/40 border-l border-white/5 min-w-[120px]">
                         <div className="flex flex-col items-center justify-center py-2 px-4 italic">
                             <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5 animate-pulse">

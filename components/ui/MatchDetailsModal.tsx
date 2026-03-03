@@ -237,14 +237,14 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                     <div className="lg:col-span-7 space-y-2">
 
                         {/* 1X2 Market */}
-                        {renderMarketSection(match.sportType === 'football' ? "Full Time Result" : "Match Winner", <Target className="h-4 w-4 text-purple-400" />, (
+                        {Object.keys(match.odds || {}).length > 0 && renderMarketSection(match.sportType === 'football' ? "Full Time Result" : "Match Winner", <Target className="h-4 w-4 text-purple-400" />, (
                             <div className="flex gap-2 h-14 overflow-x-auto custom-scrollbar pb-1">
                                 {participants.map((p, idx) => (
                                     <div key={p.schoolId} className="flex-1 min-w-[100px] h-full relative group">
                                         <div className="absolute top-1 left-4 text-[9px] font-black text-slate-500 uppercase z-10">{p.name}</div>
                                         <OddsButton
                                             label={(idx + 1).toString()}
-                                            odds={p.odd || match.odds[p.schoolId] || null}
+                                            odds={p.odd || match.odds?.[p.schoolId] || null}
                                             matchId={match.id}
                                             matchLabel={matchLabel}
                                             marketName="Match Winner"
@@ -283,7 +283,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                         ), "Match Winner")}
 
                         {/* Point Spread / Handicap */}
-                        {match.extendedOdds?.handicap && renderMarketSection("Point Spread / Handicap", <Target className="h-3.5 w-3.5" />, (
+                        {match.extendedOdds?.handicap && Object.keys(match.extendedOdds.handicap).length > 0 && renderMarketSection("Point Spread / Handicap", <Target className="h-3.5 w-3.5" />, (
                             <div className="flex gap-2 h-14 overflow-x-auto custom-scrollbar pb-1">
                                 {participants.slice(0, 2).map((p, idx) => {
                                     const spread = match.extendedOdds?.handicap?.[p.name] || 0;
@@ -313,7 +313,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                         ), "Handicap")}
 
                         {/* Totals & Dynamic Lines */}
-                        {renderMarketSection("Total Match Points", <BarChart3 className="h-3.5 w-3.5" />, (
+                        {match.extendedOdds?.totalPoints && Object.keys(match.extendedOdds.totalPoints).length > 0 && renderMarketSection("Total Match Points", <BarChart3 className="h-3.5 w-3.5" />, (
                             <div className="flex flex-col gap-2">
                                 {Object.entries(match.extendedOdds?.totalPoints || {})
                                     .sort((a, b) => parseFloat(a[0].split(" ")[1]) - parseFloat(b[0].split(" ")[1]))
@@ -452,7 +452,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                                                 </div>
                                             ))}
                                         </div>
-                                    ), marketTitle); // Pass marketTitle as descriptionKey to hook into AI helpInfo
+                                    ), key, marketTitle); // Pass original `key` as descriptionKey to map correctly to marketHelp
                                 })
                             }
                         </div>
@@ -464,7 +464,6 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                     <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-accent fill-current" /> Instant Settlement</span>
                     </div>
-                    <span>Virtual Sports © 2024</span>
                 </div>
             </div>
         </div>
