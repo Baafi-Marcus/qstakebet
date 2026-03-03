@@ -329,19 +329,63 @@ export function TournamentDetailClient({
                 )}
 
                 {activeTab === 'fixtures' && (
-                    <div className="lg:col-span-12 bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 animate-in fade-in zoom-in-95">
-                        <div className="max-w-md mx-auto text-center space-y-6 py-12">
-                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                                <Wand2 className="h-10 w-10 text-purple-500 opacity-40" />
+                    <div className="lg:col-span-12 space-y-6 animate-in fade-in slide-in-from-top-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                                <List className="h-5 w-5 text-purple-500" />
+                                Fixtures Preview
+                            </h2>
+                            <div className="flex gap-2">
+                                <Link href="/admin/matches" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5 text-[10px] font-black uppercase tracking-widest">
+                                    Manage All
+                                </Link>
                             </div>
-                            <div className="space-y-2">
-                                <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Competition Engine</h3>
-                                <p className="text-slate-500 text-sm font-medium">Use the &quot;Matches&quot; console to schedule fixtures for specific Groups or Knockout stages.</p>
-                            </div>
-                            <Link href="/admin/matches" className="block w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-white/5 hover:scale-[1.02] transition-all active:scale-95">
-                                MANAGE ALL FIXTURES
-                            </Link>
                         </div>
+
+                        {/* List of drafts and upcoming */}
+                        {(() => {
+                            const fixtures = matches.filter(m => m.status === 'draft' || m.status === 'upcoming');
+                            if (fixtures.length === 0) {
+                                return (
+                                    <div className="p-20 text-center border border-dashed border-white/10 rounded-[2rem] bg-slate-950/20">
+                                        <Wand2 className="h-12 w-12 text-slate-700 mx-auto mb-4 opacity-20" />
+                                        <p className="text-slate-600 font-bold uppercase tracking-widest text-xs italic">No draft or upcoming fixtures found.</p>
+                                    </div>
+                                );
+                            }
+                            return fixtures.sort((a, b) => {
+                                const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+                                const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+                                return dateA - dateB;
+                            }).map(m => (
+                                <div key={m.id} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2rem] hover:bg-slate-800/60 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.status === 'draft' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                            {m.status === 'draft' ? <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> : <Clock className="h-5 w-5" />}
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                {m.matchday && <span className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">{m.matchday}</span>}
+                                                {m.group && m.group !== 'Knockout' && <span className="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">{m.group}</span>}
+                                                <span className={`px-1.5 py-0.5 rounded ${m.status === 'draft' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>{m.status}</span>
+                                            </div>
+                                            <div className="text-lg font-bold text-white mt-1 uppercase tracking-tight flex items-center gap-3">
+                                                {m.participants[0].name}
+                                                <span className="text-slate-600 font-black italic text-xs">VS</span>
+                                                {m.participants[1].name}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Planned For</div>
+                                            <div className="text-xs font-bold text-slate-400">{m.startTime}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ));
+                        })()}
                     </div>
                 )}
 

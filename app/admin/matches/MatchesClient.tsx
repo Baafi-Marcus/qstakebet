@@ -584,10 +584,17 @@ export function MatchesClient({
                                         onChange={e => setFormData({ ...formData, group: e.target.value })}
                                     >
                                         <option value="">No Group</option>
-                                        <option value="Group A">Group A</option>
-                                        <option value="Group B">Group B</option>
-                                        <option value="Group C">Group C</option>
-                                        <option value="Group D">Group D</option>
+                                        {selectedTournament?.metadata?.groups && selectedTournament.metadata.groups.length > 0 ? (
+                                            selectedTournament.metadata.groups.map((g: string) => (
+                                                <option key={g} value={g}>{g}</option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"].map(letter => (
+                                                    <option key={letter} value={`Group ${letter}`}>Group {letter}</option>
+                                                ))}
+                                            </>
+                                        )}
                                         <option value="Knockout">Knockout</option>
                                     </select>
                                 </div>

@@ -19,7 +19,7 @@ const SPORTS = [["football", "Football"], ["athletics", "Athletics"], ["basketba
 const DEFAULT_FORM = {
     name: "", region: "Ashanti", sportType: "football", gender: "male",
     year: new Date().getFullYear().toString(), level: "shs",
-    format: "league", groups: "Group A, Group B, Group C", parentUniversityId: ""
+    format: "league", groups: "Group A, Group B, Group C, Group D, Group E, Group F, Group G, Group H", parentUniversityId: ""
 }
 
 export function TournamentsClient({ initialTournaments, universities }: { initialTournaments: Tournament[], universities: School[] }) {
