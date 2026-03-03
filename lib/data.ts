@@ -35,6 +35,7 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
 const getActiveMatchFilter = (twentyFourHoursAgo: Date) => {
     return and(
         eq(matches.isVirtual, false),
+        ne(matches.status, "draft"), // Hide drafts from users
         or(
             // 1. Matches that are NOT finished, settled, or cancelled
             and(
@@ -134,7 +135,7 @@ export const getFeaturedMatches = unstable_cache(
             .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
             .where(getActiveMatchFilter(twentyFourHoursAgo))
             .orderBy(desc(matches.isLive), desc(matches.startTime))
-            .limit(10)
+            .limit(50) // Increased limit to ensure more matches appear
 
         return results.map(r => ({
             ...mapDbMatchToMatch(r.match),

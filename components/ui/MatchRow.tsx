@@ -260,6 +260,17 @@ export function MatchRow({
                             </>
                         )}
                     </div>
+                ) : match.status === 'upcoming' ? (
+                    <div className="flex items-center px-6 bg-slate-900/40 border-l border-white/5 min-w-[120px]">
+                        <div className="flex flex-col items-center justify-center py-2 px-4 italic">
+                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5 animate-pulse">
+                                Upcoming
+                            </span>
+                            <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">
+                                Odds coming soon
+                            </span>
+                        </div>
+                    </div>
                 ) : (
                     <>
                         {/* Lock Overlay */}

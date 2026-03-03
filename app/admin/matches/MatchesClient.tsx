@@ -43,7 +43,7 @@ export function MatchesClient({
     // Filters
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [sportFilter, setSportFilter] = useState<string>("all")
-    const [viewMode, setViewMode] = useState<"active" | "log">("active")
+    const [viewMode, setViewMode] = useState<"drafts" | "active" | "log">("drafts")
 
     const toggleMatchSelection = (id: string) => {
         if (selectedMatchIds.includes(id)) {
@@ -140,9 +140,15 @@ export function MatchesClient({
         const matchesStatus = statusFilter === "all" || m.status === statusFilter
         const matchesSport = sportFilter === "all" || m.sportType === sportFilter
 
-        // Archive logic
-        const isSettledOrCancelled = m.status === "settled" || m.status === "cancelled"
-        const matchesView = viewMode === "active" ? !isSettledOrCancelled : isSettledOrCancelled
+        // View logic
+        let matchesView = false
+        if (viewMode === "drafts") {
+            matchesView = m.status === "draft"
+        } else if (viewMode === "active") {
+            matchesView = m.status !== "draft" && m.status !== "settled" && m.status !== "cancelled"
+        } else if (viewMode === "log") {
+            matchesView = m.status === "settled" || m.status === "cancelled"
+        }
 
         return matchesQuery && matchesStatus && matchesSport && matchesView
     })
@@ -310,10 +316,16 @@ export function MatchesClient({
             {/* View Mode Tabs */}
             <div className="flex items-center gap-1 bg-slate-900/40 p-1.5 rounded-2xl border border-white/5 w-fit">
                 <button
+                    onClick={() => setViewMode("drafts")}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "drafts" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
+                >
+                    Drafts
+                </button>
+                <button
                     onClick={() => setViewMode("active")}
                     className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "active" ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-white"}`}
                 >
-                    Active Matches
+                    Live / Published
                 </button>
                 <button
                     onClick={() => setViewMode("log")}

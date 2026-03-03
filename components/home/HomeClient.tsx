@@ -52,10 +52,28 @@ function getDateGroupLabel(date: Date): string {
 export function HomeClient({ initialMatches }: HomeClientProps) {
     const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
     const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
-    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')
+    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('all') // Default to 'all' for better visibility
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
+
+    // Auto-select tab logic
+    useEffect(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const hasToday = initialMatches.some(m => {
+            const d = m.scheduledAt ? new Date(m.scheduledAt) : null;
+            if (d) d.setHours(0, 0, 0, 0);
+            return d?.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
+        });
+
+        if (hasToday) {
+            setActiveDateTab('today');
+        } else {
+            setActiveDateTab('all');
+        }
+    }, [initialMatches]);
 
     const filteredMatches = initialMatches.filter(m => {
         const matchesLevel = m.level === activeLevel
