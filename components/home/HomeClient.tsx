@@ -189,12 +189,22 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             }
         });
 
-        return Array.from(markets).map(m => ({
-            id: m,
-            label: m === 'winner' ? 'Match Winner' :
-                m === 'total_points' ? 'Total Points' :
-                    m.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
-        }));
+        return Array.from(markets).map(m => {
+            let label = m;
+            if (m === 'winner') label = 'Match Winner';
+            else if (m === 'total_points') label = 'Total Points';
+            else if (m.toLowerCase().includes('overunder')) {
+                // e.g. overUnder_4_5 -> Over/Under 4.5
+                const numStr = m.split('_').slice(1).join('.');
+                label = `Over/Under ${numStr}`;
+            } else {
+                label = m.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
+                // capitalize words
+                label = label.replace(/\b\w/g, l => l.toUpperCase());
+            }
+
+            return { id: m, label };
+        });
     }, [filteredMatches]);
 
     // Reset active market if not available in current filtered matches

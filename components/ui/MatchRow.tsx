@@ -428,25 +428,37 @@ export function MatchRow({
                         {/* Dynamic AI Markets */}
                         {activeMarket !== 'winner' && activeMarket !== 'total_points' && match.extendedOdds?.[activeMarket] && (
                             <div className="flex items-center overflow-x-auto no-scrollbar">
-                                {Object.entries(match.extendedOdds[activeMarket]).map(([selectionLabel, oddValue]) => (
-                                    <div key={selectionLabel} className="min-w-[4rem] px-2 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
-                                        <OddsButton
-                                            label={selectionLabel}
-                                            odds={oddValue as number}
-                                            matchId={match.id}
-                                            marketName={normalizeMarketName(activeMarket)}
-                                            matchLabel={matchLabel}
-                                            showLabel={true}
-                                            onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-${normalizeMarketName(activeMarket)}-${selectionLabel}`)}
-                                            isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(activeMarket))}
-                                            sportType={match.sportType}
-                                            tournamentName={match.tournamentName || undefined}
-                                            stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0 text-[10px]"
-                                        />
-                                    </div>
-                                ))}
+                                {Object.entries(match.extendedOdds[activeMarket]).map(([selectionLabel, oddValue]) => {
+                                    // Make sure the marketName matches what the tabs use so the ID syncs
+                                    let cleanMarketName = activeMarket;
+                                    if (activeMarket.toLowerCase().includes('overunder')) {
+                                        const numStr = activeMarket.split('_').slice(1).join('.');
+                                        cleanMarketName = `Over/Under ${numStr}`;
+                                    } else {
+                                        cleanMarketName = activeMarket.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
+                                        cleanMarketName = cleanMarketName.replace(/\b\w/g, l => l.toUpperCase());
+                                    }
+
+                                    return (
+                                        <div key={selectionLabel} className="min-w-[4rem] px-2 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
+                                            <OddsButton
+                                                label={selectionLabel}
+                                                odds={oddValue as number}
+                                                matchId={match.id}
+                                                marketName={cleanMarketName}
+                                                matchLabel={matchLabel}
+                                                showLabel={true}
+                                                onClick={onOddsClick}
+                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName(cleanMarketName)}-${selectionLabel}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(cleanMarketName))}
+                                                sportType={match.sportType}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0 text-[10px]"
+                                            />
+                                        </div>
+                                    )
+                                })}
                             </div>
                         )}
                     </>

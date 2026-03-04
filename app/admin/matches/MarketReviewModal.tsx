@@ -59,7 +59,14 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                     ...s,
                     id: Math.random().toString(36).substr(2, 9)
                 }))
-                setDrafts(formatted)
+
+                // If forcing AI (from button click), append to existing drafts.
+                // Otherwise, it's the initial load which should be empty if no extendedOdds.
+                if (forceAI) {
+                    setDrafts(prev => [...prev, ...formatted])
+                } else {
+                    setDrafts(formatted)
+                }
             } else {
                 setError(res.error || "Failed to generate suggestions")
             }
@@ -76,6 +83,14 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
     useEffect(() => {
         fetchSuggestions(false)
     }, [fetchSuggestions])
+
+    // Prevent background scrolling when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     const handlePublish = async () => {
         if (drafts.length === 0) return

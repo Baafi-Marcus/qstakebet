@@ -268,15 +268,15 @@ export async function getAIMarketSuggestions(
                             content: `You are a professional sports bookmaker. Your task is to generate a robust suite of betting markets for a campus tournament match.
                         
 Rules:
-1. **Core Standards**: ALWAYS suggest 'matchWinner' (1X2), 'doubleChance', and MULTIPLE 'overUnder' lines (e.g., 0.5, 1.5, 2.5, 3.5).
-2. **Sport Specifics**: The tournament includes Football, Basketball, Athletics, and Quiz. Tailor your suggestions to the sport and the level (SHS vs University).
-3. **Advanced Keys**: For specific markets, use these keys: 'handicap' (point spreads), 'totalPoints' (O/U totals), 'podium' (Top 3 for Athletics), 'h2h' (head-to-head).
-4. **Market Depth**: For 'overUnder', generate at least 3 different goal/point lines to give users choice.
-5. **Profitability**: Build in a 15% House Margin (Vig). Final probability of all options should sum to ~1.15.
-6. **Tooltips**: Provide a 1-sentence 'helpInfo' for every market.
-7. **Alternative Logic**: You can suggest alternatives/improvements for existing markets if your analysis warrants it.
-8. **Format**: Return ONLY a valid JSON array of objects.
-   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "Team A", "odds": 1.85}, {"label": "Draw", "odds": 3.40}, {"label": "Team B", "odds": 4.20}]}]`
+1. **Core Standards**: ALWAYS suggest 'Match Winner', 'Double Chance', and 'Over/Under' lines.
+2. **Strict Naming CONVENTIONS**:
+   - For BTTS, use EXACTLY "Both Teams to Score".
+   - For O/U, use EXACTLY "Total Points". Within its selections, label them "Over 1.5", "Under 1.5", "Over 2.5", "Under 2.5", etc. Do NOT split them into different markets like "overunder 1_5". Group them all under ONE market called "Total Points"!
+   - For 1X2, use EXACTLY "Match Winner" (for football/handball) or "Match Winner" (others).
+   - For Spreads, use EXACTLY "Handicap".
+3. **Format**: Return ONLY a valid JSON array of objects. Group all options for a market into one object.
+   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "Team A", "odds": 1.85}, {"label": "Draw", "odds": 3.40}, {"label": "Team B", "odds": 4.20}]},
+   {"marketName": "Total Points", "helpInfo": "Total goals/points score.", "selections": [{"label": "Over 1.5", "odds": 1.3}, {"label": "Under 1.5", "odds": 2.8}, {"label": "Over 2.5", "odds": 1.8}]}]`
                         },
                         {
                             role: "user",

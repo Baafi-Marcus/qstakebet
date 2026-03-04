@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Match } from "@/lib/types"
 import { X, Trophy, Zap, Target, BarChart3, HelpCircle, Lock, Sparkles } from "lucide-react"
 import { OddsButton } from "./OddsButton"
@@ -12,6 +12,14 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
     const participants = match.participants || []
     const matchLabel = participants.map(p => p.name).join(' vs ')
+
+    // Prevent background scrolling when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     const { isLocked } = getMatchLockStatus(match, dayFirstMatchStart ? new Date(dayFirstMatchStart) : undefined)
 
