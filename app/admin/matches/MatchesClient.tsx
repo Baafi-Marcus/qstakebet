@@ -521,6 +521,18 @@ export function MatchesClient({
                                         </>
                                     )}
 
+                                    {/* Edit Markets button for already published matches */}
+                                    {(match.status === 'upcoming' || match.status === 'live' || match.status === 'locked') && (
+                                        <button
+                                            onClick={() => setSelectedMatchForAI(match)}
+                                            className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 text-xs font-bold rounded-lg transition-all uppercase tracking-wide flex items-center gap-2"
+                                            title="Edit published markets"
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                            Edit Markets
+                                        </button>
+                                    )}
+
                                     {match.status !== 'finished' && match.status !== 'settled' && match.status !== 'draft' && (
                                         <button
                                             onClick={() => setSelectedMatchForResult(match)}

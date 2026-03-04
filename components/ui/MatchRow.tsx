@@ -41,7 +41,9 @@ export function MatchRow({
     dayFirstMatchStart
 }: MatchRowProps) {
     const participants = useMemo(() => match.participants || [], [match.participants])
-    const matchLabel = participants.map(p => p.name).join(' vs ')
+    const matchLabel = participants.length > 0 && participants[0].name
+        ? participants.map(p => p.name).join(' vs ')
+        : match.tournamentName || "Scheduled Match"
 
     // NEW: Calculate lock status
     const lockStatus = getMatchLockStatus(match, dayFirstMatchStart ? new Date(dayFirstMatchStart) : undefined)

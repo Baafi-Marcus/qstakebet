@@ -666,7 +666,7 @@ export async function deleteMatch(id: string) {
  * Generates automated odds based on school strengths.
  * If strengths don't exist, it defaults to balanced odds with margin.
  */
-export async function calculateInitialOdds(schoolIds: string[], sportType: string, gender: string, tournamentId?: string, margin: number = 0.1) {
+export async function calculateInitialOdds(schoolIds: string[], sportType: string, gender: string, tournamentId?: string, margin: number = 0.15) {
     // Determine level for constraints
     let level = 'shs';
     if (tournamentId) {
@@ -1358,7 +1358,7 @@ export async function recalculateTournamentOutrightOdds(tournamentId: string) {
  */
 export async function generateExtendedMarkets(schoolIds: string[], odds: Record<string, number>, sportType: string) {
     const markets: any = {};
-    const margin = 0.12; // Slightly higher margin for props
+    const margin = 0.15; // Standard 15% margin for all markets
 
     if (sportType === 'football' || sportType === 'handball') {
         const homeId = schoolIds[0];
@@ -1367,12 +1367,6 @@ export async function generateExtendedMarkets(schoolIds: string[], odds: Record<
         const awayOdd = odds[awayId] || 2.0;
         const drawOdd = odds['X'] || 3.2;
 
-        // 1. Match Winner (Duplicate for convenience in extendedOdds)
-        markets.matchWinner = {
-            [homeId]: homeOdd,
-            [awayId]: awayOdd,
-            X: drawOdd
-        };
 
         // 2. Both Teams to Score (BTTS)
         // Derived from win odds - if both have high win odds (e.g. 2.5/2.5), BTTS Yes is likely

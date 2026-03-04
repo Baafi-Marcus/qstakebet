@@ -11,7 +11,9 @@ import { getMatchLockStatus } from "@/lib/match-utils"
 export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, checkIsCorrelated, dayFirstMatchStart }: MatchDetailsModalProps) {
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
     const participants = match.participants || []
-    const matchLabel = participants.map(p => p.name).join(' vs ')
+    const matchLabel = participants.length > 0 && participants[0].name
+        ? participants.map(p => p.name).join(' vs ')
+        : match.tournamentName || "Scheduled Match"
 
     // Prevent background scrolling when modal is open
     useEffect(() => {
@@ -423,17 +425,57 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                         <div className="space-y-4">
                             {Object.entries(match.extendedOdds || {})
                                 .filter(([key]) => {
-                                    // List of core layout handled market keys
+                                    // List of core layout handled market keys (case insensitive)
                                     const handled = [
-                                        'winner', 'handicap', 'totalPoints'
+                                        'winner', 'handicap', 'totalpoints', 'total_points',
+                                        // Block these exact names if the AI spits them out as keys
+                                        'matchwinner', 'match_winner', 'match winner', 'fulltimeresult', 'full time result', 'full_time_result', '1x2'
                                     ];
-                                    const isRoundWinner = key.toLowerCase().includes('round') && key.toLowerCase().includes('winner');
-                                    return !handled.includes(key) && !isRoundWinner;
+                                    const lowerKey = key.toLowerCase();
+                                    const isRoundWinner = lowerKey.includes('round') && lowerKey.includes('winner');
+                                    return !handled.includes(lowerKey) && !isRoundWinner;
                                 })
                                 .map(([key, odds]) => {
                                     if (!odds || typeof odds !== 'object') return null;
-                                    const marketTitle = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+
+                                    // Improve market title formatting (handle overUnder2_5 -> Over/Under 2.5)
+                                    let marketTitle = key;
+                                    if (key.startsWith('overUnder')) {
+                                        marketTitle = `Over/Under ${key.replace('overUnder', '').replace('_', '.')}`;
+                                    } else {
+                                        marketTitle = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                                    }
+
                                     const optionsList = Object.entries(odds as Record<string, number>);
+
+                                    // If we have exactly 2 options (e.g. Yes/No, Over/Under), render grouped style
+                                    if (optionsList.length === 2 && !marketTitle.toLowerCase().includes('double chance')) {
+                                        return renderMarketSection(marketTitle, <Sparkles className="h-3.5 w-3.5 text-yellow-500" />, (
+                                            <div className="flex items-center h-14 bg-white/[0.01] rounded-xl border border-white/5 overflow-hidden group">
+                                                <div className="flex-1 flex gap-1 p-1 h-full">
+                                                    {optionsList.map(([label, value]) => (
+                                                        <div key={label} className="flex-1">
+                                                            <OddsButton
+                                                                label={label}
+                                                                odds={value}
+                                                                matchId={match.id}
+                                                                marketName={marketTitle}
+                                                                matchLabel={matchLabel}
+                                                                showLabel
+                                                                onClick={onOddsClick}
+                                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName(marketTitle)}-${label}`)}
+                                                                isCorrelated={checkIsCorrelated?.(match.id, marketTitle)}
+                                                                isLocked={isLocked}
+                                                                tournamentName={match.tournamentName || undefined}
+                                                                stage={match.stage}
+                                                                className="h-full w-full rounded-lg bg-transparent hover:bg-white/[0.03] border-0"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ), key, marketTitle);
+                                    }
 
                                     return renderMarketSection(marketTitle, <Sparkles className="h-3.5 w-3.5 text-yellow-500" />, (
                                         <div className={cn(

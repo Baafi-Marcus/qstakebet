@@ -37,10 +37,14 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
 
             // If we have existing markets and are not forcing AI, load them
             if (!forceAI && match.extendedOdds && Object.keys(match.extendedOdds).length > 0) {
-                const currentOdds = match.extendedOdds as Record<string, Record<string, number>>;
+                // extendedOdds might be a string if not parsed somewhere else, ensure it's an object
+                const currentOdds = typeof match.extendedOdds === 'string'
+                    ? JSON.parse(match.extendedOdds)
+                    : match.extendedOdds;
+
                 const marketHelp = (match.metadata as any)?.marketHelp || {};
 
-                const loadedDrafts: MarketDraft[] = Object.entries(currentOdds).map(([marketName, selections]) => ({
+                const loadedDrafts: MarketDraft[] = Object.entries(currentOdds as Record<string, Record<string, number>>).map(([marketName, selections]) => ({
                     id: Math.random().toString(36).substr(2, 9),
                     marketName,
                     helpInfo: marketHelp[marketName] || "",
@@ -63,7 +67,7 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                 // If forcing AI (from button click), append to existing drafts.
                 // Otherwise, it's the initial load which should be empty if no extendedOdds.
                 if (forceAI) {
-                    setDrafts(prev => [...prev, ...formatted])
+                    setDrafts(formatted)
                 } else {
                     setDrafts(formatted)
                 }
@@ -146,7 +150,9 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-white uppercase tracking-tight">
-                                {match.participants.map(p => p.name).join(" vs ")}
+                                {match.participants.length > 0 && match.participants[0].name
+                                    ? match.participants.map(p => p.name).join(' vs ')
+                                    : match.tournamentName || match.id}
                             </h2>
                             <p className="text-xs text-purple-300 font-bold uppercase tracking-wide">Market Review & Scaling</p>
                         </div>
@@ -253,7 +259,11 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                             className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50"
                         >
                             {publishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                            {publishing ? "Publishing..." : publishAfter ? "Publish & Set Upcoming" : "Publish to Users"}
+                            {publishing
+                                ? "Saving..."
+                                : publishAfter
+                                    ? "Publish & Set Upcoming"
+                                    : (match.status !== 'draft' ? "Save Edits" : "Publish to Users")}
                         </button>
                     </div>
                 </div>
