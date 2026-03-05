@@ -1113,27 +1113,73 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
         const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
         if (!matchData.length) throw new Error("Match not found")
 
-        const currentMetadata = (matchData[0].metadata as Record<string, any>) || {}
+        const match = matchData[0]
+        const currentMetadata = (match.metadata as Record<string, any>) || {}
+        const participants = match.participants as any[]
 
         // Use a fresh object to replace existing markets (enables deletion)
         const newExtendedOdds: Record<string, any> = {}
         const marketHelp: Record<string, string> = {}
+        const newPrimaryOdds: Record<string, number> = { ...((match.odds as any) || {}) }
+        let hasWinnerSync = false
 
         // Construct new state from incoming markets
         newMarkets.forEach(m => {
+            const nameLower = m.marketName.toLowerCase().trim()
             const selectionsMap: Record<string, number> = {}
             m.selections.forEach((s) => selectionsMap[s.label] = s.odds)
-            newExtendedOdds[m.marketName] = selectionsMap
+
+            // 1. Sync Match Winner to primary odds column
+            if (nameLower === 'match winner' || nameLower === '1x2' || nameLower === 'winner') {
+                hasWinnerSync = true
+                m.selections.forEach(s => {
+                    const label = s.label.toLowerCase()
+                    if (label === 'draw' || label === 'x') {
+                        newPrimaryOdds['X'] = s.odds
+                    } else {
+                        // Match with participants
+                        const p = participants.find(part =>
+                            part.name.toLowerCase() === s.label.toLowerCase() ||
+                            s.label.toLowerCase().includes(part.name.toLowerCase())
+                        )
+                        if (p) {
+                            newPrimaryOdds[p.schoolId] = s.odds
+                        }
+                    }
+                })
+                // We keep it in extendedOdds too for the ReviewModal to reload it correctly, 
+                // but we will normalize the key name used for UI tabs later.
+                newExtendedOdds[m.marketName] = selectionsMap
+            }
+            // 2. Normalize Total Points to internal key
+            else if (nameLower === 'total points' || nameLower === 'over/under') {
+                newExtendedOdds['totalPoints'] = selectionsMap
+            }
+            else {
+                newExtendedOdds[m.marketName] = selectionsMap
+            }
 
             if (m.helpInfo) {
                 marketHelp[m.marketName] = m.helpInfo
             }
         })
 
+        // 3. Update participants array if winner was synced
+        let updatedParticipants = participants
+        if (hasWinnerSync) {
+            updatedParticipants = participants.map(p => ({
+                ...p,
+                odd: newPrimaryOdds[p.schoolId] || p.odd
+            }))
+        }
+
         await db.update(matches)
             .set({
                 extendedOdds: newExtendedOdds,
-                metadata: { ...currentMetadata, marketHelp }
+                odds: newPrimaryOdds,
+                participants: updatedParticipants,
+                metadata: { ...currentMetadata, marketHelp },
+                status: 'upcoming' // Ensure published matches have correct status
             })
             .where(eq(matches.id, matchId))
 
@@ -1369,6 +1415,19 @@ export async function generateExtendedMarkets(schoolIds: string[], odds: Record<
         const homeOdd = odds[homeId] || 2.0;
         const awayOdd = odds[awayId] || 2.0;
         const drawOdd = odds['X'] || 3.2;
+
+        // Fetch school names for labels
+        const schoolData = await db.select({ id: schools.id, name: schools.name })
+            .from(schools)
+            .where(inArray(schools.id, [homeId, awayId]));
+        const schoolMap = Object.fromEntries(schoolData.map(s => [s.id, s.name]));
+
+        // 1. Match Winner (added back for admin modal sync)
+        markets["Match Winner"] = {
+            [schoolMap[homeId] || "Home"]: homeOdd,
+            "Draw": drawOdd,
+            [schoolMap[awayId] || "Away"]: awayOdd
+        };
 
 
         // 2. Both Teams to Score (BTTS)

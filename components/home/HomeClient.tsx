@@ -189,8 +189,10 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             // Check for extended markets
             if (m.extendedOdds) {
                 Object.keys(m.extendedOdds).forEach(k => {
-                    // Normalize totalPoints if it's the key used in MatchRow
-                    if (k === 'totalPoints') {
+                    const kLower = k.toLowerCase().trim();
+                    if (kLower === 'match winner' || kLower === 'winner' || kLower === '1x2') {
+                        markets.add('winner');
+                    } else if (kLower === 'total points' || kLower === 'totalpoints' || k === 'totalPoints') {
                         markets.add('total_points');
                     } else {
                         markets.add(k);
