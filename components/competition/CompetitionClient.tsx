@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useMemo, useEffect } from "react"
 import { Match } from "@/lib/types"
 import { MatchRow } from "@/components/ui/MatchRow"
@@ -62,12 +64,13 @@ export function CompetitionClient({ initialMatches, tournamentName }: Competitio
     }, [initialMatches]);
 
     // Fallback active market if current one is not in available markets
-    useEffect(() => {
-        if (availableMarkets.length > 0 && !availableMarkets.find(m => m.id === activeMarket)) {
+    if (availableMarkets.length > 0) {
+        const currentActive = availableMarkets.find(m => m.id === activeMarket);
+        if (!currentActive) {
             const winnerMarket = availableMarkets.find(m => m.id === 'winner');
             setActiveMarket(winnerMarket ? 'winner' : availableMarkets[0].id);
         }
-    }, [availableMarkets, activeMarket]);
+    }
 
     return (
         <div className="space-y-4">

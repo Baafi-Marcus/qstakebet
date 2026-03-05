@@ -57,8 +57,10 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
 
-    // Auto-select tab logic
-    useEffect(() => {
+    // Auto-select tab logic during render to avoid cascading render lint errors
+    const [lastInitialMatches, setLastInitialMatches] = useState<Match[] | null>(null);
+    if (initialMatches !== lastInitialMatches) {
+        setLastInitialMatches(initialMatches);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -73,7 +75,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         } else {
             setActiveDateTab('all');
         }
-    }, [initialMatches]);
+    }
 
     const filteredMatches = initialMatches.filter(m => {
         const matchesLevel = m.level === activeLevel
@@ -224,16 +226,14 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     }, [filteredMatches]);
 
     // Ensure activeMarket is valid for availableMarkets
-    useEffect(() => {
-        if (availableMarkets.length > 0) {
-            const exists = availableMarkets.find(m => m.id === activeMarket);
-            if (!exists) {
-                // Default to winner if available, otherwise first item
-                const winnerMarket = availableMarkets.find(m => m.id === 'winner');
-                setActiveMarket(winnerMarket ? 'winner' : availableMarkets[0].id as any);
-            }
+    if (availableMarkets.length > 0) {
+        const exists = availableMarkets.find(m => m.id === activeMarket);
+        if (!exists) {
+            // Default to winner if available, otherwise first item
+            const winnerMarket = availableMarkets.find(m => m.id === 'winner');
+            setActiveMarket(winnerMarket ? 'winner' : availableMarkets[0].id as any);
         }
-    }, [availableMarkets, activeMarket]);
+    }
 
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [pullDistance, setPullDistance] = useState(0)
