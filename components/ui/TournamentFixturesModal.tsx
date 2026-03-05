@@ -114,10 +114,14 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <div className={`grid gap-2 ${m.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                                            {m.participants.map(p => (
-                                                                <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={matchLabel} marketName="Match Winner" showLabel={true} tournamentName={tournamentName} stage={m.stage} />
-                                                            ))}
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div className="flex-1 flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/5">
+                                                                <span className="text-sm font-bold text-white uppercase">{m.participants[0].name}</span>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-slate-700 italic">VS</span>
+                                                            <div className="flex-1 flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/5">
+                                                                <span className="text-sm font-bold text-white uppercase text-right w-full">{m.participants[1].name}</span>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

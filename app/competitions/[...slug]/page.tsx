@@ -300,13 +300,7 @@ export default async function CompetitionPage({ params }: Props) {
                                         })()
                                     )}
 
-                                    {/* Upcoming Fixtures with Dynamic Market Selection */}
-                                    {upcomingMatches.length > 0 && (
-                                        <div className="space-y-4">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Upcoming Fixtures</p>
-                                            <CompetitionClient initialMatches={upcomingMatches as unknown as Match[]} />
-                                        </div>
-                                    )}
+
                                 </div>
                             )
                         })}
