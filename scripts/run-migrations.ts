@@ -22,7 +22,7 @@ async function migrate() {
             const trimmed = statement.trim();
             if (trimmed) {
                 try {
-                    await (sql as any)(trimmed);
+                    await sql.query(trimmed);
                 } catch (err: any) {
                     if (err.message.includes('already exists')) {
                         console.warn(`  Warning: Object already exists, skipping statement.`);

@@ -57,23 +57,43 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
     const { addSelection, selections } = useBetSlip()
 
-    // Auto-select tab logic during render to avoid cascading render lint errors
+    // Auto-select level and date tab during initial render
     const [lastInitialMatches, setLastInitialMatches] = useState<Match[] | null>(null);
     if (initialMatches !== lastInitialMatches) {
         setLastInitialMatches(initialMatches);
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const hasToday = initialMatches.some(m => {
+        // Helper to check for today/live matches
+        const isTodayOrLive = (m: Match) => {
             const d = m.scheduledAt ? new Date(m.scheduledAt) : null;
             if (d) d.setHours(0, 0, 0, 0);
             return d?.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
-        });
+        };
 
-        if (hasToday) {
+        const shsMatchesToday = initialMatches.some(m => m.level === 'shs' && isTodayOrLive(m));
+        const universityMatchesToday = initialMatches.some(m => m.level === 'university' && isTodayOrLive(m));
+
+        if (shsMatchesToday) {
+            setActiveLevel('shs');
+            setActiveDateTab('today');
+        } else if (universityMatchesToday) {
+            setActiveLevel('university');
             setActiveDateTab('today');
         } else {
-            setActiveDateTab('all');
+            // No matches today, check for any matches at all
+            const hasSHSAtAll = initialMatches.some(m => m.level === 'shs');
+            const hasUniversityAtAll = initialMatches.some(m => m.level === 'university');
+
+            if (hasSHSAtAll) {
+                setActiveLevel('shs');
+                setActiveDateTab('all');
+            } else if (hasUniversityAtAll) {
+                setActiveLevel('university');
+                setActiveDateTab('all');
+            }
+            // If absolutely nothing, sticking to defaults is fine
         }
     }
 
