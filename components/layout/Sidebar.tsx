@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Trophy, Map, Flag, Star, Zap, Timer, Gift } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { FootballIcon } from "../ui/FootballIcon"
+
 
 const MAIN_MENU = [
     { label: "Featured", icon: Star, href: "/" },
@@ -34,7 +34,7 @@ const REGIONS = [
 ]
 
 const SPORTS = [
-    { label: "Football", icon: FootballIcon, href: "/sports/football" },
+    { label: "Football", icon: Trophy, href: "/sports/football" },
     { label: "Basketball", icon: Trophy, href: "/sports/basketball" },
     { label: "Athletics", icon: Map, href: "/sports/athletics" },
     { label: "Volleyball", icon: Trophy, href: "/sports/volleyball" },

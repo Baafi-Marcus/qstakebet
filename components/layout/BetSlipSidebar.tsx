@@ -60,6 +60,16 @@ export function BetSlipSidebar() {
         }
     }
 
+    // Prevent background scrolling when slip is open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = 'unset'
+        }
+        return () => { document.body.style.overflow = 'unset' }
+    }, [isOpen])
+
     // Fetch wallet, gifts and bets
     React.useEffect(() => {
         if (isOpen) {

@@ -2,8 +2,7 @@
 "use client"
 import React from "react"
 import Image from "next/image"
-import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search, Trophy, Dribbble } from "lucide-react"
-import { FootballIcon } from "./FootballIcon"
+import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search, Trophy, Dribbble, Maximize2 } from "lucide-react"
 import { toJpeg } from 'html-to-image'
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -19,25 +18,26 @@ interface BookingSuccessModalProps {
 export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLoadCode }: BookingSuccessModalProps) {
     const [isDownloading, setIsDownloading] = React.useState(false)
     const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
-    const contentRef = React.useRef<HTMLDivElement>(null)
+    const modalRef = React.useRef<HTMLDivElement>(null)
+    const captureRef = React.useRef<HTMLDivElement>(null)
     const [currentTime] = React.useState(new Date())
 
     // Generate preview image on mount
     React.useEffect(() => {
-        if (!code || !contentRef.current) return;
+        if (!code) return;
         const generatePreview = async () => {
-            if (contentRef.current) {
+            // Wait for both refs to be available and rendering to settle
+            await new Promise(r => setTimeout(r, 500));
+            if (captureRef.current) {
                 try {
-                    // Small delay to ensure rendering is complete
-                    await new Promise(r => setTimeout(r, 100));
-                    const dataUrl = await toJpeg(contentRef.current, {
-                        quality: 0.8,
+                    const dataUrl = await toJpeg(captureRef.current, {
+                        quality: 0.7,
                         pixelRatio: 1,
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#0f1115',
                     })
                     setPreviewUrl(dataUrl)
                 } catch (err) {
-                    console.error("Preview generation failed")
+                    console.error("Preview generation failed", err)
                 }
             }
         }
@@ -47,14 +47,15 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
     if (!code) return null
 
     const handleDownloadImage = async () => {
-        if (!contentRef.current) return
+        if (!captureRef.current) return
         setIsDownloading(true)
         try {
-            // Wait a small bit for fonts/styles to sync
-            const dataUrl = await toJpeg(contentRef.current, {
+            // Increased delay and ensuring fonts/images are ready
+            await new Promise(r => setTimeout(r, 500));
+            const dataUrl = await toJpeg(captureRef.current, {
                 quality: 0.95,
                 pixelRatio: 2,
-                backgroundColor: '#0f172a', // slate-900 background to ensure dark theme looks right in saved image
+                backgroundColor: '#0f1115',
             })
             const link = document.createElement('a')
             link.download = `qstake-booking-${code}.jpg`
@@ -68,12 +69,20 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
         }
     }
 
+    const openPreviewInNewTab = () => {
+        if (!previewUrl) return;
+        const newTab = window.open();
+        if (newTab) {
+            newTab.document.write(`<img src="${previewUrl}" style="max-width:100%; height:auto;" />`);
+        }
+    }
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <div
-                ref={contentRef}
-                className="relative bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                ref={modalRef}
+                className="relative bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl shadow-2xl p-6 overflow-hidden animate-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 flex items-center justify-between">
@@ -90,7 +99,10 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                 <div className="flex gap-6 mb-8 items-start">
                     {/* Ticket Preview Thumbnail */}
                     <div className="relative group flex-shrink-0">
-                        <div className="w-32 h-44 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg relative cursor-zoom-in">
+                        <div
+                            className="w-32 h-44 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg relative cursor-zoom-in"
+                            onClick={openPreviewInNewTab}
+                        >
                             {previewUrl ? (
                                 <Image
                                     src={previewUrl}
@@ -105,7 +117,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                 </div>
                             )}
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-100 group-hover:opacity-0 transition-opacity">
-                                <Search className="h-8 w-8 text-white/50" />
+                                <Maximize2 className="h-8 w-8 text-white/50" />
                             </div>
                         </div>
                         <p className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
@@ -208,9 +220,9 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
             </div>
 
             {/* Hidden Capture Area (Inspired by Professional Betting Slips) */}
-            <div className="fixed top-[-9999px] left-[-9999px]">
+            <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
                 <div
-                    ref={contentRef}
+                    ref={captureRef}
                     className="w-[380px] bg-[#0f1115] text-white flex flex-col font-sans relative overflow-hidden"
                 >
                     {/* Brand Header */}
@@ -271,11 +283,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                         <div className="flex items-start gap-2">
                                             {/* Sport Icon (Dynamic) */}
                                             <div className="mt-0.5 p-1 bg-white/5 rounded">
-                                                {s.sportType?.toLowerCase() === 'football' || !s.sportType ? (
-                                                    <FootballIcon className="h-3 w-3" />
-                                                ) : (
-                                                    <Activity className="h-3 w-3 text-purple-400" />
-                                                )}
+                                                <Trophy className="h-3 w-3 text-purple-400" />
                                             </div>
                                             <div className="space-y-0.5">
                                                 <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">

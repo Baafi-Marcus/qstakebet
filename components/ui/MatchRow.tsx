@@ -5,7 +5,7 @@ import { Zap, ChevronDown, Lock, ChevronRight, Calendar, Trophy } from "lucide-r
 import { OddsButton } from "./OddsButton"
 import { MatchTimer } from "./MatchTimer"
 import { normalizeMarketName, cn } from "@/lib/utils"
-import { FootballIcon } from "./FootballIcon"
+
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
@@ -167,7 +167,7 @@ export function MatchRow({
                                     {match.isVirtual ? "VIRTUAL" : (match.tournamentName || "TOURNAMENT")}
                                 </span>
                                 {match.sportType?.toLowerCase() === 'football' && (
-                                    <FootballIcon className="h-2.5 w-2.5" />
+                                    <Trophy className="h-2.5 w-2.5" />
                                 )}
                             </div>
                             <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-tight">

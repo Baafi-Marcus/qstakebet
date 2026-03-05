@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { Match } from "@/lib/types"
 import { X, Trophy, Zap, Target, BarChart3, HelpCircle, Lock, Sparkles } from "lucide-react"
-import { FootballIcon } from "./FootballIcon"
+
 import { OddsButton } from "./OddsButton"
 import { cn, normalizeMarketName } from "@/lib/utils"
 import { Selection } from "@/lib/store/context"
@@ -120,7 +120,7 @@ export function MatchDetailsModal({ match, onClose, onOddsClick, checkSelected, 
                             )}
                             {match.sportType === 'football' && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-500 uppercase tracking-widest">
-                                    <FootballIcon className="h-3 w-3" /> FOOTBALL
+                                    <Trophy className="h-3 w-3" /> FOOTBALL
                                 </span>
                             )}
                         </div>
