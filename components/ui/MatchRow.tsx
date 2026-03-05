@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Zap, ChevronDown, Lock, ChevronRight, Calendar } from "lucide-react"
+import { Zap, ChevronDown, Lock, ChevronRight, Calendar, Trophy } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { MatchTimer } from "./MatchTimer"
 import { normalizeMarketName, cn } from "@/lib/utils"
+import { FootballIcon } from "./FootballIcon"
 import { Match } from "@/lib/types"
 import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
@@ -25,6 +26,7 @@ interface MatchRowProps {
     checkIsCorrelated?: (matchId: string, marketName: string) => boolean
     onMoreClick?: (match: Match) => void
     dayFirstMatchStart?: string | null
+    hideOdds?: boolean
 }
 
 export function MatchRow({
@@ -38,7 +40,8 @@ export function MatchRow({
     isFinished,
     currentScores,
     currentRoundIdx,
-    dayFirstMatchStart
+    dayFirstMatchStart,
+    hideOdds
 }: MatchRowProps) {
     const participants = useMemo(() => match.participants || [], [match.participants])
     const matchLabel = participants.length > 0 && participants[0].name
@@ -158,14 +161,19 @@ export function MatchRow({
                             className="text-[9px] font-bold"
                         />
                     ) : (
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                            {match.isVirtual
-                                ? `VIRTUAL • ${match.stage}`
-                                : match.tournamentName
-                                    ? `${match.tournamentName} • ${match.stage}`
-                                    : match.stage
-                            }
-                        </span>
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-black text-white uppercase tracking-tight leading-tight">
+                                    {match.isVirtual ? "VIRTUAL" : (match.tournamentName || "TOURNAMENT")}
+                                </span>
+                                {match.sportType?.toLowerCase() === 'football' && (
+                                    <FootballIcon className="h-2.5 w-2.5" />
+                                )}
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-tight">
+                                {match.stage}
+                            </span>
+                        </div>
                     )}
                     {match.isVirtual && !internalIsLive && (
                         <Zap className="h-2 w-2 text-purple-400" />
@@ -215,282 +223,287 @@ export function MatchRow({
                     <div className="mt-1 flex items-center gap-2">
                         <Calendar className="h-2 w-2 text-slate-500" />
                         <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                            {match.startTime || "TBD"}
+                            {match.scheduledAt
+                                ? new Date(match.scheduledAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+                                : match.startTime || "TBD"}
                         </span>
                     </div>
                 )}
             </div>
 
             {/* Right side: Odds Columns OR Live Scores OR Finished Results OR Pending */}
-            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
-                {(internalIsLive || internalIsFinished || internalIsPending) ? (
-                    <div className={cn(
-                        "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
-                    )}>
-                        {internalIsPending ? (
-                            <div className="flex flex-col items-center justify-center py-2">
-                                <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">
-                                    Full Time
-                                </div>
-                                <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-                                    Awaiting Result
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                {participants.map((p, idx) => (
-                                    <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
-                                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
-                                            {(idx + 1)}
-                                        </span>
-                                        <span className={cn(
-                                            "text-sm font-black font-mono tabular-nums leading-none",
-                                            internalIsLive ? "text-purple-500" : "text-slate-300"
-                                        )}>
-                                            {internalScores ? internalScores[idx] : 0}
-                                        </span>
+            {!hideOdds && (
+                <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
+                    {(internalIsLive || internalIsFinished || internalIsPending) ? (
+                        <div className={cn(
+                            "flex items-center px-4 gap-6 animate-in fade-in duration-500",
+                            internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
+                        )}>
+                            {internalIsPending ? (
+                                <div className="flex flex-col items-center justify-center py-2">
+                                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                        Full Time
                                     </div>
-                                ))}
-                                {internalIsFinished && (
-                                    <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
-                                        <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                            SETTLED
+                                    <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                                        Awaiting Result
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {participants.map((p, idx) => (
+                                        <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
+                                            <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
+                                                {(idx + 1)}
+                                            </span>
+                                            <span className={cn(
+                                                "text-sm font-black font-mono tabular-nums leading-none",
+                                                internalIsLive ? "text-purple-500" : "text-slate-300"
+                                            )}>
+                                                {internalScores ? internalScores[idx] : 0}
+                                            </span>
                                         </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                ) : match.status === 'upcoming' && Object.keys(match.odds || {}).length === 0 && Object.keys(match.extendedOdds || {}).length === 0 ? (
-                    <div className="flex items-center px-6 bg-slate-900/40 border-l border-white/5 min-w-[120px]">
-                        <div className="flex flex-col items-center justify-center py-2 px-4 italic">
-                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5 animate-pulse">
-                                Upcoming
-                            </span>
-                            <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">
-                                Odds coming soon
-                            </span>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        {/* Lock Overlay */}
-                        {isLocked && (
-                            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-0.5">
-                                    <Lock className="h-3 w-3 text-slate-500" />
-                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
-                                </div>
-                            </div>
-                        )}
-                        {activeMarket === 'winner' && (
-                            <>
-                                {participants.map((p, idx) => (
-                                    <div key={p.schoolId} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                        <OddsButton
-                                            label={(idx + 1).toString()}
-                                            odds={p.odd || match.odds?.[p.schoolId] || null}
-                                            matchId={match.id}
-                                            matchLabel={matchLabel}
-                                            marketName="Match Winner"
-                                            showLabel={true}
-                                            onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
-                                            isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                            sportType={match.sportType}
-                                            tournamentName={match.tournamentName || undefined}
-                                            stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                        />
-                                    </div>
-                                ))}
-                                {(match.sportType === "football" || match.sportType === "handball") && (
-                                    <div key="draw" className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
-                                        <OddsButton
-                                            label="X"
-                                            odds={match.odds?.["X"] || null}
-                                            matchId={match.id}
-                                            matchLabel={matchLabel}
-                                            marketName="Match Winner"
-                                            showLabel={true}
-                                            onClick={onOddsClick}
-                                            isSelected={checkSelected(`${match.id}-Match Winner-X`)}
-                                            isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
-                                            sportType={match.sportType}
-                                            tournamentName={match.tournamentName || undefined}
-                                            stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                        />
-                                    </div>
-                                )}
-                            </>
-                        )}
-
-                        {activeMarket === 'total_points' && (
-                            <div className="flex items-center">
-                                {/* Selector */}
-                                <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            haptics.light();
-                                            audio.light();
-                                            setIsDropdownOpen(!isDropdownOpen);
-                                        }}
-                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                                    >
-                                        <span className="text-[7px] uppercase opacity-50">LINE</span>
-                                        <div className="flex items-center gap-0.5" >
-                                            {selectedTotalLine || "---"}
-                                            <ChevronDown className="h-2 w-2 opacity-50" />
-                                        </div>
-                                    </button>
-                                    {isDropdownOpen && (
-                                        <div
-                                            className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {
-                                                Object.keys(match.extendedOdds?.totalPoints || {})
-                                                    .map(k => k.split(" ")[1])
-                                                    .filter((v, i, a) => a.indexOf(v) === i)
-                                                    .sort((a, b) => parseFloat(a) - parseFloat(b))
-                                                    .map(line => (
-                                                        <button
-                                                            key={line}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                haptics.light();
-                                                                audio.light();
-                                                                setSelectedTotalLine(line);
-                                                                setIsDropdownOpen(false);
-                                                            }}
-                                                            className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
-                                                        >
-                                                            {line}
-                                                        </button>
-                                                    ))
-                                            }
+                                    ))}
+                                    {internalIsFinished && (
+                                        <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
+                                            <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                                SETTLED
+                                            </div>
                                         </div>
                                     )}
-                                </div>
-
-                                {/* Odds for Selected Line */}
-                                {selectedTotalLine ? (
-                                    <>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center">
-                                            <OddsButton
-                                                label={`O`}
-                                                odds={match.extendedOdds?.totalPoints?.[`Over ${selectedTotalLine}`] ?? null}
-                                                matchId={match.id}
-                                                marketName="Total Points"
-                                                matchLabel={matchLabel}
-                                                onClick={(sel) => onOddsClick({ ...sel, label: `Over ${selectedTotalLine}` })}
-                                                id={`${match.id}-Total Points-Over ${selectedTotalLine}`}
-                                                isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
-                                                isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
-                                                sportType={match.sportType}
-                                                tournamentName={match.tournamentName || undefined}
-                                                stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                            />
-                                        </div>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
-                                            <OddsButton
-                                                label={`U`}
-                                                odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
-                                                matchId={match.id}
-                                                marketName="Total Points"
-                                                matchLabel={matchLabel}
-                                                onClick={(sel) => onOddsClick({ ...sel, label: `Under ${selectedTotalLine}` })}
-                                                id={`${match.id}-Total Points-Under ${selectedTotalLine}`}
-                                                isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
-                                                isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
-                                                sportType={match.sportType}
-                                                tournamentName={match.tournamentName || undefined}
-                                                stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
-                                            />
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center">
-                                            <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
-                                        </div>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5" >
-                                            <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
-                                        </div>
-                                    </>
-                                )}
+                                </>
+                            )}
+                        </div>
+                    ) : match.status === 'upcoming' && Object.keys(match.odds || {}).length === 0 && Object.keys(match.extendedOdds || {}).length === 0 ? (
+                        <div className="flex items-center px-6 bg-slate-900/40 border-l border-white/5 min-w-[120px]">
+                            <div className="flex flex-col items-center justify-center py-2 px-4 italic">
+                                <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5 animate-pulse">
+                                    Upcoming
+                                </span>
+                                <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">
+                                    Odds coming soon
+                                </span>
                             </div>
-                        )}
+                        </div>
+                    ) : (
+                        <>
+                            {/* Lock Overlay */}
+                            {isLocked && (
+                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center text-center px-4">
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Lock className="h-3 w-3 text-slate-500" />
+                                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-tight">{lockStatus.reason}</span>
+                                    </div>
+                                </div>
+                            )}
 
-                        {/* Dynamic AI Markets */}
-                        {activeMarket !== 'winner' && activeMarket !== 'total_points' && match.extendedOdds?.[activeMarket] && (
-                            <div className="flex items-center overflow-x-auto no-scrollbar">
-                                {Object.entries(match.extendedOdds[activeMarket]).map(([selectionLabel, oddValue]) => {
-                                    // Make sure the marketName matches what the tabs use so the ID syncs
-                                    let cleanMarketName = activeMarket;
-                                    if (activeMarket.toLowerCase().includes('overunder')) {
-                                        const numStr = activeMarket.split('_').slice(1).join('.');
-                                        cleanMarketName = `Over/Under ${numStr}`;
-                                    } else {
-                                        cleanMarketName = activeMarket.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
-                                        cleanMarketName = cleanMarketName.replace(/\b\w/g, l => l.toUpperCase());
-                                    }
-
-                                    return (
-                                        <div key={selectionLabel} className="min-w-[4rem] px-2 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
+                            {activeMarket === 'winner' && (
+                                <>
+                                    {participants.map((p, idx) => (
+                                        <div key={p.schoolId} className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
                                             <OddsButton
-                                                label={selectionLabel}
-                                                odds={oddValue as number}
+                                                label={(idx + 1).toString()}
+                                                odds={p.odd || match.odds?.[p.schoolId] || null}
                                                 matchId={match.id}
-                                                marketName={cleanMarketName}
                                                 matchLabel={matchLabel}
+                                                marketName="Match Winner"
                                                 showLabel={true}
                                                 onClick={onOddsClick}
-                                                isSelected={checkSelected(`${match.id}-${normalizeMarketName(cleanMarketName)}-${selectionLabel}`)}
-                                                isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(cleanMarketName))}
+                                                isSelected={checkSelected(`${match.id}-Match Winner-${idx + 1}`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
                                                 sportType={match.sportType}
                                                 tournamentName={match.tournamentName || undefined}
                                                 stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0 text-[10px]"
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
                                             />
                                         </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </>
-                )}
+                                    ))}
+                                    {(match.sportType === "football" || match.sportType === "handball") && (
+                                        <div key="draw" className="w-12 sm:w-14 md:w-16 flex items-center justify-center">
+                                            <OddsButton
+                                                label="X"
+                                                odds={match.odds?.["X"] || null}
+                                                matchId={match.id}
+                                                matchLabel={matchLabel}
+                                                marketName="Match Winner"
+                                                showLabel={true}
+                                                onClick={onOddsClick}
+                                                isSelected={checkSelected(`${match.id}-Match Winner-X`)}
+                                                isCorrelated={checkIsCorrelated?.(match.id, "Match Winner")}
+                                                sportType={match.sportType}
+                                                tournamentName={match.tournamentName || undefined}
+                                                stage={match.stage}
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
-                {/* More Button */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (isLocked) return;
-                        haptics.light();
-                        audio.light();
-                        onMoreClick?.(match);
-                    }}
-                    disabled={isLocked}
-                    className={cn(
-                        "w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 transition-colors self-stretch group/more",
-                        isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5 cursor-pointer"
+                            {activeMarket === 'total_points' && (
+                                <div className="flex items-center">
+                                    {/* Selector */}
+                                    <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                haptics.light();
+                                                audio.light();
+                                                setIsDropdownOpen(!isDropdownOpen);
+                                            }}
+                                            className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-[7px] uppercase opacity-50">LINE</span>
+                                            <div className="flex items-center gap-0.5" >
+                                                {selectedTotalLine || "---"}
+                                                <ChevronDown className="h-2 w-2 opacity-50" />
+                                            </div>
+                                        </button>
+                                        {isDropdownOpen && (
+                                            <div
+                                                className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {
+                                                    Object.keys(match.extendedOdds?.totalPoints || {})
+                                                        .map(k => k.split(" ")[1])
+                                                        .filter((v, i, a) => a.indexOf(v) === i)
+                                                        .sort((a, b) => parseFloat(a) - parseFloat(b))
+                                                        .map(line => (
+                                                            <button
+                                                                key={line}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    haptics.light();
+                                                                    audio.light();
+                                                                    setSelectedTotalLine(line);
+                                                                    setIsDropdownOpen(false);
+                                                                }}
+                                                                className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
+                                                            >
+                                                                {line}
+                                                            </button>
+                                                        ))
+                                                }
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Odds for Selected Line */}
+                                    {selectedTotalLine ? (
+                                        <>
+                                            <div className="w-12 sm:w-14 flex items-center justify-center">
+                                                <OddsButton
+                                                    label={`O`}
+                                                    odds={match.extendedOdds?.totalPoints?.[`Over ${selectedTotalLine}`] ?? null}
+                                                    matchId={match.id}
+                                                    marketName="Total Points"
+                                                    matchLabel={matchLabel}
+                                                    onClick={(sel) => onOddsClick({ ...sel, label: `Over ${selectedTotalLine}` })}
+                                                    id={`${match.id}-Total Points-Over ${selectedTotalLine}`}
+                                                    isSelected={checkSelected(`${match.id}-Total Points-Over ${selectedTotalLine}`)}
+                                                    isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                    sportType={match.sportType}
+                                                    tournamentName={match.tournamentName || undefined}
+                                                    stage={match.stage}
+                                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                />
+                                            </div>
+                                            <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
+                                                <OddsButton
+                                                    label={`U`}
+                                                    odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
+                                                    matchId={match.id}
+                                                    marketName="Total Points"
+                                                    matchLabel={matchLabel}
+                                                    onClick={(sel) => onOddsClick({ ...sel, label: `Under ${selectedTotalLine}` })}
+                                                    id={`${match.id}-Total Points-Under ${selectedTotalLine}`}
+                                                    isSelected={checkSelected(`${match.id}-Total Points-Under ${selectedTotalLine}`)}
+                                                    isCorrelated={checkIsCorrelated?.(match.id, "Total Points")}
+                                                    sportType={match.sportType}
+                                                    tournamentName={match.tournamentName || undefined}
+                                                    stage={match.stage}
+                                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="w-12 sm:w-14 flex items-center justify-center">
+                                                <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
+                                            </div>
+                                            <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5" >
+                                                <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Dynamic AI Markets */}
+                            {activeMarket !== 'winner' && activeMarket !== 'total_points' && match.extendedOdds?.[activeMarket] && (
+                                <div className="flex items-center overflow-x-auto no-scrollbar">
+                                    {Object.entries(match.extendedOdds[activeMarket]).map(([selectionLabel, oddValue]) => {
+                                        // Make sure the marketName matches what the tabs use so the ID syncs
+                                        let cleanMarketName = activeMarket;
+                                        if (activeMarket.toLowerCase().includes('overunder')) {
+                                            const numStr = activeMarket.split('_').slice(1).join('.');
+                                            cleanMarketName = `Over/Under ${numStr}`;
+                                        } else {
+                                            cleanMarketName = activeMarket.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
+                                            cleanMarketName = cleanMarketName.replace(/\b\w/g, l => l.toUpperCase());
+                                        }
+
+                                        return (
+                                            <div key={selectionLabel} className="min-w-[4rem] px-2 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
+                                                <OddsButton
+                                                    label={selectionLabel}
+                                                    odds={oddValue as number}
+                                                    matchId={match.id}
+                                                    marketName={cleanMarketName}
+                                                    matchLabel={matchLabel}
+                                                    showLabel={true}
+                                                    onClick={onOddsClick}
+                                                    isSelected={checkSelected(`${match.id}-${normalizeMarketName(cleanMarketName)}-${selectionLabel}`)}
+                                                    isCorrelated={checkIsCorrelated?.(match.id, normalizeMarketName(cleanMarketName))}
+                                                    sportType={match.sportType}
+                                                    tournamentName={match.tournamentName || undefined}
+                                                    stage={match.stage}
+                                                    className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0 text-[10px]"
+                                                />
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </>
                     )}
-                >
-                    <ChevronRight className={cn(
-                        "h-4 w-4 text-slate-500 transition-all",
-                        !isLocked && "group-hover/more:text-purple-400 group-hover/more:translate-x-0.5"
-                    )} />
-                    <span className={cn(
-                        "text-[7px] text-slate-500 font-black transition-colors mt-0.5",
-                        !isLocked && "group-hover/more:text-white"
-                    )}>MORE</span>
-                </button>
-            </div>
+
+                    {/* More Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isLocked) return;
+                            haptics.light();
+                            audio.light();
+                            onMoreClick?.(match);
+                        }}
+                        disabled={isLocked}
+                        className={cn(
+                            "w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 transition-colors self-stretch group/more",
+                            isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5 cursor-pointer"
+                        )}
+                    >
+                        <ChevronRight className={cn(
+                            "h-4 w-4 text-slate-500 transition-all",
+                            !isLocked && "group-hover/more:text-purple-400 group-hover/more:translate-x-0.5"
+                        )} />
+                        <span className={cn(
+                            "text-[7px] text-slate-500 font-black transition-colors mt-0.5",
+                            !isLocked && "group-hover/more:text-white"
+                        )}>MORE</span>
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

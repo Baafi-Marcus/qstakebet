@@ -104,26 +104,34 @@ export default async function MatchDetailPage({ params }: Props) {
                             </div>
 
                             {/* Extended Markets */}
-                            {match.extendedOdds && Object.entries(match.extendedOdds).map(([marketName, options]) => (
-                                <div key={marketName} className="bg-secondary/10 rounded-lg p-4 border border-border">
-                                    <h3 className="text-sm font-bold text-foreground mb-4 flex items-center capitalize">
-                                        <div className="w-1 h-4 bg-accent mr-2 rounded-full"></div>
-                                        {marketName.replace(/([A-Z])/g, ' $1').trim()}
-                                    </h3>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                        {Object.entries(options as Record<string, number>).map(([label, odds]) => (
-                                            <OddsButton
-                                                key={label}
-                                                label={label}
-                                                odds={odds}
-                                                matchId={match.id}
-                                                matchLabel={matchLabel}
-                                                marketName={normalizeMarketName(marketName)}
-                                            />
-                                        ))}
+                            {match.extendedOdds && Object.entries(match.extendedOdds)
+                                .filter(([key]) => {
+                                    const handled = ['winner', 'matchwinner', 'match_winner', 'match winner', '1x2', 'fulltimeresult', 'full time result'];
+                                    return !handled.includes(key.toLowerCase());
+                                })
+                                .map(([marketName, options]) => (
+                                    <div key={marketName} className="bg-secondary/10 rounded-lg p-4 border border-border">
+                                        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center capitalize">
+                                            <div className="w-1 h-4 bg-accent mr-2 rounded-full"></div>
+                                            {marketName.startsWith('overUnder')
+                                                ? `Over/Under ${marketName.replace('overUnder', '').replace('_', '.')}`
+                                                : marketName.replace(/([A-Z])/g, ' $1').trim()
+                                            }
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {Object.entries(options as Record<string, number>).map(([label, odds]) => (
+                                                <OddsButton
+                                                    key={label}
+                                                    label={label}
+                                                    odds={odds}
+                                                    matchId={match.id}
+                                                    matchLabel={matchLabel}
+                                                    marketName={normalizeMarketName(marketName)}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     </div>
                 </main>

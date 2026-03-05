@@ -36,6 +36,8 @@ export default function SettingsPage() {
         betting_margin: 0.1,
     })
     const [isSaving, setIsSaving] = useState(false)
+    const [maintenanceTriggering, setMaintenanceTriggering] = useState(false)
+
 
     useEffect(() => {
         loadData()
@@ -60,9 +62,14 @@ export default function SettingsPage() {
     }
 
     const handleUpdateSetting = async (key: string, value: any) => {
+        if (key === "maintenance_mode") {
+            setMaintenanceTriggering(true)
+            setTimeout(() => setMaintenanceTriggering(false), 2000)
+        }
         setPlatformSettings(prev => ({ ...prev, [key]: value }))
         await updateSetting(key, value)
     }
+
 
     const handleSaveGeneral = async () => {
         setIsSaving(true)
@@ -164,11 +171,39 @@ export default function SettingsPage() {
                                 </div>
                                 <button
                                     onClick={() => handleUpdateSetting("maintenance_mode", !platformSettings.maintenance_mode)}
-                                    className={`relative w-16 h-8 rounded-full transition-colors ${platformSettings.maintenance_mode ? 'bg-red-600' : 'bg-slate-700'}`}
+                                    className={`relative w-16 h-8 rounded-full transition-all duration-500 ${platformSettings.maintenance_mode ? 'bg-red-600 shadow-[0_0_20px_rgba(220,38,38,0.4)]' : 'bg-slate-700'
+                                        } ${maintenanceTriggering ? 'scale-110' : 'scale-100'}`}
                                 >
-                                    <div className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all ${platformSettings.maintenance_mode ? 'left-9 shadow-lg shadow-red-900' : 'left-1'}`} />
+                                    <div className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all duration-500 flex items-center justify-center ${platformSettings.maintenance_mode ? 'left-9 shadow-lg shadow-red-900' : 'left-1'
+                                        }`}>
+                                        {maintenanceTriggering && (
+                                            <div className="absolute inset-0 rounded-full border-2 border-purple-500 animate-ping" />
+                                        )}
+                                    </div>
                                 </button>
+
                             </div>
+
+                            {platformSettings.maintenance_mode && (
+                                <div className="mt-6 pt-6 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Rocket className="h-4 w-4 text-purple-400" />
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selective Access (Override)</h4>
+                                    </div>
+                                    <div className="relative max-w-md">
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. /virtuals"
+                                            value={platformSettings.maintenance_allowed_path || ""}
+                                            onChange={(e) => handleUpdateSetting("maintenance_allowed_path", e.target.value)}
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-purple-500 outline-none placeholder:text-slate-700"
+                                        />
+                                        <div className="mt-2 text-[9px] text-slate-500 font-medium italic">
+                                            Users can still access this path while the rest of the site is locked. Leave empty for full lockdown.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

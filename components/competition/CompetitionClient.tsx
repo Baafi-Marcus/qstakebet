@@ -112,6 +112,7 @@ export function CompetitionClient({ initialMatches, tournamentName }: Competitio
                         onOddsClick={addSelection}
                         checkSelected={checkSelected}
                         onMoreClick={(m) => setSelectedMatchForDetails(m)}
+                        hideOdds={match.status === 'upcoming'}
                     />
                 ))}
             </div>

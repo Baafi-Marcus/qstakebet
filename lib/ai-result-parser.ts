@@ -25,7 +25,7 @@ import { getActiveKey, reportKeyError } from "./ai-key-manager"
 // Helper to wait
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> {
+export async function parseResultsWithAI(text: string, matchContext?: string): Promise<ParsedResult[]> {
     let attempts = 0;
     const maxAttempts = 3;
 
@@ -52,9 +52,9 @@ export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> 
                             content: `You are a high-precision sports result extractor. Your task is to extract match results from the provided text.
                             
 Rules:
-1. Return ONLY a valid JSON array. No conversational text, no "Here is your JSON".
-2. If match results are ambiguous, make your best professional guess based on the phrasing.
-3. If no match results are found, return an empty array [].
+1. Return ONLY a valid JSON array. No conversational text.
+2. If match results are ambiguous or if the user asks you to "generate" or "predict" outcomes, use the provided Market Context (Odds/Strengths) as the primary guide.
+3. Lower odds (favorites) should generally correspond to better performances/winners unless the text says otherwise.
 4. Format:
 [
   {
@@ -73,13 +73,11 @@ Rules:
     }
   }
 ]
-5. If the score is missing but a winner is mentioned, include the winner and leave scores null.
-6. Extract Half-Time (HT) vs Full-Time (FT) scores if explicitly mentioned (e.g., "1-0 at HT, 3-1 FT").
-7. Extract period-specific winners or special event outcomes if mentioned (e.g., "Round 1 winner: X", "Q1: 12-10").`
+5. If the user's text seems to be a command (e.g. "Create results for today"), generate realistic results based ON THE MARKET CONTEXT PROVIDED.`
                         },
                         {
                             role: "user",
-                            content: `Extract match results from this text and return as JSON array:\n\n${text}`
+                            content: `Market Context (Published Odds & Matches):\n${matchContext || "Not provided"}\n\nExtraction/Generation Task:\n${text}`
                         }
                     ],
                     model: "gpt-4o",

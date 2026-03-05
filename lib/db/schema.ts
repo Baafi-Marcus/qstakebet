@@ -11,6 +11,7 @@ export const schools = pgTable("schools", {
     location: text("location"),
     parentId: text("parent_id"), // Self-reference for University -> Hall/Dept
     type: text("type").default("school").notNull(), // "school", "hall", "department", "program"
+    aliases: jsonb("aliases").default([]).$type<string[]>(), // Old names for backward compatibility
     createdAt: timestamp("created_at").defaultNow(),
 });
 

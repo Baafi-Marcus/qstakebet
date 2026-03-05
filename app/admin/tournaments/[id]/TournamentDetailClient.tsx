@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner, forceDeleteTournament, removeSchoolFromRoster } from "@/lib/admin-actions"
-import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator, Trash2, Layers } from "lucide-react"
+import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner, forceDeleteTournament, removeSchoolFromRoster, updateSchoolAction } from "@/lib/admin-actions"
+import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator, Trash2, Layers, Edit2 } from "lucide-react"
 import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
@@ -24,7 +24,11 @@ export function TournamentDetailClient({
     const format = tournament.metadata?.format || 'league'
     const [uniType, setUniType] = useState<'hall' | 'program'>('hall')
     const [activeTab, setActiveTab] = useState<'standings' | 'roster' | 'fixtures' | 'results' | 'outrights'>(format === 'league' ? 'standings' : 'results')
+
     const [selectedMatchForResult, setSelectedMatchForResult] = useState<Match | null>(null)
+    const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null)
+    const [editSchoolName, setEditSchoolName] = useState("")
+
 
     // Parse Groups from Metadata
     const metadata = tournament.metadata || {}
@@ -295,32 +299,97 @@ export function TournamentDetailClient({
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Participating Entities</p>
                             <div className="grid grid-cols-1 gap-2">
                                 {schools.map(s => (
-                                    <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm font-bold text-slate-300 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <Trophy className="h-3 w-3 text-purple-500 font-bold" />
-                                            <div className="flex flex-col">
-                                                <span>{s.name}</span>
-                                                {groupAssignments[s.id] && <span className="text-[10px] text-purple-400 uppercase tracking-widest">{groupAssignments[s.id]}</span>}
-                                            </div>
+                                    <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm font-bold text-slate-300 flex items-center justify-between group/item">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <Trophy className="h-3 w-3 text-purple-500 font-bold shrink-0" />
+                                            {editingSchoolId === s.id ? (
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <input
+                                                        autoFocus
+                                                        value={editSchoolName}
+                                                        onChange={(e) => setEditSchoolName(e.target.value)}
+                                                        onKeyDown={async (e) => {
+                                                            if (e.key === 'Enter') {
+                                                                if (!editSchoolName.trim()) return;
+                                                                setIsSaving(true);
+                                                                try {
+                                                                    const res = await updateSchoolAction(s.id, { name: editSchoolName }) as { success: boolean, error?: string };
+                                                                    if (res.success) {
+                                                                        setEditingSchoolId(null);
+                                                                        router.refresh();
+                                                                    } else {
+                                                                        alert(res.error || "Failed to update school");
+                                                                    }
+                                                                } finally {
+                                                                    setIsSaving(false);
+                                                                }
+                                                            } else if (e.key === 'Escape') {
+                                                                setEditingSchoolId(null);
+                                                            }
+                                                        }}
+                                                        className="bg-slate-950 border border-purple-500/50 rounded px-2 py-0.5 text-xs text-white focus:outline-none w-full"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col">
+                                                    <span className="flex items-center gap-2">
+                                                        {s.name}
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingSchoolId(s.id);
+                                                                setEditSchoolName(s.name);
+                                                            }}
+                                                            className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded"
+                                                        >
+                                                            <Edit2 className="h-3 w-3 text-slate-500" />
+                                                        </button>
+                                                    </span>
+                                                    {groupAssignments[s.id] && <span className="text-[10px] text-purple-400 uppercase tracking-widest">{groupAssignments[s.id]}</span>}
+                                                </div>
+                                            )}
                                         </div>
                                         {s.type !== 'school' && <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-500 uppercase mr-2">{s.type}</span>}
-                                        <button
-                                            onClick={async () => {
-                                                if (!confirm(`Remove ${s.name} from this tournament's roster?`)) return;
-                                                setIsSaving(true)
-                                                try {
-                                                    await removeSchoolFromRoster(tournament.id, s.id);
-                                                    router.refresh();
-                                                } finally {
-                                                    setIsSaving(false);
-                                                }
-                                            }}
-                                            disabled={isSaving}
-                                            className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20"
-                                            title="Remove from roster"
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {editingSchoolId === s.id && (
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!editSchoolName.trim()) return;
+                                                        setIsSaving(true);
+                                                        try {
+                                                            const res = await updateSchoolAction(s.id, { name: editSchoolName }) as { success: boolean, error?: string };
+                                                            if (res.success) {
+                                                                setEditingSchoolId(null);
+                                                                router.refresh();
+                                                            } else {
+                                                                alert(res.error || "Failed to update school");
+                                                            }
+                                                        } finally {
+                                                            setIsSaving(false);
+                                                        }
+                                                    }}
+                                                    className="p-1.5 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-colors border border-green-500/20"
+                                                >
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={async () => {
+                                                    if (!confirm(`Remove ${s.name} from this tournament's roster?`)) return;
+                                                    setIsSaving(true)
+                                                    try {
+                                                        await removeSchoolFromRoster(tournament.id, s.id);
+                                                        router.refresh();
+                                                    } finally {
+                                                        setIsSaving(false);
+                                                    }
+                                                }}
+                                                disabled={isSaving}
+                                                className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors border border-red-500/20"
+                                                title="Remove from roster"
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

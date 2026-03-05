@@ -2,7 +2,8 @@
 "use client"
 import React from "react"
 import Image from "next/image"
-import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search } from "lucide-react"
+import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search, Trophy, Dribbble } from "lucide-react"
+import { FootballIcon } from "./FootballIcon"
 import { toJpeg } from 'html-to-image'
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -210,68 +211,78 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
             <div className="fixed top-[-9999px] left-[-9999px]">
                 <div
                     ref={contentRef}
-                    className="w-[450px] bg-[#0f1115] text-white flex flex-col font-sans relative overflow-hidden"
+                    className="w-[380px] bg-[#0f1115] text-white flex flex-col font-sans relative overflow-hidden"
                 >
                     {/* Brand Header */}
-                    <div className="bg-[#e11d48] px-6 py-4 flex items-center justify-between border-b border-black/10">
-                        <div className="flex items-center gap-2">
-                            <span className="text-white font-black italic tracking-tighter text-2xl">QSTAKEbet</span>
-                            <div className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Official Booking</div>
+                    <div className="bg-[#e11d48] px-5 py-3 flex items-center justify-between border-b border-black/10">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-white font-black italic tracking-tighter text-xl">QSTAKEbet</span>
+                            <div className="bg-white/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">OFFICIAL</div>
                         </div>
                         <div className="text-right">
-                            <div className="text-[10px] font-black uppercase opacity-60">Generated on</div>
-                            <div className="text-[11px] font-mono font-bold leading-none">{format(currentTime, "dd/MM/yyyy HH:mm")}</div>
+                            <div className="text-[9px] font-black uppercase opacity-60 leading-none mb-0.5">Booking Date</div>
+                            <div className="text-[10px] font-mono font-bold leading-none">{format(currentTime, "dd/MM/yy HH:mm")}</div>
                         </div>
                     </div>
 
                     {/* Booking Code Section (High Impact) */}
-                    <div className="bg-[#1a1c23] px-8 py-10 text-center relative">
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Booking Code</div>
-                        <div className="text-7xl font-black text-[#10b981] tracking-[0.15em] font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">{code}</div>
+                    <div className="bg-[#1a1c23] px-6 py-8 text-center relative border-b border-white/5">
+                        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Booking Code</div>
+                        <div className="text-6xl font-black text-[#10b981] tracking-[0.1em] font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">{code}</div>
 
-                        <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
-                            <div className="text-center w-full">
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Odds</div>
-                                <div className="text-2xl font-black text-white">{totalOdds.toFixed(2)}</div>
+                        <div className="mt-6 flex items-center justify-center gap-8">
+                            <div className="text-center">
+                                <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total Odds</div>
+                                <div className="text-lg font-black text-white px-3 py-0.5 bg-white/5 rounded-full border border-white/10">{totalOdds.toFixed(2)}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total Games</div>
+                                <div className="text-lg font-black text-white">{selections.length}</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Financial Summary */}
-                    <div className="px-8 py-6 bg-[#0f1115]">
-                        <div className="bg-[#1a1c23]/50 rounded-2xl border border-white/5 p-5 space-y-3">
-                            <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                <span>Total Stake</span>
-                                <span className="text-white font-black">GHS 100.00</span>
+                    <div className="px-6 py-4 bg-[#0f1115]">
+                        <div className="bg-[#1a1c23]/50 rounded-xl border border-white/5 p-4 space-y-2">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span>Suggested Stake</span>
+                                <span className="text-white font-black">GHS 10.00</span>
                             </div>
-                            <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 <span>Potential Payout</span>
-                                <span className="text-white font-black">GHS {(100 * totalOdds).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] font-bold text-emerald-500 bg-emerald-500/5 px-2 py-1 rounded-lg">
-                                <span>Max Bonus Appliable</span>
-                                <span className="font-black">GHS 250.00</span>
+                                <span className="text-white font-black">GHS {(10 * totalOdds).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Selections Section */}
-                    <div className="px-8 pb-8">
+                    <div className="px-6 pb-6">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="flex-1 h-[1px] bg-white/5"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 bg-black/20 px-3 py-1 rounded-full">Your Selections ({selections.length})</span>
+                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">Selections List</span>
                             <div className="flex-1 h-[1px] bg-white/5"></div>
                         </div>
 
                         <div className="space-y-4">
                             {selections.map((s, i) => (
-                                <div key={i} className="group flex flex-col gap-1 border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                                <div key={i} className="flex flex-col gap-1 border-b border-white/5 pb-3 last:border-0 last:pb-0">
                                     <div className="flex justify-between items-start">
-                                        <div className="space-y-0.5">
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                                {s.sportType ? s.sportType.toUpperCase() : "FOOTBALL"} / {s.tournamentName ? s.tournamentName.toUpperCase() : s.stage ? s.stage.toUpperCase() : "GAME"}
+                                        <div className="flex items-start gap-2">
+                                            {/* Sport Icon (Dynamic) */}
+                                            <div className="mt-0.5 p-1 bg-white/5 rounded">
+                                                {s.sportType?.toLowerCase() === 'football' || !s.sportType ? (
+                                                    <FootballIcon className="h-3 w-3" />
+                                                ) : (
+                                                    <Activity className="h-3 w-3 text-purple-400" />
+                                                )}
                                             </div>
-                                            <div className="text-sm font-bold text-white tracking-tight">{s.matchLabel}</div>
+                                            <div className="space-y-0.5">
+                                                <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                                                    {s.tournamentName || s.stage || "Tournament"}
+                                                </div>
+                                                <div className="text-xs font-bold text-white tracking-tight uppercase">{s.matchLabel}</div>
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-[10px] font-black text-emerald-500 font-mono italic">{s.odds.toFixed(2)}</div>
@@ -279,12 +290,12 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                     </div>
                                     <div className="flex gap-4 items-center">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Market</span>
-                                            <span className="text-[11px] font-black text-slate-300">Match Winner (1X2)</span>
+                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">Market</span>
+                                            <span className="text-[10px] font-black text-slate-300">{s.marketName || "Match Winner"}</span>
                                         </div>
                                         <div className="flex flex-col border-l border-white/5 pl-4">
-                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Selection</span>
-                                            <span className="text-[11px] font-black text-white">{s.label}</span>
+                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">Selection</span>
+                                            <span className="text-[10px] font-black text-white uppercase">{s.label}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -293,16 +304,16 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                     </div>
 
                     {/* Security Footer */}
-                    <div className="bg-[#1a1c23] px-8 py-6 text-center border-t border-white/5">
-                        <div className="mb-4 flex flex-col items-center">
-                            <div className="w-16 h-1 bg-emerald-500/20 rounded-full mb-3 shrink-0"></div>
-                            <p className="text-[10px] text-slate-400 font-medium max-w-[300px] leading-relaxed">
-                                Odds are dynamic and may change before actual placement.
-                                <br /> Visit <span className="text-white font-bold tracking-tight italic uppercase">qstakebet.vercel.app</span> to load and play.
+                    <div className="bg-[#1a1c23] px-6 py-4 text-center border-t border-white/5">
+                        <div className="mb-3 flex flex-col items-center">
+                            <div className="w-12 h-1 bg-emerald-500/20 rounded-full mb-2 shrink-0"></div>
+                            <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
+                                Odds are dynamic and may change.
+                                <br /> Play at <span className="text-white font-bold tracking-tight italic uppercase">qstakebet.vercel.app</span>
                             </p>
                         </div>
-                        <div className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">
-                            © 2026 QSTAKEbet GAMING TECHNOLOGY LIMITED. ALL RIGHTS RESERVED.
+                        <div className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">
+                            © 2026 QSTAKEbet · Official Ticket
                         </div>
                     </div>
                 </div>

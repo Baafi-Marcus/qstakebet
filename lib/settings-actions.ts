@@ -3,34 +3,31 @@
 import { db } from "@/lib/db"
 import { platformSettings } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
-import { revalidatePath, revalidateTag } from "next/cache"
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache"
 
 export async function getSettings() {
-    try {
-        const settings = await db.select().from(platformSettings);
-        // Convert array to useful object
-        const settingsMap: Record<string, any> = {};
-        settings.forEach(s => {
-            settingsMap[s.key] = s.value;
-        });
-        return settingsMap;
-    } catch (error) {
-        console.error("Failed to fetch settings:", error);
-        return {};
-    }
+    return unstable_cache(
+        async () => {
+            try {
+                const settings = await db.select().from(platformSettings);
+                const settingsMap: Record<string, any> = {};
+                settings.forEach(s => {
+                    settingsMap[s.key] = s.value;
+                });
+                return settingsMap;
+            } catch (error) {
+                console.error("Failed to fetch settings:", error);
+                return {};
+            }
+        },
+        ["platform-settings"],
+        { tags: ["platform-settings"] }
+    )();
 }
 
 export async function getSetting(key: string, defaultValue: any = null) {
-    try {
-        const result = await db.select().from(platformSettings).where(eq(platformSettings.key, key)).limit(1);
-        if (result.length > 0) {
-            return result[0].value;
-        }
-        return defaultValue;
-    } catch (error) {
-        console.error(`Failed to fetch setting ${key}:`, error);
-        return defaultValue;
-    }
+    const settings = await getSettings();
+    return settings[key] ?? defaultValue;
 }
 
 export async function updateSetting(key: string, value: any, description?: string) {

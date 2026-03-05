@@ -181,6 +181,9 @@ export async function updateSchoolAction(id: string, data: {
         return await db.transaction(async (tx) => {
             // Update Basic Info
             if (data.name || data.region || data.district || data.category) {
+                const oldSchool = await tx.select().from(schools).where(eq(schools.id, id)).limit(1);
+                const isNameChanged = data.name && oldSchool.length > 0 && oldSchool[0].name !== data.name;
+
                 await tx.update(schools).set({
                     name: data.name,
                     region: data.region,
@@ -190,6 +193,28 @@ export async function updateSchoolAction(id: string, data: {
                     type: data.type,
                     parentId: data.parentId
                 }).where(eq(schools.id, id));
+
+                // Global Roster Sync: If name changed, update all matches
+                if (isNameChanged && data.name) {
+                    const affectedMatches = await tx.select().from(matches);
+                    for (const match of affectedMatches) {
+                        const participants = match.participants as any[];
+                        let changed = false;
+                        const newParticipants = participants.map(p => {
+                            if (p.schoolId === id) {
+                                changed = true;
+                                return { ...p, name: data.name };
+                            }
+                            return p;
+                        });
+
+                        if (changed) {
+                            await tx.update(matches)
+                                .set({ participants: newParticipants })
+                                .where(eq(matches.id, match.id));
+                        }
+                    }
+                }
             }
 
             // Update AI Stats
@@ -1056,8 +1081,27 @@ export async function bulkUpdateResults(parsedResults: ParsedResult[]) {
  */
 export async function parseResults(text: string) {
     try {
+        // Fetch active matches for context (Upcoming or Live)
+        const activeMatches = await db.select().from(matches)
+            .where(sql`${matches.status} IN ('upcoming', 'live', 'scheduled')`)
+            .limit(40);
+
+        const context = await Promise.all(activeMatches.map(async (m) => {
+            const p = m.participants as any[];
+            const odds = m.odds as any;
+
+            // Get aliases for participants
+            const participantsWithAliases = await Promise.all(p.map(async (part) => {
+                const school = await db.select().from(schools).where(eq(schools.id, part.schoolId)).limit(1);
+                const aliases = school[0]?.aliases || [];
+                return `${part.name}${aliases.length > 0 ? ` (aka ${aliases.join(", ")})` : ""}`;
+            }));
+
+            return `Match [${m.id}]: ${participantsWithAliases[0] || "Team A"} vs ${participantsWithAliases[1] || "Team B"}. Stage: ${m.stage}. Published Odds: ${JSON.stringify(odds)}.`;
+        })).then(lines => lines.join("\n"));
+
         const { parseResultsWithAI } = await import("./ai-result-parser")
-        const results = await parseResultsWithAI(text)
+        const results = await parseResultsWithAI(text, context)
         return { success: true, results }
     } catch (error) {
         console.error("Parse error:", error)

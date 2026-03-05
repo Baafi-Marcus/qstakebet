@@ -77,39 +77,84 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         }
     }
 
-    const filteredMatches = initialMatches.filter(m => {
-        const matchesLevel = m.level === activeLevel
-        const matchesSearch = m.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.participants.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    // 1. Base Filtering: Category, Search, Date
+    const baseFilteredMatches = useMemo(() => {
+        return initialMatches.filter(m => {
+            const matchesLevel = m.level === activeLevel
+            const matchesSearch = !searchQuery ||
+                m.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                m.participants.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
-        // Date Tabs Logic
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        const afterTomorrow = new Date(tomorrow);
-        afterTomorrow.setDate(tomorrow.getDate() + 1);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            const afterTomorrow = new Date(tomorrow);
+            afterTomorrow.setDate(tomorrow.getDate() + 1);
 
-        const matchDate = m.scheduledAt ? new Date(m.scheduledAt) : null;
-        if (matchDate) {
-            matchDate.setHours(0, 0, 0, 0);
-        }
+            const matchDate = m.scheduledAt ? new Date(m.scheduledAt) : null;
+            if (matchDate) matchDate.setHours(0, 0, 0, 0);
 
-        let dateMatch = false;
-        if (activeDateTab === 'today') {
-            dateMatch = !matchDate || matchDate.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
-            // Hide finished matches from today view if they are already settled, unless specifically needed.
-            if (m.status === 'finished') dateMatch = false;
-        } else if (activeDateTab === 'tomorrow') {
-            dateMatch = matchDate?.getTime() === tomorrow.getTime();
-        } else if (activeDateTab === 'upcoming') {
-            dateMatch = matchDate ? matchDate.getTime() >= afterTomorrow.getTime() : false;
-        } else if (activeDateTab === 'all') {
-            dateMatch = true;
-        }
+            let dateMatch = false;
+            if (activeDateTab === 'today') {
+                dateMatch = !matchDate || matchDate.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
+                // Removed: if (m.status === 'finished') dateMatch = false; 
+            } else if (activeDateTab === 'tomorrow') {
+                dateMatch = matchDate?.getTime() === tomorrow.getTime();
+            } else if (activeDateTab === 'upcoming') {
+                dateMatch = matchDate ? matchDate.getTime() >= afterTomorrow.getTime() : false;
+            } else if (activeDateTab === 'all') {
+                dateMatch = true;
+            }
 
-        return matchesLevel && matchesSearch && dateMatch
-    })
+            return matchesLevel && matchesSearch && dateMatch
+        })
+    }, [initialMatches, activeLevel, searchQuery, activeDateTab]);
+
+    // 2. Derive Available Markets from Base Filtered Matches
+    const availableMarkets = useMemo(() => {
+        const markets = new Set<string>();
+        baseFilteredMatches.forEach(m => {
+            if (m.odds && Object.keys(m.odds).length > 0) markets.add('winner');
+            if (m.extendedOdds) {
+                Object.keys(m.extendedOdds).forEach(k => {
+                    const kLower = k.toLowerCase().trim();
+                    if (kLower === 'match winner' || kLower === 'winner' || kLower === '1x2') markets.add('winner');
+                    else if (kLower === 'total points' || kLower === 'totalpoints' || k === 'totalPoints') markets.add('total_points');
+                    else markets.add(k);
+                });
+            }
+        });
+
+        const sortedKeys = Array.from(markets).sort((a, b) => {
+            if (a === 'winner') return -1;
+            if (b === 'winner') return 1;
+            if (a === 'total_points') return -1;
+            if (b === 'total_points') return 1;
+            return a.localeCompare(b);
+        });
+
+        return sortedKeys.map(m => {
+            let label = m;
+            if (m === 'winner') label = 'Match Winner';
+            else if (m === 'total_points') label = 'Total Points';
+            else if (m.toLowerCase().includes('overunder')) {
+                const numStr = m.split('_').slice(1).join('.');
+                label = `Over/Under ${numStr}`;
+            } else {
+                label = m.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
+                label = label.replace(/\b\w/g, l => l.toUpperCase());
+            }
+            return { id: m, label };
+        });
+    }, [baseFilteredMatches]);
+
+    // 3. Final Filtering for Display: 
+    // "Match Winner shouldnt be filtered out" - We now show ALL matches that match the base filters,
+    // and the market tabs only control what odds are displayed.
+    const filteredMatches = useMemo(() => {
+        return baseFilteredMatches;
+    }, [baseFilteredMatches]);
 
     // Group matches by date
     const groupedMatches = useMemo(() => {
@@ -154,7 +199,11 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
         return sortedGroupKeys.map(key => ({
             label: key,
-            matches: groups[key]
+            matches: groups[key].sort((a, b) => {
+                const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+                const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+                return aTime - bTime;
+            })
         }));
     }, [filteredMatches]);
 
@@ -177,55 +226,6 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
     const checkSelected = (selectionId: string) => {
         return selections.some(s => s.selectionId === selectionId)
     }
-
-    const availableMarkets = useMemo(() => {
-        const markets = new Set<string>();
-
-        filteredMatches.forEach(m => {
-            // Check for primary winner market (in match.odds)
-            if (m.odds && Object.keys(m.odds).length > 0) {
-                markets.add('winner');
-            }
-            // Check for extended markets
-            if (m.extendedOdds) {
-                Object.keys(m.extendedOdds).forEach(k => {
-                    const kLower = k.toLowerCase().trim();
-                    if (kLower === 'match winner' || kLower === 'winner' || kLower === '1x2') {
-                        markets.add('winner');
-                    } else if (kLower === 'total points' || kLower === 'totalpoints' || k === 'totalPoints') {
-                        markets.add('total_points');
-                    } else {
-                        markets.add(k);
-                    }
-                });
-            }
-        });
-
-        // Ensure we always have at least 'winner' if it exists anywhere or fallback
-        // Sort: Winner first, then Total Points, then others alphabetic
-        const sortedKeys = Array.from(markets).sort((a, b) => {
-            if (a === 'winner') return -1;
-            if (b === 'winner') return 1;
-            if (a === 'total_points') return -1;
-            if (b === 'total_points') return 1;
-            return a.localeCompare(b);
-        });
-
-        return sortedKeys.map(m => {
-            let label = m;
-            if (m === 'winner') label = 'Match Winner';
-            else if (m === 'total_points') label = 'Total Points';
-            else if (m.toLowerCase().includes('overunder')) {
-                const numStr = m.split('_').slice(1).join('.');
-                label = `Over/Under ${numStr}`;
-            } else {
-                label = m.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
-                label = label.replace(/\b\w/g, l => l.toUpperCase());
-            }
-
-            return { id: m, label };
-        });
-    }, [filteredMatches]);
 
     // Ensure activeMarket is valid for availableMarkets
     if (availableMarkets.length > 0) {

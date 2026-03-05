@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { X, Trophy, CalendarDays, Clock, CheckCircle2 } from "lucide-react"
+import { FootballIcon } from "./FootballIcon"
 import { Match } from "@/lib/types"
 import { OddsButton } from "@/components/ui/OddsButton"
 
@@ -49,7 +50,11 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                         <div className="p-6 border-b border-white/5 bg-slate-900/40 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="p-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-                                    <Trophy className="h-4 w-4 text-purple-400" />
+                                    {matches[0]?.sportType === 'football' ? (
+                                        <FootballIcon className="h-4 w-4" />
+                                    ) : (
+                                        <Trophy className="h-4 w-4 text-purple-400" />
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">Match Center</p>

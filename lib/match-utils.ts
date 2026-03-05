@@ -21,10 +21,10 @@ export function getMatchLockStatus(match: Match, dayFirstMatchStart?: Date): {
     const diffMs = startTime.getTime() - now.getTime()
     const minutesUntilStart = diffMs / 60000
 
-    // NEW: Day-level lock (2 hours before first match of the day)
+    // NEW: Day-level lock (30 minutes before first match of the day)
     if (dayFirstMatchStart) {
         const firstMatchTime = new Date(dayFirstMatchStart);
-        const lockTime = firstMatchTime.getTime() - (2 * 60 * 60 * 1000); // 2 hours before
+        const lockTime = firstMatchTime.getTime() - (30 * 60 * 1000); // 30 minutes before
         if (now.getTime() >= lockTime) {
             return {
                 isLocked: true,
