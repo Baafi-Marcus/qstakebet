@@ -163,13 +163,15 @@ export function BottomNav() {
                                     isActive ? "text-purple-400" : "text-slate-500 hover:text-slate-300"
                                 )}
                             >
-                                <item.icon className={cn("h-5 w-5", isActive && "fill-purple-400/20")} />
+                                <div className="relative">
+                                    <item.icon className={cn("h-5 w-5", isActive && "fill-purple-400/20")} />
+                                    {item.label === "Bets" && activeBetsCount > 0 && (
+                                        <div className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[7px] font-black text-white shadow-lg animate-in zoom-in border border-slate-950">
+                                            {activeBetsCount}
+                                        </div>
+                                    )}
+                                </div>
                                 <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
-                                {item.label === "Bets" && activeBetsCount > 0 && (
-                                    <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-black text-white shadow-lg animate-in zoom-in">
-                                        {activeBetsCount}
-                                    </div>
-                                )}
                             </Link>
                         )
                     })}

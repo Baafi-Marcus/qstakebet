@@ -323,7 +323,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                                 <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">
                                                     {s.tournamentName || s.stage || "Tournament"}
                                                 </div>
-                                                <div className="text-xs font-bold text-white tracking-tight uppercase">{s.matchLabel}</div>
+                                                <div className="text-[10px] font-bold text-white tracking-tight uppercase">{s.matchLabel}</div>
                                             </div>
                                         </div>
                                         <div className="text-right">

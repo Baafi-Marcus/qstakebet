@@ -128,7 +128,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                                                 {sel.marketName}
                                             </p>
-                                            <p className="text-base font-black text-white leading-tight">
+                                            <p className="text-[13px] font-bold text-white leading-tight">
                                                 {sel.matchLabel}
                                             </p>
                                         </div>

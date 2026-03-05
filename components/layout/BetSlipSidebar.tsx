@@ -457,7 +457,7 @@ export function BetSlipSidebar() {
 
                                             {/* Combined Match & Market Name */}
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <span className="text-slate-400 text-[10px] font-bold truncate max-w-[120px]">{item.matchLabel}</span>
+                                                <span className="text-slate-400 text-[9px] font-medium truncate max-w-[120px]">{item.matchLabel}</span>
                                                 <span className="text-slate-600 text-[10px]">•</span>
                                                 <span className="text-slate-500 text-[10px] font-black uppercase truncate">{item.marketName}</span>
                                             </div>
