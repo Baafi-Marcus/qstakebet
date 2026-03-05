@@ -1113,15 +1113,17 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
         const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
         if (!matchData.length) throw new Error("Match not found")
 
-        const currentOdds = (matchData[0].extendedOdds as Record<string, any>) || {}
         const currentMetadata = (matchData[0].metadata as Record<string, any>) || {}
-        const marketHelp = currentMetadata.marketHelp || {}
 
-        // Merge new markets and their help info
+        // Use a fresh object to replace existing markets (enables deletion)
+        const newExtendedOdds: Record<string, any> = {}
+        const marketHelp: Record<string, string> = {}
+
+        // Construct new state from incoming markets
         newMarkets.forEach(m => {
             const selectionsMap: Record<string, number> = {}
             m.selections.forEach((s) => selectionsMap[s.label] = s.odds)
-            currentOdds[m.marketName] = selectionsMap
+            newExtendedOdds[m.marketName] = selectionsMap
 
             if (m.helpInfo) {
                 marketHelp[m.marketName] = m.helpInfo
@@ -1130,11 +1132,12 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
 
         await db.update(matches)
             .set({
-                extendedOdds: currentOdds,
+                extendedOdds: newExtendedOdds,
                 metadata: { ...currentMetadata, marketHelp }
             })
             .where(eq(matches.id, matchId))
 
+        revalidateTag("matches")
         return { success: true }
     } catch (error) {
         console.error("Publish Error:", error)

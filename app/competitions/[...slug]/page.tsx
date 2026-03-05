@@ -8,6 +8,7 @@ import { TournamentFixturesModal } from "@/components/ui/TournamentFixturesModal
 import { GroupStandingsModal } from "@/components/ui/GroupStandingsModal"
 import { OddsButton } from "@/components/ui/OddsButton"
 import type { Match } from "@/lib/types"
+import { CompetitionClient } from "@/components/competition/CompetitionClient"
 
 export const dynamic = 'force-dynamic'
 
@@ -171,7 +172,7 @@ export default async function CompetitionPage({ params }: Props) {
                                                                 key={item.schoolId}
                                                                 label={school.name}
                                                                 odds={item.odd}
-                                                                matchId={`outright-${tournament.id}`} // Dummy ID for matching in slip logic if needed
+                                                                matchId={`outright - ${tournament.id} `} // Dummy ID for matching in slip logic if needed
                                                                 tournamentId={tournament.id}
                                                                 matchLabel={`${tournament.name} (${tournament.sportType})`}
                                                                 marketName="Tournament Winner"
@@ -299,26 +300,11 @@ export default async function CompetitionPage({ params }: Props) {
                                         })()
                                     )}
 
-                                    {/* Upcoming Fixtures with Bet Buttons */}
+                                    {/* Upcoming Fixtures with Dynamic Market Selection */}
                                     {upcomingMatches.length > 0 && (
-                                        <div className="space-y-2">
+                                        <div className="space-y-4">
                                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Upcoming Fixtures</p>
-                                            {upcomingMatches.map(m => {
-                                                const matchLabel = m.participants.map(p => p.name).join(' vs ')
-                                                return (
-                                                    <div key={m.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
-                                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                                            <span>{m.group || m.stage}</span>
-                                                            <span className={m.status === 'live' ? 'text-red-400 animate-pulse' : ''}>{m.status === 'live' ? '🔴 LIVE' : m.startTime || 'TBD'}</span>
-                                                        </div>
-                                                        <div className={`grid gap-2 ${m.participants.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                                            {m.participants.map(p => (
-                                                                <OddsButton key={p.schoolId} label={p.name} odds={p.odd} matchId={m.id} matchLabel={matchLabel} marketName="Match Winner" showLabel={true} />
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
+                                            <CompetitionClient initialMatches={upcomingMatches as unknown as Match[]} />
                                         </div>
                                     )}
                                 </div>

@@ -178,28 +178,44 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
     const availableMarkets = useMemo(() => {
         const markets = new Set<string>();
-        markets.add('winner');
-        markets.add('total_points');
 
         filteredMatches.forEach(m => {
+            // Check for primary winner market (in match.odds)
+            if (m.odds && Object.keys(m.odds).length > 0) {
+                markets.add('winner');
+            }
+            // Check for extended markets
             if (m.extendedOdds) {
                 Object.keys(m.extendedOdds).forEach(k => {
-                    markets.add(k);
+                    // Normalize totalPoints if it's the key used in MatchRow
+                    if (k === 'totalPoints') {
+                        markets.add('total_points');
+                    } else {
+                        markets.add(k);
+                    }
                 });
             }
         });
 
-        return Array.from(markets).map(m => {
+        // Ensure we always have at least 'winner' if it exists anywhere or fallback
+        // Sort: Winner first, then Total Points, then others alphabetic
+        const sortedKeys = Array.from(markets).sort((a, b) => {
+            if (a === 'winner') return -1;
+            if (b === 'winner') return 1;
+            if (a === 'total_points') return -1;
+            if (b === 'total_points') return 1;
+            return a.localeCompare(b);
+        });
+
+        return sortedKeys.map(m => {
             let label = m;
             if (m === 'winner') label = 'Match Winner';
             else if (m === 'total_points') label = 'Total Points';
             else if (m.toLowerCase().includes('overunder')) {
-                // e.g. overUnder_4_5 -> Over/Under 4.5
                 const numStr = m.split('_').slice(1).join('.');
                 label = `Over/Under ${numStr}`;
             } else {
                 label = m.replace(/([A-Z])/g, ' $1').replace(/[_]/g, ' ').trim();
-                // capitalize words
                 label = label.replace(/\b\w/g, l => l.toUpperCase());
             }
 
@@ -207,13 +223,17 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         });
     }, [filteredMatches]);
 
-    // Reset active market if not available in current filtered matches
+    // Ensure activeMarket is valid for availableMarkets
     useEffect(() => {
-        if (availableMarkets.length > 0 && !availableMarkets.find(m => m.id === activeMarket)) {
-            setActiveMarket('winner');
+        if (availableMarkets.length > 0) {
+            const exists = availableMarkets.find(m => m.id === activeMarket);
+            if (!exists) {
+                // Default to winner if available, otherwise first item
+                const winnerMarket = availableMarkets.find(m => m.id === 'winner');
+                setActiveMarket(winnerMarket ? 'winner' : availableMarkets[0].id as any);
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [availableMarkets]);
+    }, [availableMarkets, activeMarket]);
 
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [pullDistance, setPullDistance] = useState(0)
