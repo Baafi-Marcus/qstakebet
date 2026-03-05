@@ -257,7 +257,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
             <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
                 <div
                     ref={captureRef}
-                    className="w-[380px] bg-[#0f1115] text-white flex flex-col font-sans relative overflow-hidden"
+                    className="w-[350px] bg-[#0f1115] text-white flex flex-col font-sans relative overflow-hidden"
                 >
                     {/* Brand Header */}
                     <div className="bg-[#e11d48] px-5 py-3 flex items-center justify-between border-b border-black/10">

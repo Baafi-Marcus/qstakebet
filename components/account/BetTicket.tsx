@@ -140,10 +140,10 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                                            <span className="text-xs font-black text-primary">{sel.label}</span>
-                                            <span className="text-[10px] font-bold text-slate-500">@</span>
-                                            <span className="text-xs font-black text-white">{sel.odds.toFixed(2)}</span>
+                                        <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                                            <span className="text-[10px] font-black text-primary">{sel.label}</span>
+                                            <div className="w-[1px] h-3 bg-white/10 mx-1" />
+                                            <span className="text-[10px] font-black text-white">{sel.odds.toFixed(2)}</span>
                                         </div>
 
                                         {/* Dynamic Badges based on market or logic */}
@@ -183,30 +183,35 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                     </div>
 
                     {/* Footer Metrics */}
-                    <div className="pt-4 border-t border-white/5 flex items-end justify-between">
-                        <div className="flex gap-6">
-                            <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Stake</p>
-                                <p className="text-lg font-black text-white leading-none">
-                                    <span className="text-xs text-slate-500 mr-1">GHS</span>
-                                    {bet.stake.toLocaleString()}
-                                </p>
+                    <div className="pt-4 border-t border-white/5 flex items-center justify-between bg-slate-800/20 -mx-6 -mb-6 px-6 py-4 rounded-b-[2rem]">
+                        <div className="flex gap-8">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Stake</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-[10px] font-bold text-slate-500">GHS</span>
+                                    <span className="text-xl font-black text-white">{bet.stake.toLocaleString()}</span>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
-                                    {bet.status === 'won' ? "Return" : "Potential Win"}
-                                </p>
-                                <p className={cn(
-                                    "text-lg font-black leading-none",
-                                    bet.status === 'won' ? "text-emerald-400" : "text-white"
-                                )}>
-                                    <span className="text-xs text-slate-500 mr-1">GHS</span>
-                                    {bet.potentialPayout.toLocaleString()}
-                                </p>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                    {bet.status === 'won' ? "Paid Return" : "Potential Win"}
+                                </span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-[10px] font-bold text-slate-500">GHS</span>
+                                    <span className={cn(
+                                        "text-xl font-black",
+                                        bet.status === 'won' ? "text-emerald-400" : "text-white"
+                                    )}>{bet.potentialPayout.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
 
-
+                        {bet.status === 'pending' && !isHistory && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl">
+                                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[9px] font-black text-primary uppercase tracking-widest">Active Leg</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Ticket Metadata */}

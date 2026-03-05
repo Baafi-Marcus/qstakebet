@@ -23,14 +23,17 @@ export default function BetsPage() {
     }, [])
 
     const counts = useMemo(() => {
+        // Only count and show real-time bets here (exclude virtuals)
+        const realTimeBets = bets.filter(b => !b.isVirtual)
         return {
-            open: bets.filter(b => b.status === 'pending').length,
-            history: bets.filter(b => ['won', 'lost', 'void'].includes(b.status)).length
+            open: realTimeBets.filter(b => b.status === 'pending').length,
+            history: realTimeBets.filter(b => ['won', 'lost', 'void'].includes(b.status)).length
         }
     }, [bets])
 
     const filteredBets = useMemo(() => {
-        const base = bets.filter(b => {
+        const realTimeBets = bets.filter(b => !b.isVirtual)
+        const base = realTimeBets.filter(b => {
             if (activeTab === 'open') return b.status === 'pending'
             return ['won', 'lost', 'void'].includes(b.status)
         })

@@ -208,3 +208,33 @@ export async function getUserGifts() {
         return { success: false, gifts: [] }
     }
 }
+/**
+ * Fetches the count of active (pending) real-time sports bets for the user.
+ */
+export async function getActiveRealTimeBetsCount() {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, count: 0 }
+
+    try {
+        const userId = session.user.id
+        const activeBets = await db.query.bets.findMany({
+            where: and(
+                eq(bets.userId, userId),
+                eq(bets.status, 'pending')
+            )
+        })
+
+        if (!activeBets.length) return { success: true, count: 0 }
+
+        // Filter out virtual bets manually from the selections
+        const sportsBets = activeBets.filter(bet => {
+            const selections = bet.selections as any[]
+            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-'))
+        })
+
+        return { success: true, count: sportsBets.length }
+    } catch (e) {
+        console.error("Get active bets count error:", e)
+        return { success: false, count: 0 }
+    }
+}

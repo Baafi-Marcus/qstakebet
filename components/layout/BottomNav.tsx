@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Home, User, Zap, ScrollText, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useBetSlip } from "@/lib/store/useBetSlip"
-import { useRef, useLayoutEffect } from "react"
+import { useRef, useLayoutEffect, useState, useEffect } from "react"
 import gsap from "gsap"
 import { haptics } from "@/lib/haptics"
 
@@ -19,11 +19,30 @@ const navItems = [
 export function BottomNav() {
     const pathname = usePathname()
     const { selections, toggleSlip, isOpen } = useBetSlip()
+    const [activeBetsCount, setActiveBetsCount] = useState(0)
 
     // Refs for animation
     const navRef = useRef<HTMLDivElement>(null)
     const indicatorRef = useRef<HTMLDivElement>(null)
     const itemsRef = useRef<(HTMLAnchorElement | null)[]>([])
+
+    // Fetch active bets count periodically
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const { getActiveRealTimeBetsCount } = await import("@/lib/user-actions")
+                const res = await getActiveRealTimeBetsCount()
+                if (res.success) {
+                    setActiveBetsCount(res.count)
+                }
+            } catch (err) {
+                console.error("Failed to fetch active bets count", err)
+            }
+        }
+        fetchCount()
+        const interval = setInterval(fetchCount, 60000) // Every minute
+        return () => clearInterval(interval)
+    }, [])
 
     useLayoutEffect(() => {
         const activeIndex = navItems.findIndex(item => pathname === item.href)
@@ -146,6 +165,11 @@ export function BottomNav() {
                             >
                                 <item.icon className={cn("h-5 w-5", isActive && "fill-purple-400/20")} />
                                 <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+                                {item.label === "Bets" && activeBetsCount > 0 && (
+                                    <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-black text-white shadow-lg animate-in zoom-in">
+                                        {activeBetsCount}
+                                    </div>
+                                )}
                             </Link>
                         )
                     })}
