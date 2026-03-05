@@ -31,8 +31,8 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
             if (captureRef.current) {
                 try {
                     const dataUrl = await toJpeg(captureRef.current, {
-                        quality: 0.7,
-                        pixelRatio: 1,
+                        quality: 0.9,
+                        pixelRatio: 1.5,
                         backgroundColor: '#0f1115',
                     })
                     setPreviewUrl(dataUrl)
@@ -51,16 +51,50 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
         setIsDownloading(true)
         try {
             // Increased delay and ensuring fonts/images are ready
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
+
+            // Higher resolution for better quality
+            const pixelRatio = 3;
             const dataUrl = await toJpeg(captureRef.current, {
-                quality: 0.95,
-                pixelRatio: 2,
+                quality: 1.0,
+                pixelRatio,
                 backgroundColor: '#0f1115',
             })
+
+            // Check if it's mobile and supports native sharing (better for "Save to Gallery")
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            if (isMobile && navigator.share && navigator.canShare) {
+                try {
+                    // Convert dataUrl to a blob/file for sharing
+                    const response = await fetch(dataUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], `qstake-ticket-${code}.jpg`, { type: 'image/jpeg' });
+
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'QSTAKE Ticket',
+                            text: `Check out my QSTAKE bet! Code: ${code}`
+                        });
+                        setIsDownloading(false);
+                        return;
+                    }
+                } catch (shareErr) {
+                    console.log("Native share failed or cancelled", shareErr);
+                    // Fallback to traditional download if share fails
+                }
+            }
+
+            // Desktop Fallback / Traditional Download
             const link = document.createElement('a')
             link.download = `qstake-booking-${code}.jpg`
             link.href = dataUrl
             link.click()
+
+            if (isMobile) {
+                alert("If the download didn't start, please long-press the preview image to save it to your phone.");
+            }
         } catch (error) {
             console.error("Failed to capture image:", error)
             alert("Could not save image. Try taking a screenshot instead.")
