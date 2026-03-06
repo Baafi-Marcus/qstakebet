@@ -363,7 +363,7 @@ export function isSelectionWinner(
             return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
         }
 
-        if (market.includes("total") || market.includes("over/under")) {
+        if (market.includes("total") || market.includes("overunder") || market.includes("goals")) {
             const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
             const parts = label.split(" ")
             const line = parseFloat(parts[parts.length - 1])

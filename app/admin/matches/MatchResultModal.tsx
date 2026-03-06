@@ -282,7 +282,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 "handicap", "spread", "over/under", "total goals", "total points", "total point",
                 "both teams to score", "btts", "double chance", "dnb", "draw no bet",
                 "ht/ft", "half time / full time", "winning margin", "first team to score",
-                "first goal", "odd/even", "winner"
+                "first goal", "odd/even", "winner", "first half", "1st half"
             ];
 
             const unresolvedMarkets = extendedMarkets.filter(m => {
