@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { transactions, wallets } from "@/lib/db/schema"
+import { transactions, wallets, bonuses } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { initiateMomoDeposit } from "./payment/moolre"
 import { FINANCE_LIMITS } from "./constants"
@@ -173,7 +173,50 @@ export async function confirmDeposit(reference: string) {
                 return { success: true, alreadyCompleted: true, amount: txn.amount }
             }
 
-            // 3. Update the transaction status
+            // Fetch wallet for bonus calculations
+            const walletQuery = await tx.select().from(wallets).where(eq(wallets.id, txn.walletId)).limit(1)
+            const existingWallet = walletQuery[0]
+
+            // 3. Independence Day Promo (March 6th - March 7th 2026, 11:59PM)
+            const now = new Date()
+            const promoStart = new Date("2026-03-06T00:00:00Z")
+            const promoEnd = new Date("2026-03-07T23:59:59Z")
+            const isPromoActive = now >= promoStart && now <= promoEnd
+
+            let finalBonusBalance = existingWallet.bonusBalance
+            let bonusAmountAwarded = 0
+
+            if (isPromoActive) {
+                // 100% Deposit Bonus
+                bonusAmountAwarded = verification.amount
+                finalBonusBalance += bonusAmountAwarded
+
+                // Record the bonus
+                await tx.insert(bonuses).values({
+                    id: `bns-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: txn.userId,
+                    type: "deposit",
+                    amount: bonusAmountAwarded,
+                    initialAmount: bonusAmountAwarded,
+                    status: "active",
+                    expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // Expires in 7 days
+                })
+
+                // Record bonus transaction
+                await tx.insert(transactions).values({
+                    id: `txn-bns-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: txn.userId,
+                    walletId: txn.walletId,
+                    type: "bonus",
+                    amount: bonusAmountAwarded,
+                    balanceBefore: existingWallet.balance, // Bonus transactions don't strictly affect main balance column in history the same way
+                    balanceAfter: existingWallet.balance,
+                    reference: reference,
+                    description: `Independence Day 100% Deposit Bonus`
+                })
+            }
+
+            // 4. Update the transaction status
             const balanceAfter = txn.balanceBefore + verification.amount
             await tx.update(transactions)
                 .set({
@@ -183,15 +226,16 @@ export async function confirmDeposit(reference: string) {
                 })
                 .where(eq(transactions.id, txn.id))
 
-            // 4. Update the wallet balance
+            // 5. Update the wallet balance
             await tx.update(wallets)
                 .set({
                     balance: balanceAfter,
+                    bonusBalance: finalBonusBalance,
                     updatedAt: new Date()
                 })
                 .where(eq(wallets.id, txn.walletId))
 
-            return { success: true, amount: verification.amount }
+            return { success: true, amount: verification.amount, bonusAwarded: bonusAmountAwarded }
         })
     } catch (error) {
         console.error("Deposit confirmation error:", error)
