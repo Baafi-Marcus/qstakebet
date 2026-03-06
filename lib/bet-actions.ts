@@ -232,7 +232,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 totalOdds,
                 potentialPayout,
                 status: "pending",
-                selections: selections, // JSONB column
+                selections: selections.map(s => ({ ...s, status: 'pending' })), // Initial status for each leg
                 mode: mode, // "single" or "multi"
                 isBonusBet: bonusAmount > 0,
                 bonusUsed: bonusId,

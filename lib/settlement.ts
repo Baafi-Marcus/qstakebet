@@ -21,12 +21,27 @@ export async function settleMatch(matchId: string) {
             metadata?: Record<string, unknown>
         } | null
 
-        if (!result?.winner && match.status !== 'cancelled') {
-            console.error("Match has no winner declared")
+        // Auto-resolve winner if missing but scores exist (Robust fallback)
+        const sport = (match.sportType || 'football').toLowerCase()
+        let currentWinner = result?.winner;
+        const scores = result?.scores || {};
+        if (!currentWinner && sport !== 'quiz') {
+            const pIds = Object.keys(scores);
+            if (pIds.length >= 2) {
+                const s1 = scores[pIds[0]];
+                const s2 = scores[pIds[1]];
+                if (s1 > s2) currentWinner = pIds[0];
+                else if (s2 > s1) currentWinner = pIds[1];
+                else currentWinner = 'X';
+            }
+        }
+
+        if (!currentWinner && match.status !== 'cancelled') {
+            console.error("Match has no winner declared and could not be auto-resolved")
             return { success: false, error: "Match has no winner" }
         }
 
-        const isVoid = match.status === 'cancelled' || result?.winner === 'void' || result?.winner === 'cancelled'
+        const isVoid = match.status === 'cancelled' || currentWinner === 'void' || currentWinner === 'cancelled'
 
         // 2. Fetch all PENDING bets for this match
         const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
@@ -56,7 +71,8 @@ export async function settleMatch(matchId: string) {
             if (isVoid) {
                 // Find legs for this match and mark them void
                 const updatedSelections = selections.map(s => {
-                    if (s.matchId === matchId && s.status === 'pending') {
+                    const isPending = !s.status || s.status === 'pending'
+                    if (s.matchId === matchId && isPending) {
                         return { ...s, status: 'void', odds: 1.00 } // Set odds to 1.00 for void
                     }
                     return s
@@ -101,7 +117,7 @@ export async function settleMatch(matchId: string) {
                 }).where(eq(bets.id, bet.id))
 
                 // If all legs are now finished (won/lost/void), settle the bet
-                const allFinished = updatedSelections.every(s => s.status !== 'pending')
+                const allFinished = updatedSelections.every(s => s.status && s.status !== 'pending')
                 if (allFinished) {
                     const isAllWinOrVoid = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
                     const finalStatus = isAllWinOrVoid ? 'won' : 'lost'
@@ -141,7 +157,8 @@ export async function settleMatch(matchId: string) {
             // Normal Settlement Logic (Live or Finished)
             let betUpdated = false
             const updatedSelections = selections.map(s => {
-                if (s.matchId === matchId && s.status === 'pending') {
+                const isPending = !s.status || s.status === 'pending'
+                if (s.matchId === matchId && isPending) {
                     const resolution = isSelectionWinner(s.selectionId, s.marketName || "Match Winner", s.label || "", match, result || {})
 
                     if (resolution.resolved) {
@@ -157,7 +174,7 @@ export async function settleMatch(matchId: string) {
             if (!betUpdated) continue
 
             // Check if entire bet is decided
-            const allDecided = updatedSelections.every(s => s.status !== 'pending')
+            const allDecided = updatedSelections.every(s => s.status && s.status !== 'pending')
             const stillDecidedWin = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
             const hasLostLeg = updatedSelections.some(s => s.status === 'lost')
 
