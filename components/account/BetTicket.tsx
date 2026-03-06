@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Trophy, ChevronDown, ChevronUp, Share2, Edit2, Clock, Zap, Target, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import gsap from "gsap"
+import { BetTicketModal } from "./BetTicketModal"
 
 interface BetTicketProps {
     bet: any
@@ -11,24 +11,7 @@ interface BetTicketProps {
 }
 
 export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
-    const [isExpanded, setIsExpanded] = useState(false)
-    const detailsRef = useRef<HTMLDivElement>(null)
-    const arrowRef = useRef<SVGSVGElement>(null)
-
-    useEffect(() => {
-        if (!detailsRef.current) return
-
-        if (isExpanded) {
-            gsap.fromTo(detailsRef.current,
-                { height: 0, opacity: 0 },
-                { height: "auto", opacity: 1, duration: 0.4, ease: "power2.out" }
-            )
-            gsap.to(arrowRef.current, { rotate: 180, duration: 0.3 })
-        } else {
-            gsap.to(detailsRef.current, { height: 0, opacity: 0, duration: 0.3, ease: "power2.in" })
-            gsap.to(arrowRef.current, { rotate: 0, duration: 0.3 })
-        }
-    }, [isExpanded])
+    const [showModal, setShowModal] = useState(false)
 
     const statusColor = bet.status === 'won' ? 'emerald' : bet.status === 'lost' ? 'slate' : 'blue'
     const selections = bet.selections as any[]
@@ -72,115 +55,52 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                         <span className="text-[10px] font-black uppercase text-white tracking-[0.1em]">
                             {bet.status}
                         </span>
-                        <ChevronDown ref={arrowRef} className="h-4 w-4 text-white/70 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)} />
+                        <ChevronDown
+                            className={cn("h-4 w-4 text-white/70 cursor-pointer transition-transform", showModal && "rotate-180")}
+                            onClick={() => setShowModal(!showModal)}
+                        />
                     </div>
                 </div>
 
                 <div className="p-6 space-y-4">
                     {/* Summary View */}
-                    {!isExpanded && (
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                {selections.slice(0, 3).map((sel, idx) => (
-                                    <div key={idx} className="flex items-center gap-3">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-700" />
-                                        <span className="text-sm font-bold text-slate-200 line-clamp-1">
-                                            {sel.matchLabel}
-                                        </span>
-                                    </div>
-                                ))}
-                                {selections.length > 3 && (
-                                    <div className="flex items-center justify-between pl-4">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase">
-                                            and {selections.length - 3} other matches
-                                        </span>
-                                        <button
-                                            onClick={() => setIsExpanded(true)}
-                                            className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
-                                        >
-                                            Match Details
-                                        </button>
-                                    </div>
-                                )}
-                                {selections.length <= 3 && (
-                                    <div className="flex justify-end">
-                                        <button
-                                            onClick={() => setIsExpanded(true)}
-                                            className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
-                                        >
-                                            Match Details
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Detailed Leg List (Expanded) */}
-                    <div ref={detailsRef} className="overflow-hidden h-0 opacity-0">
-                        <div className="space-y-6 pt-2 pb-4">
-                            {selections.map((sel, idx) => (
-                                <div key={idx} className="relative pl-8 border-l border-white/5 space-y-2">
-                                    <div className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-slate-800 border-2 border-slate-900" />
-
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                                                {sel.marketName}
-                                            </p>
-                                            <p className="text-[13px] font-bold text-white leading-tight">
-                                                {sel.matchLabel}
-                                            </p>
-                                        </div>
-                                        {sel.currentMatch?.isLive && (
-                                            <div className="px-2 py-0.5 bg-red-500/10 border border-red-500/30 rounded-full text-[8px] font-black text-red-500 uppercase animate-pulse shrink-0">
-                                                Live
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                                            <span className="text-[10px] font-black text-primary">{sel.label}</span>
-                                            <div className="w-[1px] h-3 bg-white/10 mx-1" />
-                                            <span className="text-[10px] font-black text-white">{sel.odds.toFixed(2)}</span>
-                                        </div>
-
-                                        {/* Dynamic Badges based on market or logic */}
-                                        {sel.marketName.toLowerCase().includes("score") && (
-                                            <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[8px] font-black text-blue-400 uppercase italic">
-                                                Bore Draw
-                                            </div>
-                                        )}
-                                        {bet.isBonusBet && (
-                                            <div className="px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[8px] font-black text-amber-500 uppercase">
-                                                Gift
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-600">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            <span>{sel.currentMatch?.startTime || "TBD"}</span>
-                                        </div>
-                                        {sel.currentMatch?.result?.scores && (
-                                            <div className="flex items-center gap-1 text-primary">
-                                                <Target className="h-3 w-3" />
-                                                <span>Live: {Object.values(sel.currentMatch.result.scores).join(' - ')}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            {selections.slice(0, 3).map((sel, idx) => (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+                                    <span className="text-sm font-bold text-slate-200 line-clamp-1">
+                                        {sel.matchLabel}
+                                    </span>
                                 </div>
                             ))}
-                            <button
-                                onClick={() => setIsExpanded(false)}
-                                className="w-full py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
-                            >
-                                Hide Match Details ↑
-                            </button>
+                            {selections.length > 3 && (
+                                <div className="flex items-center justify-between pl-4">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                        and {selections.length - 3} other matches
+                                    </span>
+                                    <button
+                                        onClick={() => setShowModal(true)}
+                                        className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
+                                    >
+                                        Match Details
+                                    </button>
+                                </div>
+                            )}
+                            {selections.length <= 3 && (
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={() => setShowModal(true)}
+                                        className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
+                                    >
+                                        Match Details
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {/* Expandable details have been replaced by BetTicketModal */}
 
                     {/* Footer Metrics */}
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between bg-slate-800/20 -mx-6 -mb-6 px-6 py-4 rounded-b-[2rem]">
@@ -222,6 +142,12 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
 
 
             </div>
+
+            <BetTicketModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                bet={bet}
+            />
         </div>
     )
 }
