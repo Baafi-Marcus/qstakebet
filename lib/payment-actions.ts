@@ -177,10 +177,10 @@ export async function confirmDeposit(reference: string) {
             const walletQuery = await tx.select().from(wallets).where(eq(wallets.id, txn.walletId)).limit(1)
             const existingWallet = walletQuery[0]
 
-            // 3. Independence Day Promo (March 6th - March 7th 2026, 11:59PM)
+            // 3. Independence Day Promo (March 6th - March 13th 2026, 11:59PM)
             const now = new Date()
             const promoStart = new Date("2026-03-06T00:00:00Z")
-            const promoEnd = new Date("2026-03-07T23:59:59Z")
+            const promoEnd = new Date("2026-03-13T23:59:59Z")
             const isPromoActive = now >= promoStart && now <= promoEnd
 
             let finalBonusBalance = existingWallet.bonusBalance

@@ -15,12 +15,12 @@ export function PromoModal() {
         const checkPromo = () => {
             const now = new Date()
             const promoStart = new Date("2026-03-06T00:00:00Z")
-            const promoEnd = new Date("2026-03-07T23:59:59Z")
+            const promoEnd = new Date("2026-03-13T23:59:59Z")
 
             if (now >= promoStart && now <= promoEnd) {
                 setIsPromoActive(true)
                 // Check if user has already seen and closed it this session
-                const hasSeen = sessionStorage.getItem("ghana_promo_seen_v1")
+                const hasSeen = sessionStorage.getItem("ghana_promo_seen_v2")
                 if (!hasSeen) {
                     // Small delay so it doesn't instantly jump scare
                     const timer = setTimeout(() => setIsOpen(true), 1500)
@@ -34,7 +34,7 @@ export function PromoModal() {
 
     const handleClose = () => {
         setIsOpen(false)
-        sessionStorage.setItem("ghana_promo_seen_v1", "true")
+        sessionStorage.setItem("ghana_promo_seen_v2", "true")
     }
 
     if (!isPromoActive || !isOpen) return null
@@ -77,7 +77,7 @@ export function PromoModal() {
                             Claim 100% Bonus Now
                         </Link>
                         <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest mt-4 text-center">
-                            Promo ends Mar 7, 2026. T&C Apply.
+                            Promo ends Mar 13, 2026. T&C Apply.
                         </p>
                     </div>
                 </div>

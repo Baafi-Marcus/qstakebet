@@ -1,4 +1,3 @@
-
 export class VynfyClient {
     private baseUrl = "https://sms.vynfy.com";
     private apiKey: string;
@@ -14,11 +13,13 @@ export class VynfyClient {
      */
     async sendSMS(recipients: string[], message: string) {
         if (!this.apiKey) {
-            console.error("Vynfy API Key missing");
-            return { success: false, error: "Configuration Error" };
+            console.error("[VYNFY] API Key missing");
+            return { success: false, error: "Configuration Error: API Key missing" };
         }
 
         try {
+            console.log(`[VYNFY] Sending to ${recipients.length} recipients:`, recipients);
+
             const res = await fetch(`${this.baseUrl}/api/v1/send`, {
                 method: "POST",
                 headers: {
@@ -32,7 +33,9 @@ export class VynfyClient {
                 }),
             });
 
+            console.log(`[VYNFY] Response Status: ${res.status}`);
             const data = await res.json();
+            console.log("[VYNFY] Response Data:", data);
 
             // Log to database for tracking
             if (res.ok) {
@@ -59,7 +62,7 @@ export class VynfyClient {
 
             return { success: res.ok, data };
         } catch (error) {
-            console.error("Vynfy Send SMS Error:", error);
+            console.error("[VYNFY] Send SMS Error:", error);
             return { success: false, error: "Network Error" };
         }
     }
@@ -74,7 +77,7 @@ export class VynfyClient {
             const res = await fetch(`${this.baseUrl}/api/v1/check/balance`, {
                 method: "GET",
                 headers: {
-                    "X-API-Key": this.apiKey, // Based on docs, usually header
+                    "X-API-Key": this.apiKey,
                 },
             });
             const data = await res.json();

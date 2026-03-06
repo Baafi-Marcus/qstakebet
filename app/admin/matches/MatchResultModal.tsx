@@ -307,12 +307,12 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
             </div>
 
-            <div className={`relative bg-[#0f1115] rounded-[3rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden w-full transition-all duration-500 animate-in zoom-in-95 ${isQuiz || isBasketball || isVolleyball ? 'max-w-5xl' : 'max-w-2xl'}`}>
+            <div className={`relative bg-[#0f1115] rounded-[2rem] sm:rounded-[3rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden w-full transition-all duration-500 animate-in zoom-in-95 ${isQuiz || isBasketball || isVolleyball ? 'max-w-5xl' : 'max-w-2xl'}`}>
                 {/* Visual Header Enhancement */}
                 <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-purple-600/5 to-transparent pointer-events-none" />
 
                 {/* Header Section */}
-                <div className="relative p-10 border-b border-white/5 flex flex-col gap-6">
+                <div className="relative p-6 sm:p-10 border-b border-white/5 flex flex-col gap-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-6">
                             <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-purple-600/20 to-indigo-600/20 flex items-center justify-center border border-white/10 text-white shadow-xl relative overflow-hidden group">
@@ -386,7 +386,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                     </div>
                 </div>
 
-                <div className="p-10">
+                <div className="p-6 sm:p-10">
                     {error && (
                         <div className="mb-8 p-5 bg-red-500/10 border border-red-500/20 rounded-[1.5rem] flex items-center gap-4 animate-in slide-in-from-top-4">
                             <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
@@ -576,7 +576,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
                                 {/* Detailed Sport Analysis Phase Breakdown */}
                                 {isQuiz && (
-                                    <div className="p-10 bg-white/[0.02] border border-white/5 rounded-[3rem] shadow-inner relative overflow-hidden group">
+                                    <div className="p-6 sm:p-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] sm:rounded-[3rem] shadow-inner relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
                                             <Brain className="w-40 h-40" />
                                         </div>
@@ -594,9 +594,9 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
                                             {match.participants.map((p: any) => (
                                                 <div key={p.schoolId} className="space-y-6 p-8 bg-black/40 rounded-[2rem] border border-white/5 hover:border-purple-500/20 transition-colors shadow-xl">
-                                                    <h5 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
-                                                        <div className="w-4 h-[1px] bg-purple-500/30" />
-                                                        {p.name.split(' ')[0]}
+                                                    <h5 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.25em] mb-4 flex items-center gap-3 overflow-hidden">
+                                                        <div className="w-4 h-[1px] bg-purple-500/30 shrink-0" />
+                                                        <span className="truncate">{p.name.split(' ')[0]}</span>
                                                     </h5>
                                                     <div className="space-y-4">
                                                         {['r1', 'r2', 'r3', 'r4', 'r5'].map(r => (
@@ -639,7 +639,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-10 min-w-full md:min-w-[400px]">
+                                                    <div className="grid grid-cols-2 gap-4 sm:gap-10 w-full lg:w-auto">
                                                         <div className="space-y-4">
                                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Half Time (HT)</label>
                                                             <div className="flex items-center gap-3">
@@ -796,7 +796,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                     {Object.entries(match.extendedOdds || {}).map(([marketName, options]) => (
                                         <div key={marketName} className="group relative">
                                             <div className="absolute -inset-0.5 bg-gradient-to-r from-white/5 to-transparent rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500" />
-                                            <div className="relative p-8 bg-black/40 border border-white/5 rounded-[2.5rem] space-y-6 backdrop-blur-md">
+                                            <div className="relative p-4 sm:p-8 bg-black/40 border border-white/5 rounded-[2rem] sm:rounded-[2.5rem] space-y-6 backdrop-blur-md overflow-hidden">
                                                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-slate-700 group-hover:bg-primary transition-colors duration-500" />
