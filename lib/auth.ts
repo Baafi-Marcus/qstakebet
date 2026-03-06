@@ -28,26 +28,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                     // Find user by phone (normalize input)
                     const phone = (credentials.phone as string).replace(/\s+/g, "")
-                    console.log("Auth Attempt - Phone:", phone);
+                    console.log("[AUTH] Normalizing phone:", phone);
 
-                    const user = await db.select().from(users).where(eq(users.phone, phone)).limit(1)
+                    let user;
+                    try {
+                        user = await db.select().from(users).where(eq(users.phone, phone)).limit(1)
+                    } catch (dbError) {
+                        console.error("[AUTH] Database Error during user lookup:", dbError);
+                        throw new Error("Database connection failure");
+                    }
 
                     if (!user || user.length === 0) {
-                        console.error("Auth Failure - User not found:", phone);
+                        console.error("[AUTH] Failure - User not found:", phone);
                         return null
                     }
 
+                    console.log("[AUTH] User found, comparing password...");
+
                     // Verify password
-                    const isValid = await bcrypt.compare(credentials.password as string, user[0].passwordHash)
+                    let isValid = false;
+                    try {
+                        // Using compareSync to rule out async rejection bugs in specific runtimes
+                        isValid = bcrypt.compareSync(credentials.password as string, user[0].passwordHash)
+                    } catch (bcryptError) {
+                        console.error("[AUTH] Bcrypt Error:", bcryptError);
+                        throw new Error("Password verification failed");
+                    }
 
                     if (!isValid) {
-                        console.error("Auth Failure - Invalid password for:", phone);
+                        console.error("[AUTH] Failure - Invalid password for:", phone);
                         return null
                     }
 
                     // Check if user is active
                     if (user[0].status !== "active") {
-                        console.error("Auth Failure - User not active:", phone);
+                        console.error("[AUTH] Failure - User not active:", phone);
                         return null
                     }
 

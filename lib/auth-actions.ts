@@ -49,7 +49,7 @@ export async function registerUser(data: {
         }
 
         // Hash password
-        const passwordHash = await bcrypt.hash(data.password, 10)
+        const passwordHash = bcrypt.hashSync(data.password, 10)
 
         // Generate unique user ID and referral code
         const userId = `usr-${Math.random().toString(36).substr(2, 9)}`
@@ -175,7 +175,7 @@ export async function registerAdmin(data: {
             return { success: false, error: "Email or Phone already registered" }
         }
 
-        const passwordHash = await bcrypt.hash(data.password, 10)
+        const passwordHash = bcrypt.hashSync(data.password, 10)
         const userId = `adm-${Math.random().toString(36).substr(2, 9)}`
         const referralCode = `ADM-${data.name.substring(0, 3).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
 
@@ -250,7 +250,7 @@ export async function resetPassword(data: {
         }
 
         // 3. Hash new password
-        const passwordHash = await bcrypt.hash(data.password, 10)
+        const passwordHash = bcrypt.hashSync(data.password, 10)
 
         // 4. Update user
         await db.update(users)
