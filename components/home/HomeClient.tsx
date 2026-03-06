@@ -200,21 +200,14 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
         // Sort groups by date priority
         const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-            const priority: { [key: string]: number } = {
-                "Live & Recent": 0,
-                "Today": 1,
-                "Tomorrow": 2
-            };
+            if (a === "Live & Recent") return -1;
+            if (b === "Live & Recent") return 1;
 
-            const aPriority = priority[a] ?? 3;
-            const bPriority = priority[b] ?? 3;
+            // Since all matches in a group are on the same day, we can just use the first match's timestamp
+            const aTime = groups[a][0]?.scheduledAt ? new Date(groups[a][0].scheduledAt).getTime() : Infinity;
+            const bTime = groups[b][0]?.scheduledAt ? new Date(groups[b][0].scheduledAt).getTime() : Infinity;
 
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
-
-            // For other dates, sort chronologically
-            return a.localeCompare(b);
+            return aTime - bTime;
         });
 
         return sortedGroupKeys.map(key => ({
