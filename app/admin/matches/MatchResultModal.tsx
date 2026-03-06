@@ -300,7 +300,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     }
 
     return (
-        <div className="fixed inset-0 bg-[#050608]/90 backdrop-blur-xl flex items-center justify-center z-[100] p-4 overflow-y-auto custom-scrollbar-hide">
+        <div className="fixed inset-0 bg-[#050608]/90 backdrop-blur-xl flex justify-center items-start z-[100] p-4 overflow-y-auto custom-scrollbar-hide">
             {/* Animated background glows */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
@@ -639,14 +639,14 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-4 sm:gap-10 w-full lg:w-auto">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 w-full lg:w-auto">
                                                         <div className="space-y-4">
                                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Half Time (HT)</label>
                                                             <div className="flex items-center gap-3">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: Math.max(0, (footballData[p.schoolId].ht || 0) - 1) } })}
-                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm"
+                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm shrink-0"
                                                                 >
                                                                     <Minus className="h-4 w-4" />
                                                                 </button>
@@ -654,7 +654,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ht: (footballData[p.schoolId].ht || 0) + 1 } })}
-                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm"
+                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm shrink-0"
                                                                 >
                                                                     <Plus className="h-4 w-4" />
                                                                 </button>
@@ -666,7 +666,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: Math.max(0, (footballData[p.schoolId].ft || 0) - 1) } })}
-                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm"
+                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm shrink-0"
                                                                 >
                                                                     <Minus className="h-4 w-4" />
                                                                 </button>
@@ -674,7 +674,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFootballData({ ...footballData, [p.schoolId]: { ...footballData[p.schoolId], ft: (footballData[p.schoolId].ft || 0) + 1 } })}
-                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm"
+                                                                    className="h-14 w-14 bg-black/40 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center shadow-sm shrink-0"
                                                                 >
                                                                     <Plus className="h-4 w-4" />
                                                                 </button>
