@@ -213,6 +213,11 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
             potentialPayout += bonusGiftAmount
 
+            // GIFT RULE: If using a gift, winnings = (Stake * Odds) - Stake (Profit Only)
+            if (actualBonusStake > 0) {
+                potentialPayout = Math.max(0, potentialPayout - stake)
+            }
+
             // 3. Payout Limit Check
             if (potentialPayout > FINANCE_LIMITS.BET.MAX_PAYOUT) {
                 throw new Error(`Potential payout (GHS ${potentialPayout.toFixed(2)}) exceeds the maximum limit of GHS ${FINANCE_LIMITS.BET.MAX_PAYOUT}.`)
