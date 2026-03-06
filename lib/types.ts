@@ -7,6 +7,7 @@ export interface Match {
         name: string
         odd: number
         result?: number | string | null
+        aliases?: string[]
     }[]
     startTime: string
     scheduledAt?: Date | string | null
@@ -72,6 +73,7 @@ export interface School {
     level: string
     type?: string | null
     parentId?: string | null
+    aliases?: string[] | null
     location?: string | null
     createdAt?: Date | null
 }

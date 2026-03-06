@@ -279,10 +279,14 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
             // Whitelist of markets that the system handles through outcome-based logic
             const automatedMarkets = [
-                "handicap", "spread", "over/under", "total goals", "total points", "total point",
-                "both teams to score", "btts", "double chance", "dnb", "draw no bet",
-                "ht/ft", "half time / full time", "winning margin", "first team to score",
-                "first goal", "odd/even", "winner", "first half", "1st half"
+                "handicap", "spread", "hcap", "hc", "over/under", "total goals", "total points",
+                "total point", "total", "tg", "tp", "gls", "ou",
+                "both teams to score", "btts", "bts", "both score",
+                "double chance", "dc", "double res", "draw no bet", "dnb", "draw no",
+                "ht/ft", "half time / full time", "htft", "halftimefulltime",
+                "winning margin", "margin", "first team to score", "first goal",
+                "team to score first", "fg", "1st goal", "odd/even", "oddeven", "odd", "even",
+                "winner", "first half", "1st half", "ht", "1h", "1sthalf", "1x2", "result", "moneyline"
             ];
 
             const unresolvedMarkets = extendedMarkets.filter(m => {

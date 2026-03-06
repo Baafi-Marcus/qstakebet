@@ -180,30 +180,42 @@ export async function updateSchoolAction(id: string, data: {
     try {
         return await db.transaction(async (tx) => {
             // Update Basic Info
-            if (data.name || data.region || data.district || data.category) {
-                const oldSchool = await tx.select().from(schools).where(eq(schools.id, id)).limit(1);
-                const isNameChanged = data.name && oldSchool.length > 0 && oldSchool[0].name !== data.name;
+            const schoolUpdateRequested = data.name || data.region || data.district || data.category || data.level || data.type || data.parentId !== undefined;
 
-                await tx.update(schools).set({
-                    name: data.name,
-                    region: data.region,
-                    district: data.district,
-                    category: data.category,
-                    level: data.level,
-                    type: data.type,
-                    parentId: data.parentId
-                }).where(eq(schools.id, id));
+            if (schoolUpdateRequested) {
+                const [oldSchool] = await tx.select().from(schools).where(eq(schools.id, id)).limit(1);
+                if (!oldSchool) throw new Error("School not found");
 
-                // Global Roster Sync: If name changed, update all matches
+                const isNameChanged = data.name && oldSchool.name !== data.name;
+
                 if (isNameChanged && data.name) {
-                    const affectedMatches = await tx.select().from(matches);
-                    for (const match of affectedMatches) {
-                        const participants = match.participants as any[];
+                    const currentAliases = (oldSchool.aliases as string[]) || [];
+                    const newAliases = Array.from(new Set([...currentAliases, oldSchool.name]));
+
+                    await tx.update(schools).set({
+                        name: data.name,
+                        region: data.region ?? oldSchool.region,
+                        district: data.district ?? oldSchool.district,
+                        category: data.category ?? oldSchool.category,
+                        level: data.level ?? oldSchool.level,
+                        type: data.type ?? oldSchool.type,
+                        parentId: data.parentId === undefined ? oldSchool.parentId : data.parentId,
+                        aliases: newAliases
+                    }).where(eq(schools.id, id));
+
+                    // Global Roster Sync: If name changed, update all matches and sync aliases
+                    const allMatches = await tx.select().from(matches);
+                    for (const match of allMatches) {
+                        const participants = (match.participants as any[]) || [];
                         let changed = false;
                         const newParticipants = participants.map(p => {
                             if (p.schoolId === id) {
                                 changed = true;
-                                return { ...p, name: data.name };
+                                return {
+                                    ...p,
+                                    name: data.name,
+                                    aliases: newAliases
+                                };
                             }
                             return p;
                         });
@@ -214,6 +226,16 @@ export async function updateSchoolAction(id: string, data: {
                                 .where(eq(matches.id, match.id));
                         }
                     }
+                } else {
+                    await tx.update(schools).set({
+                        name: data.name ?? oldSchool.name,
+                        region: data.region ?? oldSchool.region,
+                        district: data.district ?? oldSchool.district,
+                        category: data.category ?? oldSchool.category,
+                        level: data.level ?? oldSchool.level,
+                        type: data.type ?? oldSchool.type,
+                        parentId: data.parentId === undefined ? oldSchool.parentId : data.parentId
+                    }).where(eq(schools.id, id));
                 }
             }
 
@@ -1529,13 +1551,54 @@ export async function generateExtendedMarkets(schoolIds: string[], odds: Record<
 export async function syncAllSettlements() {
     const { settleMatch } = await import("./settlement")
 
+    // --- RETROACTIVE ALIAS HEALING ---
+    // Fetch all school aliases to fix historical matches where teams were renamed without preservation
+    const schoolData = await db.select({ id: schools.id, name: schools.name, aliases: schools.aliases }).from(schools);
+    const schoolMap = new Map<string, { name: string, aliases: string[] }>();
+    schoolData.forEach(s => {
+        schoolMap.set(s.id, {
+            name: s.name,
+            aliases: (s.aliases as string[]) || []
+        });
+    });
+
     // Fetch all matches that are in a final state
-    const targetMatches = await db.select({ id: matches.id })
-        .from(matches)
-        .where(inArray(matches.status, ['finished', 'settled', 'cancelled']))
+    const allFinalMatches = await db.select().from(matches)
+        .where(inArray(matches.status, ['finished', 'settled', 'cancelled']));
+
+    console.log(`Healing ${allFinalMatches.length} matches with latest school aliases...`);
+
+    for (const match of allFinalMatches) {
+        const participants = (match.participants as any[]) || [];
+        let changed = false;
+
+        const updatedParticipants = participants.map(p => {
+            const master = schoolMap.get(p.schoolId);
+            if (!master) return p;
+
+            const currentAliases = (p.aliases as string[]) || [];
+            const hasAliasDiff = JSON.stringify(currentAliases.sort()) !== JSON.stringify(master.aliases.sort());
+            const hasNameDiff = p.name !== master.name;
+
+            if (hasAliasDiff || hasNameDiff) {
+                changed = true;
+                return { ...p, name: master.name, aliases: master.aliases };
+            }
+            return p;
+        });
+
+        if (changed) {
+            await db.update(matches)
+                .set({ participants: updatedParticipants })
+                .where(eq(matches.id, match.id));
+        }
+    }
+    // ---------------------------------
+
+    console.log("Healing complete. Starting settlement sweep...");
 
     let totalSettled = 0
-    for (const match of targetMatches) {
+    for (const match of allFinalMatches) {
         const result = await settleMatch(match.id)
         if (result.success) {
             totalSettled += (result.settledCount || 0)

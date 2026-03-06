@@ -266,20 +266,119 @@ export function isSelectionWinner(
     const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
     const vOutcome = isVirtualOutcome ? (result as any) : null;
 
-    // Normalize Market Name for robust matching
-    const market = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
-    const isMatchWinner = market === "matchwinner" || market === "1x2" || market === "win" || market === "12"
-    const isTotal = market.includes("total") || market.includes("overunder")
-    const isHT = market.includes("1sthalf") || market.includes("firsthalf") || market.includes("htft") || market.includes("halftimefulltime")
-    const isBTTS = market.includes("btts") || market.includes("bothteamstoscore")
-    const isHandicap = market.includes("handicap") || market.includes("spread")
-    const isDoubleChance = market.includes("doublechance")
-    const isDNB = market.includes("drawnobet") || market.includes("dnb")
-    const isWinningMargin = market.includes("winningmargin")
-    const isFirstGoal = market.includes("firstteamtoscore") || market.includes("firstgoal") || market.includes("teamtoscorefirst")
-    const isOddEven = market.includes("oddeven")
+    // Normalize Market Name for robust matching (Remove spaces/special chars)
+    const norm = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
 
-    // 1. MATCH WINNER (1X2 / 12)
+    // Period detection (HT vs FT)
+    const isHT = (norm.includes("ht") && !norm.includes("ft")) ||
+        norm.includes("1h") ||
+        norm.includes("1sthalf") ||
+        norm.includes("firsthalf")
+
+    const isHTFT = norm.includes("htft") || norm.includes("halftimefulltime")
+
+    // Market Type Detection with Aliases
+    const isMatchWinner = !isHT && !isHTFT && (
+        norm === "matchwinner" ||
+        norm === "1x2" ||
+        norm === "win" ||
+        norm === "winner" ||
+        norm === "12" ||
+        norm === "result" ||
+        norm === "homeaway" ||
+        norm === "moneyline"
+    )
+
+    const isTotal = (norm.includes("total") ||
+        norm.includes("overunder") ||
+        norm.includes("goals") ||
+        norm.includes("points") ||
+        norm.includes("ou") ||
+        norm.includes("tg") ||
+        norm.includes("tp") ||
+        norm.includes("gls")) && !isHTFT
+
+    const isBTTS = norm.includes("btts") ||
+        norm.includes("bothteamstoscore") ||
+        norm.includes("bts") ||
+        norm.includes("bothscore")
+
+    const isHandicap = norm.includes("handicap") ||
+        norm.includes("spread") ||
+        norm.includes("hcap") ||
+        norm.includes("hc")
+
+    const isDoubleChance = norm.includes("doublechance") || norm.includes("dc") || norm.includes("doubleres")
+
+    const isDNB = norm.includes("drawnobet") ||
+        norm.includes("dnb") ||
+        norm.includes("drawno")
+
+    const isWinningMargin = norm.includes("winningmargin") || norm.includes("margin")
+
+    const isFirstGoal = norm.includes("firstteam") ||
+        norm.includes("firstgoal") ||
+        norm.includes("teamtoscorefirst") ||
+        norm.includes("fg") ||
+        norm.includes("1stgoal")
+
+    const isOddEven = (norm.includes("oddeven") || (norm.includes("odd") || norm.includes("even"))) && !norm.includes("over") && !isTotal
+
+    // 1. HT/FT (Half Time / Full Time)
+    if (isHTFT) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+
+        const h1 = footballDetails[p1]?.ht || 0
+        const a1 = footballDetails[p2]?.ht || 0
+        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
+
+        const h2 = footballDetails[p1]?.ft || 0
+        const a2 = footballDetails[p2]?.ft || 0
+        const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
+
+        const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
+        return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
+    }
+
+    // 2. FIRST HALF WINNER / TOTALS (Prioritize HT over FT)
+    if (isHT) {
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        const hasHTScores = Object.values(footballDetails).some(d => d.ht !== undefined)
+        const isHTDecided = hasHTScores || (match.status === 'finished' || match.status === 'settled' || match.status === 'HT' || match.status === '2nd Half') || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
+
+        if (!isHTDecided) return { resolved: false, isWin: false }
+
+        const htScores: Record<string, number> = {}
+        Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
+
+        if (norm.includes("winner") || norm.includes("result") || norm === "1h" || norm === "ht") {
+            if (selectionId === "X" || label === "Draw") {
+                const values = Object.values(htScores)
+                return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
+            }
+            const myScore = htScores[selectionId]
+            const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
+            return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+        }
+
+        if (norm.includes("total") || norm.includes("goals") || norm.includes("ou") || norm.includes("tg")) {
+            const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
+            const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
+            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > target }
+            if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalHT < target }
+        }
+
+        return { resolved: false, isWin: false }
+    }
+
+    // 3. MATCH WINNER (1X2 / 12)
     if (isMatchWinner) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
@@ -315,75 +414,39 @@ export function isSelectionWinner(
         return { resolved: true, isWin: false };
     }
 
-    // 2. TOTAL POINTS / GOALS (Over/Under)
+    // 4. TOTAL POINTS / GOALS (Over/Under)
     if (isTotal) {
         const totalScore = isVirtualOutcome
             ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
             : Object.values(scores).reduce((a, b) => a + b, 0)
 
-        const parts = label.split(" ")
-        const lineStr = parts[parts.length - 1]
-        const line = parseFloat(lineStr)
-
-        if (isNaN(line)) return { resolved: false, isWin: false }
+        const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
+        if (isNaN(target)) return { resolved: false, isWin: false }
 
         const isOver = label.toLowerCase().includes("over")
         const isUnder = label.toLowerCase().includes("under")
 
         // If it's already "Over" the line, it's resolved even if match is live
-        if (isOver && totalScore > line) return { resolved: true, isWin: true }
+        if (isOver && totalScore > target) return { resolved: true, isWin: true }
 
         // If match is finished, resolve definitively
-        if (match.status === 'finished') {
-            return { resolved: true, isWin: isOver ? totalScore > line : totalScore < line }
+        if (match.status === 'finished' || match.status === 'settled') {
+            return { resolved: true, isWin: isOver ? totalScore > target : totalScore < target }
         }
 
         // If it's "Under" and we already passed it, it's lost
-        if (isUnder && totalScore > line) return { resolved: true, isWin: false }
+        if (isUnder && totalScore > target) return { resolved: true, isWin: false }
 
         return { resolved: false, isWin: false }
     }
 
-    // 3. FIRST HALF WINNER / TOTALS
-    if (isHT) {
-        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
-        const hasHTScores = Object.values(footballDetails).some(d => d.ht !== undefined)
-        const isHTDecided = hasHTScores || (match.status === 'finished' || match.status === 'settled' || match.status === 'HT' || match.status === '2nd Half') || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
-
-        if (!isHTDecided) return { resolved: false, isWin: false }
-
-        const htScores: Record<string, number> = {}
-        Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
-
-        if (market.includes("winner")) {
-            if (selectionId === "X" || label === "Draw") {
-                const values = Object.values(htScores)
-                return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
-            }
-            const myScore = htScores[selectionId]
-            const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
-            return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
-        }
-
-        if (market.includes("total") || market.includes("overunder") || market.includes("goals")) {
-            const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
-            const parts = label.split(" ")
-            const line = parseFloat(parts[parts.length - 1])
-            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > line }
-            return { resolved: true, isWin: totalHT < line }
-        }
-    }
-
-    // 4. QUIZ ROUND WINNER
-    if (market.includes("round") && market.includes("winner")) {
-        const roundNum = market.match(/\d+/)?.[0]
+    // 5. QUIZ ROUND WINNER
+    if (norm.includes("round") && norm.includes("winner")) {
+        const roundNum = norm.match(/\d+/)?.[0]
         if (!roundNum) return { resolved: false, isWin: false }
 
         const roundKey = `r${roundNum}`
         const quizDetails = (metadata.quizDetails as Record<string, Record<string, number>>) || {}
-
-        // Check if all participants have a non-NaN score for this round
-        const participants = match.participants || []
         const roundResolved = participants.every(p => {
             const score = quizDetails[p.schoolId]?.[roundKey]
             return score !== undefined && !isNaN(score)
@@ -397,7 +460,6 @@ export function isSelectionWinner(
         const myScore = roundScores[selectionId]
         const otherScores = Object.entries(roundScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
 
-        // Handle Draw in rounds? (Usually quiz rounds don't have Draw market, if they do, same logic as match winner)
         if (selectionId === "X" || label === "Draw") {
             return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
         }
@@ -405,7 +467,7 @@ export function isSelectionWinner(
         return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
     }
 
-    // 5. HANDICAP / SPREAD
+    // 6. HANDICAP / SPREAD
     if (isHandicap) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
@@ -414,7 +476,20 @@ export function isSelectionWinner(
         const [targetName, lineValueStr] = label.split(lineSign)
         const line = parseFloat(`${lineSign}${lineValueStr}`)
 
-        const participant = participants.find(p => p.name.trim().toLowerCase() === targetName.trim().toLowerCase() || p.schoolId === selectionId)
+        const participant = participants.find(p => {
+            if (p.schoolId === selectionId) return true;
+            const cleanTarget = targetName?.trim().toLowerCase();
+            if (!cleanTarget) return false;
+
+            // Check direct name
+            if (p.name.trim().toLowerCase() === cleanTarget) return true;
+
+            // Check aliases if they exist
+            if (Array.isArray(p.aliases) && p.aliases.some((a: string) => a.trim().toLowerCase() === cleanTarget)) return true;
+
+            return false;
+        })
+
         if (!participant) return { resolved: false, isWin: false }
 
         const targetId = participant.schoolId
@@ -425,7 +500,7 @@ export function isSelectionWinner(
         return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
     }
 
-    // 6. BTTS (Both Teams to Score)
+    // 7. BTTS (Both Teams to Score)
     if (isBTTS) {
         const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
         if (!isFinishedOrSettled && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
@@ -435,7 +510,7 @@ export function isSelectionWinner(
         if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored }
     }
 
-    // 7. DOUBLE CHANCE
+    // 8. DOUBLE CHANCE
     if (isDoubleChance) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
@@ -449,51 +524,13 @@ export function isSelectionWinner(
         if (selectionId === "X2" || label === "X2") return { resolved: true, isWin: winner === awayId || winner === 'X' }
     }
 
-    // 8. DRAW NO BET
+    // 9. DRAW NO BET
     if (isDNB) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
         return { resolved: true, isWin: result.winner === selectionId }
-    }
-
-    // 9. HT/FT (Half Time / Full Time)
-    if (market === "htft" || market === "halftimefulltime") {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
-        if (!isFinished) return { resolved: false, isWin: false }
-
-        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
-        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
-
-        const p1 = participants[0]?.schoolId
-        const p2 = participants[1]?.schoolId
-
-        const h1 = footballDetails[p1]?.ht || 0
-        const a1 = footballDetails[p2]?.ht || 0
-        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
-
-        const h2 = footballDetails[p1]?.ft || 0
-        const a2 = footballDetails[p2]?.ft || 0
-        const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
-
-        const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
-        return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
-    }
-
-    // 10. FIRST HALF WINNER
-    if (market.includes("firsthalfwinner") || market.includes("1sthalfwinner")) {
-        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
-        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
-
-        const p1 = participants[0]?.schoolId
-        const p2 = participants[1]?.schoolId
-        const h1 = footballDetails[p1]?.ht || 0
-        const a1 = footballDetails[p2]?.ht || 0
-        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
-
-        if (selectionId === 'X' || label.toLowerCase() === 'draw') return { resolved: true, isWin: htRes === 'X' }
-        return { resolved: true, isWin: selectionId === (htRes === '1' ? p1 : (htRes === '2' ? p2 : '')) }
     }
 
     // 10. WINNING MARGIN
@@ -516,7 +553,6 @@ export function isSelectionWinner(
             return { resolved: true, isWin: selectionId === 'Draw' || label.toLowerCase() === 'draw' }
         }
 
-        // e.g. "Home by 1", "Away by 2+"
         const isHome = victor === '1'
         const labelLower = label.toLowerCase()
 
@@ -534,11 +570,10 @@ export function isSelectionWinner(
 
     // 11. FIRST TEAM TO SCORE
     if (isFirstGoal) {
-        const firstScorerId = metadata.firstScorerId // We'll add this to the admin UI
+        const firstScorerId = metadata.firstScorerId
         const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
         if (!firstScorerId && !isFinishedOrSettled) return { resolved: false, isWin: false }
 
-        // If match finished 0-0
         const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
         if (isFinishedOrSettled && totalGoals === 0) {
             return { resolved: true, isWin: selectionId === 'none' || label.toLowerCase().includes('no goal') }
@@ -555,20 +590,10 @@ export function isSelectionWinner(
     if (isOddEven) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
-        const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
+        const totalGoals = Object.values(scores).reduce((a, b) => a + (b || 0), 0)
         const isOdd = totalGoals % 2 !== 0
         if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd }
         if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
-    }
-
-    // 13. TOTAL POINTS (Interchangeable with Goals)
-    if (market.includes("totalpoints") || market.includes("totalpoint")) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
-        if (!isFinished) return { resolved: false, isWin: false }
-        const totalPoints = Object.values(scores).reduce((a, b) => a + b, 0)
-        const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
-        if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalPoints > target }
-        if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalPoints < target }
     }
 
     // Default Fallback
