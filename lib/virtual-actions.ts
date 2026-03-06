@@ -227,12 +227,10 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
 
         // 4. Update Database
         const finalStatus = isWon ? 'won' : 'lost'
-        let payoutAmount = isWon ? totalReturns : 0
+        const payoutAmount = isWon ? totalReturns : 0
 
-        // GIFT RULE: Deduct stake from winnings
-        if (isWon && bet.isBonusBet) {
-            payoutAmount = Math.max(0, payoutAmount - bet.stake)
-        }
+        // GIFT RULE: The stake has already been deducted from potentialPayout 
+        // in bet-actions.ts during placement, so payoutAmount here is already pure profit.
 
         return await db.transaction(async (tx) => {
             await tx.update(bets).set({

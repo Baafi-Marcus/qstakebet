@@ -110,7 +110,7 @@ export async function settleMatch(matchId: string) {
                         const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
                         if (userWallet.length > 0) {
                             const balanceBefore = parseFloat(userWallet[0].balance.toString())
-                            const payout = (bet.isBonusBet && updatedSelections.length === 1) ? (newPayout - bet.stake) : newPayout
+                            const payout = newPayout
                             const balanceAfter = balanceBefore + Math.max(0, payout)
 
                             await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
@@ -172,16 +172,14 @@ export async function settleMatch(matchId: string) {
                 settledCount++
             } else if (allDecided && stillDecidedWin) {
                 // Bet is WON
-                let payoutAmount = bet.potentialPayout
+                const payoutAmount = bet.potentialPayout
 
                 // Payout adjustment (e.g. if some legs were voided during this or previous runs)
                 const currentTotalOdds = updatedSelections.reduce((acc, curr) => acc * (curr.status === 'void' ? 1.0 : curr.odds), 1)
                 // Note: Bonus logic would need to be re-run here too for accuracy on multi-settle
                 // For now, use existing potential payout but adjust for bonus rules
 
-                if (bet.isBonusBet) {
-                    payoutAmount = Math.max(0, payoutAmount - bet.stake);
-                }
+                // For now, use existing potential payout but adjust for bonus rules
 
                 await db.update(bets).set({
                     status: 'won',
