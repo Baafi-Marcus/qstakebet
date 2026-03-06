@@ -279,7 +279,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
             // Whitelist of markets that the system handles through outcome-based logic
             const automatedMarkets = [
-                "handicap", "spread", "over/under", "total goals", "total points",
+                "handicap", "spread", "over/under", "total goals", "total points", "total point",
                 "both teams to score", "btts", "double chance", "dnb", "draw no bet",
                 "ht/ft", "half time / full time", "winning margin", "first team to score",
                 "first goal", "odd/even", "winner"

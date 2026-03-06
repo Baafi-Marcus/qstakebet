@@ -542,8 +542,8 @@ export function isSelectionWinner(
         if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
     }
 
-    // 13. TOTAL POINTS (Basketball Over/Under) - Same as Over/Under
-    if (market.toLowerCase().includes("total points")) {
+    // 13. TOTAL POINTS (Interchangeable with Goals)
+    if (market.toLowerCase().includes("total points") || market.toLowerCase().includes("total point")) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
         const totalPoints = Object.values(scores).reduce((a, b) => a + b, 0)
         const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
