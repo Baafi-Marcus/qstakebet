@@ -145,7 +145,7 @@ export function MatchesClient({
         if (viewMode === "drafts") {
             matchesView = m.status === "draft"
         } else if (viewMode === "active") {
-            matchesView = m.status !== "draft" && m.status !== "settled" && m.status !== "cancelled"
+            matchesView = m.status !== "draft" && m.status !== "settled" && m.status !== "cancelled" && m.status !== "finished"
         } else if (viewMode === "log") {
             matchesView = m.status === "settled" || m.status === "cancelled"
         }
