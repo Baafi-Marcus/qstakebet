@@ -56,7 +56,7 @@ export async function getUserBetsWithDetails() {
         // Filter out virtual bets for the main My Bets page
         const sportsBets = userBets.filter(bet => {
             const selections = bet.selections as any[]
-            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-'))
+            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-') || s.matchId?.startsWith('Q-'))
         }).slice(0, 50) // Keep the top 50 sports bets
 
         if (!sportsBets.length) return { success: true, bets: [] }
@@ -229,7 +229,7 @@ export async function getActiveRealTimeBetsCount() {
         // Filter out virtual bets manually from the selections
         const sportsBets = activeBets.filter(bet => {
             const selections = bet.selections as any[]
-            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-'))
+            return !selections.some(s => s.matchId?.startsWith('vmt-') || s.matchId?.startsWith('vr-') || s.matchId?.startsWith('Q-'))
         })
 
         return { success: true, count: sportsBets.length }

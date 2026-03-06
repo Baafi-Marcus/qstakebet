@@ -79,15 +79,17 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                     <span className="text-[10px] font-bold text-slate-500 uppercase">
                                         and {selections.length - 3} other matches
                                     </span>
-                                    <button
-                                        onClick={() => setShowModal(true)}
-                                        className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
-                                    >
-                                        Match Details
-                                    </button>
+                                    {isHistory && (
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
+                                        >
+                                            Match Details
+                                        </button>
+                                    )}
                                 </div>
                             )}
-                            {selections.length <= 3 && (
+                            {selections.length <= 3 && isHistory && (
                                 <div className="flex justify-end">
                                     <button
                                         onClick={() => setShowModal(true)}
