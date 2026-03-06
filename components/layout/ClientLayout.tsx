@@ -19,6 +19,7 @@ import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 import { getActiveAnnouncements } from "@/lib/announcement-actions"
 import { PullToRefresh } from "@/components/ui/PullToRefresh"
 import { SplashScreen } from "@/components/ui/SplashScreen"
+import { PromoModal } from "@/components/ui/PromoModal"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -112,6 +113,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                                     <BottomNav />
                                     <GlobalMatchDetails />
                                     <InteractiveLayer />
+                                    <PromoModal />
                                 </>
                             )
                         })()}
