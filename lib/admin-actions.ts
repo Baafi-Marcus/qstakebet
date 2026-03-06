@@ -1522,3 +1522,26 @@ export async function generateExtendedMarkets(schoolIds: string[], odds: Record<
 
     return markets;
 }
+/**
+ * Force trigger settlement sync for all finished or settled matches 
+ * (Useful for recovering missed bets after logic updates)
+ */
+export async function syncAllSettlements() {
+    const { settleMatch } = await import("./settlement")
+
+    // Fetch all matches that are in a final state
+    const targetMatches = await db.select({ id: matches.id })
+        .from(matches)
+        .where(inArray(matches.status, ['finished', 'settled', 'cancelled']))
+
+    let totalSettled = 0
+    for (const match of targetMatches) {
+        const result = await settleMatch(match.id)
+        if (result.success) {
+            totalSettled += (result.settledCount || 0)
+        }
+    }
+
+    revalidateTag('matches')
+    return { success: true, count: totalSettled }
+}

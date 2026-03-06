@@ -5,8 +5,9 @@ import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
 import { Match, Tournament, School } from "@/lib/types"
 import { createMatch, startMatches, lockMatches, updateMatch, deleteMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, Clock } from "lucide-react"
+import { Pencil, Trash2, Clock, RefreshCw } from "lucide-react"
 import { MatchResultModal } from "./MatchResultModal"
+import { syncAllSettlements } from "@/lib/admin-actions"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
 import { MatchHistoryModal } from "./MatchHistoryModal"
@@ -39,6 +40,7 @@ export function MatchesClient({
     const [isBulkPublishing, setIsBulkPublishing] = useState(false)
     const [editingMatch, setEditingMatch] = useState<Match | null>(null)
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
+    const [isSyncing, setIsSyncing] = useState(false)
 
     // Filters
     const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -296,6 +298,26 @@ export function MatchesClient({
                     <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Monitor & Resolve Competition Events</p>
                 </div>
                 <div className="flex gap-3">
+                    <button
+                        onClick={async () => {
+                            if (!confirm("Are you sure you want to RECALCULATE all historical settlements? This will sweep all pending bets against finished matches.")) return;
+                            setIsSyncing(true);
+                            try {
+                                const result = await syncAllSettlements();
+                                alert(`Settlement Sync Complete: ${result.count} tickets updated.`);
+                            } catch (e) {
+                                alert("Sync failed");
+                            } finally {
+                                setIsSyncing(false);
+                                router.refresh();
+                            }
+                        }}
+                        disabled={isSyncing}
+                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20 active:scale-95 uppercase tracking-wide"
+                    >
+                        {isSyncing ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+                        Recalculate All
+                    </button>
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
                         className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"

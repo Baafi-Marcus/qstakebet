@@ -127,7 +127,8 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                 dateMatch = true;
             }
 
-            return matchesLevel && matchesSearch && dateMatch
+            const isNotFinished = m.status !== 'finished' && m.status !== 'settled' && m.status !== 'cancelled'
+            return matchesLevel && matchesSearch && dateMatch && isNotFinished
         })
     }, [initialMatches, activeLevel, searchQuery, activeDateTab]);
 

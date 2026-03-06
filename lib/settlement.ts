@@ -281,7 +281,7 @@ export function isSelectionWinner(
 
     // 1. MATCH WINNER (1X2 / 12)
     if (isMatchWinner) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         if (selectionId === "X" || label === "Draw") {
@@ -348,7 +348,7 @@ export function isSelectionWinner(
     if (isHT) {
         const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
         const hasHTScores = Object.values(footballDetails).some(d => d.ht !== undefined)
-        const isHTDecided = hasHTScores || match.status === "HT" || match.status === "2nd Half" || match.status === "finished" || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
+        const isHTDecided = hasHTScores || (match.status === 'finished' || match.status === 'settled' || match.status === 'HT' || match.status === '2nd Half') || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
 
         if (!isHTDecided) return { resolved: false, isWin: false }
 
@@ -407,7 +407,7 @@ export function isSelectionWinner(
 
     // 5. HANDICAP / SPREAD
     if (isHandicap) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const lineSign = label.includes("+") ? "+" : "-"
@@ -427,7 +427,8 @@ export function isSelectionWinner(
 
     // 6. BTTS (Both Teams to Score)
     if (isBTTS) {
-        if (match.status !== 'finished' && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
+        const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
+        if (!isFinishedOrSettled && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
 
         const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
         if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored }
@@ -436,7 +437,7 @@ export function isSelectionWinner(
 
     // 7. DOUBLE CHANCE
     if (isDoubleChance) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const homeId = participants[0]?.schoolId
@@ -450,7 +451,7 @@ export function isSelectionWinner(
 
     // 8. DRAW NO BET
     if (isDNB) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
@@ -459,7 +460,7 @@ export function isSelectionWinner(
 
     // 9. HT/FT (Half Time / Full Time)
     if (market === "htft" || market === "halftimefulltime") {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
@@ -497,7 +498,7 @@ export function isSelectionWinner(
 
     // 10. WINNING MARGIN
     if (isWinningMargin) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const values = Object.values(scores)
@@ -534,11 +535,12 @@ export function isSelectionWinner(
     // 11. FIRST TEAM TO SCORE
     if (isFirstGoal) {
         const firstScorerId = metadata.firstScorerId // We'll add this to the admin UI
-        if (!firstScorerId && match.status !== 'finished') return { resolved: false, isWin: false }
+        const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
+        if (!firstScorerId && !isFinishedOrSettled) return { resolved: false, isWin: false }
 
         // If match finished 0-0
         const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
-        if (match.status === 'finished' && totalGoals === 0) {
+        if (isFinishedOrSettled && totalGoals === 0) {
             return { resolved: true, isWin: selectionId === 'none' || label.toLowerCase().includes('no goal') }
         }
 
@@ -551,7 +553,7 @@ export function isSelectionWinner(
 
     // 12. ODD/EVEN TOTAL GOALS
     if (isOddEven) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
         const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
         const isOdd = totalGoals % 2 !== 0
@@ -561,7 +563,7 @@ export function isSelectionWinner(
 
     // 13. TOTAL POINTS (Interchangeable with Goals)
     if (market.includes("totalpoints") || market.includes("totalpoint")) {
-        const isFinished = match.status === 'finished' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
         const totalPoints = Object.values(scores).reduce((a, b) => a + b, 0)
         const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
