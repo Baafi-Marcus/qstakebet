@@ -276,7 +276,26 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         // Unresolved Markets Validation
         if (!isLiveUpdate) {
             const extendedMarkets = Object.keys(match.extendedOdds || {});
-            const unresolvedMarkets = extendedMarkets.filter(m => !manualOutcomes[m] && manualOutcomes[m] !== "void");
+
+            // Whitelist of markets that the system handles through outcome-based logic
+            const automatedMarkets = [
+                "handicap", "spread", "over/under", "total goals", "total points",
+                "both teams to score", "btts", "double chance", "dnb", "draw no bet",
+                "ht/ft", "half time / full time", "winning margin", "first team to score",
+                "first goal", "odd/even", "winner"
+            ];
+
+            const unresolvedMarkets = extendedMarkets.filter(m => {
+                const lowerM = m.toLowerCase();
+                // If it's manual resolved, it's not unresolved
+                if (manualOutcomes[m] || manualOutcomes[m] === "void") return false;
+                // If it matches an automated type, it's not unresolved
+                if (automatedMarkets.some(type => lowerM.includes(type))) return false;
+                // Special case for "Match Winner" which might be in the list
+                if (lowerM === "match winner") return false;
+                return true;
+            });
+
             if (unresolvedMarkets.length > 0) {
                 setError(`Please resolve or void all custom markets. Unresolved: ${unresolvedMarkets.join(', ')}`);
                 setActiveTab("markets"); // Switch them to the markets tab

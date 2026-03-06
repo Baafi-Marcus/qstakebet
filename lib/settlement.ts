@@ -465,6 +465,21 @@ export function isSelectionWinner(
         return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
     }
 
+    // 10. FIRST HALF WINNER
+    if (market.toLowerCase().includes("first half winner") || market.toLowerCase().includes("1st half winner")) {
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+        const h1 = footballDetails[p1]?.ht || 0
+        const a1 = footballDetails[p2]?.ht || 0
+        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
+
+        if (selectionId === 'X' || label.toLowerCase() === 'draw') return { resolved: true, isWin: htRes === 'X' }
+        return { resolved: true, isWin: selectionId === (htRes === '1' ? p1 : (htRes === '2' ? p2 : '')) }
+    }
+
     // 10. WINNING MARGIN
     if (market.includes("winning margin")) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
@@ -516,6 +531,24 @@ export function isSelectionWinner(
         }
 
         return { resolved: false, isWin: false }
+    }
+
+    // 12. ODD/EVEN TOTAL GOALS
+    if (market.toLowerCase().includes("odd/even")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+        const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
+        const isOdd = totalGoals % 2 !== 0
+        if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd }
+        if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
+    }
+
+    // 13. TOTAL POINTS (Basketball Over/Under) - Same as Over/Under
+    if (market.toLowerCase().includes("total points")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+        const totalPoints = Object.values(scores).reduce((a, b) => a + b, 0)
+        const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
+        if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalPoints > target }
+        if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalPoints < target }
     }
 
     // Default Fallback
