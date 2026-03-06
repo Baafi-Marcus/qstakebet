@@ -277,16 +277,15 @@ export function isSelectionWinner(
 
     const isHTFT = norm.includes("htft") || norm.includes("halftimefulltime")
 
-    // Market Type Detection with Aliases
+    // Market Type Detection with Aliases (Fuzzy Matching)
     const isMatchWinner = !isHT && !isHTFT && (
-        norm === "matchwinner" ||
-        norm === "1x2" ||
-        norm === "win" ||
-        norm === "winner" ||
-        norm === "12" ||
-        norm === "result" ||
-        norm === "homeaway" ||
-        norm === "moneyline"
+        norm.includes("winner") ||
+        norm.includes("1x2") ||
+        norm.includes("win") ||
+        norm.includes("result") ||
+        norm.includes("12") ||
+        norm.includes("homeaway") ||
+        norm.includes("moneyline")
     )
 
     const isTotal = (norm.includes("total") ||
@@ -296,12 +295,15 @@ export function isSelectionWinner(
         norm.includes("ou") ||
         norm.includes("tg") ||
         norm.includes("tp") ||
-        norm.includes("gls")) && !isHTFT
+        norm.includes("gls") ||
+        norm.includes("run") ||
+        norm.includes("wickets")) && !isHTFT
 
     const isBTTS = norm.includes("btts") ||
         norm.includes("bothteamstoscore") ||
         norm.includes("bts") ||
-        norm.includes("bothscore")
+        norm.includes("bothscore") ||
+        norm.includes("gg") // Goal Goal
 
     const isHandicap = norm.includes("handicap") ||
         norm.includes("spread") ||
@@ -334,6 +336,24 @@ export function isSelectionWinner(
         );
     };
 
+    const isDrawSelected = (idOrLabel: string) => {
+        const clean = idOrLabel.toLowerCase().trim();
+        return clean === 'x' || clean.includes('draw') || clean === 'drawmatch';
+    };
+
+    // Auto-resolve winner if missing but scores exist
+    let currentWinner = result.winner;
+    if (!currentWinner && sport !== 'quiz') {
+        const pIds = Object.keys(scores);
+        if (pIds.length >= 2) {
+            const s1 = scores[pIds[0]];
+            const s2 = scores[pIds[1]];
+            if (s1 > s2) currentWinner = pIds[0];
+            else if (s2 > s1) currentWinner = pIds[1];
+            else currentWinner = 'X';
+        }
+    }
+
     const getTeamScore = (idOrName: string, scoreMap: Record<string, number> = scores) => {
         if (scoreMap[idOrName] !== undefined) return scoreMap[idOrName];
         const p = getParticipant(idOrName);
@@ -345,18 +365,25 @@ export function isSelectionWinner(
     };
 
     const isMatchWinnerInternal = (teamIdOrName: string) => {
-        if (result.winner === teamIdOrName) return true;
+        if (currentWinner === teamIdOrName) return true;
+        if (isDrawSelected(teamIdOrName)) return currentWinner === 'X';
+
         const p = getParticipant(teamIdOrName);
         if (p) {
-            return result.winner === p.schoolId || result.winner === p.name;
+            return currentWinner === p.schoolId || currentWinner === p.name;
         }
+
+        // Home/Away shortcuts
+        if (teamIdOrName === '1' && participants[0]) return currentWinner === participants[0].schoolId;
+        if (teamIdOrName === '2' && participants[1]) return currentWinner === participants[1].schoolId;
+
         return false;
     };
     // ----------------------------
 
     // 1. HT/FT (Half Time / Full Time)
     if (isHTFT) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
@@ -389,7 +416,7 @@ export function isSelectionWinner(
         Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
 
         if (norm.includes("winner") || norm.includes("result") || norm === "1h" || norm === "ht") {
-            if (selectionId === "X" || label === "Draw") {
+            if (isDrawSelected(selectionId) || isDrawSelected(label)) {
                 const values = Object.values(htScores)
                 return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
             }
@@ -410,17 +437,16 @@ export function isSelectionWinner(
 
     // 3. MATCH WINNER (1X2 / 12)
     if (isMatchWinner) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
-        if (selectionId === "X" || label === "Draw") {
+        if (isDrawSelected(selectionId) || isDrawSelected(label)) {
             if (isVirtualOutcome) {
                 const vScores = vOutcome.totalScores;
                 if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1] };
                 return { resolved: true, isWin: false };
             }
-            const values = Object.values(scores)
-            return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
+            return { resolved: true, isWin: currentWinner === 'X' };
         }
 
         if (isVirtualOutcome) {
@@ -432,9 +458,9 @@ export function isSelectionWinner(
             return { resolved: true, isWin: winnerName === normalizedSid };
         }
 
-        if (isMatchWinnerInternal(selectionId)) return { resolved: true, isWin: true };
+        if (isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label)) return { resolved: true, isWin: true };
 
-        // Final score check
+        // Final score check fallback
         const myScore = getTeamScore(selectionId)
         if (myScore !== undefined) {
             const participant = getParticipant(selectionId)
@@ -473,6 +499,7 @@ export function isSelectionWinner(
     }
 
     // 5. QUIZ ROUND WINNER
+    // 5. QUIZ ROUND WINNER
     if (norm.includes("round") && norm.includes("winner")) {
         const roundNum = norm.match(/\d+/)?.[0]
         if (!roundNum) return { resolved: false, isWin: false }
@@ -495,7 +522,7 @@ export function isSelectionWinner(
         const targetId = getParticipant(selectionId)?.schoolId || selectionId
         const otherScores = Object.entries(roundScores).filter(([id]) => id !== targetId).map(([_, s]) => s)
 
-        if (selectionId === "X" || label === "Draw") {
+        if (isDrawSelected(selectionId) || isDrawSelected(label)) {
             return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
         }
 
@@ -504,7 +531,7 @@ export function isSelectionWinner(
 
     // 6. HANDICAP / SPREAD
     if (isHandicap) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const lineSign = label.includes("+") ? "+" : "-"
@@ -534,12 +561,12 @@ export function isSelectionWinner(
 
     // 8. DOUBLE CHANCE
     if (isDoubleChance) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const homeId = participants[0]?.schoolId
         const awayId = participants[1]?.schoolId
-        const winner = result.winner
+        const winner = currentWinner
 
         if (selectionId === "1X" || label === "1X") return { resolved: true, isWin: winner === homeId || winner === 'X' }
         if (selectionId === "12" || label === "12") return { resolved: true, isWin: winner === homeId || winner === awayId }
@@ -548,16 +575,17 @@ export function isSelectionWinner(
 
     // 9. DRAW NO BET
     if (isDNB) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
-        if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
-        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) }
+        if (currentWinner === 'X') return { resolved: true, isWin: false, isVoid: true }
+        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label) }
     }
 
     // 10. WINNING MARGIN
+    // 10. WINNING MARGIN
     if (isWinningMargin) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
         const values = Object.values(scores)
@@ -572,17 +600,17 @@ export function isSelectionWinner(
         const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
 
         if (victor === 'X') {
-            return { resolved: true, isWin: selectionId === 'Draw' || label.toLowerCase() === 'draw' }
+            return { resolved: true, isWin: isDrawSelected(selectionId) || isDrawSelected(label) }
         }
 
-        const isHome = victor === '1'
+        const isHomeLeg = victor === '1'
         const labelLower = label.toLowerCase()
 
-        if (isHome && labelLower.includes('home by')) {
+        if (isHomeLeg && labelLower.includes('home by')) {
             if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
             return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
         }
-        if (!isHome && labelLower.includes('away by')) {
+        if (!isHomeLeg && labelLower.includes('away by')) {
             if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
             return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
         }
@@ -605,6 +633,8 @@ export function isSelectionWinner(
             if (firstScorerId === selectionId) return { resolved: true, isWin: true }
             const p = getParticipant(selectionId)
             if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true }
+            const pLabel = getParticipant(label)
+            if (pLabel && pLabel.schoolId === firstScorerId) return { resolved: true, isWin: true }
             return { resolved: true, isWin: false }
         }
 
@@ -613,7 +643,7 @@ export function isSelectionWinner(
 
     // 12. ODD/EVEN TOTAL GOALS
     if (isOddEven) {
-        const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
         const totalGoals = Object.values(scores).reduce((a, b) => a + (b || 0), 0)
         const isOdd = totalGoals % 2 !== 0
