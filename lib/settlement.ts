@@ -265,11 +265,21 @@ export function isSelectionWinner(
     const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
     const vOutcome = isVirtualOutcome ? (result as any) : null;
 
-    // Normalize Market Name
-    const market = marketName.toLowerCase().trim()
+    // Normalize Market Name for robust matching
+    const market = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+    const isMatchWinner = market === "matchwinner" || market === "1x2" || market === "win" || market === "12"
+    const isTotal = market.includes("total") || market.includes("overunder")
+    const isHT = market.includes("1sthalf") || market.includes("firsthalf") || market.includes("htft") || market.includes("halftimefulltime")
+    const isBTTS = market.includes("btts") || market.includes("bothteamstoscore")
+    const isHandicap = market.includes("handicap") || market.includes("spread")
+    const isDoubleChance = market.includes("doublechance")
+    const isDNB = market.includes("drawnobet") || market.includes("dnb")
+    const isWinningMargin = market.includes("winningmargin")
+    const isFirstGoal = market.includes("firstteamtoscore") || market.includes("firstgoal") || market.includes("teamtoscorefirst")
+    const isOddEven = market.includes("oddeven")
 
     // 1. MATCH WINNER (1X2 / 12)
-    if (market === "match winner" || market === "1x2" || market === "win" || market === "12") {
+    if (isMatchWinner) {
         const isFinished = match.status === 'finished'
         if (!isFinished) return { resolved: false, isWin: false }
 
@@ -305,7 +315,7 @@ export function isSelectionWinner(
     }
 
     // 2. TOTAL POINTS / GOALS (Over/Under)
-    if (market.includes("total") || market.includes("over/under")) {
+    if (isTotal) {
         const totalScore = isVirtualOutcome
             ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
             : Object.values(scores).reduce((a, b) => a + b, 0)
@@ -334,7 +344,7 @@ export function isSelectionWinner(
     }
 
     // 3. FIRST HALF WINNER / TOTALS
-    if (market.includes("1st half") || market.includes("first half")) {
+    if (isHT) {
         const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
         const isHTDecided = match.status === "HT" || match.status === "2nd Half" || match.status === "finished" || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
 
@@ -394,7 +404,7 @@ export function isSelectionWinner(
     }
 
     // 5. HANDICAP / SPREAD
-    if (market.includes("handicap") || market.includes("spread")) {
+    if (isHandicap) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
 
         const lineSign = label.includes("+") ? "+" : "-"
@@ -413,7 +423,7 @@ export function isSelectionWinner(
     }
 
     // 6. BTTS (Both Teams to Score)
-    if (market.includes("btts") || market.includes("both teams to score")) {
+    if (isBTTS) {
         if (match.status !== 'finished' && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
 
         const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
@@ -422,7 +432,7 @@ export function isSelectionWinner(
     }
 
     // 7. DOUBLE CHANCE
-    if (market.includes("double chance")) {
+    if (isDoubleChance) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
 
         const homeId = participants[0]?.schoolId
@@ -435,7 +445,7 @@ export function isSelectionWinner(
     }
 
     // 8. DRAW NO BET
-    if (market.includes("draw no bet") || market.includes("dnb")) {
+    if (isDNB) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
 
         if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
@@ -443,7 +453,7 @@ export function isSelectionWinner(
     }
 
     // 9. HT/FT (Half Time / Full Time)
-    if (market.includes("ht/ft") || market.includes("half time / full time")) {
+    if (market === "htft" || market === "halftimefulltime") {
         const isFinished = match.status === 'finished'
         if (!isFinished) return { resolved: false, isWin: false }
 
@@ -466,7 +476,7 @@ export function isSelectionWinner(
     }
 
     // 10. FIRST HALF WINNER
-    if (market.toLowerCase().includes("first half winner") || market.toLowerCase().includes("1st half winner")) {
+    if (market.includes("firsthalfwinner") || market.includes("1sthalfwinner")) {
         const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
         if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
 
@@ -481,7 +491,7 @@ export function isSelectionWinner(
     }
 
     // 10. WINNING MARGIN
-    if (market.includes("winning margin")) {
+    if (isWinningMargin) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
 
         const values = Object.values(scores)
@@ -516,7 +526,7 @@ export function isSelectionWinner(
     }
 
     // 11. FIRST TEAM TO SCORE
-    if (market.includes("first team to score") || market.includes("first goal")) {
+    if (isFirstGoal) {
         const firstScorerId = metadata.firstScorerId // We'll add this to the admin UI
         if (!firstScorerId && match.status !== 'finished') return { resolved: false, isWin: false }
 
@@ -534,7 +544,7 @@ export function isSelectionWinner(
     }
 
     // 12. ODD/EVEN TOTAL GOALS
-    if (market.toLowerCase().includes("odd/even")) {
+    if (isOddEven) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
         const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
         const isOdd = totalGoals % 2 !== 0
@@ -543,7 +553,7 @@ export function isSelectionWinner(
     }
 
     // 13. TOTAL POINTS (Interchangeable with Goals)
-    if (market.toLowerCase().includes("total points") || market.toLowerCase().includes("total point")) {
+    if (market.includes("totalpoints") || market.includes("totalpoint")) {
         if (match.status !== 'finished') return { resolved: false, isWin: false }
         const totalPoints = Object.values(scores).reduce((a, b) => a + b, 0)
         const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")

@@ -286,13 +286,20 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
             ];
 
             const unresolvedMarkets = extendedMarkets.filter(m => {
-                const lowerM = m.toLowerCase();
+                const normalizedM = m.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+
                 // If it's manual resolved, it's not unresolved
                 if (manualOutcomes[m] || manualOutcomes[m] === "void") return false;
+
                 // If it matches an automated type, it's not unresolved
-                if (automatedMarkets.some(type => lowerM.includes(type))) return false;
-                // Special case for "Match Winner" which might be in the list
-                if (lowerM === "match winner") return false;
+                if (automatedMarkets.some(type => {
+                    const normalizedType = type.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+                    return normalizedM.includes(normalizedType);
+                })) return false;
+
+                // Special case for "Match Winner" matches
+                if (normalizedM === "matchwinner") return false;
+
                 return true;
             });
 
