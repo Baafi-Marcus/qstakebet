@@ -324,6 +324,36 @@ export function isSelectionWinner(
 
     const isOddEven = (norm.includes("oddeven") || (norm.includes("odd") || norm.includes("even"))) && !norm.includes("over") && !isTotal
 
+    // --- ALIAS-AWARE HELPERS ---
+    const getParticipant = (idOrName: string) => {
+        const clean = idOrName.trim().toLowerCase();
+        return participants.find(p =>
+            p.schoolId.toLowerCase() === clean ||
+            p.name.trim().toLowerCase() === clean ||
+            (Array.isArray(p.aliases) && p.aliases.some(a => a.trim().toLowerCase() === clean))
+        );
+    };
+
+    const getTeamScore = (idOrName: string, scoreMap: Record<string, number> = scores) => {
+        if (scoreMap[idOrName] !== undefined) return scoreMap[idOrName];
+        const p = getParticipant(idOrName);
+        if (p) {
+            if (scoreMap[p.schoolId] !== undefined) return scoreMap[p.schoolId];
+            if (scoreMap[p.name] !== undefined) return scoreMap[p.name];
+        }
+        return undefined;
+    };
+
+    const isMatchWinnerInternal = (teamIdOrName: string) => {
+        if (result.winner === teamIdOrName) return true;
+        const p = getParticipant(teamIdOrName);
+        if (p) {
+            return result.winner === p.schoolId || result.winner === p.name;
+        }
+        return false;
+    };
+    // ----------------------------
+
     // 1. HT/FT (Half Time / Full Time)
     if (isHTFT) {
         const isFinished = match.status === 'finished' || match.status === 'settled' || (result?.winner && result.winner !== 'pending')
@@ -363,7 +393,7 @@ export function isSelectionWinner(
                 const values = Object.values(htScores)
                 return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
             }
-            const myScore = htScores[selectionId]
+            const myScore = getTeamScore(selectionId, htScores)
             const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
             return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
         }
@@ -402,12 +432,14 @@ export function isSelectionWinner(
             return { resolved: true, isWin: winnerName === normalizedSid };
         }
 
-        if (result.winner === selectionId) return { resolved: true, isWin: true };
+        if (isMatchWinnerInternal(selectionId)) return { resolved: true, isWin: true };
 
         // Final score check
-        if (scores[selectionId] !== undefined) {
-            const myScore = scores[selectionId];
-            const otherScores = Object.entries(scores).filter(([id]) => id !== selectionId).map(([_, s]) => s);
+        const myScore = getTeamScore(selectionId)
+        if (myScore !== undefined) {
+            const participant = getParticipant(selectionId)
+            const targetId = participant?.schoolId || selectionId
+            const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s);
             return { resolved: true, isWin: otherScores.every(os => myScore > os) };
         }
 
@@ -457,8 +489,11 @@ export function isSelectionWinner(
         const roundScores: Record<string, number> = {}
         participants.forEach(p => roundScores[p.schoolId] = quizDetails[p.schoolId][roundKey])
 
-        const myScore = roundScores[selectionId]
-        const otherScores = Object.entries(roundScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
+        const myScore = roundScores[selectionId] !== undefined ? roundScores[selectionId] :
+            (getParticipant(selectionId) ? roundScores[getParticipant(selectionId)!.schoolId] : undefined)
+
+        const targetId = getParticipant(selectionId)?.schoolId || selectionId
+        const otherScores = Object.entries(roundScores).filter(([id]) => id !== targetId).map(([_, s]) => s)
 
         if (selectionId === "X" || label === "Draw") {
             return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
@@ -476,20 +511,7 @@ export function isSelectionWinner(
         const [targetName, lineValueStr] = label.split(lineSign)
         const line = parseFloat(`${lineSign}${lineValueStr}`)
 
-        const participant = participants.find(p => {
-            if (p.schoolId === selectionId) return true;
-            const cleanTarget = targetName?.trim().toLowerCase();
-            if (!cleanTarget) return false;
-
-            // Check direct name
-            if (p.name.trim().toLowerCase() === cleanTarget) return true;
-
-            // Check aliases if they exist
-            if (Array.isArray(p.aliases) && p.aliases.some((a: string) => a.trim().toLowerCase() === cleanTarget)) return true;
-
-            return false;
-        })
-
+        const participant = getParticipant(targetName || selectionId)
         if (!participant) return { resolved: false, isWin: false }
 
         const targetId = participant.schoolId
@@ -530,7 +552,7 @@ export function isSelectionWinner(
         if (!isFinished) return { resolved: false, isWin: false }
 
         if (result.winner === 'X') return { resolved: true, isWin: false, isVoid: true }
-        return { resolved: true, isWin: result.winner === selectionId }
+        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) }
     }
 
     // 10. WINNING MARGIN
@@ -580,7 +602,10 @@ export function isSelectionWinner(
         }
 
         if (firstScorerId) {
-            return { resolved: true, isWin: selectionId === firstScorerId }
+            if (firstScorerId === selectionId) return { resolved: true, isWin: true }
+            const p = getParticipant(selectionId)
+            if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: false }
         }
 
         return { resolved: false, isWin: false }
