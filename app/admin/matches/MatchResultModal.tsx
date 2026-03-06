@@ -91,6 +91,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     })
     const [activeMarkets, setActiveMarkets] = useState<string[]>([])
     const [isConfirmed, setIsConfirmed] = useState(false)
+    const [firstScorerId, setFirstScorerId] = useState<string>(match.metadata?.firstScorerId || "")
 
     // Fetch active markets on mount
     useEffect(() => {
@@ -219,6 +220,42 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
             outcomes.push({ market: 'Match Winner', result: winnerName, type: 'auto' });
         }
 
+        // Football Specific Derived Markets
+        if (isFootball) {
+            const p1 = match.participants[0]
+            const p2 = match.participants[1]
+            const h1 = footballData[p1.schoolId].ht
+            const a1 = footballData[p2.schoolId].ht
+            const h2 = footballData[p1.schoolId].ft
+            const a2 = footballData[p2.schoolId].ft
+            const total = h2 + a2
+
+            // BTTS
+            const btts = h2 > 0 && a2 > 0 ? "Yes" : "No"
+            outcomes.push({ market: 'Both Teams to Score', result: btts, type: 'auto' })
+
+            // Over/Under 2.5 (Common)
+            outcomes.push({ market: 'Total Goals Over/Under 2.5', result: total > 2.5 ? "Over 2.5" : "Under 2.5", type: 'auto' })
+
+            // HT/FT
+            const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
+            const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
+            outcomes.push({ market: 'HT/FT', result: `${htRes}/${ftRes}`, type: 'auto' })
+
+            // First Scorer
+            if (total > 0) {
+                const firstScorerName = match.participants.find(p => p.schoolId === firstScorerId)?.name || "Not Selected"
+                outcomes.push({ market: 'First Team to Score', result: firstScorerName, type: 'auto' })
+            } else {
+                outcomes.push({ market: 'First Team to Score', result: "No Goal", type: 'auto' })
+            }
+
+            // Winning Margin
+            const diff = Math.abs(h2 - a2)
+            if (diff === 0) outcomes.push({ market: 'Winning Margin', result: 'Draw', type: 'auto' })
+            else outcomes.push({ market: 'Winning Margin', result: `${h2 > a2 ? p1.name : p2.name} by ${diff}`, type: 'auto' })
+        }
+
         // Add manual ones
         Object.entries(manualOutcomes).forEach(([market, selection]) => {
             if (selection) {
@@ -227,7 +264,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         });
 
         return outcomes;
-    }, [isLiveUpdate, winner, manualOutcomes, match.participants]);
+    }, [isLiveUpdate, winner, manualOutcomes, match.participants, isFootball, footballData, firstScorerId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -280,6 +317,10 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 metadata.currentMinute = timerData.minute
                 metadata.period = timerData.period
                 metadata.lastUpdated = new Date().toISOString()
+            }
+
+            if (isFootball) {
+                metadata.firstScorerId = firstScorerId
             }
 
             const result = await updateMatchResult(match.id, {
@@ -682,6 +723,34 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {/* First Scorer Selection */}
+                                                {!isLiveUpdate && (footballTotals[match.participants[0].schoolId] + footballTotals[match.participants[1].schoolId] > 0) && (
+                                                    <div className="mt-8 p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 space-y-4">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                                                            <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest">First Team To Score</h4>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            {match.participants.map(p => (
+                                                                <button
+                                                                    key={p.schoolId}
+                                                                    type="button"
+                                                                    onClick={() => setFirstScorerId(p.schoolId)}
+                                                                    className={cn(
+                                                                        "p-4 rounded-2xl border text-sm font-bold transition-all flex items-center justify-center gap-3",
+                                                                        firstScorerId === p.schoolId
+                                                                            ? "bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/20"
+                                                                            : "bg-black/40 border-white/10 text-slate-400 hover:border-white/20"
+                                                                    )}
+                                                                >
+                                                                    <div className={cn("h-2 w-2 rounded-full", firstScorerId === p.schoolId ? "bg-white" : "bg-slate-600")} />
+                                                                    {p.name}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

@@ -442,6 +442,82 @@ export function isSelectionWinner(
         return { resolved: true, isWin: result.winner === selectionId }
     }
 
+    // 9. HT/FT (Half Time / Full Time)
+    if (market.includes("ht/ft") || market.includes("half time / full time")) {
+        const isFinished = match.status === 'finished'
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+
+        const h1 = footballDetails[p1]?.ht || 0
+        const a1 = footballDetails[p2]?.ht || 0
+        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
+
+        const h2 = footballDetails[p1]?.ft || 0
+        const a2 = footballDetails[p2]?.ft || 0
+        const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
+
+        const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
+        return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
+    }
+
+    // 10. WINNING MARGIN
+    if (market.includes("winning margin")) {
+        if (match.status !== 'finished') return { resolved: false, isWin: false }
+
+        const values = Object.values(scores)
+        if (values.length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+        const s1 = scores[p1] || 0
+        const s2 = scores[p2] || 0
+
+        const diff = Math.abs(s1 - s2)
+        const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
+
+        if (victor === 'X') {
+            return { resolved: true, isWin: selectionId === 'Draw' || label.toLowerCase() === 'draw' }
+        }
+
+        // e.g. "Home by 1", "Away by 2+"
+        const isHome = victor === '1'
+        const labelLower = label.toLowerCase()
+
+        if (isHome && labelLower.includes('home by')) {
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+        }
+        if (!isHome && labelLower.includes('away by')) {
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+        }
+
+        return { resolved: true, isWin: false }
+    }
+
+    // 11. FIRST TEAM TO SCORE
+    if (market.includes("first team to score") || market.includes("first goal")) {
+        const firstScorerId = metadata.firstScorerId // We'll add this to the admin UI
+        if (!firstScorerId && match.status !== 'finished') return { resolved: false, isWin: false }
+
+        // If match finished 0-0
+        const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
+        if (match.status === 'finished' && totalGoals === 0) {
+            return { resolved: true, isWin: selectionId === 'none' || label.toLowerCase().includes('no goal') }
+        }
+
+        if (firstScorerId) {
+            return { resolved: true, isWin: selectionId === firstScorerId }
+        }
+
+        return { resolved: false, isWin: false }
+    }
+
     // Default Fallback
     return { resolved: false, isWin: false }
 }
