@@ -67,9 +67,12 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
 
         // Helper to check for today/live matches
         const isTodayOrLive = (m: Match) => {
+            const isNotFinished = m.status !== 'finished' && m.status !== 'settled' && m.status !== 'cancelled';
+            if (!isNotFinished) return false;
+
             const d = m.scheduledAt ? new Date(m.scheduledAt) : null;
             if (d) d.setHours(0, 0, 0, 0);
-            return d?.getTime() === today.getTime() || (m.isLive && m.status !== 'finished');
+            return d?.getTime() === today.getTime() || m.isLive;
         };
 
         const shsMatchesToday = initialMatches.some(m => m.level === 'shs' && isTodayOrLive(m));
@@ -82,9 +85,9 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             setActiveLevel('university');
             setActiveDateTab('today');
         } else {
-            // No matches today, check for any matches at all
-            const hasSHSAtAll = initialMatches.some(m => m.level === 'shs');
-            const hasUniversityAtAll = initialMatches.some(m => m.level === 'university');
+            // No active matches today, check for any active matches at all
+            const hasSHSAtAll = initialMatches.some(m => m.level === 'shs' && m.status !== 'finished' && m.status !== 'settled' && m.status !== 'cancelled');
+            const hasUniversityAtAll = initialMatches.some(m => m.level === 'university' && m.status !== 'finished' && m.status !== 'settled' && m.status !== 'cancelled');
 
             if (hasSHSAtAll) {
                 setActiveLevel('shs');

@@ -5,21 +5,9 @@ import { users, wallets, withdrawalRequests, transactions } from "@/lib/db/schem
 import { eq, desc, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { isAdmin } from "./admin-utils"
 
-/**
- * Verifies if the current user is an admin
- */
-async function isAdmin() {
-    const session = await auth();
-    if (!session?.user?.id) return false;
-
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
-        columns: { role: true }
-    });
-
-    return user?.role === "admin";
-}
+// Local isAdmin removed in favor of shared helper
 
 /**
  * Fetches all withdrawal requests with user names

@@ -170,26 +170,30 @@ export function MatchesClient({
                     alert(result.error);
                     return;
                 }
-                if (result) {
+                if (result.success && result.results && result.results.length > 0) {
+                    const updatedMatch = result.results[0];
                     setMatches((prev: Match[]) => prev.map(m => m.id === editingMatch.id ? ({
                         ...m,
-                        ...result[0],
-                        startTime: result[0].startTime || "",
-                        participants: result[0].participants as any
+                        ...updatedMatch,
+                        startTime: updatedMatch.startTime || "",
+                        participants: updatedMatch.participants as any
                     } as Match) : m))
                 }
             } else {
-                const newMatch = await createMatch({
+                const result = await createMatch({
                     ...formData,
                     startTime: formData.startTime || "" // Allow empty for TBD
-                })
+                }) as any
 
-                if (newMatch && newMatch.length > 0) {
+                if (result.success && result.results && result.results.length > 0) {
+                    const createdMatch = result.results[0];
                     const created = {
-                        ...newMatch[0],
-                        participants: newMatch[0].participants as any
+                        ...createdMatch,
+                        participants: createdMatch.participants as any
                     } as Match
                     setMatches([created, ...matches])
+                } else if (result.error) {
+                    alert(result.error);
                 }
             }
 

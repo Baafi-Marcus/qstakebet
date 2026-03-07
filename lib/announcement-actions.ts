@@ -5,6 +5,7 @@ import { announcements } from "@/lib/db/schema"
 import { eq, desc, and } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
+import { isAdmin } from "./admin-utils"
 import fs from "fs"
 import path from "path"
 
@@ -21,6 +22,7 @@ export async function getActiveAnnouncements() {
 }
 
 export async function getAllAnnouncements() {
+    if (!(await isAdmin())) return [];
     try {
         return await db.select()
             .from(announcements)
@@ -39,6 +41,7 @@ export async function createAnnouncement(data: {
     priority?: number
     style?: string
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.insert(announcements).values({
             id: `ann-${nanoid(10)}`,
@@ -62,6 +65,7 @@ export async function updateAnnouncement(id: string, data: Partial<{
     priority: number
     style: string
 }>) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.update(announcements)
             .set(data)
@@ -76,6 +80,7 @@ export async function updateAnnouncement(id: string, data: Partial<{
 }
 
 export async function deleteAnnouncement(id: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.delete(announcements)
             .where(eq(announcements.id, id))
@@ -89,6 +94,7 @@ export async function deleteAnnouncement(id: string) {
 }
 
 export async function uploadAdvertImage(base64Data: string, filename: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         // Since Vercel has a read-only filesystem (except /tmp), we cannot write to /public.
         // Instead of requiring an external blob storage for just a few adverts, 

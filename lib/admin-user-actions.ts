@@ -4,8 +4,10 @@ import { db } from "@/lib/db"
 import { users, wallets, bets, transactions, referralClicks } from "@/lib/db/schema"
 import { eq, desc, ilike, or, sql, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { isAdmin } from "./admin-utils"
 
 export async function getUsers(query?: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const baseQuery = db.select({
             id: users.id,
@@ -41,6 +43,7 @@ export async function getUsers(query?: string) {
 }
 
 export async function getUserDetails(userId: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
@@ -74,6 +77,7 @@ export async function getUserDetails(userId: string) {
 }
 
 export async function updateUserStatus(userId: string, status: "active" | "suspended") {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.update(users)
             .set({ status })
@@ -93,6 +97,7 @@ export async function broadcastSMS(message: string, filters?: {
     maxBalance?: number;
     lastBetDays?: number;
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         // Fetch users based on filters
         let usersQuery = db.select({

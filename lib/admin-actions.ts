@@ -7,10 +7,12 @@ import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { auth } from "./auth"
 import { revalidateTag } from "next/cache"
+import { isAdmin } from "./admin-utils"
 
 // import { School, Tournament } from "./types" 
 
 export async function smartUpsertSchools(schoolList: string[], region: string) {
+    if (!(await isAdmin())) throw new Error("Unauthorized");
     const results = [];
 
     for (const name of schoolList) {
@@ -44,6 +46,7 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
 
 
 export async function upsertTournamentRoster(tournamentId: string, rosterText: string, uniTypeOverride?: 'hall' | 'program') {
+    if (!(await isAdmin())) throw new Error("Unauthorized");
     // 1. Fetch Tournament to get level and region
     const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
     if (tData.length === 0) throw new Error("Tournament not found");
@@ -135,6 +138,7 @@ export async function createSchoolAction(data: {
     parentId?: string,
     type?: string
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const id = `sch-${Math.random().toString(36).substr(2, 9)}`;
         const [newSchool] = await db.insert(schools).values({
@@ -177,6 +181,7 @@ export async function updateSchoolAction(id: string, data: {
     currentForm?: number,
     volatilityIndex?: number
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         return await db.transaction(async (tx) => {
             // Update Basic Info
@@ -268,6 +273,7 @@ export async function updateSchoolAction(id: string, data: {
 }
 
 export async function deleteSchoolAction(id: string) {
+    if (!(await isAdmin())) return { success: false, error: "Authorized" };
     try {
         return await db.transaction(async (tx) => {
             await tx.delete(virtualSchoolStats).where(eq(virtualSchoolStats.schoolId, id));
@@ -295,6 +301,7 @@ export async function createTournament(data: {
     uniType?: string,
     metadata?: any
 }) {
+    if (!(await isAdmin())) throw new Error("Unauthorized");
     const id = `tmt-${Math.random().toString(36).substr(2, 9)}`;
 
     // Process metadata
@@ -340,6 +347,7 @@ export async function updateTournament(id: string, data: {
     status?: string,
     metadata?: any
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     // Process metadata
     const metadata = data.metadata || {};
     if (data.format) metadata.format = data.format;
@@ -377,21 +385,27 @@ export async function updateTournament(id: string, data: {
 }
 
 export async function deleteTournament(id: string) {
-    // Safety check: Don't delete if matches exist
-    const linkedMatches = await db.select().from(matches).where(eq(matches.tournamentId, id)).limit(1);
-    if (linkedMatches.length > 0) {
-        return { success: false, error: "Cannot delete tournament with existing matches. Delete the matches first." };
-    }
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
-        const result = await db.delete(tournaments).where(eq(tournaments.id, id)).returning({ deletedId: tournaments.id });
-        if (result.length === 0) {
-            return { success: false, error: "Tournament not found or already deleted." };
+        // Safety check: Don't delete if matches exist
+        const linkedMatches = await db.select().from(matches).where(eq(matches.tournamentId, id)).limit(1);
+        if (linkedMatches.length > 0) {
+            return { success: false, error: "Cannot delete tournament with existing matches. Delete the matches first." };
         }
-        revalidateTag("tournaments")
-        revalidateTag("matches")
-        return { success: true };
-    } catch (e) {
-        console.error("Delete tournament error:", e);
+        try {
+            const result = await db.delete(tournaments).where(eq(tournaments.id, id)).returning({ deletedId: tournaments.id });
+            if (result.length === 0) {
+                return { success: false, error: "Tournament not found or already deleted." };
+            }
+            revalidateTag("tournaments")
+            revalidateTag("matches")
+            return { success: true };
+        } catch (e) {
+            console.error("Delete tournament error:", e);
+            return { success: false, error: "Failed to delete tournament" };
+        }
+    } catch (error) {
+        console.error("Delete tournament error:", error);
         return { success: false, error: "Failed to delete tournament" };
     }
 }
@@ -485,6 +499,7 @@ export async function createMatch(data: {
     group?: string,
     matchday?: string
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     // Parse datetime if provided
     let scheduledAt: Date | null = null;
     let autoEndAt: Date | null = null;
@@ -566,7 +581,7 @@ export async function createMatch(data: {
     }).returning();
 
     revalidateTag("matches")
-    return result;
+    return { success: true, results: result };
 }
 
 export async function updateMatch(id: string, data: {
@@ -581,6 +596,7 @@ export async function updateMatch(id: string, data: {
     matchday?: string,
     status?: string
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     // 1. Process Timing
     let scheduledAt: Date | null = undefined as any;
     let autoEndAt: Date | null = undefined as any;
@@ -680,10 +696,11 @@ export async function updateMatch(id: string, data: {
         .returning();
 
     revalidateTag("matches")
-    return result;
+    return { success: true, results: result };
 }
 
 export async function deleteMatch(id: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     // Safety check: Don't delete if bets exist
     const linkedBets = await db.select().from(bets).limit(1);
     // Note: Since 'bets' table uses JSONB for selections, we filter in JS for now or use SQL JSON search
@@ -830,6 +847,7 @@ export async function updateMatchResult(matchId: string, resultData: {
     autoEndAt?: string | null
     metadata?: any
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const { settleMatch } = await import("./settlement")
         const { recordMatchUpdate } = await import("./match-helpers")
@@ -997,6 +1015,7 @@ async function updateRealSchoolStats(match: any, resultData: { scores: any, winn
  * Bulk update match results from parsed AI data
  */
 export async function bulkUpdateResults(parsedResults: ParsedResult[]) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized", results: [] };
     try {
         const { fuzzyMatchSchool } = await import("./ai-result-parser")
 
@@ -1113,6 +1132,7 @@ export async function bulkUpdateResults(parsedResults: ParsedResult[]) {
  * Parse match results using AI (server action wrapper)
  */
 export async function parseResults(text: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized", results: [] };
     try {
         // Fetch active matches for context (Upcoming or Live)
         const activeMatches = await db.select().from(matches)
@@ -1186,6 +1206,7 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
     helpInfo: string,
     selections: Array<{ label: string, odds: number }>
 }>) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
         if (!matchData.length) throw new Error("Match not found")
@@ -1272,6 +1293,7 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
  * Bulk Start Matches (Go Live)
  */
 export async function startMatches(matchIds: string[]) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.update(matches)
             .set({
@@ -1291,6 +1313,7 @@ export async function startMatches(matchIds: string[]) {
  * Bulk Lock Matches (Disable Betting)
  */
 export async function lockMatches(matchIds: string[]) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         await db.update(matches)
             .set({
@@ -1355,6 +1378,7 @@ export async function adjustUserBalance(userId: string, amount: number, reason: 
  * Used in the Admin UI to highlight markets that need settlement.
  */
 export async function getActiveMarketsAction(matchId: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
 
@@ -1380,6 +1404,7 @@ export async function updateTournamentOutright(tournamentId: string, data: {
     isOutrightEnabled: boolean,
     outrightOdds: { schoolId: string, odd: number, status: string }[]
 }) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const result = await db.update(tournaments)
             .set({
@@ -1398,6 +1423,7 @@ export async function updateTournamentOutright(tournamentId: string, data: {
 }
 
 export async function settleTournamentWinner(tournamentId: string, winnerId: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const { settleOutrightBets } = await import("./settlement")
 
@@ -1426,6 +1452,7 @@ export async function settleTournamentWinner(tournamentId: string, winnerId: str
 }
 
 export async function recalculateTournamentOutrightOdds(tournamentId: string) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
     try {
         const tData = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
         if (tData.length === 0 || !tData[0].isOutrightEnabled) return;
@@ -1486,136 +1513,147 @@ export async function generateExtendedMarkets(schoolIds: string[], odds: Record<
     const markets: any = {};
     const margin = 0.15; // Standard 15% margin for all markets
 
-    if (sportType === 'football' || sportType === 'handball') {
-        const homeId = schoolIds[0];
-        const awayId = schoolIds[1];
-        const homeOdd = odds[homeId] || 2.0;
-        const awayOdd = odds[awayId] || 2.0;
-        const drawOdd = odds['X'] || 3.2;
+    try {
+        if (sportType === 'football' || sportType === 'handball') {
+            const homeId = schoolIds[0];
+            const awayId = schoolIds[1];
+            const homeOdd = odds[homeId] || 2.0;
+            const awayOdd = odds[awayId] || 2.0;
+            const drawOdd = odds['X'] || 3.2;
 
-        // Fetch school names for labels
-        const schoolData = await db.select({ id: schools.id, name: schools.name })
-            .from(schools)
-            .where(inArray(schools.id, [homeId, awayId]));
-        const schoolMap = Object.fromEntries(schoolData.map(s => [s.id, s.name]));
+            // Fetch school names for labels
+            const schoolData = await db.select({ id: schools.id, name: schools.name })
+                .from(schools)
+                .where(inArray(schools.id, [homeId, awayId]));
+            const schoolMap = Object.fromEntries(schoolData.map(s => [s.id, s.name]));
 
-        // 1. Match Winner (added back for admin modal sync)
-        markets["Match Winner"] = {
-            [schoolMap[homeId] || "Home"]: homeOdd,
-            "Draw": drawOdd,
-            [schoolMap[awayId] || "Away"]: awayOdd
-        };
-
-
-        // 2. Both Teams to Score (BTTS)
-        // Derived from win odds - if both have high win odds (e.g. 2.5/2.5), BTTS Yes is likely
-        const bttsYesProb = (1 / homeOdd + 1 / awayOdd) * 0.55;
-        markets.btts = {
-            Yes: parseFloat((1 / (bttsYesProb * (1 - margin))).toFixed(2)),
-            No: parseFloat((1 / ((1 - bttsYesProb) * (1 - margin))).toFixed(2))
-        };
-
-        // 3. Over/Under Markets (Poisson-ish estimation)
-        // Total Expected Goals (ExpG) roughly 2.5 - 3.0
-        const expG = (1 / homeOdd * 1.5) + (1 / awayOdd * 1.5) + 0.5;
-        const lines = [0.5, 1.5, 2.5, 3.5, 4.5];
-        lines.forEach(line => {
-            // Very simplified Poisson cumulative distribution heuristic
-            const overProb = Math.max(0.1, Math.min(0.9, 1 - Math.exp(-expG / (line + 0.5))));
-            markets[`overUnder${line.toString().replace('.', '_')}`] = {
-                Over: parseFloat((1 / (overProb * (1 - margin))).toFixed(2)),
-                Under: parseFloat((1 / ((1 - overProb) * (1 - margin))).toFixed(2))
+            // 1. Match Winner (added back for admin modal sync)
+            markets["Match Winner"] = {
+                [schoolMap[homeId] || "Home"]: homeOdd,
+                "Draw": drawOdd,
+                [schoolMap[awayId] || "Away"]: awayOdd
             };
-        });
 
-        // 4. Double Chance
-        markets.doubleChance = {
-            "1X": parseFloat((1 / ((1 / homeOdd + 1 / drawOdd) * (1 - margin))).toFixed(2)),
-            "12": parseFloat((1 / ((1 / homeOdd + 1 / awayOdd) * (1 - margin))).toFixed(2)),
-            "X2": parseFloat((1 / ((1 / awayOdd + 1 / drawOdd) * (1 - margin))).toFixed(2))
-        };
 
-        // 5. Draw No Bet
-        const dnbHomeProb = (1 / homeOdd) / (1 / homeOdd + 1 / awayOdd);
-        markets.drawNoBet = {
-            [homeId]: parseFloat((1 / (dnbHomeProb * (1 - margin))).toFixed(2)),
-            [awayId]: parseFloat((1 / ((1 - dnbHomeProb) * (1 - margin))).toFixed(2))
-        };
+            // 2. Both Teams to Score (BTTS)
+            // Derived from win odds - if both have high win odds (e.g. 2.5/2.5), BTTS Yes is likely
+            const bttsYesProb = (1 / homeOdd + 1 / awayOdd) * 0.55;
+            markets.btts = {
+                Yes: parseFloat((1 / (bttsYesProb * (1 - margin))).toFixed(2)),
+                No: parseFloat((1 / ((1 - bttsYesProb) * (1 - margin))).toFixed(2))
+            };
 
-        // 6. Half Time Result (Roughly 1/3 of full time probability for home/away, higher for draw)
-        const htHomeProb = (1 / homeOdd) * 0.7;
-        const htAwayProb = (1 / awayOdd) * 0.7;
-        const htDrawProb = 1 - htHomeProb - htAwayProb;
-        markets.halfTimeResult = {
-            [homeId]: parseFloat((1 / (htHomeProb * (1 - margin))).toFixed(2)),
-            [awayId]: parseFloat((1 / (htAwayProb * (1 - margin))).toFixed(2)),
-            X: parseFloat((1 / (htDrawProb * (1 - margin))).toFixed(2))
-        };
+            // 3. Over/Under Markets (Poisson-ish estimation)
+            // Total Expected Goals (ExpG) roughly 2.5 - 3.0
+            const expG = (1 / homeOdd * 1.5) + (1 / awayOdd * 1.5) + 0.5;
+            const lines = [0.5, 1.5, 2.5, 3.5, 4.5];
+            lines.forEach(line => {
+                // Very simplified Poisson cumulative distribution heuristic
+                const overProb = Math.max(0.1, Math.min(0.9, 1 - Math.exp(-expG / (line + 0.5))));
+                markets[`overUnder${line.toString().replace('.', '_')}`] = {
+                    Over: parseFloat((1 / (overProb * (1 - margin))).toFixed(2)),
+                    Under: parseFloat((1 / ((1 - overProb) * (1 - margin))).toFixed(2))
+                };
+            });
+
+            // 4. Double Chance
+            markets.doubleChance = {
+                "1X": parseFloat((1 / ((1 / homeOdd + 1 / drawOdd) * (1 - margin))).toFixed(2)),
+                "12": parseFloat((1 / ((1 / homeOdd + 1 / awayOdd) * (1 - margin))).toFixed(2)),
+                "X2": parseFloat((1 / ((1 / awayOdd + 1 / drawOdd) * (1 - margin))).toFixed(2))
+            };
+
+            // 5. Draw No Bet
+            const dnbHomeProb = (1 / homeOdd) / (1 / homeOdd + 1 / awayOdd);
+            markets.drawNoBet = {
+                [homeId]: parseFloat((1 / (dnbHomeProb * (1 - margin))).toFixed(2)),
+                [awayId]: parseFloat((1 / ((1 - dnbHomeProb) * (1 - margin))).toFixed(2))
+            };
+
+            // 6. Half Time Result (Roughly 1/3 of full time probability for home/away, higher for draw)
+            const htHomeProb = (1 / homeOdd) * 0.7;
+            const htAwayProb = (1 / awayOdd) * 0.7;
+            const htDrawProb = 1 - htHomeProb - htAwayProb;
+            markets.halfTimeResult = {
+                [homeId]: parseFloat((1 / (htHomeProb * (1 - margin))).toFixed(2)),
+                [awayId]: parseFloat((1 / (htAwayProb * (1 - margin))).toFixed(2)),
+                X: parseFloat((1 / (htDrawProb * (1 - margin))).toFixed(2))
+            };
+        }
+
+        return markets;
+    } catch (error) {
+        console.error("Error generating extended markets:", error);
+        return markets;
     }
-
-    return markets;
 }
+
 /**
  * Force trigger settlement sync for all finished or settled matches 
  * (Useful for recovering missed bets after logic updates)
  */
 export async function syncAllSettlements() {
-    const { settleMatch } = await import("./settlement")
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+    try {
+        const { settleMatch } = await import("./settlement")
 
-    // --- RETROACTIVE ALIAS HEALING ---
-    // Fetch all school aliases to fix historical matches where teams were renamed without preservation
-    const schoolData = await db.select({ id: schools.id, name: schools.name, aliases: schools.aliases }).from(schools);
-    const schoolMap = new Map<string, { name: string, aliases: string[] }>();
-    schoolData.forEach(s => {
-        schoolMap.set(s.id, {
-            name: s.name,
-            aliases: (s.aliases as string[]) || []
+        // --- RETROACTIVE ALIAS HEALING ---
+        const schoolData = await db.select({ id: schools.id, name: schools.name, aliases: schools.aliases }).from(schools);
+        const schoolMap = new Map<string, { name: string, aliases: string[] }>();
+        schoolData.forEach(s => {
+            schoolMap.set(s.id, {
+                name: s.name,
+                aliases: (s.aliases as string[]) || []
+            });
         });
-    });
 
-    // Fetch all matches that are in a final state
-    const allFinalMatches = await db.select().from(matches)
-        .where(inArray(matches.status, ['finished', 'settled', 'cancelled']));
+        // Fetch all matches that are in a final state
+        const allFinalMatches = await db.select().from(matches)
+            .where(inArray(matches.status, ['finished', 'settled', 'cancelled']));
 
-    console.log(`Healing ${allFinalMatches.length} matches with latest school aliases...`);
+        console.log(`Healing ${allFinalMatches.length} matches with latest school aliases...`);
 
-    for (const match of allFinalMatches) {
-        const participants = (match.participants as any[]) || [];
-        let changed = false;
+        for (const match of allFinalMatches) {
+            const participants = (match.participants as any[]) || [];
+            let changed = false;
 
-        const updatedParticipants = participants.map(p => {
-            const master = schoolMap.get(p.schoolId);
-            if (!master) return p;
+            const updatedParticipants = participants.map(p => {
+                const master = schoolMap.get(p.schoolId);
+                if (!master) return p;
 
-            const currentAliases = (p.aliases as string[]) || [];
-            const hasAliasDiff = JSON.stringify(currentAliases.sort()) !== JSON.stringify(master.aliases.sort());
-            const hasNameDiff = p.name !== master.name;
+                const currentAliases = (p.aliases as string[]) || [];
+                const hasAliasDiff = JSON.stringify(currentAliases.sort()) !== JSON.stringify(master.aliases.sort());
+                const hasNameDiff = p.name !== master.name;
 
-            if (hasAliasDiff || hasNameDiff) {
-                changed = true;
-                return { ...p, name: master.name, aliases: master.aliases };
+                if (hasAliasDiff || hasNameDiff) {
+                    changed = true;
+                    return { ...p, name: master.name, aliases: master.aliases };
+                }
+                return p;
+            });
+
+            if (changed) {
+                await db.update(matches)
+                    .set({ participants: updatedParticipants })
+                    .where(eq(matches.id, match.id));
             }
-            return p;
-        });
-
-        if (changed) {
-            await db.update(matches)
-                .set({ participants: updatedParticipants })
-                .where(eq(matches.id, match.id));
         }
-    }
-    // ---------------------------------
+        // ---------------------------------
 
-    console.log("Healing complete. Starting settlement sweep...");
+        console.log("Healing complete. Starting settlement sweep...");
 
-    let totalSettled = 0
-    for (const match of allFinalMatches) {
-        const result = await settleMatch(match.id)
-        if (result.success) {
-            totalSettled += (result.settledCount || 0)
+        let totalSettled = 0;
+        for (const match of allFinalMatches) {
+            const result = await settleMatch(match.id);
+            if (result.success) {
+                totalSettled += (result.settledCount || 0);
+            }
         }
-    }
 
-    revalidateTag('matches')
-    return { success: true, count: totalSettled }
+        revalidateTag('matches');
+        return { success: true, count: totalSettled };
+    } catch (error) {
+        console.error("Sync settlements error:", error);
+        return { success: false, error: "Sync failed" };
+    }
 }
