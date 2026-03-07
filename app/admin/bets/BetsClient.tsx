@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from "react"
-import { Search, Filter, History, User, Activity, ArrowRight, ShieldAlert, CheckCircle2, Clock } from "lucide-react"
+import { Search, Filter, History, User, Activity, ArrowRight, ShieldAlert, CheckCircle2, Clock, Target, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { AdminBetDetailModal } from "@/components/admin/AdminBetDetailModal"
 
 interface BetsClientProps {
     initialBets: any[]
@@ -12,6 +13,7 @@ interface BetsClientProps {
 export function BetsClient({ initialBets }: BetsClientProps) {
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
+    const [selectedBet, setSelectedBet] = useState<any>(null)
 
     const filteredBets = initialBets.filter(bet => {
         const matchesSearch =
@@ -26,6 +28,12 @@ export function BetsClient({ initialBets }: BetsClientProps) {
 
     return (
         <div className="space-y-8">
+            <AdminBetDetailModal
+                bet={selectedBet}
+                isOpen={!!selectedBet}
+                onClose={() => setSelectedBet(null)}
+            />
+
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <div className="flex items-center gap-2 text-primary font-black uppercase tracking-tighter text-xs mb-2">
@@ -73,19 +81,23 @@ export function BetsClient({ initialBets }: BetsClientProps) {
 
             <div className="bg-[#0f1115] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="w-full text-left border-separate border-spacing-0">
                         <thead>
                             <tr className="border-b border-white/5">
                                 <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ticket Details</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Customer</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Financials</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Settled At</th>
+                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredBets.map((bet) => (
-                                <tr key={bet.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                                <tr
+                                    key={bet.id}
+                                    onClick={() => setSelectedBet(bet)}
+                                    className="border-b border-white/5 hover:bg-white/[0.04] transition-colors group cursor-pointer"
+                                >
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col gap-1">
                                             <span className="text-xs font-black text-white uppercase tracking-tight flex items-center gap-2">
@@ -122,9 +134,15 @@ export function BetsClient({ initialBets }: BetsClientProps) {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <span className="text-xs font-mono font-bold text-slate-500">
-                                            {format(new Date(bet.createdAt), "MMM d, HH:mm")}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all group-hover:bg-primary group-hover:text-white group-hover:border-primary">
+                                                <Eye className="h-3 w-3" />
+                                                Audit Ticket
+                                            </button>
+                                            <span className="text-[10px] font-mono font-bold text-slate-600">
+                                                {format(new Date(bet.createdAt), "MMM d, HH:mm")}
+                                            </span>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

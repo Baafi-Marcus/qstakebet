@@ -755,10 +755,11 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
             });
 
             // Generate a 'currentForm' multiplier: 1.0 is base. 
-            // Simple: +5% per win, -5% per loss, +2% per goal diff
+            // More aggressive: +15% per win, +5% per goal diff, +20% for perfect win rate
             const gd = gf - ga;
-            const formMultiplier = 1.0 + (wins * 0.05) + (gd * 0.02);
-            return { schoolId: id, currentForm: Math.max(0.7, Math.min(1.5, formMultiplier)), matchesPlayed: schoolMatches.length };
+            const winRate = schoolMatches.length > 0 ? wins / schoolMatches.length : 0;
+            const formMultiplier = 1.0 + (wins * 0.15) + (gd * 0.05) + (winRate * 0.2);
+            return { schoolId: id, currentForm: Math.max(0.5, Math.min(2.5, formMultiplier)), matchesPlayed: schoolMatches.length };
         });
     } else {
         liveStats = await db.select().from(realSchoolStats)
