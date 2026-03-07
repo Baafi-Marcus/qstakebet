@@ -6,7 +6,7 @@ import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { auth } from "./auth"
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 import { isAdmin } from "./admin-utils"
 
 // import { School, Tournament } from "./types" 
@@ -41,6 +41,7 @@ export async function smartUpsertSchools(schoolList: string[], region: string) {
         results.push({ ...newSchool[0], status: 'created' });
     }
 
+    revalidatePath("/admin/schools");
     return results;
 }
 
@@ -125,7 +126,9 @@ export async function upsertTournamentRoster(tournamentId: string, rosterText: s
         }
     }).where(eq(tournaments.id, tournamentId));
 
-    revalidateTag("tournaments")
+    revalidateTag("tournaments");
+    revalidatePath("/admin/tournaments");
+    revalidatePath("/admin/schools");
     return results;
 }
 
@@ -163,6 +166,7 @@ export async function createSchoolAction(data: {
             wins: 0
         });
 
+        revalidatePath("/admin/schools");
         return { success: true, school: newSchool };
     } catch (error) {
         console.error("Create school error:", error);
@@ -264,6 +268,7 @@ export async function updateSchoolAction(id: string, data: {
                 }
             }
 
+            revalidatePath("/admin/schools");
             return { success: true };
         });
     } catch (error) {
@@ -280,6 +285,7 @@ export async function deleteSchoolAction(id: string) {
             await tx.delete(realSchoolStats).where(eq(realSchoolStats.schoolId, id));
             await tx.delete(schoolStrengths).where(eq(schoolStrengths.schoolId, id));
             await tx.delete(schools).where(eq(schools.id, id));
+            revalidatePath("/admin/schools");
             return { success: true };
         });
     } catch (error) {
@@ -329,7 +335,8 @@ export async function createTournament(data: {
         status: 'active'
     }).returning();
 
-    revalidateTag("tournaments")
+    revalidateTag("tournaments");
+    revalidatePath("/admin/tournaments");
     return result;
 }
 
@@ -380,7 +387,8 @@ export async function updateTournament(id: string, data: {
         .where(eq(tournaments.id, id))
         .returning();
 
-    revalidateTag("tournaments")
+    revalidateTag("tournaments");
+    revalidatePath("/admin/tournaments");
     return result;
 }
 
@@ -397,8 +405,9 @@ export async function deleteTournament(id: string) {
             if (result.length === 0) {
                 return { success: false, error: "Tournament not found or already deleted." };
             }
-            revalidateTag("tournaments")
-            revalidateTag("matches")
+            revalidateTag("tournaments");
+            revalidateTag("matches");
+            revalidatePath("/admin/tournaments");
             return { success: true };
         } catch (e) {
             console.error("Delete tournament error:", e);
@@ -442,6 +451,7 @@ export async function forceDeleteTournament(id: string) {
 
         revalidateTag("tournaments");
         revalidateTag("matches");
+        revalidatePath("/admin/tournaments");
         return { success: true };
     } catch (e) {
         console.error("Force delete tournament error:", e);
@@ -478,6 +488,7 @@ export async function removeSchoolFromRoster(tournamentId: string, schoolId: str
             }).where(eq(tournaments.id, tournamentId));
 
             revalidateTag("tournaments");
+            revalidatePath("/admin/tournaments");
             return { success: true };
         }
 
@@ -580,7 +591,8 @@ export async function createMatch(data: {
         margin: 0.1
     }).returning();
 
-    revalidateTag("matches")
+    revalidateTag("matches");
+    revalidatePath("/admin/matches");
     return { success: true, results: result };
 }
 
@@ -695,7 +707,8 @@ export async function updateMatch(id: string, data: {
         .where(eq(matches.id, id))
         .returning();
 
-    revalidateTag("matches")
+    revalidateTag("matches");
+    revalidatePath("/admin/matches");
     return { success: true, results: result };
 }
 
@@ -719,6 +732,8 @@ export async function deleteMatch(id: string) {
 
     try {
         await db.delete(matches).where(eq(matches.id, id));
+        revalidateTag("matches");
+        revalidatePath("/admin/matches");
         return { success: true };
     } catch (e) {
         console.error("Delete match error:", e);
@@ -903,12 +918,16 @@ export async function updateMatchResult(matchId: string, resultData: {
                 }
             }
 
+            revalidateTag("matches");
+            revalidatePath("/admin/matches");
             return {
                 success: true,
                 message: `Match result saved. ${settlementResult.settledCount || 0} bets settled.`
             }
         }
 
+        revalidateTag("matches");
+        revalidatePath("/admin/matches");
         return { success: true, message: "Match result saved" }
     } catch (error) {
         console.error("Error updating match result:", error)
@@ -1297,7 +1316,8 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
             })
             .where(eq(matches.id, matchId))
 
-        revalidateTag("matches")
+        revalidateTag("matches");
+        revalidatePath("/admin/matches");
         return { success: true }
     } catch (error) {
         console.error("Publish Error:", error)
@@ -1319,6 +1339,8 @@ export async function startMatches(matchIds: string[]) {
             })
             .where(inArray(matches.id, matchIds))
 
+        revalidateTag("matches");
+        revalidatePath("/admin/matches");
         return { success: true, count: matchIds.length }
     } catch (error) {
         console.error("Bulk start error:", error)
@@ -1337,6 +1359,8 @@ export async function lockMatches(matchIds: string[]) {
             })
             .where(inArray(matches.id, matchIds))
 
+        revalidateTag("matches");
+        revalidatePath("/admin/matches");
         return { success: true, count: matchIds.length }
     } catch (error) {
         console.error("Bulk lock error:", error)
@@ -1382,6 +1406,8 @@ export async function adjustUserBalance(userId: string, amount: number, reason: 
             description: `Admin Adjustment: ${reason}`
         })
 
+        revalidatePath("/admin/users");
+        revalidatePath(`/admin/users/${userId}`);
         return { success: true, newBalance: balanceAfter }
     } catch (error) {
         console.error("Balance adjustment error:", error)
