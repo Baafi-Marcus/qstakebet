@@ -49,7 +49,7 @@ export default async function RewardsPage() {
 
                         <div className="bg-black/30 backdrop-blur-md border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4">
                             <div className="font-mono text-xl tracking-tight font-black truncate max-w-[65%] text-slate-100">
-                                {referralStats?.code ? `qstakebet.com/r/${referralStats.code}` : "Generating..."}
+                                {referralStats?.code ? `qstakebet.vercel.app/r/${referralStats.code}` : "Generating..."}
                             </div>
                             <CopyLinkButton referralCode={referralStats?.code || ""} />
                         </div>

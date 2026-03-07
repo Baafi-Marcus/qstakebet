@@ -138,25 +138,51 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                     </div>
 
                                     {/* Match Info */}
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-600 mt-3">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            <span>{sel.currentMatch?.startTime || "TBD"}</span>
+                                    <div className="flex flex-col gap-2 mt-3">
+                                        <div className="flex items-center gap-4 text-[10px] font-bold text-slate-600">
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                <span>{sel.currentMatch?.startTime || "TBD"}</span>
+                                            </div>
+                                            {sel.status && sel.status !== 'pending' && (
+                                                <div className={cn(
+                                                    "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                                                    sel.status === 'won' ? "bg-emerald-500/20 text-emerald-400" :
+                                                        sel.status === 'lost' ? "bg-red-500/20 text-red-400" : "bg-slate-700 text-slate-300"
+                                                )}>
+                                                    Result: {sel.status}
+                                                </div>
+                                            )}
                                         </div>
-                                        {sel.currentMatch?.status === 'finished' && (
-                                            <div className="flex items-center gap-2 p-2 bg-slate-950/50 rounded-md border border-white/5 mt-2">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[7px] text-slate-500 uppercase font-black tracking-widest">Match Outcome</span>
-                                                    <div className="text-[10px] font-bold text-emerald-400">
+
+                                        {(sel.currentMatch?.status === 'finished' || sel.currentMatch?.status === 'settled') && (
+                                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                                <div className="p-2 bg-slate-950/50 rounded-md border border-white/5">
+                                                    <span className="text-[7px] text-slate-500 uppercase font-black tracking-widest block mb-0.5">Match Score</span>
+                                                    <div className="text-[10px] font-black text-white/90">
                                                         {sel.currentMatch.result?.scores ?
                                                             Object.values(sel.currentMatch.result.scores).join(' - ') :
                                                             (sel.currentMatch.result?.winner || "Completed")}
                                                     </div>
                                                 </div>
+                                                <div className={cn(
+                                                    "p-2 rounded-md border",
+                                                    sel.status === 'won' ? "bg-emerald-500/10 border-emerald-500/20" :
+                                                        sel.status === 'lost' ? "bg-red-500/10 border-red-500/20" : "bg-slate-950/50 border-white/5"
+                                                )}>
+                                                    <span className="text-[7px] text-slate-500 uppercase font-black tracking-widest block mb-0.5">Market Outcome</span>
+                                                    <div className={cn(
+                                                        "text-[10px] font-black",
+                                                        sel.status === 'won' ? "text-emerald-400" :
+                                                            sel.status === 'lost' ? "text-red-400" : "text-slate-300"
+                                                    )}>
+                                                        {getMarketOutcomeLabel(sel)}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         {sel.currentMatch?.isLive && (
-                                            <div className="flex items-center gap-2 p-2 bg-red-500/5 rounded-md border border-red-500/10 mt-2">
+                                            <div className="flex items-center gap-2 p-2 bg-red-500/5 rounded-md border border-red-500/10 mt-1">
                                                 <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
                                                 <div className="flex flex-col">
                                                     <span className="text-[7px] text-red-500/70 uppercase font-black tracking-widest">Live Score</span>
@@ -185,4 +211,29 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
             </div>
         </div>
     )
+}
+
+function getMarketOutcomeLabel(sel: any) {
+    const market = sel.marketName?.toLowerCase() || "";
+    const result = sel.currentMatch?.result;
+    if (!result) return "TBD";
+
+    if (market.includes("winner") || market.includes("1x2") || market.includes("win")) {
+        if (result.winner === 'X') return 'Draw';
+        const winner = sel.currentMatch?.participants?.find((p: any) => p.schoolId === result.winner);
+        return winner?.name || result.winner || "Decided";
+    }
+    if (market.includes("total") || market.includes("over") || market.includes("under")) {
+        const scores = result.scores || {};
+        const total = Object.values(scores).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+        const threshold = parseFloat(sel.label.match(/[\d.]+/)?.[0] || "1.5");
+        return total > threshold ? `Over ${threshold}` : `Under ${threshold}`;
+    }
+    if (market.includes("btts")) {
+        const scores = result.scores || {};
+        const values = Object.values(scores);
+        const both = values.length >= 2 && values.every(s => (Number(s) || 0) > 0);
+        return both ? "Yes" : "No";
+    }
+    return sel.status === 'won' ? sel.label : "Settled";
 }

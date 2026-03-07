@@ -10,21 +10,44 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const russo = Russo_One({ weight: "400", subsets: ["latin"], variable: "--font-russo" });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://qstakebet.vercel.app';
+
 export const metadata: Metadata = {
-  title: "QSTAKEbet",
-  description: "Advanced betting platform for the National Science & Maths Quiz",
-  manifest: "/manifest.json",
-  themeColor: "#0f1115",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "QSTAKEbet | NSMQ Betting Excellence",
+    template: "%s | QSTAKEbet"
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "QSTAKEbet",
+  description: "Experience the thrill of the National Science & Maths Quiz with QSTAKEbet. Secure, fast, and competitive odds on your favorite schools.",
+  manifest: "/manifest.json",
+  keywords: ["NSMQ", "Betting", "Ghana", "Quiz", "Science", "Maths", "QSTAKEbet", "Virtual Sports"],
+  authors: [{ name: "QSTAKEbet Team" }],
+  creator: "QSTAKEbet",
+  openGraph: {
+    type: "website",
+    locale: "en_GH",
+    url: baseUrl,
+    siteName: "QSTAKEbet",
+    title: "QSTAKEbet | National Science & Maths Quiz Betting",
+    description: "Bet on your favorite schools in the National Science & Maths Quiz. Pure adrenaline, competitive odds.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "QSTAKEbet Dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "QSTAKEbet | NSMQ Betting Platform",
+    description: "The ultimate platform for National Science & Maths Quiz fans. Win big with your school!",
+    images: ["/twitter-image.png"],
+    creator: "@qstakebet",
+  },
+  alternates: {
+    canonical: "/",
   },
   icons: {
     icon: "/icon.png",
