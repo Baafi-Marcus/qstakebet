@@ -13,7 +13,7 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
 
     const selections = bet.selections as any[];
     const isMultiple = selections.length > 1;
-    const statusColor = bet.status === 'won' ? 'emerald' : bet.status === 'lost' ? 'slate' : 'blue';
+    const statusColor = bet.status === 'won' ? 'emerald' : bet.status === 'lost' ? 'red' : 'blue';
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -26,7 +26,7 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                 {/* Header */}
                 <div className={cn("px-4 py-3 flex items-center justify-between text-white shadow-md z-10",
                     statusColor === 'emerald' ? "bg-emerald-600" :
-                        statusColor === 'slate' ? "bg-slate-800" : "bg-blue-600"
+                        statusColor === 'red' ? "bg-red-600" : "bg-blue-600"
                 )}>
                     <div className="flex items-center gap-4">
                         <button onClick={onClose} className="p-1 hover:bg-black/10 rounded-full transition-colors">
@@ -51,20 +51,28 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                 <div className={cn(
                                     "px-2 py-0.5 rounded-md text-[10px] font-black uppercase inline-block w-fit",
                                     statusColor === 'emerald' ? "bg-emerald-500/20 text-emerald-400" :
-                                        statusColor === 'slate' ? "bg-slate-500/20 text-slate-400" : "bg-blue-500/20 text-blue-400"
+                                        statusColor === 'red' ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
                                 )}>
                                     {bet.status}
                                 </div>
-                                <h3 className="text-lg font-black text-white mt-1">
+                                <h3 className="text-lg font-black text-white mt-1 flex items-center gap-2">
                                     {bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
+                                    {bet.isBonusBet && (
+                                        <span className="px-1.5 py-0.5 bg-amber-500 text-black rounded text-[8px] font-black uppercase tracking-tighter">
+                                            Gift
+                                        </span>
+                                    )}
                                 </h3>
                             </div>
                             <div className="text-right">
                                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">
                                     {bet.status === 'won' ? "Paid Return" : "Potential Win"}
                                 </span>
-                                <div className={cn("text-2xl font-black mt-1", bet.status === 'won' ? "text-emerald-400" : "text-white")}>
-                                    {bet.potentialPayout.toLocaleString()}
+                                <div className={cn("text-2xl font-black mt-1",
+                                    bet.status === 'won' ? "text-emerald-400" :
+                                        bet.status === 'lost' ? "text-red-400" : "text-white"
+                                )}>
+                                    {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString()}
                                 </div>
                             </div>
                         </div>
@@ -126,11 +134,6 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                                     Bore Draw
                                                 </div>
                                             )}
-                                            {bet.isBonusBet && (
-                                                <div className="px-2 py-0.5 mt-1 w-fit bg-amber-500/10 border border-amber-500/30 rounded-md text-[8px] font-black text-amber-500 uppercase">
-                                                    Gift
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
@@ -140,15 +143,27 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                             <Clock className="h-3 w-3" />
                                             <span>{sel.currentMatch?.startTime || "TBD"}</span>
                                         </div>
-                                        {sel.currentMatch?.isLive && (
-                                            <div className="px-2 py-0.5 bg-red-500/10 border border-red-500/30 rounded-full text-[8px] font-black text-red-500 uppercase animate-pulse">
-                                                Live
+                                        {sel.currentMatch?.status === 'finished' && (
+                                            <div className="flex items-center gap-2 p-2 bg-slate-950/50 rounded-md border border-white/5 mt-2">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[7px] text-slate-500 uppercase font-black tracking-widest">Match Outcome</span>
+                                                    <div className="text-[10px] font-bold text-emerald-400">
+                                                        {sel.currentMatch.result?.scores ?
+                                                            Object.values(sel.currentMatch.result.scores).join(' - ') :
+                                                            (sel.currentMatch.result?.winner || "Completed")}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
-                                        {sel.currentMatch?.result?.scores && (
-                                            <div className="flex items-center gap-1 text-primary">
-                                                <Target className="h-3 w-3" />
-                                                <span>Live: {Object.values(sel.currentMatch.result.scores).join(' - ')}</span>
+                                        {sel.currentMatch?.isLive && (
+                                            <div className="flex items-center gap-2 p-2 bg-red-500/5 rounded-md border border-red-500/10 mt-2">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[7px] text-red-500/70 uppercase font-black tracking-widest">Live Score</span>
+                                                    <div className="text-[10px] font-black text-white">
+                                                        {sel.currentMatch.result?.scores ? Object.values(sel.currentMatch.result.scores).join(' - ') : "0 - 0"}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

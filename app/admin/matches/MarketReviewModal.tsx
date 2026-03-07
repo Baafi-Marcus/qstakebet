@@ -128,6 +128,14 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
         setDrafts(prev => prev.filter(d => d.id !== id))
     }
 
+    const removeSelection = (draftId: string, selectionIdx: number) => {
+        setDrafts(prev => prev.map(d => {
+            if (d.id !== draftId) return d
+            const newSelections = d.selections.filter((_, idx) => idx !== selectionIdx)
+            return { ...d, selections: newSelections }
+        }).filter(d => d.selections.length > 0)) // Auto-remove market if no selections left
+    }
+
     const updateDraftOdd = (draftId: string, selectionIdx: number, newOdd: string) => {
         const val = parseFloat(newOdd)
         setDrafts(prev => prev.map(d => {
@@ -201,23 +209,31 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                                                 className="bg-transparent text-slate-400 text-xs focus:outline-none w-full border-b border-transparent focus:border-purple-500/50"
                                             />
                                         </div>
-                                        <button onClick={() => removeDraft(draft.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2">
+                                        <button onClick={() => removeDraft(draft.id)} title="Delete entire market" className="text-slate-600 hover:text-red-400 transition-colors p-2">
                                             <Trash2 className="h-5 w-5" />
                                         </button>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                         {draft.selections.map((sel, idx) => (
-                                            <div key={idx} className="bg-black/30 p-3 rounded-lg border border-white/5 flex justify-between items-center">
-                                                <input
-                                                    value={sel.label}
-                                                    onChange={(e) => {
-                                                        const newSels = [...draft.selections]
-                                                        newSels[idx].label = e.target.value
-                                                        setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, selections: newSels } : d))
-                                                    }}
-                                                    className="bg-transparent text-slate-300 text-sm font-medium focus:outline-none w-full"
-                                                />
+                                            <div key={idx} className="bg-black/30 p-3 rounded-lg border border-white/5 flex flex-col gap-2 group/sel">
+                                                <div className="flex justify-between items-center gap-2">
+                                                    <input
+                                                        value={sel.label}
+                                                        onChange={(e) => {
+                                                            const newSels = [...draft.selections]
+                                                            newSels[idx].label = e.target.value
+                                                            setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, selections: newSels } : d))
+                                                        }}
+                                                        className="bg-transparent text-slate-300 text-sm font-medium focus:outline-none w-full"
+                                                    />
+                                                    <button
+                                                        onClick={() => removeSelection(draft.id, idx)}
+                                                        className="opacity-0 group-hover/sel:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
                                                 <div className="flex items-center gap-1 bg-slate-800 rounded px-2 py-1 border border-white/10">
                                                     <span className="text-white font-bold text-sm">x</span>
                                                     <input
@@ -225,7 +241,7 @@ export function MarketReviewModal({ match, onClose, onSuccess, publishAfter }: M
                                                         step="0.01"
                                                         value={sel.odds}
                                                         onChange={(e) => updateDraftOdd(draft.id, idx, e.target.value)}
-                                                        className="bg-transparent text-green-400 font-black text-right w-16 focus:outline-none"
+                                                        className="bg-transparent text-green-400 font-black text-right w-full focus:outline-none"
                                                     />
                                                 </div>
                                             </div>

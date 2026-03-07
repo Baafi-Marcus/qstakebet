@@ -771,16 +771,23 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
 
     // 2. Calculate probabilities
     let totalPower = 0;
+    const SHARPNESS_FACTOR = 1.5; // Amplifies rating differences to avoid "big odds" for favorites
+
     const schoolPowers = schoolIds.map(id => {
         // Base Rating (Default 50)
         const s = baseStrengths.find(st => st.schoolId === id);
-        let power = (s?.rating as { overall?: number })?.overall || 50;
+        const baseRating = (s?.rating as { overall?: number })?.overall || 50;
 
-        // Live Form Adjustment
+        // Scale power exponentially to widen the gap
+        let power = Math.pow(baseRating, SHARPNESS_FACTOR);
+
+        // Live Form Adjustment (More aggressive)
         const live = liveStats.find(l => l.schoolId === id);
         if (live && live.matchesPlayed && live.matchesPlayed > 0) {
             const formMultiplier = live.currentForm || 1.0;
-            power = power * formMultiplier;
+            // Apply form twice to power if it's a win streak
+            const aggressiveMultiplier = formMultiplier > 1 ? Math.pow(formMultiplier, 2) : formMultiplier;
+            power = power * aggressiveMultiplier;
         }
 
         totalPower += power;
@@ -792,9 +799,12 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
     schoolPowers.forEach(sp => {
         const prob = sp.power / totalPower;
         const rawOdd = 1 / prob;
-        let finalOdd = rawOdd * (1 - effectiveMargin);
 
-        // Apply Constraints
+        // Dynamic Margin: Lower margin for heavy favorites to keep odds attractive
+        const dynamicMargin = prob > 0.7 ? effectiveMargin * 0.7 : effectiveMargin;
+        let finalOdd = rawOdd * (1 - dynamicMargin);
+
+        // Apply Constraints (Min 1.01 for heavy favorites)
         finalOdd = Math.max(minOdd, Math.min(maxOdd, finalOdd));
 
         odds[sp.id] = parseFloat(finalOdd.toFixed(2));

@@ -13,7 +13,7 @@ interface BetTicketProps {
 export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
     const [showModal, setShowModal] = useState(false)
 
-    const statusColor = bet.status === 'won' ? 'emerald' : bet.status === 'lost' ? 'slate' : 'blue'
+    const statusColor = bet.status === 'won' ? 'emerald' : bet.status === 'lost' ? 'red' : 'blue'
     const selections = bet.selections as any[]
     const isMultiple = selections.length > 1
 
@@ -43,12 +43,17 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                 <div className={cn(
                     "px-6 py-2 flex items-center justify-between",
                     statusColor === 'emerald' ? "bg-emerald-500" :
-                        statusColor === 'slate' ? "bg-slate-700" : "bg-slate-800"
+                        statusColor === 'red' ? "bg-red-500" : "bg-slate-800"
                 )}>
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase text-white tracking-[0.2em]">
                             {bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
                         </span>
+                        {bet.isBonusBet && (
+                            <span className="px-1.5 py-0.5 bg-amber-500 text-black rounded text-[8px] font-black uppercase tracking-tighter">
+                                Gift
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         {bet.status === 'won' && <Trophy className="h-3 w-3 text-white fill-white" />}
@@ -122,8 +127,11 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                     <span className="text-[10px] font-bold text-slate-500">GHS</span>
                                     <span className={cn(
                                         "text-xl font-black",
-                                        bet.status === 'won' ? "text-emerald-400" : "text-white"
-                                    )}>{bet.potentialPayout.toLocaleString()}</span>
+                                        bet.status === 'won' ? "text-emerald-400" :
+                                            bet.status === 'lost' ? "text-red-400" : "text-white"
+                                    )}>
+                                        {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString()}
+                                    </span>
                                 </div>
                             </div>
                         </div>
