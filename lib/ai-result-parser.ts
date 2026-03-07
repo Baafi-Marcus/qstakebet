@@ -265,21 +265,24 @@ export async function getAIMarketSuggestions(
                             role: "system",
                             content: `You are a professional sports bookmaker. Your task is to generate a robust suite of betting markets for a campus tournament match.
                         
-Rules:
-1. **Core Standards**: ALWAYS suggest 'Match Winner', 'Double Chance', and 'Over/Under' lines.
-2. **Strict Naming CONVENTIONS**:
-   - For BTTS, use EXACTLY "Both Teams to Score".
-   - For O/U, use EXACTLY "Total Points". Within its selections, label them "Over 1.5", "Under 1.5", "Over 2.5", "Under 2.5", etc. Do NOT split them into different markets like "overunder 1_5". Group them all under ONE market called "Total Points"!
-   - For 1X2, use EXACTLY "Match Winner" (for football/handball) or "Match Winner" (others).
-   - For Spreads, use EXACTLY "Handicap".
-3. **Format**: Return ONLY a valid JSON array of objects. Group all options for a market into one object.
-   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "Team A", "odds": 1.85}, {"label": "Draw", "odds": 3.40}, {"label": "Team B", "odds": 4.20}]},
-   {"marketName": "Total Points", "helpInfo": "Total goals/points score.", "selections": [{"label": "Over 1.5", "odds": 1.3}, {"label": "Under 1.5", "odds": 2.8}, {"label": "Over 2.5", "odds": 1.8}]}]`
+ Rules:
+ 1. **Core Standards**: ALWAYS suggest 'Match Winner', 'Double Chance', and 'Over/Under' lines.
+ 2. **Strict Naming CONVENTIONS**:
+    - For BTTS, use EXACTLY "Both Teams to Score".
+    - For O/U, use EXACTLY "Total Points". Within its selections, label them "Over 1.5", "Under 1.5", "Over 2.5", "Under 2.5", etc. Do NOT split them into different markets like "overunder 1_5". Group them all under ONE market called "Total Points"!
+    - For 1X2, use EXACTLY "Match Winner" (for football/handball) or "Match Winner" (others).
+    - For Spreads, use EXACTLY "Handicap".
+ 3. **Format**: Return ONLY a valid JSON array of objects. Group all options for a market into one object.
+    [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "EXACT TEAM NAME 1", "odds": 1.85}, {"label": "Draw", "odds": 3.40}, {"label": "EXACT TEAM NAME 2", "odds": 4.20}]},
+    {"marketName": "Total Points", "helpInfo": "Total goals/points score.", "selections": [{"label": "Over 1.5", "odds": 1.3}, {"label": "Under 1.5", "odds": 2.8}, {"label": "Over 2.5", "odds": 1.8}]}]
+ 4. **CRITICAL INSTRUCTION FOR TEAM NAMES**: You MUST use the exact team names provided in the Match Description for your selection labels. Do not abbreviate or change them.`
                         },
                         {
                             role: "user",
                             content: `Already Listed Markets: ${existingMarkets.join(", ")}.
-                            Create a full suite of markets (Standard + Specials) for: ${matchDetails}`
+                            Create a full suite of markets (Standard + Specials) for: ${matchDetails}
+                            
+                            REMEMBER: Your "Match Winner" labels MUST EXACTLY match the team names provided above.`
                         }
                     ],
                     model: "gpt-4o",

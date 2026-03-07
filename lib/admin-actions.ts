@@ -1231,17 +1231,33 @@ export async function publishMatchMarkets(matchId: string, newMarkets: Array<{
             if (nameLower === 'match winner' || nameLower === '1x2' || nameLower === 'winner') {
                 hasWinnerSync = true
                 m.selections.forEach(s => {
-                    const label = s.label.toLowerCase()
+                    const label = s.label.toLowerCase().trim()
                     if (label === 'draw' || label === 'x') {
                         newPrimaryOdds['X'] = s.odds
                     } else {
-                        // Match with participants
-                        const p = participants.find(part =>
-                            part.name.toLowerCase() === s.label.toLowerCase() ||
-                            s.label.toLowerCase().includes(part.name.toLowerCase())
+                        // Better fuzzy match with participants to handle AI variations
+                        let bestMatch = participants.find(part =>
+                            part.name.toLowerCase().trim() === label
                         )
-                        if (p) {
-                            newPrimaryOdds[p.schoolId] = s.odds
+
+                        if (!bestMatch) {
+                            bestMatch = participants.find(part =>
+                                label.includes(part.name.toLowerCase().trim()) ||
+                                part.name.toLowerCase().trim().includes(label)
+                            )
+                        }
+
+                        // Last resort simple word overlap
+                        if (!bestMatch) {
+                            const labelWords = label.split(' ')
+                            bestMatch = participants.find(part => {
+                                const partName = part.name.toLowerCase().trim()
+                                return labelWords.some(w => w.length > 3 && partName.includes(w))
+                            })
+                        }
+
+                        if (bestMatch) {
+                            newPrimaryOdds[bestMatch.schoolId] = s.odds
                         }
                     }
                 })
