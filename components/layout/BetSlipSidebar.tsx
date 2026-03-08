@@ -189,43 +189,81 @@ export function BetSlipSidebar() {
         }
     }
 
-    // ---------- COMBINATIONS LOGIC ----------
-    const isSameMatchCombinations = React.useMemo(() => {
+    // ---------- COMBINATIONS LOGIC (SportyBet Style) ----------
+    const isSystemBet = React.useMemo(() => {
         if (selections.length < 2) return false
-        const firstMatchId = selections[0].matchId
-        return selections.every(s => s.matchId === firstMatchId)
+        // Group by matchId
+        const groups: Record<string, any[]> = {}
+        selections.forEach(s => {
+            if (!groups[s.matchId]) groups[s.matchId] = []
+            groups[s.matchId].push(s)
+        })
+        // It's a system bet if ANY match has more than 1 selection
+        return Object.values(groups).some(g => g.length > 1)
     }, [selections])
 
     const combinations = React.useMemo(() => {
-        if (!isSameMatchCombinations) return []
-        const n = selections.length
-        const results = []
-        for (let i = 0; i < (1 << n); i++) {
-            const combo = []
-            for (let j = 0; j < n; j++) {
-                if (i & (1 << j)) {
-                    combo.push(selections[j])
+        if (!isSystemBet) return []
+
+        // 1. Group selections by matchId
+        const groupsMap: Record<string, any[]> = {}
+        selections.forEach(s => {
+            if (!groupsMap[s.matchId]) groupsMap[s.matchId] = []
+            groupsMap[s.matchId].push(s)
+        })
+
+        // 2. For each match, generate its "options" set
+        const matchOptionSets: any[][] = []
+
+        Object.values(groupsMap).forEach(matchPicks => {
+            if (matchPicks.length === 1) {
+                // Only one pick, so the only option is this pick as a single leg
+                matchOptionSets.push([matchPicks])
+            } else {
+                // Multiple picks in same match -> generate power set of 2+ picks
+                const matchCombos = []
+                const n = matchPicks.length
+                for (let i = 0; i < (1 << n); i++) {
+                    const combo = []
+                    for (let j = 0; j < n; j++) {
+                        if (i & (1 << j)) combo.push(matchPicks[j])
+                    }
+                    if (combo.length >= 2) {
+                        matchCombos.push(combo)
+                    }
+                }
+                matchOptionSets.push(matchCombos)
+            }
+        })
+
+        // 3. Cartesian Product (Cross-Join) across all match sets
+        // Example: if Match A has sets [A1, A2] and Match B has sets [B1]
+        // Result is [ [...A1, ...B1], [...A2, ...B1] ]
+        let results: any[][] = [[]]
+
+        for (const set of matchOptionSets) {
+            const nextResults: any[][] = []
+            for (const currentCombo of results) {
+                for (const option of set) {
+                    nextResults.push([...currentCombo, ...option])
                 }
             }
-            if (combo.length >= 2) {
-                // Check if all are active
-                if (combo.some((s: any) => s.matchStatus === 'finished')) continue
-                results.push(combo)
-            }
+            results = nextResults
         }
+
         return results
-    }, [selections, isSameMatchCombinations])
+    }, [selections, isSystemBet])
 
     const totalStake = React.useMemo(() => {
         if (betMode === 'single') {
             return selections.reduce((acc, s) => acc + (s.stake || stake), 0)
         }
         // If Combination mode
-        if (isSameMatchCombinations && betMode === 'multiple') {
+        if (isSystemBet && betMode === 'multiple') {
             return stake * combinations.length
         }
         return stake
-    }, [betMode, selections, stake, isSameMatchCombinations, combinations.length])
+    }, [betMode, selections, stake, isSystemBet, combinations.length])
 
     const calculateAccumulatorTotalOdds = () => {
         return selections.reduce((acc, curr) => {
@@ -235,7 +273,7 @@ export function BetSlipSidebar() {
     }
 
     const { minOdds, maxOdds, minWin, maxWin, totalOdds } = React.useMemo(() => {
-        if (betMode === 'multiple' && isSameMatchCombinations && combinations.length > 0) {
+        if (betMode === 'multiple' && isSystemBet && combinations.length > 0) {
             const comboOdds = combinations.map(combo => combo.reduce((acc, curr) => acc * curr.odds, 1))
             const comboWins = comboOdds.map(odds => stake * odds)
             return {
@@ -256,7 +294,7 @@ export function BetSlipSidebar() {
             maxWin: 0,
             totalOdds: odds
         }
-    }, [betMode, isSameMatchCombinations, combinations, stake, selections])
+    }, [betMode, isSystemBet, combinations, stake, selections])
 
     const calculatePotentialWin = () => {
         if (betMode === 'single') {
@@ -267,7 +305,7 @@ export function BetSlipSidebar() {
             }, 0)
         }
 
-        if (isSameMatchCombinations) {
+        if (isSystemBet) {
             // UI shows the range, but for total Potential Win sum (max possible) we sum all combinations
             return combinations.reduce((acc, combo) => {
                 const odd = combo.reduce((a, s) => a * s.odds, 1)
@@ -567,10 +605,10 @@ export function BetSlipSidebar() {
                             {/* Summary Grid */}
                             <div className="grid grid-cols-2 gap-2 bg-slate-800/50 rounded-lg p-2 border border-slate-800">
                                 {/* Total Stake Section */}
-                                <div className={cn(betMode === 'multiple' && isSameMatchCombinations ? "col-span-2 flex justify-between items-center" : "")}>
+                                <div className={cn(betMode === 'multiple' && isSystemBet ? "col-span-2 flex justify-between items-center" : "")}>
                                     <div>
                                         <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">
-                                            {isSameMatchCombinations && betMode === 'multiple' ? `Stake per bet (x${combinations.length} bets)` : "Total Stake"}
+                                            {isSystemBet && betMode === 'multiple' ? `Stake per bet (x${combinations.length} bets)` : "Total Stake"}
                                         </span>
                                         <div className="flex items-center gap-1">
                                             <span className="text-[10px] font-bold text-slate-500">GHS</span>
@@ -602,7 +640,7 @@ export function BetSlipSidebar() {
                                     </div>
 
                                     {/* NEW: Total Stake Display for Combinations */}
-                                    {isSameMatchCombinations && betMode === 'multiple' && (
+                                    {isSystemBet && betMode === 'multiple' && (
                                         <div className="text-right">
                                             <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Total Stake</span>
                                             <div className="text-sm font-black text-white">
@@ -613,9 +651,9 @@ export function BetSlipSidebar() {
                                 </div>
 
                                 {/* Odds Section */}
-                                <div className={cn("text-right flex flex-col items-end", betMode === 'multiple' && isSameMatchCombinations ? "col-span-2 text-left items-start mt-2 border-t border-slate-700 pt-2" : "")}>
-                                    <div className={cn("flex items-center gap-1.5 mb-0.5", betMode === 'multiple' && isSameMatchCombinations ? "flex-row-reverse justify-end" : "")}>
-                                        {gifts.length > 0 && !isSameMatchCombinations && (
+                                <div className={cn("text-right flex flex-col items-end", betMode === 'multiple' && isSystemBet ? "col-span-2 text-left items-start mt-2 border-t border-slate-700 pt-2" : "")}>
+                                    <div className={cn("flex items-center gap-1.5 mb-0.5", betMode === 'multiple' && isSystemBet ? "flex-row-reverse justify-end" : "")}>
+                                        {gifts.length > 0 && !isSystemBet && (
                                             <button
                                                 onClick={() => setShowGiftModal(true)}
                                                 className={cn(
@@ -627,11 +665,11 @@ export function BetSlipSidebar() {
                                             </button>
                                         )}
                                         <span className="text-[9px] uppercase font-bold text-slate-500">
-                                            {isSameMatchCombinations && betMode === 'multiple' ? "Odds Range" : "Total Odds"}
+                                            {isSystemBet && betMode === 'multiple' ? "Odds Range" : "Total Odds"}
                                         </span>
                                     </div>
-                                    <span className={cn("text-sm font-black", betMode === 'multiple' && isSameMatchCombinations ? "text-yellow-400" : "text-white")}>
-                                        {isSameMatchCombinations && betMode === 'multiple'
+                                    <span className={cn("text-sm font-black", betMode === 'multiple' && isSystemBet ? "text-yellow-400" : "text-white")}>
+                                        {isSystemBet && betMode === 'multiple'
                                             ? `${minOdds.toFixed(2)} ~ ${maxOdds.toFixed(2)}`
                                             : totalOdds.toFixed(2)
                                         }
@@ -639,23 +677,23 @@ export function BetSlipSidebar() {
                                 </div>
 
                                 {/* Bonus / Max Win */}
-                                <div className={cn("col-span-1", isSameMatchCombinations && betMode === 'multiple' ? "hidden" : "")}>
+                                <div className={cn("col-span-1", isSystemBet && betMode === 'multiple' ? "hidden" : "")}>
                                     <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Max Bonus</span>
                                     <span className="text-sm font-black text-green-500">
                                         {cappedBonus.toFixed(2)}
                                     </span>
                                 </div>
-                                <div className={cn("text-right", isSameMatchCombinations && betMode === 'multiple' ? "col-span-2 flex justify-between items-center" : "")}>
+                                <div className={cn("text-right", isSystemBet && betMode === 'multiple' ? "col-span-2 flex justify-between items-center" : "")}>
                                     <span className="text-[9px] uppercase font-bold text-slate-400 mb-0.5">
-                                        {isSameMatchCombinations && betMode === 'multiple' ? "Potential Win Range" : "Potential Win"}
+                                        {isSystemBet && betMode === 'multiple' ? "Potential Win Range" : "Potential Win"}
                                     </span>
                                     <div className="text-base font-black text-white tracking-tight leading-none text-right">
-                                        {isSameMatchCombinations && betMode === 'multiple'
+                                        {isSystemBet && betMode === 'multiple'
                                             ? `GHS ${minWin.toFixed(2)} ~ ${maxWin.toFixed(2)}`
                                             : `GHS ${finalPotentialWin.toFixed(2)}`
                                         }
                                     </div>
-                                    {useBonus && !isSameMatchCombinations && (
+                                    {useBonus && !isSystemBet && (
                                         <div className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter mt-1">
                                             Profit only credited (Stake deducted)
                                         </div>
@@ -757,7 +795,7 @@ export function BetSlipSidebar() {
                                                     } else {
                                                         const finalBonus = useBonus ? Math.min(bonusAmount, stake) : 0
                                                         // Pass combinations if applicable
-                                                        const isCombinations = isSameMatchCombinations && betMode === 'multiple';
+                                                        const isCombinations = isSystemBet && betMode === 'multiple';
 
                                                         const result = await placeBet(
                                                             stake,
