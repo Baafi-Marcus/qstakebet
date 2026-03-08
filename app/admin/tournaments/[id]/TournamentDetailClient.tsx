@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
 import { useRouter } from "next/navigation"
-import { calculateGroupStandings } from "@/lib/match-utils"
+import { calculateGroupStandings, getQualifiedTeams } from "@/lib/match-utils"
 
 export function TournamentDetailClient({
     tournament,
@@ -43,6 +43,9 @@ export function TournamentDetailClient({
     )
 
     const groupMatches = matches.filter(m => !knockoutMatches.includes(m))
+
+    // Calculate Qualified Teams (if in league format)
+    const qualifiedData = format === 'league' ? getQualifiedTeams(groupMatches, groups) : null
 
     // Define available tabs
     const availableTabs = format === 'league'
@@ -142,6 +145,64 @@ export function TournamentDetailClient({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {activeTab === 'standings' && (
                     <div className="lg:col-span-12 space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                        {/* Qualification Summary */}
+                        {qualifiedData && (
+                            <div className="bg-slate-900/60 border border-white/5 rounded-[2.5rem] p-8">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="w-12 h-12 bg-yellow-500/10 rounded-2xl flex items-center justify-center">
+                                        <Trophy className="h-6 w-6 text-yellow-500" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Qualified for Knockouts</h2>
+                                        <p className="text-slate-500 text-sm font-medium">Automatic qualifiers and best runners-up logic applied.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                                            Group Winners (5)
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {qualifiedData.groupWinners.map((w, i) => (
+                                                <div key={w.schoolId} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group/item">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-black text-slate-600">#{i + 1}</span>
+                                                        <span className="text-sm font-bold text-white uppercase">{w.schoolName}</span>
+                                                    </div>
+                                                    <div className="px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-black rounded-lg border border-green-500/20 uppercase">Winner</div>
+                                                </div>
+                                            ))}
+                                            {qualifiedData.groupWinners.length === 0 && <p className="text-xs text-slate-600 italic">No winners identified yet.</p>}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                            Best Runners-Up (3)
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {qualifiedData.bestRunnersUp.map((r, i) => (
+                                                <div key={r.schoolId} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group/item">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-black text-slate-600">#{i + 1}</span>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-bold text-white uppercase">{r.schoolName}</span>
+                                                            <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest">{r.points} PTS • {r.gd > 0 ? `+${r.gd}` : r.gd} GD</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded-lg border border-blue-500/20 uppercase">Best 2nd</div>
+                                                </div>
+                                            ))}
+                                            {qualifiedData.bestRunnersUp.length === 0 && <p className="text-xs text-slate-600 italic">No runners-up identified yet.</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Group Standings */}
                         <div className="space-y-8">
                             {groups.map((group: string) => {
@@ -183,22 +244,38 @@ export function TournamentDetailClient({
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {fullStandings.map((s, idx) => (
-                                                        <tr key={s.schoolId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                                            <td className="px-6 py-4">
-                                                                <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-500' : 'bg-slate-800 text-slate-400'}`}>
-                                                                    {idx + 1}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 font-bold text-white text-sm uppercase tracking-tight">{s.schoolName}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-slate-300">{s.played}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-green-500">{s.won}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-slate-400">{s.drawn}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-red-500">{s.lost}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-bold text-slate-400">{s.gd > 0 ? `+${s.gd}` : s.gd}</td>
-                                                            <td className="px-6 py-4 text-center text-sm font-black text-purple-400">{s.points}</td>
-                                                        </tr>
-                                                    ))}
+                                                    {fullStandings.map((s, idx) => {
+                                                        const isQualified = qualifiedData?.allQualifiedIds.includes(s.schoolId)
+                                                        const isWinner = qualifiedData?.groupWinners.some(gw => gw.schoolId === s.schoolId)
+
+                                                        return (
+                                                            <tr key={s.schoolId} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${isQualified ? 'bg-purple-500/5' : ''}`}>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${isWinner ? 'bg-green-500/20 text-green-500' : isQualified ? 'bg-blue-500/20 text-blue-500' : 'bg-slate-800 text-slate-400'}`}>
+                                                                            {idx + 1}
+                                                                        </span>
+                                                                        {isQualified && (
+                                                                            <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${isWinner ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>Q</span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 font-bold text-white text-sm uppercase tracking-tight">
+                                                                    <div className="flex flex-col">
+                                                                        {s.schoolName}
+                                                                        {isWinner && <span className="text-[8px] text-green-500 font-black uppercase tracking-widest">Group Winner</span>}
+                                                                        {isQualified && !isWinner && <span className="text-[8px] text-blue-400 font-black uppercase tracking-widest">Qualified (Best 2nd)</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center text-sm font-bold text-slate-300">{s.played}</td>
+                                                                <td className="px-6 py-4 text-center text-sm font-bold text-green-500">{s.won}</td>
+                                                                <td className="px-6 py-4 text-center text-sm font-bold text-slate-400">{s.drawn}</td>
+                                                                <td className="px-6 py-4 text-center text-sm font-bold text-red-500">{s.lost}</td>
+                                                                <td className="px-6 py-4 text-center text-sm font-bold text-slate-400">{s.gd > 0 ? `+${s.gd}` : s.gd}</td>
+                                                                <td className="px-6 py-4 text-center text-sm font-black text-purple-400">{s.points}</td>
+                                                            </tr>
+                                                        )
+                                                    })}
                                                 </tbody>
                                             </table>
                                         </div>

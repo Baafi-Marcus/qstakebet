@@ -163,6 +163,12 @@ export interface GroupStanding {
     points: number
 }
 
+export interface QualifiedTeams {
+    groupWinners: GroupStanding[]
+    bestRunnersUp: GroupStanding[]
+    allQualifiedIds: string[]
+}
+
 /**
  * Calculates current group standings based on finished matches.
  */
@@ -230,4 +236,43 @@ export function calculateGroupStandings(matches: Match[], groupName: string): Gr
         if (b.gd !== a.gd) return b.gd - a.gd
         return b.gf - a.gf
     })
+}
+
+/**
+ * Identifies the 8 teams that qualify for the Quarter-Finals.
+ * Rules: 
+ * 1. Top team from each of the 5 groups.
+ * 2. 3 best second-placed teams across all groups.
+ */
+export function getQualifiedTeams(matches: Match[], groupNames: string[]): QualifiedTeams {
+    const groupWinners: GroupStanding[] = []
+    const allRunnersUp: GroupStanding[] = []
+
+    groupNames.forEach(groupName => {
+        const standings = calculateGroupStandings(matches, groupName)
+        if (standings.length > 0) {
+            groupWinners.push(standings[0])
+            if (standings.length > 1) {
+                allRunnersUp.push(standings[1])
+            }
+        }
+    })
+
+    // Sort all runners-up to find the best 3
+    const bestRunnersUp = [...allRunnersUp].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points
+        if (b.gd !== a.gd) return b.gd - a.gd
+        return b.gf - a.gf
+    }).slice(0, 3)
+
+    const allQualifiedIds = [
+        ...groupWinners.map(gw => gw.schoolId),
+        ...bestRunnersUp.map(bru => bru.schoolId)
+    ]
+
+    return {
+        groupWinners,
+        bestRunnersUp,
+        allQualifiedIds
+    }
 }
