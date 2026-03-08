@@ -292,6 +292,7 @@ export async function getAllBets() {
             potentialPayout: bets.potentialPayout,
             status: bets.status,
             mode: bets.mode,
+            combinations: bets.combinations,
             createdAt: bets.createdAt,
             selections: bets.selections
         })

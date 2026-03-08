@@ -56,7 +56,7 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                     {bet.status}
                                 </div>
                                 <h3 className="text-lg font-black text-white mt-1 flex items-center gap-2">
-                                    {bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
+                                    {bet.mode === 'system' ? 'System' : bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
                                     {bet.isBonusBet && (
                                         <span className="px-1.5 py-0.5 bg-amber-500 text-black rounded text-[8px] font-black uppercase tracking-tighter">
                                             Gift
@@ -72,22 +72,25 @@ export function BetTicketModal({ isOpen, onClose, bet }: BetTicketModalProps) {
                                     bet.status === 'won' ? "text-emerald-400" :
                                         bet.status === 'lost' ? "text-red-400" : "text-white"
                                 )}>
-                                    {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString()}
+                                    {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                             <div>
-                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Stake</div>
+                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                                    {bet.mode === 'system' ? `Total Stake (${bet.combinations?.length} bets)` : "Total Stake"}
+                                </div>
                                 <div className="text-sm font-black text-white">
-                                    {bet.stake.toLocaleString()}
+                                    <span className="text-[10px] text-slate-500 pr-1">GHS</span>
+                                    {(bet.mode === 'system' ? bet.stake * (bet.combinations?.length || 1) : bet.stake).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                             <div className="text-right">
                                 <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Total Odds</div>
                                 <div className="text-sm font-black text-white">
-                                    {bet.totalOdds.toFixed(2)}
+                                    {bet.mode === 'system' ? "System" : bet.totalOdds.toFixed(2)}
                                 </div>
                             </div>
                         </div>

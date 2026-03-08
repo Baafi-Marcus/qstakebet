@@ -55,5 +55,6 @@ export const PlaceBetSchema = z.object({
     selections: z.array(SelectionSchema).min(1, "At least one selection is required"),
     bonusId: z.string().optional(),
     bonusAmount: z.number().default(0),
-    mode: z.enum(["single", "multi"]).default("multi")
+    mode: z.enum(["single", "multi", "system"]).default("multi"),
+    combinations: z.array(z.array(SelectionSchema)).optional()
 });

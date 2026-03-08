@@ -17,7 +17,7 @@ export type SelectionInput = {
     matchLabel: string
 }
 
-export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0, mode: 'single' | 'multi' = 'multi') {
+export async function placeBet(stake: number, selections: SelectionInput[], bonusId?: string, bonusAmount: number = 0, mode: 'single' | 'multi' | 'system' = 'multi', combinations?: SelectionInput[][]) {
     // Rate limit: 5 bets per minute per IP
     const limiter = await rateLimit("place-bet", 5, 60000);
     if (!limiter.success) {
@@ -25,7 +25,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
     }
 
     // Zod Validation
-    const validation = PlaceBetSchema.safeParse({ stake, selections, bonusId, bonusAmount, mode });
+    const validation = PlaceBetSchema.safeParse({ stake, selections, bonusId, bonusAmount, mode, combinations });
     if (!validation.success) {
         console.error("Bet validation failed:", validation.error.format());
         return { success: false, error: validation.error.issues[0].message };
@@ -43,8 +43,11 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
     const { FINANCE_LIMITS } = await import("@/lib/constants")
 
+    // Calculate Total Stake Deduction
+    const totalWager = mode === 'system' && combinations ? stake * combinations.length : stake;
+
     // Limit check
-    if (stake > FINANCE_LIMITS.BET.MAX_STAKE) {
+    if (totalWager > FINANCE_LIMITS.BET.MAX_STAKE) {
         return { success: false, error: `Maximum stake allowed is GHS ${FINANCE_LIMITS.BET.MAX_STAKE}` }
     }
 
@@ -143,8 +146,8 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
             // Calculate required cash stake
             // FEATURE: Cap bonus deduction at stake amount
-            const actualBonusStake = Math.min(stake, bonusAmount)
-            const cashAmount = Math.max(0, stake - actualBonusStake)
+            const actualBonusStake = Math.min(totalWager, bonusAmount)
+            const cashAmount = Math.max(0, totalWager - actualBonusStake)
 
             // Validate Gift usage if applicable
             if (actualBonusStake > 0) {
@@ -183,10 +186,13 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
             let potentialPayout = 0
             if (mode === 'single') {
-                const stakePerSelection = stake / selections.length
+                const stakePerSelection = totalWager / selections.length
                 potentialPayout = selections.reduce((acc, s) => acc + (stakePerSelection * s.odds), 0)
+            } else if (mode === 'system' && combinations) {
+                const comboPayouts = combinations.map(combo => combo.reduce((acc, curr) => acc * curr.odds, 1) * stake);
+                potentialPayout = comboPayouts.reduce((a, b) => a + b, 0);
             } else {
-                potentialPayout = stake * totalOdds
+                potentialPayout = totalWager * totalOdds
             }
 
             let bonusGiftAmount = 0
@@ -215,7 +221,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
             // GIFT RULE: If using a gift, winnings = (Stake * Odds) - Stake (Profit Only)
             if (actualBonusStake > 0) {
-                potentialPayout = Math.max(0, potentialPayout - stake)
+                potentialPayout = Math.max(0, potentialPayout - totalWager)
             }
 
             // 3. Payout Limit Check
@@ -228,12 +234,13 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             await tx.insert(bets).values({
                 id: betId,
                 userId,
-                stake,
-                totalOdds,
+                stake: stake, // Save the per-bet stake or single stake
+                totalOdds: mode === 'system' ? 0 : totalOdds,
                 potentialPayout,
                 status: "pending",
                 selections: selections.map(s => ({ ...s, status: 'pending' })), // Initial status for each leg
-                mode: mode, // "single" or "multi"
+                mode: mode, // "single" or "multi" or "system"
+                combinations: mode === 'system' ? combinations : null,
                 isBonusBet: bonusAmount > 0,
                 bonusUsed: bonusId,
                 bonusAmountUsed: bonusAmount,
@@ -290,7 +297,7 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
                 userId,
                 walletId: wallet.id,
                 type: isBonus ? "bonus_stake" : "bet_stake",
-                amount: stake,
+                amount: totalWager,
                 balanceBefore: isBonus ? wallet.bonusBalance : wallet.balance,
                 balanceAfter: isBonus ? wallet.bonusBalance - actualBonusStake : wallet.balance - cashAmount,
                 paymentStatus: "success",
@@ -303,7 +310,9 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
             for (const selection of selections) {
                 // Record stake for dynamic odds (Skip for outrights as they are handled differently)
                 if (!selection.tournamentId && !selection.matchId.startsWith('outright-')) {
-                    await recordBetStake(selection.matchId, selection.selectionId, stake)
+                    // Spread total risk based on the stake proportion mapped to this selection in a system
+                    const stakeForOdds = mode === 'system' ? stake * Math.pow(2, selections.length - 2) : stake;
+                    await recordBetStake(selection.matchId, selection.selectionId, stakeForOdds)
                 }
             }
 

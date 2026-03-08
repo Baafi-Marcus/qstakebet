@@ -153,6 +153,7 @@ export const bets = pgTable("bets", {
     mode: text("mode").default("multi").notNull(), // "single", "multi"
     bonusAmountUsed: real("bonus_amount_used").default(0),
     bonusGiftAmount: real("bonus_gift_amount").default(0),
+    combinations: jsonb("combinations"), // Array of selection arrays for system bets
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),

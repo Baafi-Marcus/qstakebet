@@ -73,15 +73,15 @@ export function AdminBetDetailModal({ bet, isOpen, onClose }: AdminBetDetailModa
                         <div className="grid grid-cols-3 gap-8">
                             <div>
                                 <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Stake</div>
-                                <div className="text-xl font-black text-white tracking-tighter">₵{bet.stake.toLocaleString()}</div>
+                                <div className="text-xl font-black text-white tracking-tighter">₵{(bet.mode === 'system' ? bet.stake * (bet.combinations?.length || 1) : bet.stake).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
                             <div>
                                 <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Odds</div>
-                                <div className="text-xl font-black text-primary tracking-tighter">x{bet.totalOdds.toFixed(2)}</div>
+                                <div className="text-xl font-black text-primary tracking-tighter">{bet.mode === 'system' ? "SYSTEM" : `x${bet.totalOdds.toFixed(2)}`}</div>
                             </div>
                             <div>
                                 <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2">Potential Payout</div>
-                                <div className="text-xl font-black text-emerald-400 tracking-tighter">₵{bet.potentialPayout.toLocaleString()}</div>
+                                <div className="text-xl font-black text-emerald-400 tracking-tighter">₵{bet.potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
                         </div>
                     </div>

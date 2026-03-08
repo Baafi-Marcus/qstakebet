@@ -47,7 +47,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                 )}>
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase text-white tracking-[0.2em]">
-                            {bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
+                            {bet.mode === 'system' ? 'System' : bet.mode === 'multi' ? 'Multiple' : bet.mode === 'single' ? 'Single' : (isMultiple ? "Multiple" : "Single")}
                         </span>
                         {bet.isBonusBet && (
                             <span className="px-1.5 py-0.5 bg-amber-500 text-black rounded text-[8px] font-black uppercase tracking-tighter">
@@ -113,10 +113,14 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between bg-slate-800/20 -mx-6 -mb-6 px-6 py-4 rounded-b-[2rem]">
                         <div className="flex gap-8">
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Stake</span>
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                    {bet.mode === 'system' ? `Total Stake (${bet.combinations?.length} bets)` : "Total Stake"}
+                                </span>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-[10px] font-bold text-slate-500">GHS</span>
-                                    <span className="text-xl font-black text-white">{bet.stake.toLocaleString()}</span>
+                                    <span className="text-xl font-black text-white">
+                                        {(bet.mode === 'system' ? bet.stake * (bet.combinations?.length || 1) : bet.stake).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             </div>
                             <div className="flex flex-col">
@@ -130,7 +134,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                         bet.status === 'won' ? "text-emerald-400" :
                                             bet.status === 'lost' ? "text-red-400" : "text-white"
                                     )}>
-                                        {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString()}
+                                        {bet.status === 'lost' ? '0.00' : bet.potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             </div>

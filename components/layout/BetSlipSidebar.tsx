@@ -189,29 +189,94 @@ export function BetSlipSidebar() {
         }
     }
 
-    const totalOdds = selections.reduce((acc, curr) => {
-        // Only include active games in odds
-        if ((curr as any).matchStatus === 'finished') return acc
-        return acc * curr.odds
-    }, 1)
+    // ---------- COMBINATIONS LOGIC ----------
+    const isSameMatchCombinations = React.useMemo(() => {
+        if (selections.length < 2) return false
+        const firstMatchId = selections[0].matchId
+        return selections.every(s => s.matchId === firstMatchId)
+    }, [selections])
+
+    const combinations = React.useMemo(() => {
+        if (!isSameMatchCombinations) return []
+        const n = selections.length
+        const results = []
+        for (let i = 0; i < (1 << n); i++) {
+            const combo = []
+            for (let j = 0; j < n; j++) {
+                if (i & (1 << j)) {
+                    combo.push(selections[j])
+                }
+            }
+            if (combo.length >= 2) {
+                // Check if all are active
+                if (combo.some((s: any) => s.matchStatus === 'finished')) continue
+                results.push(combo)
+            }
+        }
+        return results
+    }, [selections, isSameMatchCombinations])
+
+    const totalStake = React.useMemo(() => {
+        if (betMode === 'single') {
+            return selections.reduce((acc, s) => acc + (s.stake || stake), 0)
+        }
+        // If Combination mode
+        if (isSameMatchCombinations && betMode === 'multiple') {
+            return stake * combinations.length
+        }
+        return stake
+    }, [betMode, selections, stake, isSameMatchCombinations, combinations.length])
+
+    const calculateAccumulatorTotalOdds = () => {
+        return selections.reduce((acc, curr) => {
+            if ((curr as any).matchStatus === 'finished') return acc
+            return acc * curr.odds
+        }, 1)
+    }
+
+    const { minOdds, maxOdds, minWin, maxWin, totalOdds } = React.useMemo(() => {
+        if (betMode === 'multiple' && isSameMatchCombinations && combinations.length > 0) {
+            const comboOdds = combinations.map(combo => combo.reduce((acc, curr) => acc * curr.odds, 1))
+            const comboWins = comboOdds.map(odds => stake * odds)
+            return {
+                minOdds: Math.min(...comboOdds),
+                maxOdds: Math.max(...comboOdds),
+                minWin: Math.min(...comboWins),
+                maxWin: Math.max(...comboWins),
+                totalOdds: 0 // Not applicable directly as a single number
+            }
+        }
+
+        // Single or Standard Multiple
+        const odds = calculateAccumulatorTotalOdds()
+        return {
+            minOdds: odds,
+            maxOdds: odds,
+            minWin: 0,
+            maxWin: 0,
+            totalOdds: odds
+        }
+    }, [betMode, isSameMatchCombinations, combinations, stake, selections])
 
     const calculatePotentialWin = () => {
         if (betMode === 'single') {
             return selections.reduce((acc, s) => {
-                // Don't count finished selections in win
                 if ((s as any).matchStatus === 'finished') return acc
                 const sStake = s.stake || stake
                 return acc + (sStake * s.odds)
             }, 0)
         }
 
-        // Multiples: only if all games are active (checked in buttons later)
+        if (isSameMatchCombinations) {
+            // UI shows the range, but for total Potential Win sum (max possible) we sum all combinations
+            return combinations.reduce((acc, combo) => {
+                const odd = combo.reduce((a, s) => a * s.odds, 1)
+                return acc + (stake * odd)
+            }, 0)
+        }
+
         return stake * totalOdds
     }
-
-    const totalStake = betMode === 'single'
-        ? selections.reduce((acc, s) => acc + (s.stake || stake), 0)
-        : stake
 
     const potentialWin = calculatePotentialWin()
 
@@ -501,39 +566,56 @@ export function BetSlipSidebar() {
                         <div className="mt-auto sticky bottom-0 z-10 bg-slate-900 border-t border-slate-800 p-2 pb-safe space-y-2 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
                             {/* Summary Grid */}
                             <div className="grid grid-cols-2 gap-2 bg-slate-800/50 rounded-lg p-2 border border-slate-800">
-                                <div>
-                                    <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Total Stake</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-[10px] font-bold text-slate-500">GHS</span>
-                                        {betMode === 'single' ? (
-                                            <span className="text-sm font-black text-white">{(totalStake - (useBonus ? bonusAmount : 0)).toFixed(2)}</span>
-                                        ) : (
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    type="number"
-                                                    value={stake}
-                                                    disabled={useBonus && bonusAmount >= stake}
-                                                    onChange={(e) => setStake(Math.max(0, Number(e.target.value)))}
-                                                    className="bg-transparent text-sm font-black text-white w-14 focus:outline-none border-b border-dashed border-slate-600 focus:border-green-500 transition-colors disabled:opacity-50"
-                                                />
-                                                {useBonus && (
-                                                    <span className="text-[10px] font-bold text-slate-500 line-through">
-                                                        {stake.toFixed(2)}
-                                                    </span>
-                                                )}
+                                {/* Total Stake Section */}
+                                <div className={cn(betMode === 'multiple' && isSameMatchCombinations ? "col-span-2 flex justify-between items-center" : "")}>
+                                    <div>
+                                        <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">
+                                            {isSameMatchCombinations && betMode === 'multiple' ? `Stake per bet (x${combinations.length} bets)` : "Total Stake"}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[10px] font-bold text-slate-500">GHS</span>
+                                            {betMode === 'single' ? (
+                                                <span className="text-sm font-black text-white">{(totalStake - (useBonus ? bonusAmount : 0)).toFixed(2)}</span>
+                                            ) : (
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="number"
+                                                        value={stake}
+                                                        disabled={useBonus && bonusAmount >= stake}
+                                                        onChange={(e) => setStake(Math.max(0, Number(e.target.value)))}
+                                                        className="bg-transparent text-sm font-black text-white w-14 focus:outline-none border-b border-dashed border-slate-600 focus:border-green-500 transition-colors disabled:opacity-50"
+                                                    />
+                                                    {useBonus && (
+                                                        <span className="text-[10px] font-bold text-slate-500 line-through">
+                                                            {stake.toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {useBonus && (
+                                            <div className="mt-0.5 flex items-center gap-1 text-[8px] font-black text-purple-400 uppercase">
+                                                <Gift className="h-2 w-2" />
+                                                -{bonusAmount.toFixed(2)} Gift Applied
                                             </div>
                                         )}
                                     </div>
-                                    {useBonus && (
-                                        <div className="mt-0.5 flex items-center gap-1 text-[8px] font-black text-purple-400 uppercase">
-                                            <Gift className="h-2 w-2" />
-                                            -{bonusAmount.toFixed(2)} Gift Applied
+
+                                    {/* NEW: Total Stake Display for Combinations */}
+                                    {isSameMatchCombinations && betMode === 'multiple' && (
+                                        <div className="text-right">
+                                            <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Total Stake</span>
+                                            <div className="text-sm font-black text-white">
+                                                GHS {(totalStake - (useBonus ? bonusAmount : 0)).toFixed(2)}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                        {gifts.length > 0 && (
+
+                                {/* Odds Section */}
+                                <div className={cn("text-right flex flex-col items-end", betMode === 'multiple' && isSameMatchCombinations ? "col-span-2 text-left items-start mt-2 border-t border-slate-700 pt-2" : "")}>
+                                    <div className={cn("flex items-center gap-1.5 mb-0.5", betMode === 'multiple' && isSameMatchCombinations ? "flex-row-reverse justify-end" : "")}>
+                                        {gifts.length > 0 && !isSameMatchCombinations && (
                                             <button
                                                 onClick={() => setShowGiftModal(true)}
                                                 className={cn(
@@ -544,22 +626,36 @@ export function BetSlipSidebar() {
                                                 <Gift className="h-3 w-3" />
                                             </button>
                                         )}
-                                        <span className="text-[9px] uppercase font-bold text-slate-500">Total Odds</span>
+                                        <span className="text-[9px] uppercase font-bold text-slate-500">
+                                            {isSameMatchCombinations && betMode === 'multiple' ? "Odds Range" : "Total Odds"}
+                                        </span>
                                     </div>
-                                    <span className="text-sm font-black text-white">{totalOdds.toFixed(2)}</span>
+                                    <span className={cn("text-sm font-black", betMode === 'multiple' && isSameMatchCombinations ? "text-yellow-400" : "text-white")}>
+                                        {isSameMatchCombinations && betMode === 'multiple'
+                                            ? `${minOdds.toFixed(2)} ~ ${maxOdds.toFixed(2)}`
+                                            : totalOdds.toFixed(2)
+                                        }
+                                    </span>
                                 </div>
-                                <div className="col-span-1">
+
+                                {/* Bonus / Max Win */}
+                                <div className={cn("col-span-1", isSameMatchCombinations && betMode === 'multiple' ? "hidden" : "")}>
                                     <span className="text-[9px] uppercase font-bold text-slate-500 block mb-0.5">Max Bonus</span>
                                     <span className="text-sm font-black text-green-500">
                                         {cappedBonus.toFixed(2)}
                                     </span>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-[9px] uppercase font-bold text-slate-400 mb-0.5">Potential Win</span>
-                                    <div className="text-base font-black text-white tracking-tight leading-none">
-                                        GHS {finalPotentialWin.toFixed(2)}
+                                <div className={cn("text-right", isSameMatchCombinations && betMode === 'multiple' ? "col-span-2 flex justify-between items-center" : "")}>
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 mb-0.5">
+                                        {isSameMatchCombinations && betMode === 'multiple' ? "Potential Win Range" : "Potential Win"}
+                                    </span>
+                                    <div className="text-base font-black text-white tracking-tight leading-none text-right">
+                                        {isSameMatchCombinations && betMode === 'multiple'
+                                            ? `GHS ${minWin.toFixed(2)} ~ ${maxWin.toFixed(2)}`
+                                            : `GHS ${finalPotentialWin.toFixed(2)}`
+                                        }
                                     </div>
-                                    {useBonus && (
+                                    {useBonus && !isSameMatchCombinations && (
                                         <div className="text-[7px] text-purple-400 font-bold uppercase tracking-tighter mt-1">
                                             Profit only credited (Stake deducted)
                                         </div>
@@ -660,12 +756,22 @@ export function BetSlipSidebar() {
                                                         }
                                                     } else {
                                                         const finalBonus = useBonus ? Math.min(bonusAmount, stake) : 0
-                                                        const result = await placeBet(stake, selections, bonusId, finalBonus)
+                                                        // Pass combinations if applicable
+                                                        const isCombinations = isSameMatchCombinations && betMode === 'multiple';
+
+                                                        const result = await placeBet(
+                                                            stake,
+                                                            selections,
+                                                            bonusId,
+                                                            finalBonus,
+                                                            isCombinations ? 'system' : 'multi', // 'system' represents combinations here
+                                                            isCombinations ? combinations : undefined // pass combinations to backend
+                                                        )
                                                         if (result.success) {
                                                             if (wallet) {
                                                                 setWallet(prev => prev ? ({
                                                                     ...prev,
-                                                                    balance: prev.balance - (stake - finalBonus),
+                                                                    balance: prev.balance - (totalStake - finalBonus),
                                                                     bonusBalance: prev.bonusBalance - finalBonus
                                                                 }) : null)
                                                             }

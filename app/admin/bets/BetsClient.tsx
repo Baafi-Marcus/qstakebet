@@ -105,7 +105,7 @@ export function BetsClient({ initialBets }: BetsClientProps) {
                                                 {bet.id}
                                             </span>
                                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                                {bet.mode} • {bet.selections?.length || 0} Selections
+                                                {bet.mode === 'system' ? 'System' : bet.mode} • {bet.selections?.length || 0} Selections
                                             </span>
                                         </div>
                                     </td>
@@ -122,9 +122,9 @@ export function BetsClient({ initialBets }: BetsClientProps) {
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black text-white">₵ {bet.stake.toLocaleString()}</span>
+                                            <span className="text-sm font-black text-white">₵ {(bet.mode === 'system' ? bet.stake * (bet.combinations?.length || 1) : bet.stake).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                                Payout: ₵ {bet.potentialPayout.toLocaleString()}
+                                                Payout: ₵ {bet.potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </td>

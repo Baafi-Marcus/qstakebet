@@ -185,38 +185,64 @@ export async function settleMatch(matchId: string) {
             const stillDecidedWin = updatedSelections.every(s => s.status === 'won' || s.status === 'void')
             const hasLostLeg = updatedSelections.some(s => s.status === 'lost')
 
-            if (hasLostLeg) {
-                // Bet is LOST
-                if (!skipFinancials) {
-                    await db.update(bets).set({
-                        status: 'lost',
-                        selections: updatedSelections,
-                        settledAt: new Date(),
-                        updatedAt: new Date()
-                    }).where(eq(bets.id, bet.id))
-                    settledCount++
-                } else if (betStatus === 'lost') {
-                    // Just update selections for a bet already marked lost
+            if (bet.mode === 'system' && bet.combinations) {
+                // System Bet Settlement
+                const isFinished = allDecided;
+
+                // For a system bet, we can only be sure it's fully lost if NO combination can win
+                // Or we can just wait until ALL legs are decided to settle it
+                if (!isFinished) {
                     await db.update(bets).set({
                         selections: updatedSelections,
                         updatedAt: new Date()
                     }).where(eq(bets.id, bet.id))
+                    continue;
                 }
-            } else if (allDecided && stillDecidedWin) {
-                // Bet is WON
-                const payoutAmount = bet.potentialPayout
 
-                // Payout adjustment (e.g. if some legs were voided during this or previous runs)
-                const currentTotalOdds = updatedSelections.reduce((acc, curr) => acc * (curr.status === 'void' ? 1.0 : curr.odds), 1)
-                // Note: Bonus logic would need to be re-run here too for accuracy on multi-settle
-                // For now, use existing potential payout but adjust for bonus rules
+                // Calculate Payout for System Bet
+                let newPayout = 0;
+                let wonCombinations = 0;
+                let totalCombinations = 0;
 
-                // For now, use existing potential payout but adjust for bonus rules
+                const combos = bet.combinations as Array<Array<{ selectionId: string, odds: number }>>;
+                totalCombinations = combos.length;
 
-                if (!skipFinancials) {
+                for (const combo of combos) {
+                    // Check if this combination won
+                    let comboWin = true;
+                    let comboOdds = 1;
+
+                    for (const comboLeg of combo) {
+                        const matchingLeg = updatedSelections.find((s: any) => s.selectionId === comboLeg.selectionId);
+                        if (!matchingLeg || matchingLeg.status === 'lost') {
+                            comboWin = false;
+                            break;
+                        }
+                        if (matchingLeg.status === 'void') {
+                            // void legs are odds = 1
+                            comboOdds *= 1;
+                        } else {
+                            comboOdds *= matchingLeg.odds;
+                        }
+                    }
+
+                    if (comboWin) {
+                        wonCombinations++;
+                        newPayout += (bet.stake * comboOdds); // stake here is per-bet stake
+                    }
+                }
+
+                const sysFinalStatus = newPayout > 0 ? "won" : "lost";
+
+                if (!skipFinancials && sysFinalStatus === 'won') {
+                    // Adjust payout against max payout constraint if needed
+                    const { FINANCE_LIMITS } = await import("@/lib/constants")
+                    newPayout = Math.min(newPayout, FINANCE_LIMITS.BET.MAX_PAYOUT)
+
                     await db.update(bets).set({
                         status: 'won',
                         selections: updatedSelections,
+                        potentialPayout: newPayout,
                         settledAt: new Date(),
                         updatedAt: new Date()
                     }).where(eq(bets.id, bet.id))
@@ -225,7 +251,7 @@ export async function settleMatch(matchId: string) {
                     if (userWallet.length > 0) {
                         const wallet = userWallet[0]
                         await db.update(wallets).set({
-                            balance: sql`${wallets.balance} + ${payoutAmount}`,
+                            balance: sql`${wallets.balance} + ${newPayout}`,
                             updatedAt: new Date()
                         }).where(eq(wallets.userId, bet.userId))
 
@@ -233,28 +259,102 @@ export async function settleMatch(matchId: string) {
                             id: `txn-${Math.random().toString(36).substr(2, 9)}`,
                             userId: bet.userId,
                             walletId: wallet.id,
-                            amount: payoutAmount,
+                            amount: newPayout,
                             type: "bet_payout",
                             balanceBefore: wallet.balance,
-                            balanceAfter: Number(wallet.balance) + payoutAmount,
+                            balanceAfter: Number(wallet.balance) + newPayout,
                             reference: bet.id,
-                            description: `Multi-Leg Win Payout: ${bet.id}`
+                            description: `System Bet Win (${wonCombinations}/${totalCombinations}): ${bet.id}`
                         })
                     }
                     settledCount++
-                } else if (betStatus === 'won') {
-                    // Just update selections for a bet already marked won
+                } else if (!skipFinancials && sysFinalStatus === 'lost') {
+                    await db.update(bets).set({
+                        status: 'lost',
+                        selections: updatedSelections,
+                        settledAt: new Date(),
+                        updatedAt: new Date()
+                    }).where(eq(bets.id, bet.id))
+                    settledCount++
+                } else {
+                    // Already settled, just update selections
+                    await db.update(bets).set({
+                        status: sysFinalStatus,
+                        selections: updatedSelections,
+                        potentialPayout: newPayout > 0 ? newPayout : bet.potentialPayout,
+                        updatedAt: new Date()
+                    }).where(eq(bets.id, bet.id))
+                }
+
+            } else {
+                // Standard Multi/Single Settlement
+                if (hasLostLeg) {
+                    // Bet is LOST
+                    if (!skipFinancials) {
+                        await db.update(bets).set({
+                            status: 'lost',
+                            selections: updatedSelections,
+                            settledAt: new Date(),
+                            updatedAt: new Date()
+                        }).where(eq(bets.id, bet.id))
+                        settledCount++
+                    } else if (betStatus === 'lost') {
+                        // Just update selections for a bet already marked lost
+                        await db.update(bets).set({
+                            selections: updatedSelections,
+                            updatedAt: new Date()
+                        }).where(eq(bets.id, bet.id))
+                    }
+                } else if (allDecided && stillDecidedWin) {
+                    // Bet is WON
+                    const payoutAmount = bet.potentialPayout
+
+                    // Payout adjustment (e.g. if some legs were voided during this or previous runs)
+                    const currentTotalOdds = updatedSelections.reduce((acc, curr) => acc * (curr.status === 'void' ? 1.0 : curr.odds), 1)
+
+                    if (!skipFinancials) {
+                        await db.update(bets).set({
+                            status: 'won',
+                            selections: updatedSelections,
+                            settledAt: new Date(),
+                            updatedAt: new Date()
+                        }).where(eq(bets.id, bet.id))
+
+                        const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                        if (userWallet.length > 0) {
+                            const wallet = userWallet[0]
+                            await db.update(wallets).set({
+                                balance: sql`${wallets.balance} + ${payoutAmount}`,
+                                updatedAt: new Date()
+                            }).where(eq(wallets.userId, bet.userId))
+
+                            await db.insert(transactions).values({
+                                id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                                userId: bet.userId,
+                                walletId: wallet.id,
+                                amount: payoutAmount,
+                                type: "bet_payout",
+                                balanceBefore: wallet.balance,
+                                balanceAfter: Number(wallet.balance) + payoutAmount,
+                                reference: bet.id,
+                                description: `Multi/Single Leg Win Payout: ${bet.id}`
+                            })
+                        }
+                        settledCount++
+                    } else if (betStatus === 'won') {
+                        // Just update selections for a bet already marked won
+                        await db.update(bets).set({
+                            selections: updatedSelections,
+                            updatedAt: new Date()
+                        }).where(eq(bets.id, bet.id))
+                    }
+                } else {
+                    // Bet is still pending (partial legs won), just update the selections
                     await db.update(bets).set({
                         selections: updatedSelections,
                         updatedAt: new Date()
                     }).where(eq(bets.id, bet.id))
                 }
-            } else {
-                // Bet is still pending (partial legs won), just update the selections
-                await db.update(bets).set({
-                    selections: updatedSelections,
-                    updatedAt: new Date()
-                }).where(eq(bets.id, bet.id))
             }
         }
 
@@ -274,504 +374,504 @@ export async function settleMatch(matchId: string) {
     }
 }
 
-            /**
-             * Intelligent Market Settlement Logic
-             */
-            export function isSelectionWinner(
+/**
+ * Intelligent Market Settlement Logic
+ */
+export function isSelectionWinner(
+    selectionId: string,
+    marketName: string,
+    label: string,
+    match: Match,
+    result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
+): { resolved: boolean, isWin: boolean, isVoid?: boolean } {
+    const sport = (match.sportType || 'football').toLowerCase()
+    const metadata = (result.metadata || {}) as Record<string, any>
+    const scores = result.scores || {}
+    const participants = match.participants || []
+
+    // 0. MANUAL OVERRIDE (Explicit Outcomes from Admin)
+    const outcomes = (metadata.outcomes as Record<string, string>) || {}
+    const normalizedMarket = marketName.toLowerCase().trim()
+
+    // Check for exact or normalized match in overrides
+    const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
+    if (overrideKey && outcomes[overrideKey]) {
+        if (outcomes[overrideKey] === 'void') {
+            return { resolved: true, isWin: false, isVoid: true }
+        }
+        return { resolved: true, isWin: outcomes[overrideKey] === selectionId }
+    }
+
+    // Virtuals Adapter: If it's a virtual match outcome
+    const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
+    const vOutcome = isVirtualOutcome ? (result as any) : null;
+
+    // Normalize Market Name for robust matching (Remove spaces/special chars)
+    const norm = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+
+    // Period detection (HT vs FT)
+    const isHT = (norm.includes("ht") && !norm.includes("ft")) ||
+        norm.includes("1h") ||
+        norm.includes("1sthalf") ||
+        norm.includes("firsthalf")
+
+    const isHTFT = norm.includes("htft") || norm.includes("halftimefulltime")
+
+    // Market Type Detection with Aliases (Fuzzy Matching)
+    const isMatchWinner = !isHT && !isHTFT && (
+        norm.includes("winner") ||
+        norm.includes("1x2") ||
+        norm.includes("win") ||
+        norm.includes("result") ||
+        norm.includes("12") ||
+        norm.includes("homeaway") ||
+        norm.includes("moneyline")
+    )
+
+    const isTotal = (norm.includes("total") ||
+        norm.includes("overunder") ||
+        norm.includes("goals") ||
+        norm.includes("points") ||
+        norm.includes("ou") ||
+        norm.includes("tg") ||
+        norm.includes("tp") ||
+        norm.includes("gls") ||
+        norm.includes("run") ||
+        norm.includes("wickets")) && !isHTFT
+
+    const isBTTS = norm.includes("btts") ||
+        norm.includes("bothteamstoscore") ||
+        norm.includes("bts") ||
+        norm.includes("bothscore") ||
+        norm.includes("gg") // Goal Goal
+
+    const isHandicap = norm.includes("handicap") ||
+        norm.includes("spread") ||
+        norm.includes("hcap") ||
+        norm.includes("hc")
+
+    const isDoubleChance = norm.includes("doublechance") || norm.includes("dc") || norm.includes("doubleres")
+
+    const isDNB = norm.includes("drawnobet") ||
+        norm.includes("dnb") ||
+        norm.includes("drawno")
+
+    const isWinningMargin = norm.includes("winningmargin") || norm.includes("margin")
+
+    const isFirstGoal = norm.includes("firstteam") ||
+        norm.includes("firstgoal") ||
+        norm.includes("teamtoscorefirst") ||
+        norm.includes("fg") ||
+        norm.includes("1stgoal")
+
+    const isOddEven = (norm.includes("oddeven") || (norm.includes("odd") || norm.includes("even"))) && !norm.includes("over") && !isTotal
+
+    // --- ALIAS-AWARE HELPERS ---
+    const getParticipant = (idOrName: string) => {
+        const clean = idOrName.trim().toLowerCase();
+        return participants.find(p =>
+            p.schoolId.toLowerCase() === clean ||
+            p.name.trim().toLowerCase() === clean ||
+            (Array.isArray(p.aliases) && p.aliases.some(a => a.trim().toLowerCase() === clean))
+        );
+    };
+
+    const isDrawSelected = (idOrLabel: string) => {
+        const clean = idOrLabel.toLowerCase().trim();
+        return clean === 'x' || clean.includes('draw') || clean === 'drawmatch';
+    };
+
+    // Auto-resolve winner if missing but scores exist
+    let currentWinner = result.winner;
+    if (!currentWinner && sport !== 'quiz') {
+        const pIds = Object.keys(scores);
+        if (pIds.length >= 2) {
+            const s1 = scores[pIds[0]];
+            const s2 = scores[pIds[1]];
+            if (s1 > s2) currentWinner = pIds[0];
+            else if (s2 > s1) currentWinner = pIds[1];
+            else currentWinner = 'X';
+        }
+    }
+
+    const getTeamScore = (idOrName: string, scoreMap: Record<string, number> = scores) => {
+        if (scoreMap[idOrName] !== undefined) return scoreMap[idOrName];
+        const p = getParticipant(idOrName);
+        if (p) {
+            if (scoreMap[p.schoolId] !== undefined) return scoreMap[p.schoolId];
+            if (scoreMap[p.name] !== undefined) return scoreMap[p.name];
+        }
+        return undefined;
+    };
+
+    const isMatchWinnerInternal = (teamIdOrName: string) => {
+        if (currentWinner === teamIdOrName) return true;
+        if (isDrawSelected(teamIdOrName)) return currentWinner === 'X';
+
+        const p = getParticipant(teamIdOrName);
+        if (p) {
+            return currentWinner === p.schoolId || currentWinner === p.name;
+        }
+
+        // Home/Away shortcuts
+        if (teamIdOrName === '1' && participants[0]) return currentWinner === participants[0].schoolId;
+        if (teamIdOrName === '2' && participants[1]) return currentWinner === participants[1].schoolId;
+
+        return false;
+    };
+    // ----------------------------
+
+    // 1. HT/FT (Half Time / Full Time)
+    if (isHTFT) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+
+        const h1 = footballDetails[p1]?.ht || 0
+        const a1 = footballDetails[p2]?.ht || 0
+        const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
+
+        const h2 = footballDetails[p1]?.ft || 0
+        const a2 = footballDetails[p2]?.ft || 0
+        const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
+
+        const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
+        return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
+    }
+
+    // 2. FIRST HALF WINNER / TOTALS (Prioritize HT over FT)
+    if (isHT) {
+        const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
+        const hasHTScores = Object.values(footballDetails).some(d => d.ht !== undefined)
+        const isHTDecided = hasHTScores || (match.status === 'finished' || match.status === 'settled' || match.status === 'HT' || match.status === '2nd Half') || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
+
+        if (!isHTDecided) return { resolved: false, isWin: false }
+
+        const htScores: Record<string, number> = {}
+        Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
+
+        if (norm.includes("winner") || norm.includes("result") || norm === "1h" || norm === "ht") {
+            if (isDrawSelected(selectionId) || isDrawSelected(label)) {
+                const values = Object.values(htScores)
+                return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
+            }
+            const myScore = getTeamScore(selectionId, htScores)
+            const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
+            return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+        }
+
+        if (norm.includes("total") || norm.includes("goals") || norm.includes("ou") || norm.includes("tg")) {
+            const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
+            const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
+            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > target }
+            if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalHT < target }
+        }
+
+        return { resolved: false, isWin: false }
+    }
+
+    // 3. MATCH WINNER (1X2 / 12)
+    if (isMatchWinner) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        if (isDrawSelected(selectionId) || isDrawSelected(label)) {
+            if (isVirtualOutcome) {
+                const vScores = vOutcome.totalScores;
+                if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1] };
+                return { resolved: true, isWin: false };
+            }
+            return { resolved: true, isWin: currentWinner === 'X' };
+        }
+
+        if (isVirtualOutcome) {
+            const winnerName = vOutcome.schools[vOutcome.winnerIndex];
+            const normalizedSid = selectionId.startsWith('v-') ? selectionId.substring(2) : selectionId;
+
+            if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0 };
+            if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1 };
+            return { resolved: true, isWin: winnerName === normalizedSid };
+        }
+
+        if (isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label)) return { resolved: true, isWin: true };
+
+        // Final score check fallback
+        const myScore = getTeamScore(selectionId)
+        if (myScore !== undefined) {
+            const participant = getParticipant(selectionId)
+            const targetId = participant?.schoolId || selectionId
+            const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s);
+            return { resolved: true, isWin: otherScores.every(os => myScore > os) };
+        }
+
+        return { resolved: true, isWin: false };
+    }
+
+    // 4. TOTAL POINTS / GOALS (Over/Under)
+    if (isTotal) {
+        const totalScore = isVirtualOutcome
+            ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
+            : Object.values(scores).reduce((a, b) => a + b, 0)
+
+        const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
+        if (isNaN(target)) return { resolved: false, isWin: false }
+
+        const isOver = label.toLowerCase().includes("over")
+        const isUnder = label.toLowerCase().includes("under")
+
+        // If it's already "Over" the line, it's resolved even if match is live
+        if (isOver && totalScore > target) return { resolved: true, isWin: true }
+
+        // If match is finished, resolve definitively
+        if (match.status === 'finished' || match.status === 'settled') {
+            return { resolved: true, isWin: isOver ? totalScore > target : totalScore < target }
+        }
+
+        // If it's "Under" and we already passed it, it's lost
+        if (isUnder && totalScore > target) return { resolved: true, isWin: false }
+
+        return { resolved: false, isWin: false }
+    }
+
+    // 5. QUIZ ROUND WINNER
+    // 5. QUIZ ROUND WINNER
+    if (norm.includes("round") && norm.includes("winner")) {
+        const roundNum = norm.match(/\d+/)?.[0]
+        if (!roundNum) return { resolved: false, isWin: false }
+
+        const roundKey = `r${roundNum}`
+        const quizDetails = (metadata.quizDetails as Record<string, Record<string, number>>) || {}
+        const roundResolved = participants.every(p => {
+            const score = quizDetails[p.schoolId]?.[roundKey]
+            return score !== undefined && !isNaN(score)
+        })
+
+        if (!roundResolved) return { resolved: false, isWin: false }
+
+        const roundScores: Record<string, number> = {}
+        participants.forEach(p => roundScores[p.schoolId] = quizDetails[p.schoolId][roundKey])
+
+        const myScore = roundScores[selectionId] !== undefined ? roundScores[selectionId] :
+            (getParticipant(selectionId) ? roundScores[getParticipant(selectionId)!.schoolId] : undefined)
+
+        const targetId = getParticipant(selectionId)?.schoolId || selectionId
+        const otherScores = Object.entries(roundScores).filter(([id]) => id !== targetId).map(([_, s]) => s)
+
+        if (isDrawSelected(selectionId) || isDrawSelected(label)) {
+            return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
+        }
+
+        return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+    }
+
+    // 6. HANDICAP / SPREAD
+    if (isHandicap) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const lineSign = label.includes("+") ? "+" : "-"
+        const [targetName, lineValueStr] = label.split(lineSign)
+        const line = parseFloat(`${lineSign}${lineValueStr}`)
+
+        const participant = getParticipant(targetName || selectionId)
+        if (!participant) return { resolved: false, isWin: false }
+
+        const targetId = participant.schoolId
+        const myScore = scores[targetId] || 0
+        const adjustedScore = myScore + line
+        const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
+
+        return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
+    }
+
+    // 7. BTTS (Both Teams to Score)
+    if (isBTTS) {
+        const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
+        if (!isFinishedOrSettled && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
+
+        const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
+        if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored }
+        if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored }
+    }
+
+    // 8. DOUBLE CHANCE
+    if (isDoubleChance) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const homeId = participants[0]?.schoolId
+        const awayId = participants[1]?.schoolId
+        const winner = currentWinner
+
+        if (selectionId === "1X" || label === "1X") return { resolved: true, isWin: winner === homeId || winner === 'X' }
+        if (selectionId === "12" || label === "12") return { resolved: true, isWin: winner === homeId || winner === awayId }
+        if (selectionId === "X2" || label === "X2") return { resolved: true, isWin: winner === awayId || winner === 'X' }
+    }
+
+    // 9. DRAW NO BET
+    if (isDNB) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        if (currentWinner === 'X') return { resolved: true, isWin: false, isVoid: true }
+        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label) }
+    }
+
+    // 10. WINNING MARGIN
+    // 10. WINNING MARGIN
+    if (isWinningMargin) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+
+        const values = Object.values(scores)
+        if (values.length < 2) return { resolved: false, isWin: false }
+
+        const p1 = participants[0]?.schoolId
+        const p2 = participants[1]?.schoolId
+        const s1 = scores[p1] || 0
+        const s2 = scores[p2] || 0
+
+        const diff = Math.abs(s1 - s2)
+        const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
+
+        if (victor === 'X') {
+            return { resolved: true, isWin: isDrawSelected(selectionId) || isDrawSelected(label) }
+        }
+
+        const isHomeLeg = victor === '1'
+        const labelLower = label.toLowerCase()
+
+        if (isHomeLeg && labelLower.includes('home by')) {
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+        }
+        if (!isHomeLeg && labelLower.includes('away by')) {
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+        }
+
+        return { resolved: true, isWin: false }
+    }
+
+    // 11. FIRST TEAM TO SCORE
+    if (isFirstGoal) {
+        const firstScorerId = metadata.firstScorerId
+        const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
+        if (!firstScorerId && !isFinishedOrSettled) return { resolved: false, isWin: false }
+
+        const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
+        if (isFinishedOrSettled && totalGoals === 0) {
+            return { resolved: true, isWin: selectionId === 'none' || label.toLowerCase().includes('no goal') }
+        }
+
+        if (firstScorerId) {
+            if (firstScorerId === selectionId) return { resolved: true, isWin: true }
+            const p = getParticipant(selectionId)
+            if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true }
+            const pLabel = getParticipant(label)
+            if (pLabel && pLabel.schoolId === firstScorerId) return { resolved: true, isWin: true }
+            return { resolved: true, isWin: false }
+        }
+
+        return { resolved: false, isWin: false }
+    }
+
+    // 12. ODD/EVEN TOTAL GOALS
+    if (isOddEven) {
+        const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
+        if (!isFinished) return { resolved: false, isWin: false }
+        const totalGoals = Object.values(scores).reduce((a, b) => a + (b || 0), 0)
+        const isOdd = totalGoals % 2 !== 0
+        if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd }
+        if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
+    }
+
+    // Default Fallback
+    return { resolved: false, isWin: false }
+}
+
+export async function settleOutrightBets(tournamentId: string, winnerId: string) {
+    try {
+        console.log(`Starting settlement for tournament outrights: ${tournamentId}`)
+
+        // 1. Fetch all PENDING bets that contain an outright prediction for this tournament
+        const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
+        const pendingBets = allPendingBets.filter(bet => {
+            const selections = bet.selections as unknown as Array<{ tournamentId?: string, marketName: string }> | null
+            return selections?.some(s => s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner"))
+        })
+
+        console.log(`Found ${pendingBets.length} pending outright bets to settle`)
+
+        let settledCount = 0
+
+        for (const bet of pendingBets) {
+            const selections = bet.selections as unknown as Array<{
+                tournamentId?: string,
                 selectionId: string,
+                odds: number,
                 marketName: string,
-                label: string,
-                match: Match,
-                result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
-            ): { resolved: boolean, isWin: boolean, isVoid?: boolean } {
-                const sport = (match.sportType || 'football').toLowerCase()
-                const metadata = (result.metadata || {}) as Record<string, any>
-                const scores = result.scores || {}
-                const participants = match.participants || []
+                status?: string
+            }>
 
-                // 0. MANUAL OVERRIDE (Explicit Outcomes from Admin)
-                const outcomes = (metadata.outcomes as Record<string, string>) || {}
-                const normalizedMarket = marketName.toLowerCase().trim()
+            if (bet.status !== "pending") continue;
 
-                // Check for exact or normalized match in overrides
-                const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
-                if (overrideKey && outcomes[overrideKey]) {
-                    if (outcomes[overrideKey] === 'void') {
-                        return { resolved: true, isWin: false, isVoid: true }
-                    }
-                    return { resolved: true, isWin: outcomes[overrideKey] === selectionId }
+            const updatedSelections = selections.map(s => {
+                if (s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner")) {
+                    return { ...s, status: s.selectionId === winnerId ? 'won' : 'lost' }
                 }
+                return s
+            })
 
-                // Virtuals Adapter: If it's a virtual match outcome
-                const isVirtualOutcome = (result as any).winnerIndex !== undefined && Array.isArray((result as any).totalScores);
-                const vOutcome = isVirtualOutcome ? (result as any) : null;
+            // Since outrights are SINGLES (enforced at placement), the bet status is simply the selection status
+            const outrightSelection = updatedSelections.find(s => s.tournamentId === tournamentId)
+            if (!outrightSelection) continue
 
-                // Normalize Market Name for robust matching (Remove spaces/special chars)
-                const norm = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+            const isWin = outrightSelection.status === 'won'
+            const finalStatus = isWin ? 'won' : 'lost'
 
-                // Period detection (HT vs FT)
-                const isHT = (norm.includes("ht") && !norm.includes("ft")) ||
-                    norm.includes("1h") ||
-                    norm.includes("1sthalf") ||
-                    norm.includes("firsthalf")
+            if (isWin) {
+                const payoutAmount = bet.potentialPayout
+                const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
 
-                const isHTFT = norm.includes("htft") || norm.includes("halftimefulltime")
+                if (userWallet.length > 0) {
+                    const wallet = userWallet[0]
+                    const balanceBefore = parseFloat(wallet.balance.toString())
+                    const balanceAfter = balanceBefore + payoutAmount
 
-                // Market Type Detection with Aliases (Fuzzy Matching)
-                const isMatchWinner = !isHT && !isHTFT && (
-                    norm.includes("winner") ||
-                    norm.includes("1x2") ||
-                    norm.includes("win") ||
-                    norm.includes("result") ||
-                    norm.includes("12") ||
-                    norm.includes("homeaway") ||
-                    norm.includes("moneyline")
-                )
+                    await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
 
-                const isTotal = (norm.includes("total") ||
-                    norm.includes("overunder") ||
-                    norm.includes("goals") ||
-                    norm.includes("points") ||
-                    norm.includes("ou") ||
-                    norm.includes("tg") ||
-                    norm.includes("tp") ||
-                    norm.includes("gls") ||
-                    norm.includes("run") ||
-                    norm.includes("wickets")) && !isHTFT
-
-                const isBTTS = norm.includes("btts") ||
-                    norm.includes("bothteamstoscore") ||
-                    norm.includes("bts") ||
-                    norm.includes("bothscore") ||
-                    norm.includes("gg") // Goal Goal
-
-                const isHandicap = norm.includes("handicap") ||
-                    norm.includes("spread") ||
-                    norm.includes("hcap") ||
-                    norm.includes("hc")
-
-                const isDoubleChance = norm.includes("doublechance") || norm.includes("dc") || norm.includes("doubleres")
-
-                const isDNB = norm.includes("drawnobet") ||
-                    norm.includes("dnb") ||
-                    norm.includes("drawno")
-
-                const isWinningMargin = norm.includes("winningmargin") || norm.includes("margin")
-
-                const isFirstGoal = norm.includes("firstteam") ||
-                    norm.includes("firstgoal") ||
-                    norm.includes("teamtoscorefirst") ||
-                    norm.includes("fg") ||
-                    norm.includes("1stgoal")
-
-                const isOddEven = (norm.includes("oddeven") || (norm.includes("odd") || norm.includes("even"))) && !norm.includes("over") && !isTotal
-
-                // --- ALIAS-AWARE HELPERS ---
-                const getParticipant = (idOrName: string) => {
-                    const clean = idOrName.trim().toLowerCase();
-                    return participants.find(p =>
-                        p.schoolId.toLowerCase() === clean ||
-                        p.name.trim().toLowerCase() === clean ||
-                        (Array.isArray(p.aliases) && p.aliases.some(a => a.trim().toLowerCase() === clean))
-                    );
-                };
-
-                const isDrawSelected = (idOrLabel: string) => {
-                    const clean = idOrLabel.toLowerCase().trim();
-                    return clean === 'x' || clean.includes('draw') || clean === 'drawmatch';
-                };
-
-                // Auto-resolve winner if missing but scores exist
-                let currentWinner = result.winner;
-                if (!currentWinner && sport !== 'quiz') {
-                    const pIds = Object.keys(scores);
-                    if (pIds.length >= 2) {
-                        const s1 = scores[pIds[0]];
-                        const s2 = scores[pIds[1]];
-                        if (s1 > s2) currentWinner = pIds[0];
-                        else if (s2 > s1) currentWinner = pIds[1];
-                        else currentWinner = 'X';
-                    }
-                }
-
-                const getTeamScore = (idOrName: string, scoreMap: Record<string, number> = scores) => {
-                    if (scoreMap[idOrName] !== undefined) return scoreMap[idOrName];
-                    const p = getParticipant(idOrName);
-                    if (p) {
-                        if (scoreMap[p.schoolId] !== undefined) return scoreMap[p.schoolId];
-                        if (scoreMap[p.name] !== undefined) return scoreMap[p.name];
-                    }
-                    return undefined;
-                };
-
-                const isMatchWinnerInternal = (teamIdOrName: string) => {
-                    if (currentWinner === teamIdOrName) return true;
-                    if (isDrawSelected(teamIdOrName)) return currentWinner === 'X';
-
-                    const p = getParticipant(teamIdOrName);
-                    if (p) {
-                        return currentWinner === p.schoolId || currentWinner === p.name;
-                    }
-
-                    // Home/Away shortcuts
-                    if (teamIdOrName === '1' && participants[0]) return currentWinner === participants[0].schoolId;
-                    if (teamIdOrName === '2' && participants[1]) return currentWinner === participants[1].schoolId;
-
-                    return false;
-                };
-                // ----------------------------
-
-                // 1. HT/FT (Half Time / Full Time)
-                if (isHTFT) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
-                    if (Object.keys(footballDetails).length < 2) return { resolved: false, isWin: false }
-
-                    const p1 = participants[0]?.schoolId
-                    const p2 = participants[1]?.schoolId
-
-                    const h1 = footballDetails[p1]?.ht || 0
-                    const a1 = footballDetails[p2]?.ht || 0
-                    const htRes = h1 > a1 ? '1' : (a1 > h1 ? '2' : 'X')
-
-                    const h2 = footballDetails[p1]?.ft || 0
-                    const a2 = footballDetails[p2]?.ft || 0
-                    const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
-
-                    const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
-                    return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
-                }
-
-                // 2. FIRST HALF WINNER / TOTALS (Prioritize HT over FT)
-                if (isHT) {
-                    const footballDetails = (metadata.footballDetails as Record<string, { ht: number, ft: number }>) || {}
-                    const hasHTScores = Object.values(footballDetails).some(d => d.ht !== undefined)
-                    const isHTDecided = hasHTScores || (match.status === 'finished' || match.status === 'settled' || match.status === 'HT' || match.status === '2nd Half') || (typeof metadata.period === 'string' && ["HT", "2H", "finished"].includes(metadata.period))
-
-                    if (!isHTDecided) return { resolved: false, isWin: false }
-
-                    const htScores: Record<string, number> = {}
-                    Object.entries(footballDetails).forEach(([id, data]) => htScores[id] = data.ht)
-
-                    if (norm.includes("winner") || norm.includes("result") || norm === "1h" || norm === "ht") {
-                        if (isDrawSelected(selectionId) || isDrawSelected(label)) {
-                            const values = Object.values(htScores)
-                            return { resolved: true, isWin: values.length >= 2 && values.every(v => v === values[0]) }
-                        }
-                        const myScore = getTeamScore(selectionId, htScores)
-                        const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
-                        return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
-                    }
-
-                    if (norm.includes("total") || norm.includes("goals") || norm.includes("ou") || norm.includes("tg")) {
-                        const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
-                        const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
-                        if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > target }
-                        if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalHT < target }
-                    }
-
-                    return { resolved: false, isWin: false }
-                }
-
-                // 3. MATCH WINNER (1X2 / 12)
-                if (isMatchWinner) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    if (isDrawSelected(selectionId) || isDrawSelected(label)) {
-                        if (isVirtualOutcome) {
-                            const vScores = vOutcome.totalScores;
-                            if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1] };
-                            return { resolved: true, isWin: false };
-                        }
-                        return { resolved: true, isWin: currentWinner === 'X' };
-                    }
-
-                    if (isVirtualOutcome) {
-                        const winnerName = vOutcome.schools[vOutcome.winnerIndex];
-                        const normalizedSid = selectionId.startsWith('v-') ? selectionId.substring(2) : selectionId;
-
-                        if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0 };
-                        if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1 };
-                        return { resolved: true, isWin: winnerName === normalizedSid };
-                    }
-
-                    if (isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label)) return { resolved: true, isWin: true };
-
-                    // Final score check fallback
-                    const myScore = getTeamScore(selectionId)
-                    if (myScore !== undefined) {
-                        const participant = getParticipant(selectionId)
-                        const targetId = participant?.schoolId || selectionId
-                        const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s);
-                        return { resolved: true, isWin: otherScores.every(os => myScore > os) };
-                    }
-
-                    return { resolved: true, isWin: false };
-                }
-
-                // 4. TOTAL POINTS / GOALS (Over/Under)
-                if (isTotal) {
-                    const totalScore = isVirtualOutcome
-                        ? (vOutcome.totalScores as number[]).reduce((a, b) => a + b, 0)
-                        : Object.values(scores).reduce((a, b) => a + b, 0)
-
-                    const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
-                    if (isNaN(target)) return { resolved: false, isWin: false }
-
-                    const isOver = label.toLowerCase().includes("over")
-                    const isUnder = label.toLowerCase().includes("under")
-
-                    // If it's already "Over" the line, it's resolved even if match is live
-                    if (isOver && totalScore > target) return { resolved: true, isWin: true }
-
-                    // If match is finished, resolve definitively
-                    if (match.status === 'finished' || match.status === 'settled') {
-                        return { resolved: true, isWin: isOver ? totalScore > target : totalScore < target }
-                    }
-
-                    // If it's "Under" and we already passed it, it's lost
-                    if (isUnder && totalScore > target) return { resolved: true, isWin: false }
-
-                    return { resolved: false, isWin: false }
-                }
-
-                // 5. QUIZ ROUND WINNER
-                // 5. QUIZ ROUND WINNER
-                if (norm.includes("round") && norm.includes("winner")) {
-                    const roundNum = norm.match(/\d+/)?.[0]
-                    if (!roundNum) return { resolved: false, isWin: false }
-
-                    const roundKey = `r${roundNum}`
-                    const quizDetails = (metadata.quizDetails as Record<string, Record<string, number>>) || {}
-                    const roundResolved = participants.every(p => {
-                        const score = quizDetails[p.schoolId]?.[roundKey]
-                        return score !== undefined && !isNaN(score)
+                    await db.insert(transactions).values({
+                        id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+                        userId: bet.userId,
+                        walletId: wallet.id,
+                        amount: payoutAmount,
+                        type: "bet_payout",
+                        balanceBefore,
+                        balanceAfter,
+                        reference: bet.id,
+                        description: `Outright Winner Payout: ${bet.id}`
                     })
-
-                    if (!roundResolved) return { resolved: false, isWin: false }
-
-                    const roundScores: Record<string, number> = {}
-                    participants.forEach(p => roundScores[p.schoolId] = quizDetails[p.schoolId][roundKey])
-
-                    const myScore = roundScores[selectionId] !== undefined ? roundScores[selectionId] :
-                        (getParticipant(selectionId) ? roundScores[getParticipant(selectionId)!.schoolId] : undefined)
-
-                    const targetId = getParticipant(selectionId)?.schoolId || selectionId
-                    const otherScores = Object.entries(roundScores).filter(([id]) => id !== targetId).map(([_, s]) => s)
-
-                    if (isDrawSelected(selectionId) || isDrawSelected(label)) {
-                        return { resolved: true, isWin: Object.values(roundScores).every(v => v === Object.values(roundScores)[0]) }
-                    }
-
-                    return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
                 }
-
-                // 6. HANDICAP / SPREAD
-                if (isHandicap) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    const lineSign = label.includes("+") ? "+" : "-"
-                    const [targetName, lineValueStr] = label.split(lineSign)
-                    const line = parseFloat(`${lineSign}${lineValueStr}`)
-
-                    const participant = getParticipant(targetName || selectionId)
-                    if (!participant) return { resolved: false, isWin: false }
-
-                    const targetId = participant.schoolId
-                    const myScore = scores[targetId] || 0
-                    const adjustedScore = myScore + line
-                    const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
-
-                    return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
-                }
-
-                // 7. BTTS (Both Teams to Score)
-                if (isBTTS) {
-                    const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
-                    if (!isFinishedOrSettled && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
-
-                    const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
-                    if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored }
-                    if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored }
-                }
-
-                // 8. DOUBLE CHANCE
-                if (isDoubleChance) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    const homeId = participants[0]?.schoolId
-                    const awayId = participants[1]?.schoolId
-                    const winner = currentWinner
-
-                    if (selectionId === "1X" || label === "1X") return { resolved: true, isWin: winner === homeId || winner === 'X' }
-                    if (selectionId === "12" || label === "12") return { resolved: true, isWin: winner === homeId || winner === awayId }
-                    if (selectionId === "X2" || label === "X2") return { resolved: true, isWin: winner === awayId || winner === 'X' }
-                }
-
-                // 9. DRAW NO BET
-                if (isDNB) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    if (currentWinner === 'X') return { resolved: true, isWin: false, isVoid: true }
-                    return { resolved: true, isWin: isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label) }
-                }
-
-                // 10. WINNING MARGIN
-                // 10. WINNING MARGIN
-                if (isWinningMargin) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-
-                    const values = Object.values(scores)
-                    if (values.length < 2) return { resolved: false, isWin: false }
-
-                    const p1 = participants[0]?.schoolId
-                    const p2 = participants[1]?.schoolId
-                    const s1 = scores[p1] || 0
-                    const s2 = scores[p2] || 0
-
-                    const diff = Math.abs(s1 - s2)
-                    const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
-
-                    if (victor === 'X') {
-                        return { resolved: true, isWin: isDrawSelected(selectionId) || isDrawSelected(label) }
-                    }
-
-                    const isHomeLeg = victor === '1'
-                    const labelLower = label.toLowerCase()
-
-                    if (isHomeLeg && labelLower.includes('home by')) {
-                        if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
-                        return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
-                    }
-                    if (!isHomeLeg && labelLower.includes('away by')) {
-                        if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
-                        return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
-                    }
-
-                    return { resolved: true, isWin: false }
-                }
-
-                // 11. FIRST TEAM TO SCORE
-                if (isFirstGoal) {
-                    const firstScorerId = metadata.firstScorerId
-                    const isFinishedOrSettled = match.status === 'finished' || match.status === 'settled'
-                    if (!firstScorerId && !isFinishedOrSettled) return { resolved: false, isWin: false }
-
-                    const totalGoals = Object.values(scores).reduce((a, b) => a + b, 0)
-                    if (isFinishedOrSettled && totalGoals === 0) {
-                        return { resolved: true, isWin: selectionId === 'none' || label.toLowerCase().includes('no goal') }
-                    }
-
-                    if (firstScorerId) {
-                        if (firstScorerId === selectionId) return { resolved: true, isWin: true }
-                        const p = getParticipant(selectionId)
-                        if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true }
-                        const pLabel = getParticipant(label)
-                        if (pLabel && pLabel.schoolId === firstScorerId) return { resolved: true, isWin: true }
-                        return { resolved: true, isWin: false }
-                    }
-
-                    return { resolved: false, isWin: false }
-                }
-
-                // 12. ODD/EVEN TOTAL GOALS
-                if (isOddEven) {
-                    const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
-                    if (!isFinished) return { resolved: false, isWin: false }
-                    const totalGoals = Object.values(scores).reduce((a, b) => a + (b || 0), 0)
-                    const isOdd = totalGoals % 2 !== 0
-                    if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd }
-                    if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
-                }
-
-                // Default Fallback
-                return { resolved: false, isWin: false }
             }
 
-            export async function settleOutrightBets(tournamentId: string, winnerId: string) {
-                try {
-                    console.log(`Starting settlement for tournament outrights: ${tournamentId}`)
+            await db.update(bets).set({
+                status: finalStatus,
+                selections: updatedSelections,
+                settledAt: new Date()
+            }).where(eq(bets.id, bet.id))
 
-                    // 1. Fetch all PENDING bets that contain an outright prediction for this tournament
-                    const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"))
-                    const pendingBets = allPendingBets.filter(bet => {
-                        const selections = bet.selections as unknown as Array<{ tournamentId?: string, marketName: string }> | null
-                        return selections?.some(s => s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner"))
-                    })
+            settledCount++
+        }
 
-                    console.log(`Found ${pendingBets.length} pending outright bets to settle`)
-
-                    let settledCount = 0
-
-                    for (const bet of pendingBets) {
-                        const selections = bet.selections as unknown as Array<{
-                            tournamentId?: string,
-                            selectionId: string,
-                            odds: number,
-                            marketName: string,
-                            status?: string
-                        }>
-
-                        if (bet.status !== "pending") continue;
-
-                        const updatedSelections = selections.map(s => {
-                            if (s.tournamentId === tournamentId && (s.marketName === "Tournament Winner" || s.marketName === "Outright Winner")) {
-                                return { ...s, status: s.selectionId === winnerId ? 'won' : 'lost' }
-                            }
-                            return s
-                        })
-
-                        // Since outrights are SINGLES (enforced at placement), the bet status is simply the selection status
-                        const outrightSelection = updatedSelections.find(s => s.tournamentId === tournamentId)
-                        if (!outrightSelection) continue
-
-                        const isWin = outrightSelection.status === 'won'
-                        const finalStatus = isWin ? 'won' : 'lost'
-
-                        if (isWin) {
-                            const payoutAmount = bet.potentialPayout
-                            const userWallet = await db.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
-
-                            if (userWallet.length > 0) {
-                                const wallet = userWallet[0]
-                                const balanceBefore = parseFloat(wallet.balance.toString())
-                                const balanceAfter = balanceBefore + payoutAmount
-
-                                await db.update(wallets).set({ balance: balanceAfter }).where(eq(wallets.userId, bet.userId))
-
-                                await db.insert(transactions).values({
-                                    id: `txn-${Math.random().toString(36).substr(2, 9)}`,
-                                    userId: bet.userId,
-                                    walletId: wallet.id,
-                                    amount: payoutAmount,
-                                    type: "bet_payout",
-                                    balanceBefore,
-                                    balanceAfter,
-                                    reference: bet.id,
-                                    description: `Outright Winner Payout: ${bet.id}`
-                                })
-                            }
-                        }
-
-                        await db.update(bets).set({
-                            status: finalStatus,
-                            selections: updatedSelections,
-                            settledAt: new Date()
-                        }).where(eq(bets.id, bet.id))
-
-                        settledCount++
-                    }
-
-                    return { success: true, settledCount }
-                } catch (error) {
-                    console.error("Outright settlement error:", error)
-                    return { success: false, error: "Failed to settle outright bets" }
-                }
-            }
+        return { success: true, settledCount }
+    } catch (error) {
+        console.error("Outright settlement error:", error)
+        return { success: false, error: "Failed to settle outright bets" }
+    }
+}
