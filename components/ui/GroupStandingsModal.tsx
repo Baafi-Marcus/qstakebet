@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { BarChart2, X, Trophy } from "lucide-react"
 import type { Match } from "@/lib/types"
+import { getQualifiedTeams } from "@/lib/match-utils"
 
 interface GroupStandingsModalProps {
     tournamentName: string
@@ -53,64 +54,87 @@ export function GroupStandingsModal({
                 </DialogHeader>
 
                 <div className="p-6 pt-2 space-y-6 max-h-[70vh] overflow-y-auto">
-                    {groups.map(group => {
-                        const gFinished = matches.filter(m => m.group === group && (m.status === 'finished' || m.status === 'settled'))
-                        const rows: Record<string, any> = {}
+                    {(() => {
+                        const groupMatches = matches.filter(m => m.group && m.group !== 'Knockout')
+                        const qualifiedData = getQualifiedTeams(groupMatches, groups)
 
-                        gFinished.forEach(m => {
-                            if (m.participants.length < 2) return
-                            const [p1, p2] = m.participants
-                            const s1 = typeof p1.result === 'number' ? p1.result : parseInt(String(p1.result || "0")) || 0
-                            const s2 = typeof p2.result === 'number' ? p2.result : parseInt(String(p2.result || "0")) || 0
-                                ;[p1, p2].forEach(p => { if (!rows[p.schoolId]) rows[p.schoolId] = { id: p.schoolId, name: p.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 } })
-                            const r1 = rows[p1.schoolId], r2 = rows[p2.schoolId]
-                            r1.p++; r2.p++; r1.gf += s1; r1.ga += s2; r2.gf += s2; r2.ga += s1
-                            if (s1 > s2) { r1.w++; r1.pts += 3; r2.l++ }
-                            else if (s2 > s1) { r2.w++; r2.pts += 3; r1.l++ }
-                            else { r1.d++; r1.pts++; r2.d++; r2.pts++ }
-                        })
+                        return groups.map(group => {
+                            const gFinished = matches.filter(m => m.group === group && (m.status === 'finished' || m.status === 'settled'))
+                            const rows: Record<string, any> = {}
 
-                        allSchools.filter(s => groupAssignments[s.id] === group).forEach(s => {
-                            if (!rows[s.id]) rows[s.id] = { id: s.id, name: s.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }
-                        })
+                            gFinished.forEach(m => {
+                                if (m.participants.length < 2) return
+                                const [p1, p2] = m.participants
+                                const s1 = typeof p1.result === 'number' ? p1.result : parseInt(String(p1.result || "0")) || 0
+                                const s2 = typeof p2.result === 'number' ? p2.result : parseInt(String(p2.result || "0")) || 0
+                                    ;[p1, p2].forEach(p => { if (!rows[p.schoolId]) rows[p.schoolId] = { id: p.schoolId, name: p.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 } })
+                                const r1 = rows[p1.schoolId], r2 = rows[p2.schoolId]
+                                r1.p++; r2.p++; r1.gf += s1; r1.ga += s2; r2.gf += s2; r2.ga += s1
+                                if (s1 > s2) { r1.w++; r1.pts += 3; r2.l++ }
+                                else if (s2 > s1) { r2.w++; r2.pts += 3; r1.l++ }
+                                else { r1.d++; r1.pts++; r2.d++; r2.pts++ }
+                            })
 
-                        const sorted = Object.values(rows).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga))
-                        if (sorted.length === 0) return null
+                            allSchools.filter(s => groupAssignments[s.id] === group).forEach(s => {
+                                if (!rows[s.id]) rows[s.id] = { id: s.id, name: s.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }
+                            })
 
-                        return (
-                            <div key={group} className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
-                                <div className="px-5 py-3 bg-white/5 flex items-center justify-between border-b border-white/5">
-                                    <span className="text-xs font-black text-white uppercase">{group}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Finished</span>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-xs">
-                                        <thead>
-                                            <tr className="border-b border-white/5 text-slate-500 text-[9px]">
-                                                <th className="text-left px-5 py-2 font-black">#</th>
-                                                <th className="text-left px-0 pr-4 py-2 font-black">Team</th>
-                                                {["P", "W", "D", "L", "PTS"].map(h => <th key={h} className="text-center px-2 py-2 font-black">{h}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sorted.map((s: any, idx: number) => (
-                                                <tr key={s.id} className="border-b last:border-0 border-white/5 hover:bg-white/5 transition-colors">
-                                                    <td className="px-5 py-3">
-                                                        <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
-                                                    </td>
-                                                    <td className="py-3 pr-4 font-bold text-white uppercase truncate max-w-[120px]">{s.name}</td>
-                                                    {[s.p, s.w, s.d, s.l].map((v, i) => (
-                                                        <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
-                                                    ))}
-                                                    <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
+                            const sorted = Object.values(rows).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga))
+                            if (sorted.length === 0) return null
+
+                            return (
+                                <div key={group} className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
+                                    <div className="px-5 py-3 bg-white/5 flex items-center justify-between border-b border-white/5">
+                                        <span className="text-xs font-black text-white uppercase">{group}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Finished</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="border-b border-white/5 text-slate-500 text-[9px]">
+                                                    <th className="text-left px-5 py-2 font-black">#</th>
+                                                    <th className="text-left px-0 pr-4 py-2 font-black">Team</th>
+                                                    {["P", "W", "D", "L", "PTS"].map(h => <th key={h} className="text-center px-2 py-2 font-black">{h}</th>)}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {sorted.map((s: any, idx: number) => {
+                                                    const isQualified = qualifiedData?.allQualifiedIds.includes(s.id)
+                                                    const isWinner = qualifiedData?.groupWinners.some(gw => gw.schoolId === s.id)
+
+                                                    return (
+                                                        <tr key={s.id} className={`border-b last:border-0 border-white/5 hover:bg-white/5 transition-colors ${isQualified ? 'bg-purple-500/5' : ''}`}>
+                                                            <td className="px-5 py-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${isWinner ? 'bg-green-500/20 text-green-400' : isQualified ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500'}`}>
+                                                                        {idx + 1}
+                                                                    </span>
+                                                                    {isQualified && (
+                                                                        <span className={`text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded ${isWinner ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>Q</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-3 pr-4">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-bold text-white uppercase truncate max-w-[120px]">{s.name}</span>
+                                                                    {isWinner && <span className="text-[7px] text-green-500 font-black uppercase tracking-widest">Group Winner</span>}
+                                                                    {isQualified && !isWinner && <span className="text-[7px] text-blue-400 font-black uppercase tracking-widest">Qualified</span>}
+                                                                </div>
+                                                            </td>
+                                                            {[s.p, s.w, s.d, s.l].map((v, i) => (
+                                                                <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
+                                                            ))}
+                                                            <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )
+                        })
+                    })()}
                 </div>
             </DialogContent>
         </Dialog>

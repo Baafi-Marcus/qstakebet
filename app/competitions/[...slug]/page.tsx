@@ -9,6 +9,7 @@ import { GroupStandingsModal } from "@/components/ui/GroupStandingsModal"
 import { OddsButton } from "@/components/ui/OddsButton"
 import type { Match } from "@/lib/types"
 import { CompetitionClient } from "@/components/competition/CompetitionClient"
+import { getQualifiedTeams } from "@/lib/match-utils"
 
 export const dynamic = 'force-dynamic'
 
@@ -110,6 +111,9 @@ export default async function CompetitionPage({ params }: Props) {
                             const groupMatches = tMatches.filter(m => m.group && m.group !== 'Knockout')
                             const allGroupsFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'finished' || m.status === 'settled')
 
+                            // Calculate Qualified Teams
+                            const qualifiedData = (groups.length > 0) ? getQualifiedTeams(groupMatches, groups) : null
+
                             return (
                                 <div key={tournament.id} className="space-y-4">
                                     {/* Tournament Header */}
@@ -184,6 +188,54 @@ export default async function CompetitionPage({ params }: Props) {
                                         </div>
                                     )}
 
+                                    {/* Qualification Summary (Visible to users) */}
+                                    {qualifiedData && (qualifiedData.groupWinners.length > 0 || qualifiedData.bestRunnersUp.length > 0) && (
+                                        <div className="bg-slate-900/60 border border-purple-500/20 rounded-[2rem] p-6 space-y-6 shadow-xl relative overflow-hidden">
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center">
+                                                    <Trophy className="h-5 w-5 text-yellow-500" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Knockout Stage Qualification</h3>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Automatic winners & best 2nd places</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                                                <div className="space-y-2">
+                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                        Automatic Qualifiers
+                                                    </span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {qualifiedData.groupWinners.map(w => (
+                                                            <div key={w.schoolId} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
+                                                                <span className="text-[10px] font-bold text-white uppercase">{w.schoolName}</span>
+                                                                <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">W</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                        Best Runners-Up
+                                                    </span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {qualifiedData.bestRunnersUp.map(r => (
+                                                            <div key={r.schoolId} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
+                                                                <span className="text-[10px] font-bold text-white uppercase">{r.schoolName}</span>
+                                                                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Q</span>
+                                                            </div>
+                                                        ))}
+                                                        {qualifiedData.bestRunnersUp.length === 0 && <span className="text-[8px] text-slate-600 italic uppercase">TBD</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Group Standings OR Qualified Teams */}
                                     {(groups.length > 0 && !allGroupsFinished) ? (
                                         <div className="space-y-4">
@@ -228,18 +280,36 @@ export default async function CompetitionPage({ params }: Props) {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {sorted.map((s: any, idx: number) => (
-                                                                        <tr key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                                                            <td className="px-5 py-3">
-                                                                                <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
-                                                                            </td>
-                                                                            <td className="py-3 pr-4 font-bold text-white uppercase">{s.name}</td>
-                                                                            {[s.p, s.w, s.d, s.l, s.gf - s.ga > 0 ? `+${s.gf - s.ga}` : s.gf - s.ga].map((v, i) => (
-                                                                                <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
-                                                                            ))}
-                                                                            <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
-                                                                        </tr>
-                                                                    ))}
+                                                                    {sorted.map((s: any, idx: number) => {
+                                                                        const isQualified = qualifiedData?.allQualifiedIds.includes(s.id)
+                                                                        const isWinner = qualifiedData?.groupWinners.some(gw => gw.schoolId === s.id)
+
+                                                                        return (
+                                                                            <tr key={s.id} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${isQualified ? 'bg-purple-500/5' : ''}`}>
+                                                                                <td className="px-5 py-3">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${isWinner ? 'bg-green-500/20 text-green-400' : isQualified ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500'}`}>
+                                                                                            {idx + 1}
+                                                                                        </span>
+                                                                                        {isQualified && (
+                                                                                            <span className={`text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded ${isWinner ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>Q</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td className="py-3 pr-4">
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="font-bold text-white uppercase">{s.name}</span>
+                                                                                        {isWinner && <span className="text-[7px] text-green-500 font-black uppercase tracking-widest">Group Winner</span>}
+                                                                                        {isQualified && !isWinner && <span className="text-[7px] text-blue-400 font-black uppercase tracking-widest">Best 2nd Qualifier</span>}
+                                                                                    </div>
+                                                                                </td>
+                                                                                {[s.p, s.w, s.d, s.l, s.gf - s.ga > 0 ? `+${s.gf - s.ga}` : s.gf - s.ga].map((v, i) => (
+                                                                                    <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
+                                                                                ))}
+                                                                                <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
+                                                                            </tr>
+                                                                        )
+                                                                    })}
                                                                 </tbody>
                                                             </table>
                                                         </div>
