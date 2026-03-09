@@ -1282,7 +1282,64 @@ export async function getMatchSuggestions(matchId: string) {
             return `  ${teamName}: Form [${form || 'N/A'}] | Tournament: P${row?.played ?? 0} W${row?.won ?? 0} D${row?.drawn ?? 0} L${row?.lost ?? 0} Pts${row?.points ?? 0}`
         }).join('\n')
 
-        // ── 5. Compose the full details string for the AI ────────────────────
+        // ── 5. Football-specific stats (when sport is football) ───────────────
+        let footballStatsText = ''
+        if (match.sportType === 'football' || match.sportType === 'handball') {
+            const footballMatches = tAllMatches.filter(m => m.sportType === match.sportType)
+            const totalGoals = footballMatches.reduce((acc, m) => {
+                const res = m.result as any
+                const ps = m.participants as any[]
+                const g = ps.reduce((s: number, p: any) => s + (parseInt(String(res?.scores?.[p.schoolId] ?? p.result ?? 0)) || 0), 0)
+                return acc + g
+            }, 0)
+            const totalDraws = footballMatches.filter(m => {
+                const res = m.result as any
+                return res?.winner === 'X' || res?.winner === 'draw'
+            }).length
+            const bttsCount = footballMatches.filter(m => {
+                const res = m.result as any
+                const ps = m.participants as any[]
+                return ps.every((p: any) => (parseInt(String(res?.scores?.[p.schoolId] ?? p.result ?? 0)) || 0) > 0)
+            }).length
+            const avgGoals = footballMatches.length > 0 ? (totalGoals / footballMatches.length).toFixed(2) : 'N/A'
+            const drawRate = footballMatches.length > 0 ? ((totalDraws / footballMatches.length) * 100).toFixed(0) + '%' : 'N/A'
+            const bttsRate = footballMatches.length > 0 ? ((bttsCount / footballMatches.length) * 100).toFixed(0) + '%' : 'N/A'
+
+            // Per-team scoring & conceding averages + clean sheets for the two teams
+            const teamStatsLines = teamIds.map(id => {
+                const teamName = participants?.find(p => p.schoolId === id)?.name || id
+                const tmMatches = footballMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id))
+                const scored = tmMatches.reduce((acc, m) => {
+                    const res = m.result as any
+                    return acc + (parseInt(String(res?.scores?.[id] ?? 0)) || 0)
+                }, 0)
+                const conceded = tmMatches.reduce((acc, m) => {
+                    const res = m.result as any
+                    const ps = m.participants as any[]
+                    const opp = ps.find((p: any) => p.schoolId !== id)
+                    return acc + (parseInt(String(res?.scores?.[opp?.schoolId] ?? 0)) || 0)
+                }, 0)
+                const cleanSheets = tmMatches.filter(m => {
+                    const res = m.result as any
+                    const ps = m.participants as any[]
+                    const opp = ps.find((p: any) => p.schoolId !== id)
+                    return (parseInt(String(res?.scores?.[opp?.schoolId] ?? 0)) || 0) === 0
+                }).length
+                const n = tmMatches.length || 1
+                return `  ${teamName}: Avg scored ${(scored / n).toFixed(2)}/game | Avg conceded ${(conceded / n).toFixed(2)}/game | Clean sheets ${cleanSheets}/${tmMatches.length}`
+            }).join('\n')
+
+            footballStatsText = [
+                ``,
+                `FOOTBALL TOURNAMENT STATS (${footballMatches.length} matches played):`,
+                `  Avg goals/game: ${avgGoals} | Draw rate: ${drawRate} | BTTS rate: ${bttsRate}`,
+                ``,
+                `SCORING STATS (each team in this match):`,
+                teamStatsLines,
+            ].join('\n')
+        }
+
+        // ── 6. Compose the full details string for the AI ────────────────────
         const details = [
             `MATCH: ${match.sportType?.toUpperCase()} | ${match.gender?.toUpperCase()} | Stage: ${match.stage}`,
             `TEAMS: ${pNames}`,
@@ -1295,6 +1352,7 @@ export async function getMatchSuggestions(matchId: string) {
             ``,
             `HEAD-TO-HEAD (this tournament):`,
             h2hText,
+            footballStatsText,
         ].join('\n')
 
         const { getAIMarketSuggestions } = await import("./ai-result-parser")

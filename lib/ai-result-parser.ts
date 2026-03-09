@@ -266,18 +266,23 @@ export async function getAIMarketSuggestions(
                             content: `You are a professional sports bookmaker setting betting markets for a real campus tournament match.
 
 CRITICAL ODDS RULES (follow strictly):
-1. **Base odds on data, not team order.** You will receive a TOURNAMENT STANDINGS table, per-team FORM & STATS, and HEAD-TO-HEAD results. Read them carefully. The team with more points, better goal difference, and a winning form MUST receive a lower (more favourable) "Match Winner" odd. Never default to giving Team 1 a lower price simply because they were listed first.
-2. **Fair probability distribution.** Calculate each team's implied win probability from their tournament standing. A team on 9 points should NOT have the same odds as a team on 2 points.
-3. **Core Standards**: ALWAYS include 'Match Winner', 'Double Chance', and 'Total Points' markets.
-4. **Strict Naming CONVENTIONS**:
+1. **Base odds on data, not team order.** You will receive a TOURNAMENT STANDINGS table, per-team FORM & STATS, and HEAD-TO-HEAD results. The team higher in the standings (more points, better GD, better form) MUST receive a lower "Match Winner" odd. Never default to pricing Team 1 as favourite based on listing order alone.
+2. **Fair probability distribution.** Calculate each team's win probability from their standings. A team on 9 pts should have a significantly lower odd than one on 2 pts.
+3. **FOOTBALL-SPECIFIC RULES (when sport is football):**
+   a. **Draw odds:** Use the provided tournament DRAW RATE. If draw rate is 40%, the draw probability is ~0.40 so Draw odds ≈ 2.50. Higher draw rate = lower Draw odds. Never default to a generic 3.20 draw.
+   b. **Total Points (Over/Under):** Base the O/U lines on the provided AVG GOALS/GAME. If avg is 1.8 goals, Over 1.5 should be short (e.g. 1.30-1.45), Over 2.5 should be longer (e.g. 1.90-2.20), Under 2.5 shorter (e.g. 1.70-2.00). Scale all O/U odds to the actual scoring average.
+   c. **Both Teams to Score:** Use the provided BTTS RATE directly. If 60% of tournament matches have BTTS, set "Yes" odds ≈ 1.60-1.70 and "No" odds ≈ 2.10-2.30. Do NOT use a fixed generic price.
+   d. **Team scoring form:** Factor in each team's avg goals scored and conceded per game from the SCORING STATS. A team averaging 2.5 goals/game should have a lower Over 0.5 First Team Goals price than one averaging 0.5.
+4. **Core Standards**: ALWAYS include 'Match Winner', 'Double Chance', 'Total Points', and 'Both Teams to Score' for football.
+5. **Strict Naming CONVENTIONS**:
    - For BTTS: use EXACTLY "Both Teams to Score".
-   - For O/U: use EXACTLY "Total Points". Group all lines (Over 1.5, Under 1.5, Over 2.5, etc.) under ONE market.
+   - For O/U: use EXACTLY "Total Points". Group ALL lines under ONE market.
    - For 1X2: use EXACTLY "Match Winner".
    - For Spreads: use EXACTLY "Handicap".
-5. **Format**: Return ONLY a valid JSON array. Group all selections for a market into one object:
-   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "EXACT TEAM NAME 1", "odds": 1.85}, {"label": "Draw", "odds": 3.40}, {"label": "EXACT TEAM NAME 2", "odds": 4.20}]},
-   {"marketName": "Total Points", "helpInfo": "Total goals/points scored.", "selections": [{"label": "Over 1.5", "odds": 1.3}, {"label": "Under 1.5", "odds": 2.8}, {"label": "Over 2.5", "odds": 1.8}]}]
-6. **CRITICAL**: Use the EXACT team names from the match description in all selection labels. Do not abbreviate.`
+6. **Format**: Return ONLY a valid JSON array:
+   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "EXACT TEAM NAME 1", "odds": 1.85}, {"label": "Draw", "odds": 3.10}, {"label": "EXACT TEAM NAME 2", "odds": 4.20}]},
+   {"marketName": "Total Points", "helpInfo": "Total goals scored.", "selections": [{"label": "Over 1.5", "odds": 1.30}, {"label": "Under 1.5", "odds": 3.00}, {"label": "Over 2.5", "odds": 2.10}, {"label": "Under 2.5", "odds": 1.72}]}]
+7. **CRITICAL**: Use the EXACT team names from the match description in all selection labels. Do not abbreviate.`
                         },
                         {
                             role: "user",
