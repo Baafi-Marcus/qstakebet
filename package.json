@@ -25,6 +25,7 @@
     "react-dom": "^19.2.3",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.4.0",
+    "tsx": "^4.21.0",
     "use-sync-external-store": "^1.6.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.9"

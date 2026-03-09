@@ -390,7 +390,7 @@ export function isSelectionWinner(
     label: string,
     match: Match,
     result: { winner?: string, scores?: Record<string, number>, metadata?: Record<string, unknown> }
-): { resolved: boolean, isWin: boolean, isVoid?: boolean } {
+): { resolved: boolean, isWin: boolean, isVoid?: boolean, basis?: string } {
     const sport = (match.sportType || 'football').toLowerCase()
     const metadata = (result.metadata || {}) as Record<string, any>
     const scores = result.scores || {}
@@ -403,18 +403,18 @@ export function isSelectionWinner(
 
     // 0a. Check for Selection-Level Override (e.g. "Over/Under 2.5:Over" -> "won")
     if (outcomes[selectionKey]) {
-        if (outcomes[selectionKey] === 'void') return { resolved: true, isWin: false, isVoid: true }
-        if (outcomes[selectionKey] === 'won') return { resolved: true, isWin: true }
-        if (outcomes[selectionKey] === 'lost') return { resolved: true, isWin: false }
+        if (outcomes[selectionKey] === 'void') return { resolved: true, isWin: false, isVoid: true, basis: "Manual Override" }
+        if (outcomes[selectionKey] === 'won') return { resolved: true, isWin: true, basis: "Manual Override" }
+        if (outcomes[selectionKey] === 'lost') return { resolved: true, isWin: false, basis: "Manual Override" }
     }
 
     // 0b. Check for legacy Market-Level Override (e.g. "Match Winner" -> "team-id")
     const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
     if (overrideKey && outcomes[overrideKey]) {
         if (outcomes[overrideKey] === 'void') {
-            return { resolved: true, isWin: false, isVoid: true }
+            return { resolved: true, isWin: false, isVoid: true, basis: "Manual Override" }
         }
-        return { resolved: true, isWin: outcomes[overrideKey] === selectionId }
+        return { resolved: true, isWin: outcomes[overrideKey] === selectionId, basis: "Manual Override" }
     }
 
     // Virtuals Adapter: If it's a virtual match outcome
@@ -560,7 +560,11 @@ export function isSelectionWinner(
         const ftRes = h2 > a2 ? '1' : (a2 > h2 ? '2' : 'X')
 
         const combinedResult = `${htRes}/${ftRes}` // e.g. "X/1", "1/1"
-        return { resolved: true, isWin: selectionId === combinedResult || label === combinedResult }
+        return {
+            resolved: true,
+            isWin: selectionId === combinedResult || label === combinedResult,
+            basis: `HT: ${h1}-${a1}, FT: ${h2}-${a2}`
+        }
     }
 
     // 2. FIRST HALF WINNER / TOTALS (Prioritize HT over FT)
@@ -581,14 +585,20 @@ export function isSelectionWinner(
             }
             const myScore = getTeamScore(selectionId, htScores)
             const otherScores = Object.entries(htScores).filter(([id]) => id !== selectionId).map(([_, s]) => s)
-            return { resolved: true, isWin: myScore !== undefined && otherScores.every(os => myScore > os) }
+            const htScoreStr = Object.entries(htScores).map(([_, s]) => s).join('-')
+            return {
+                resolved: true,
+                isWin: myScore !== undefined && otherScores.every(os => myScore > os),
+                basis: `HT Score: ${htScoreStr}`
+            }
         }
 
         if (norm.includes("total") || norm.includes("goals") || norm.includes("ou") || norm.includes("tg")) {
             const totalHT = Object.values(htScores).reduce((a, b) => a + (b || 0), 0)
             const target = parseFloat(label.match(/[\d.]+/)?.[0] || "0")
-            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > target }
-            if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalHT < target }
+            const basis = `Total HT Goals: ${totalHT}`
+            if (label.toLowerCase().includes("over")) return { resolved: true, isWin: totalHT > target, basis }
+            if (label.toLowerCase().includes("under")) return { resolved: true, isWin: totalHT < target, basis }
         }
 
         return { resolved: false, isWin: false }
@@ -600,24 +610,26 @@ export function isSelectionWinner(
         if (!isFinished) return { resolved: false, isWin: false }
 
         if (isDrawSelected(selectionId) || isDrawSelected(label)) {
+            const basis = isVirtualOutcome ? `V-Score: ${vOutcome.totalScores.join('-')}` : `Score: ${Object.values(scores).join(' - ')}`;
             if (isVirtualOutcome) {
                 const vScores = vOutcome.totalScores;
-                if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1] };
-                return { resolved: true, isWin: false };
+                if (vScores.length === 2) return { resolved: true, isWin: vScores[0] === vScores[1], basis };
+                return { resolved: true, isWin: false, basis };
             }
-            return { resolved: true, isWin: currentWinner === 'X' };
+            return { resolved: true, isWin: currentWinner === 'X', basis };
         }
 
+        const mwBasis = isVirtualOutcome ? `V-Score: ${vOutcome.totalScores.join('-')}` : `Score: ${Object.values(scores).join(' - ')}`;
         if (isVirtualOutcome) {
             const winnerName = vOutcome.schools[vOutcome.winnerIndex];
             const normalizedSid = selectionId.startsWith('v-') ? selectionId.substring(2) : selectionId;
 
-            if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0 };
-            if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1 };
-            return { resolved: true, isWin: winnerName === normalizedSid };
+            if (selectionId === "1") return { resolved: true, isWin: vOutcome.winnerIndex === 0, basis: mwBasis };
+            if (selectionId === "2") return { resolved: true, isWin: vOutcome.winnerIndex === 1, basis: mwBasis };
+            return { resolved: true, isWin: winnerName === normalizedSid, basis: mwBasis };
         }
 
-        if (isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label)) return { resolved: true, isWin: true };
+        if (isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label)) return { resolved: true, isWin: true, basis: mwBasis };
 
         // Final score check fallback
         const myScore = getTeamScore(selectionId)
@@ -625,10 +637,10 @@ export function isSelectionWinner(
             const participant = getParticipant(selectionId)
             const targetId = participant?.schoolId || selectionId
             const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s);
-            return { resolved: true, isWin: otherScores.every(os => myScore > os) };
+            return { resolved: true, isWin: otherScores.every(os => myScore > os), basis: mwBasis };
         }
 
-        return { resolved: true, isWin: false };
+        return { resolved: true, isWin: false, basis: mwBasis };
     }
 
     // 4. TOTAL POINTS / GOALS (Over/Under)
@@ -643,16 +655,17 @@ export function isSelectionWinner(
         const isOver = label.toLowerCase().includes("over")
         const isUnder = label.toLowerCase().includes("under")
 
+        const basis = `Total: ${totalScore}`
         // If it's already "Over" the line, it's resolved even if match is live
-        if (isOver && totalScore > target) return { resolved: true, isWin: true }
+        if (isOver && totalScore > target) return { resolved: true, isWin: true, basis }
 
         // If match is finished, resolve definitively
         if (match.status === 'finished' || match.status === 'settled') {
-            return { resolved: true, isWin: isOver ? totalScore > target : totalScore < target }
+            return { resolved: true, isWin: isOver ? totalScore > target : totalScore < target, basis }
         }
 
         // If it's "Under" and we already passed it, it's lost
-        if (isUnder && totalScore > target) return { resolved: true, isWin: false }
+        if (isUnder && totalScore > target) return { resolved: true, isWin: false, basis }
 
         return { resolved: false, isWin: false }
     }
@@ -704,8 +717,9 @@ export function isSelectionWinner(
         const myScore = scores[targetId] || 0
         const adjustedScore = myScore + line
         const otherScores = Object.entries(scores).filter(([id]) => id !== targetId).map(([_, s]) => s)
+        const basis = `Adj. Score: ${adjustedScore} (vs ${otherScores.join('/')})`
 
-        return { resolved: true, isWin: otherScores.every(os => adjustedScore > os) }
+        return { resolved: true, isWin: otherScores.every(os => adjustedScore > os), basis }
     }
 
     // 7. BTTS (Both Teams to Score)
@@ -714,8 +728,9 @@ export function isSelectionWinner(
         if (!isFinishedOrSettled && !Object.values(scores).every(s => s > 0)) return { resolved: false, isWin: false }
 
         const bothScored = Object.values(scores).length >= 2 && Object.values(scores).every(s => s > 0)
-        if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored }
-        if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored }
+        const basis = bothScored ? "Both Scored: YES" : "Both Scored: NO"
+        if (selectionId === "Yes" || label.toLowerCase() === "yes") return { resolved: true, isWin: bothScored, basis }
+        if (selectionId === "No" || label.toLowerCase() === "no") return { resolved: true, isWin: !bothScored, basis }
     }
 
     // 8. DOUBLE CHANCE
@@ -757,8 +772,10 @@ export function isSelectionWinner(
             const parts = label.split(/ or /i)
             const p1 = getParticipant(parts[0].trim().toLowerCase())
             const p2 = getParticipant(parts[1].trim().toLowerCase())
+            const winnerStr = winner === homeId ? 'Home' : (winner === awayId ? 'Away' : 'Draw')
+            const basis = `Result: ${winnerStr}`
             if (p1 && p2) {
-                return { resolved: true, isWin: winner === p1.schoolId || winner === p2.schoolId }
+                return { resolved: true, isWin: winner === p1.schoolId || winner === p2.schoolId, basis }
             }
         }
     }
@@ -768,8 +785,9 @@ export function isSelectionWinner(
         const isFinished = match.status === 'finished' || match.status === 'settled' || (currentWinner && currentWinner !== 'pending')
         if (!isFinished) return { resolved: false, isWin: false }
 
-        if (currentWinner === 'X') return { resolved: true, isWin: false, isVoid: true }
-        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label) }
+        const basis = `Winner: ${currentWinner}`
+        if (currentWinner === 'X') return { resolved: true, isWin: false, isVoid: true, basis }
+        return { resolved: true, isWin: isMatchWinnerInternal(selectionId) || isMatchWinnerInternal(label), basis }
     }
 
     // 10. WINNING MARGIN
@@ -788,24 +806,20 @@ export function isSelectionWinner(
 
         const diff = Math.abs(s1 - s2)
         const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
-
-        if (victor === 'X') {
-            return { resolved: true, isWin: isDrawSelected(selectionId) || isDrawSelected(label) }
-        }
-
         const isHomeLeg = victor === '1'
         const labelLower = label.toLowerCase()
 
+        const basis = `Margin: ${victor}-${diff}`
         if (isHomeLeg && labelLower.includes('home by')) {
-            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
-            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true, basis }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0"), basis }
         }
         if (!isHomeLeg && labelLower.includes('away by')) {
-            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true }
-            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0") }
+            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true, basis }
+            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0"), basis }
         }
 
-        return { resolved: true, isWin: false }
+        return { resolved: true, isWin: false, basis }
     }
 
     // 11. FIRST TEAM TO SCORE
@@ -820,12 +834,14 @@ export function isSelectionWinner(
         }
 
         if (firstScorerId) {
-            if (firstScorerId === selectionId) return { resolved: true, isWin: true }
+            const pScorer = getParticipant(firstScorerId)
+            const basis = `First Goal: ${pScorer?.name || firstScorerId}`
+            if (firstScorerId === selectionId) return { resolved: true, isWin: true, basis }
             const p = getParticipant(selectionId)
-            if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true }
+            if (p && p.schoolId === firstScorerId) return { resolved: true, isWin: true, basis }
             const pLabel = getParticipant(label)
-            if (pLabel && pLabel.schoolId === firstScorerId) return { resolved: true, isWin: true }
-            return { resolved: true, isWin: false }
+            if (pLabel && pLabel.schoolId === firstScorerId) return { resolved: true, isWin: true, basis }
+            return { resolved: true, isWin: false, basis }
         }
 
         return { resolved: false, isWin: false }
@@ -837,8 +853,9 @@ export function isSelectionWinner(
         if (!isFinished) return { resolved: false, isWin: false }
         const totalGoals = Object.values(scores).reduce((a, b) => a + (b || 0), 0)
         const isOdd = totalGoals % 2 !== 0
-        if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd }
-        if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd }
+        const basis = `Total: ${totalGoals} (${isOdd ? 'Odd' : 'Even'})`
+        if (selectionId.toLowerCase() === 'odd' || label.toLowerCase() === 'odd') return { resolved: true, isWin: isOdd, basis }
+        if (selectionId.toLowerCase() === 'even' || label.toLowerCase() === 'even') return { resolved: true, isWin: !isOdd, basis }
     }
 
     // Default Fallback

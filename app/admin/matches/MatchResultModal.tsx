@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
+import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, RefreshCcw, Minus, AlertTriangle, Clock } from "lucide-react"
 import { updateMatchResult, getActiveMarketsAction, getSettlementPreview } from "@/lib/admin-actions"
 import { CheckCircle, AlertCircle } from "lucide-react"
 import { validateScores } from "@/lib/match-utils"
@@ -1135,21 +1135,49 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Review market outcomes before final authorization</p>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowPreview(false)}
-                                                        className="px-6 h-12 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
-                                                    >
-                                                        <Plus className="w-3 h-3 rotate-45" /> Back to Edit
-                                                    </button>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setManualOutcomes({})}
+                                                            className="px-6 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/20 transition-all flex items-center gap-2"
+                                                        >
+                                                            <RefreshCcw className="w-3 h-3" /> Reset all to Auto
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowPreview(false)}
+                                                            className="px-6 h-12 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                                                        >
+                                                            <Plus className="w-3 h-3 rotate-45" /> Back to Edit
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
                                                     {previewData.map((market, idx) => (
                                                         <div key={idx} className="p-5 bg-white/[0.03] border border-white/5 rounded-2xl space-y-4">
-                                                            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{market.marketName}</span>
+                                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{market.marketName}</span>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const mKeyPrefix = `${market.marketName}:`.toLowerCase();
+                                                                        setManualOutcomes(prev => {
+                                                                            const next = { ...prev };
+                                                                            Object.keys(next).forEach(k => {
+                                                                                if (k.startsWith(mKeyPrefix)) delete next[k];
+                                                                            });
+                                                                            return next;
+                                                                        });
+                                                                    }}
+                                                                    className="text-[7px] font-black text-white/30 hover:text-amber-500 uppercase tracking-widest transition-colors flex items-center gap-1 group/reset"
+                                                                >
+                                                                    <RefreshCcw className="w-2.5 h-2.5 group-hover/reset:rotate-180 transition-transform duration-500" />
+                                                                    Reset Market
+                                                                </button>
                                                             </div>
                                                             <div className="space-y-2">
                                                                 {market.selections.map((sel: any, sIdx: number) => (
@@ -1165,8 +1193,13 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                     >
                                                                         <div className="flex flex-col">
                                                                             <span className="text-[10px] font-black uppercase tracking-tight truncate">{sel.label}</span>
-                                                                            {manualOutcomes[`${market.marketName}:${sel.label}`.toLowerCase().trim()] && (
-                                                                                <span className="text-[7px] font-bold text-white/40 uppercase tracking-tighter">Manual Override</span>
+                                                                            {sel.basis && (
+                                                                                <span className="text-[7px] font-bold text-white/40 uppercase tracking-tighter opacity-60 italic">{sel.basis}</span>
+                                                                            )}
+                                                                            {sel.isManual && (
+                                                                                <span className="text-[7px] font-black text-amber-400 uppercase tracking-tighter flex items-center gap-1">
+                                                                                    <Zap className="w-2 h-2 fill-current" /> Manual Override
+                                                                                </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-center gap-1.5">

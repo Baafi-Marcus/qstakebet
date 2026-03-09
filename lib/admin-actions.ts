@@ -1480,12 +1480,15 @@ export async function getSettlementPreview(matchId: string, resultData: {
                 if (resolution.resolved) {
                     selections.push({
                         label,
-                        status: resolution.isVoid ? 'void' : (resolution.isWin ? 'won' : 'lost')
+                        status: resolution.isVoid ? 'void' : (resolution.isWin ? 'won' : 'lost'),
+                        isManual: resolution.basis === "Manual Override",
+                        basis: resolution.basis
                     })
                 } else {
                     selections.push({
                         label,
-                        status: 'pending'
+                        status: 'pending',
+                        basis: resolution.basis
                     })
                 }
             }
@@ -1506,7 +1509,9 @@ export async function getSettlementPreview(matchId: string, resultData: {
                 const resolution = isSelectionWinner(`${matchId}-Match Winner-${p.name}`, "Match Winner", p.name, match, resultData)
                 selections.push({
                     label: p.name,
-                    status: resolution.resolved ? (resolution.isWin ? 'won' : 'lost') : 'pending'
+                    status: resolution.resolved ? (resolution.isWin ? 'won' : 'lost') : 'pending',
+                    isManual: resolution.basis === "Manual Override",
+                    basis: resolution.basis
                 })
             })
 
@@ -1514,7 +1519,9 @@ export async function getSettlementPreview(matchId: string, resultData: {
             const drawRes = isSelectionWinner(`${matchId}-Match Winner-Draw`, "Match Winner", "Draw", match, resultData)
             selections.push({
                 label: "Draw",
-                status: drawRes.resolved ? (drawRes.isWin ? 'won' : 'lost') : 'pending'
+                status: drawRes.resolved ? (drawRes.isWin ? 'won' : 'lost') : 'pending',
+                isManual: drawRes.basis === "Manual Override",
+                basis: drawRes.basis
             })
 
             preview.push({ marketName: "Match Winner", selections })
