@@ -1,19 +1,18 @@
 import React from "react"
 import { ArrowLeft, Wallet, Zap, Ticket, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BetSlipContext } from "@/lib/store/context"
 
 interface VirtualsHeaderProps {
     onBack: () => void;
     selectedCategory: 'all' | 'regional' | 'national';
     onCategoryChange: (category: 'all' | 'regional' | 'national') => void;
-    setSelectedRegion: (region: string | null) => void; // Reset region when category changes
-    balanceType: 'cash' | 'gift';
-    onBalanceTypeChange: (type: 'cash' | 'gift') => void;
+    setSelectedRegion: (region: string | null) => void;
     balance: number;
     bonusBalance: number;
     hasPendingBets: boolean;
     onOpenHistory: () => void;
-    availableRegions: string[]; // Passed for logic if needed, though mostly used in resetting
+    availableRegions: string[];
     isSimulationActive?: boolean;
     onSkip?: () => void;
     isAuthenticated: boolean;
@@ -21,6 +20,7 @@ interface VirtualsHeaderProps {
     onNextRound: () => void;
     disableSkip?: boolean;
     customSubNavNode?: React.ReactNode;
+    setLocalShowGiftModal?: (show: boolean) => void;
 }
 
 export function VirtualsHeader({
@@ -28,8 +28,6 @@ export function VirtualsHeader({
     selectedCategory,
     onCategoryChange,
     setSelectedRegion,
-    balanceType,
-    onBalanceTypeChange,
     balance,
     bonusBalance,
     hasPendingBets,
@@ -41,8 +39,14 @@ export function VirtualsHeader({
     user,
     onNextRound,
     disableSkip,
-    customSubNavNode
+    customSubNavNode,
+    setLocalShowGiftModal
 }: VirtualsHeaderProps) {
+    const context = React.useContext(BetSlipContext)
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
+    const bonusId = context?.bonusId
+
     return (
         <div className="bg-slate-900 shadow-lg border-b border-white/5 sticky top-0 z-50 transition-all duration-300">
             {/* Top Row: Navigation & Actions */}
@@ -109,7 +113,7 @@ export function VirtualsHeader({
                             {/* Compact Balance Toggle for small screens */}
                             <div className="flex items-center bg-slate-950/50 rounded-xl p-0.5 border border-white/5">
                                 <button
-                                    onClick={() => onBalanceTypeChange('cash')}
+                                    onClick={() => setBalanceType('cash')}
                                     className={cn(
                                         "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
                                         balanceType === 'cash' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500"
@@ -119,7 +123,13 @@ export function VirtualsHeader({
                                     <span className="text-[10px] font-black font-mono">{balance.toFixed(2)}</span>
                                 </button>
                                 <button
-                                    onClick={() => onBalanceTypeChange('gift')}
+                                    onClick={() => {
+                                        if (balanceType === 'cash' && !bonusId && setLocalShowGiftModal) {
+                                            setLocalShowGiftModal(true)
+                                            return
+                                        }
+                                        setBalanceType('gift')
+                                    }}
                                     className={cn(
                                         "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
                                         balanceType === 'gift' ? "bg-purple-600 text-white shadow-lg" : "text-slate-500"

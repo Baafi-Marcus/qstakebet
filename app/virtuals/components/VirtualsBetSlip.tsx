@@ -12,6 +12,7 @@ import {
     ResolvedSelection
 } from "@/lib/virtuals"
 import { GiftSelectionModal } from "@/components/ui/GiftSelectionModal"
+import { BetSlipContext } from "@/lib/store/context"
 
 // Re-defining constants or importing if available
 const STAKE_LIMITS = {
@@ -30,8 +31,6 @@ interface VirtualsBetSlipProps {
     setShowSlip: (show: boolean) => void;
     slipTab: 'selections' | 'pending';
     setSlipTab: (tab: 'selections' | 'pending') => void;
-    balanceType: 'cash' | 'gift';
-    setBalanceType: (type: 'cash' | 'gift') => void;
     profile: { balance: number; bonusBalance?: number } | undefined;
     betMode: 'single' | 'multi';
     setBetMode: (mode: 'single' | 'multi') => void;
@@ -48,10 +47,6 @@ interface VirtualsBetSlipProps {
     hasConflicts: boolean;
     isAuthenticated: boolean;
     gifts: any[];
-    bonusId?: string;
-    setBonusId: (id: string | undefined) => void;
-    bonusAmount: number;
-    setBonusAmount: (amount: number) => void;
     showGiftModal: boolean;
     setShowGiftModal: (show: boolean) => void;
     onNextRound?: () => void;
@@ -68,8 +63,6 @@ export function VirtualsBetSlip({
     setShowSlip,
     slipTab,
     setSlipTab,
-    balanceType,
-    setBalanceType,
     profile,
     betMode,
     setBetMode,
@@ -86,15 +79,19 @@ export function VirtualsBetSlip({
     hasConflicts,
     isAuthenticated,
     gifts,
-    bonusId,
-    setBonusId,
-    bonusAmount,
-    setBonusAmount,
     showGiftModal,
     setShowGiftModal,
     onNextRound,
     isFinished
 }: VirtualsBetSlipProps) {
+    const context = React.useContext(BetSlipContext)
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
+    const bonusId = context?.bonusId
+    const setBonusId = context?.setBonusId || (() => { })
+    const bonusAmount = context?.bonusAmount || 0
+    const setBonusAmount = context?.setBonusAmount || (() => { })
+
     // Auto-sync globalStake to bonusAmount when a gift voucher is active
     // This means the user never needs to manually enter a stake when using a gift
     React.useEffect(() => {
@@ -579,8 +576,7 @@ export function VirtualsBetSlip({
             {/* Gift Modal */}
             < GiftSelectionModal
                 isOpen={showGiftModal}
-                onClose={() => setShowGiftModal(false)
-                }
+                onClose={() => setShowGiftModal(false)}
                 gifts={gifts}
                 bonusId={bonusId}
                 totalOdds={calculateTotalOdds(selections)}

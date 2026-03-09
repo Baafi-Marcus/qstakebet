@@ -46,6 +46,8 @@ export function BetSlipSidebar() {
         (val: number) => { if (context?.setBonusAmount) context.setBonusAmount(val) },
         [context]
     )
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
     const addSelection = context?.addSelection || (() => { })
 
     // Helper for sport icons
@@ -127,6 +129,15 @@ export function BetSlipSidebar() {
             }
         }
     }, [selections, stake, useBonus, bonusId, gifts, betMode, setBonusAmount])
+
+    // Sync useBonus with balanceType
+    React.useEffect(() => {
+        if (balanceType === 'gift' && !useBonus) {
+            setUseBonus(true)
+        } else if (balanceType === 'cash' && useBonus) {
+            setUseBonus(false)
+        }
+    }, [balanceType, useBonus, setUseBonus])
 
     const handleLoadBooking = async () => {
         if (!bookingCode) return
@@ -348,8 +359,10 @@ export function BetSlipSidebar() {
     const totalPotential = potentialWin + cappedBonus;
 
     // Conditional balance logic: Real only by default, includes bonus if useBonus is true
-    const relevantBalance = wallet ? (useBonus ? wallet.balance + bonusAmount : wallet.balance) : 0
-    const isInsufficient = totalStake > relevantBalance
+    const relevantBalance = wallet ? (balanceType === 'gift' ? wallet.bonusBalance : wallet.balance) : 0
+    const isInsufficient = balanceType === 'gift'
+        ? (useBonus ? totalStake > (bonusAmount || 0) : true) // If gift mode, must have a gift selected and enough amount
+        : totalStake > relevantBalance
 
     // GIFT RULE: If using a gift, winnings = (Stake * Odds) - Stake (Profit Only)
     const finalPotentialWin = useBonus
@@ -394,16 +407,21 @@ export function BetSlipSidebar() {
                                 <span className="text-white font-black text-sm">{selections.length}</span>
                             </div>
 
-                            {/* REAL Badge (no toggle) */}
-                            <div className="flex items-center bg-green-500 rounded-full h-8 overflow-hidden">
-                                <span className="px-3 text-white text-xs font-black uppercase">REAL</span>
+                            {/* REAL/GIFT Badge */}
+                            <div className={cn(
+                                "flex items-center rounded-full h-8 overflow-hidden transition-colors",
+                                balanceType === 'cash' ? "bg-emerald-600" : "bg-purple-600"
+                            )}>
+                                <span className="px-3 text-white text-xs font-black uppercase">
+                                    {balanceType === 'cash' ? "REAL" : "GIFT"}
+                                </span>
                                 {status === "authenticated" && (
                                     <Link
                                         href="/account/wallet"
                                         onClick={closeSlip}
                                         className="h-full px-3 bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase flex items-center border-l border-white/10"
                                     >
-                                        Deposit
+                                        {balanceType === 'cash' ? "Deposit" : "Gifts"}
                                     </Link>
                                 )}
                             </div>

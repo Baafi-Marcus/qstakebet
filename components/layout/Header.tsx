@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
 import { getUserWalletBalance } from "@/lib/wallet-actions"
+import { BetSlipContext } from "@/lib/store/context"
 
 export function Header() {
     const { data: session, status } = useSession()
@@ -14,11 +15,16 @@ export function Header() {
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
     const [balance, setBalance] = useState<number | null>(null)
+    const [bonusBalance, setBonusBalance] = useState<number | null>(null)
     const pathname = usePathname()
+    const { balanceType, setBalanceType } = React.useContext(BetSlipContext) || { balanceType: 'cash', setBalanceType: () => { } }
 
     React.useEffect(() => {
         if (status === "authenticated") {
-            getUserWalletBalance().then(data => setBalance(data.balance))
+            getUserWalletBalance().then(data => {
+                setBalance(data.balance)
+                setBonusBalance(data.bonusBalance)
+            })
         }
     }, [status])
 
@@ -85,11 +91,32 @@ export function Header() {
                     <div className="flex items-center space-x-2 md:space-x-4">
                         {isLoggedIn ? (
                             <>
-                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
-                                    <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
-                                    <span className="text-xs md:text-sm font-mono font-black text-foreground">
-                                        GHS {balance !== null ? balance.toFixed(2) : "..."}
-                                    </span>
+                                {/* Dual Balance Toggle */}
+                                <div className="flex items-center bg-slate-900 rounded-full p-0.5 border border-white/10 h-10 overflow-hidden shadow-inner">
+                                    <button
+                                        onClick={() => setBalanceType('cash')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full transition-all",
+                                            balanceType === 'cash' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-400"
+                                        )}
+                                    >
+                                        <Wallet className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                                        <span className="text-[10px] md:text-sm font-mono font-black">
+                                            {balance !== null ? balance.toFixed(2) : "..."}
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => setBalanceType('gift')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full transition-all",
+                                            balanceType === 'gift' ? "bg-purple-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-400"
+                                        )}
+                                    >
+                                        <Zap className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                                        <span className="text-[10px] md:text-sm font-mono font-black">
+                                            {bonusBalance !== null ? bonusBalance.toFixed(2) : "..."}
+                                        </span>
+                                    </button>
                                 </div>
                                 <Link
                                     href="/account/deposit"
@@ -124,10 +151,24 @@ export function Header() {
 
                                                 {/* Balance Display */}
                                                 <div className="px-4 py-4 border-b border-white/5 bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
-                                                    <div className="space-y-3">
-                                                        <div>
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Balance</p>
-                                                            <p className="text-2xl font-black text-white tracking-tighter">GHS {balance !== null ? balance.toFixed(2) : "0.00"}</p>
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Cash Balance</p>
+                                                                <p className="text-xl font-black text-white tracking-tighter tabular-nums">GHS {balance !== null ? balance.toFixed(2) : "0.00"}</p>
+                                                            </div>
+                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                                                <Wallet className="h-4 w-4 text-emerald-500" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                                            <div>
+                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Gift Vouchers</p>
+                                                                <p className="text-xl font-black text-purple-400 tracking-tighter tabular-nums">GHS {bonusBalance !== null ? bonusBalance.toFixed(2) : "0.00"}</p>
+                                                            </div>
+                                                            <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                                                <Zap className="h-4 w-4 text-purple-500" />
+                                                            </div>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Link

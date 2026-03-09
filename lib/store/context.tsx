@@ -41,6 +41,8 @@ export interface BetSlipContextType {
     setShowDeposit: (show: boolean) => void
     pendingWin: { amount: number } | null
     setPendingWin: (win: { amount: number } | null) => void
+    balanceType: 'cash' | 'gift'
+    setBalanceType: (type: 'cash' | 'gift') => void
 }
 
 export const BetSlipContext = React.createContext<BetSlipContextType | undefined>(undefined)
@@ -55,6 +57,7 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
     const [selectedMatchId, setSelectedMatchId] = React.useState<string | null>(null)
     const [showDeposit, setShowDeposit] = React.useState(false)
     const [pendingWin, setPendingWin] = React.useState<{ amount: number } | null>(null)
+    const [balanceType, setBalanceType] = React.useState<'cash' | 'gift'>('cash')
 
     const checkSelected = (selectionId: string) => {
         return selections.some(s => s.selectionId === selectionId)
@@ -133,7 +136,9 @@ export function BetSlipProvider({ children }: { children: React.ReactNode }) {
         showDeposit,
         setShowDeposit,
         pendingWin,
-        setPendingWin
+        setPendingWin,
+        balanceType,
+        setBalanceType
     }
 
     return (

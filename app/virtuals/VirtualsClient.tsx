@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Selection as BetSlipSelection } from "@/lib/store/context"
+import { Selection as BetSlipSelection, BetSlipContext } from "@/lib/store/context"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { cn } from "@/lib/utils"
 import {
@@ -79,11 +79,19 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
     const [currentCommentary, setCurrentCommentary] = useState<string>("Ready for kickoff!")
     const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
     const [countdown, setCountdown] = useState<string | null>(null)
-    const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
+
+    // Context synchronization
+    const context = React.useContext(BetSlipContext)
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
+    const bonusId = context?.bonusId
+    const setBonusId = context?.setBonusId || (() => { })
+    const bonusAmount = context?.bonusAmount || 0
+    const setBonusAmount = context?.setBonusAmount || (() => { })
+    const showGiftModal = context?.showDeposit || false // Reusing showDeposit as a trigger or a new modal? Actually Virtuals has showGiftModal local.
+    const [localShowGiftModal, setLocalShowGiftModal] = useState(false) // Keeping local for now as it's virtuals-specific UI
+
     const [gifts, setGifts] = useState<any[]>([])
-    const [bonusId, setBonusId] = useState<string | undefined>(undefined)
-    const [bonusAmount, setBonusAmount] = useState<number>(0)
-    const [showGiftModal, setShowGiftModal] = useState(false)
     // Live profile state — mirrors the server-passed prop but can be refreshed client-side
     const [liveProfile, setLiveProfile] = useState(profile)
 
@@ -371,13 +379,13 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
 
         // Guard: user must select a gift voucher before placing a gift bet
         if (balanceType === 'gift' && !bonusId) {
-            setShowGiftModal(true)
+            setLocalShowGiftModal(true)
             return
         }
 
         // Guard: if gift selected but amount 0, open modal to pick an amount
         if (balanceType === 'gift' && bonusAmount <= 0) {
-            setShowGiftModal(true)
+            setLocalShowGiftModal(true)
             return
         }
 
@@ -468,8 +476,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
                 onCategoryChange={setSelectedCategory}
                 setSelectedRegion={setSelectedRegion}
                 availableRegions={availableRegions}
-                balanceType={balanceType}
-                onBalanceTypeChange={setBalanceType}
                 balance={liveProfile?.balance || 0}
                 bonusBalance={liveProfile?.bonusBalance || 0}
                 hasPendingBets={pendingSlips.length > 0}
@@ -480,6 +486,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
                 user={user}
                 onNextRound={handleNextRound}
                 disableSkip={!!countdown}
+                setLocalShowGiftModal={setLocalShowGiftModal}
             />
 
             <div className="flex flex-1 overflow-hidden">
@@ -531,8 +538,6 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
                 setShowSlip={setShowSlip}
                 slipTab={slipTab}
                 setSlipTab={setSlipTab}
-                balanceType={balanceType}
-                setBalanceType={setBalanceType}
                 profile={liveProfile}
                 betMode={betMode}
                 setBetMode={setBetMode}
@@ -549,12 +554,8 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
                 hasConflicts={hasConflicts}
                 isAuthenticated={isAuthenticated}
                 gifts={gifts}
-                bonusId={bonusId}
-                setBonusId={setBonusId}
-                bonusAmount={bonusAmount}
-                setBonusAmount={setBonusAmount}
-                showGiftModal={showGiftModal}
-                setShowGiftModal={setShowGiftModal}
+                showGiftModal={localShowGiftModal}
+                setShowGiftModal={setLocalShowGiftModal}
                 onNextRound={handleNextRound}
                 isFinished={isSimulationActive && simulationProgress >= 60}
             />
