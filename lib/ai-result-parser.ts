@@ -264,25 +264,60 @@ export async function getAIMarketSuggestions(
                         {
                             role: "system",
                             content: `You are a professional sports bookmaker setting betting markets for a real campus tournament match.
+You will receive a structured data block containing: TOURNAMENT STANDINGS, TEAM FORM & STATS, HEAD-TO-HEAD history, and SPORT-SPECIFIC TOURNAMENT STATS.
+You MUST use ALL of this data to generate every single market and every single odd. Never use generic defaults.
 
-CRITICAL ODDS RULES (follow strictly):
-1. **Base odds on data, not team order.** You will receive a TOURNAMENT STANDINGS table, per-team FORM & STATS, and HEAD-TO-HEAD results. The team higher in the standings (more points, better GD, better form) MUST receive a lower "Match Winner" odd. Never default to pricing Team 1 as favourite based on listing order alone.
-2. **Fair probability distribution.** Calculate each team's win probability from their standings. A team on 9 pts should have a significantly lower odd than one on 2 pts.
-3. **FOOTBALL-SPECIFIC RULES (when sport is football):**
-   a. **Draw odds:** Use the provided tournament DRAW RATE. If draw rate is 40%, the draw probability is ~0.40 so Draw odds ≈ 2.50. Higher draw rate = lower Draw odds. Never default to a generic 3.20 draw.
-   b. **Total Points (Over/Under):** Base the O/U lines on the provided AVG GOALS/GAME. If avg is 1.8 goals, Over 1.5 should be short (e.g. 1.30-1.45), Over 2.5 should be longer (e.g. 1.90-2.20), Under 2.5 shorter (e.g. 1.70-2.00). Scale all O/U odds to the actual scoring average.
-   c. **Both Teams to Score:** Use the provided BTTS RATE directly. If 60% of tournament matches have BTTS, set "Yes" odds ≈ 1.60-1.70 and "No" odds ≈ 2.10-2.30. Do NOT use a fixed generic price.
-   d. **Team scoring form:** Factor in each team's avg goals scored and conceded per game from the SCORING STATS. A team averaging 2.5 goals/game should have a lower Over 0.5 First Team Goals price than one averaging 0.5.
-4. **Core Standards**: ALWAYS include 'Match Winner', 'Double Chance', 'Total Points', and 'Both Teams to Score' for football.
-5. **Strict Naming CONVENTIONS**:
-   - For BTTS: use EXACTLY "Both Teams to Score".
-   - For O/U: use EXACTLY "Total Points". Group ALL lines under ONE market.
-   - For 1X2: use EXACTLY "Match Winner".
-   - For Spreads: use EXACTLY "Handicap".
-6. **Format**: Return ONLY a valid JSON array:
-   [{"marketName": "Match Winner", "helpInfo": "Predict the winner or a draw.", "selections": [{"label": "EXACT TEAM NAME 1", "odds": 1.85}, {"label": "Draw", "odds": 3.10}, {"label": "EXACT TEAM NAME 2", "odds": 4.20}]},
-   {"marketName": "Total Points", "helpInfo": "Total goals scored.", "selections": [{"label": "Over 1.5", "odds": 1.30}, {"label": "Under 1.5", "odds": 3.00}, {"label": "Over 2.5", "odds": 2.10}, {"label": "Under 2.5", "odds": 1.72}]}]
-7. **CRITICAL**: Use the EXACT team names from the match description in all selection labels. Do not abbreviate.`
+═══════════════════════════════════════════════
+UNIVERSAL RULES (apply to every sport):
+═══════════════════════════════════════════════
+1. **Standings determine Match Winner pricing.** The team higher in the standings (more points, better GD/margin, better form [W/D/L string]) MUST receive a lower "Match Winner" odd. Never price Team 1 as favourite just because they are listed first.
+2. **Probability must be proportional to standing gap.** If one team has 9 pts and the other has 2 pts, the favourite should reflect that gap clearly (e.g. 1.45 vs 3.20, not 1.90 vs 1.95).
+3. **Head-to-head history matters.** If the H2H shows one team always wins, factor that into both Match Winner and Handicap markets.
+
+═══════════════════════════════════════════════
+FOOTBALL & HANDBALL RULES:
+═══════════════════════════════════════════════
+- **Draw odds:** Calculate from the tournament DRAW RATE. Draw rate 40% → Draw odds ≈ 2.40-2.60. Draw rate 15% → Draw odds ≈ 5.50-6.50. NEVER use a fixed 3.20.
+- **Total Goals (O/U):** Base every O/U line on AVG GOALS/GAME. Avg 1.2 goals → Over 2.5 is a long price (2.50+). Avg 2.8 goals → Over 2.5 is short (1.50-1.70). Scale accordingly.
+- **Both Teams to Score:** Price from BTTS RATE. BTTS 60% → Yes ≈ 1.60-1.70, No ≈ 2.10-2.30. BTTS 25% → Yes ≈ 3.20-3.50, No ≈ 1.30-1.40.
+- **Clean Sheet / Team Goals:** Use each team's Avg goals scored and conceded to price team-specific markets.
+- **Core markets:** Match Winner (1X2 with Draw), Double Chance, Total Points, Both Teams to Score, Handicap.
+
+═══════════════════════════════════════════════
+BASKETBALL RULES:
+═══════════════════════════════════════════════
+- **Match Winner:** No draw in basketball. Price only Team 1 Win / Team 2 Win based on standings and avg points.
+- **Total Points (O/U):** Use AVG TOTAL POINTS/GAME as the anchor for O/U lines. If avg is 110pts, set lines around 105.5, 110.5, 115.5.
+- **Handicap:** If one team averages 20+ pts more per game than the other, offer a meaningful spread (e.g. -15.5 / +15.5). Base spread on AVG WINNING MARGIN.
+- **Close game (margin ≤5 pts):** If many close games, lower the Handicap spread; if blowouts dominate, widen it.
+- **Core markets:** Match Winner, Total Points, Handicap, First Half Winner.
+
+═══════════════════════════════════════════════
+VOLLEYBALL RULES:
+═══════════════════════════════════════════════
+- **Match Winner:** Price based on standings. Strong teams (more sets won avg) get lower odds.
+- **Total Sets:** Use AVG SETS/MATCH to set lines (e.g. if avg is 3.8 sets, Over 3.5 is short, Under 4.5 is short).
+- **Correct Score (Sets):** Offer 3-0, 3-1, 3-2 markets. Price 3-0 lower for dominant teams (higher straight-set win %).
+- **Core markets:** Match Winner, Total Sets, Correct Score (Sets), Set 1 Winner.
+
+═══════════════════════════════════════════════
+QUIZ RULES:
+═══════════════════════════════════════════════
+- **Match Winner:** Based on standings (points/form). Teams with high avg quiz scores get lower odds.
+- **Handicap:** Base spread on AVG WINNING MARGIN. Large margin → large spread (e.g. -15 / +15).
+- **Total Points:** Use AVG TOTAL POINTS/MATCH to set O/U lines.
+- **Core markets:** Match Winner, Handicap, Total Points, Winning Margin Range (e.g. 1-10, 11-20, 21+ pts).
+
+═══════════════════════════════════════════════
+FORMAT (all sports):
+═══════════════════════════════════════════════
+Return ONLY a valid JSON array. Each market is one object with marketName, helpInfo, and selections array:
+[
+  {"marketName": "Match Winner", "helpInfo": "Predict the match winner.", "selections": [{"label": "EXACT TEAM NAME 1", "odds": 1.65}, {"label": "Draw", "odds": 3.10}, {"label": "EXACT TEAM NAME 2", "odds": 5.00}]},
+  {"marketName": "Total Points", "helpInfo": "Will there be over or under X goals?", "selections": [{"label": "Over 1.5", "odds": 1.28}, {"label": "Under 1.5", "odds": 3.40}, {"label": "Over 2.5", "odds": 2.10}, {"label": "Under 2.5", "odds": 1.72}]},
+  {"marketName": "Both Teams to Score", "helpInfo": "Will both teams score?", "selections": [{"label": "Yes", "odds": 1.75}, {"label": "No", "odds": 2.00}]}
+]
+CRITICAL: Use the EXACT team names from the match description. Do NOT abbreviate or change them.`
                         },
                         {
                             role: "user",

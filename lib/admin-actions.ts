@@ -1282,66 +1282,148 @@ export async function getMatchSuggestions(matchId: string) {
             return `  ${teamName}: Form [${form || 'N/A'}] | Tournament: P${row?.played ?? 0} W${row?.won ?? 0} D${row?.drawn ?? 0} L${row?.lost ?? 0} Pts${row?.points ?? 0}`
         }).join('\n')
 
-        // ── 5. Football-specific stats (when sport is football) ───────────────
-        let footballStatsText = ''
-        if (match.sportType === 'football' || match.sportType === 'handball') {
-            const footballMatches = tAllMatches.filter(m => m.sportType === match.sportType)
-            const totalGoals = footballMatches.reduce((acc, m) => {
-                const res = m.result as any
-                const ps = m.participants as any[]
-                const g = ps.reduce((s: number, p: any) => s + (parseInt(String(res?.scores?.[p.schoolId] ?? p.result ?? 0)) || 0), 0)
-                return acc + g
-            }, 0)
-            const totalDraws = footballMatches.filter(m => {
-                const res = m.result as any
-                return res?.winner === 'X' || res?.winner === 'draw'
-            }).length
-            const bttsCount = footballMatches.filter(m => {
-                const res = m.result as any
-                const ps = m.participants as any[]
-                return ps.every((p: any) => (parseInt(String(res?.scores?.[p.schoolId] ?? p.result ?? 0)) || 0) > 0)
-            }).length
-            const avgGoals = footballMatches.length > 0 ? (totalGoals / footballMatches.length).toFixed(2) : 'N/A'
-            const drawRate = footballMatches.length > 0 ? ((totalDraws / footballMatches.length) * 100).toFixed(0) + '%' : 'N/A'
-            const bttsRate = footballMatches.length > 0 ? ((bttsCount / footballMatches.length) * 100).toFixed(0) + '%' : 'N/A'
+        // ── 5. Universal sport-specific stats ────────────────────────────────
+        let sportStatsText = ''
+        const sportType = match.sportType as string
+        const sportMatches = tAllMatches.filter(m => m.sportType === sportType)
+        const n = sportMatches.length
 
-            // Per-team scoring & conceding averages + clean sheets for the two teams
-            const teamStatsLines = teamIds.map(id => {
+        /** Helper: get a team's numeric score from a finished match result */
+        const getScore = (m: any, schoolId: string): number => {
+            const res = m.result as any
+            const p = (m.participants as any[]).find((x: any) => x.schoolId === schoolId)
+            return parseInt(String(res?.scores?.[schoolId] ?? p?.result ?? 0)) || 0
+        }
+
+        /** Helper: per-team stat lines (scored avg, conceded avg) */
+        const buildTeamScoreLines = (label: string) => teamIds.map(id => {
+            const teamName = participants?.find(p => p.schoolId === id)?.name || id
+            const tmMatches = sportMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id))
+            const scored = tmMatches.reduce((acc, m) => acc + getScore(m, id), 0)
+            const conceded = tmMatches.reduce((acc, m) => {
+                const opp = (m.participants as any[]).find((p: any) => p.schoolId !== id)
+                return acc + (opp ? getScore(m, opp.schoolId) : 0)
+            }, 0)
+            const cnt = tmMatches.length || 1
+            return `  ${teamName}: Avg ${label} scored ${(scored / cnt).toFixed(1)} | Avg conceded ${(conceded / cnt).toFixed(1)} | Played ${tmMatches.length}`
+        }).join('\n')
+
+        if (sportType === 'football' || sportType === 'handball') {
+            const totalGoals = sportMatches.reduce((acc, m) => {
+                const ps = m.participants as any[]
+                return acc + ps.reduce((s: number, p: any) => s + getScore(m, p.schoolId), 0)
+            }, 0)
+            const drawCount = sportMatches.filter(m => { const r = m.result as any; return r?.winner === 'X' || r?.winner === 'draw' }).length
+            const bttsCount = sportMatches.filter(m => {
+                const ps = m.participants as any[]
+                return ps.every((p: any) => getScore(m, p.schoolId) > 0)
+            }).length
+            const cleanSheetLines = teamIds.map(id => {
                 const teamName = participants?.find(p => p.schoolId === id)?.name || id
-                const tmMatches = footballMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id))
-                const scored = tmMatches.reduce((acc, m) => {
-                    const res = m.result as any
-                    return acc + (parseInt(String(res?.scores?.[id] ?? 0)) || 0)
-                }, 0)
-                const conceded = tmMatches.reduce((acc, m) => {
-                    const res = m.result as any
-                    const ps = m.participants as any[]
-                    const opp = ps.find((p: any) => p.schoolId !== id)
-                    return acc + (parseInt(String(res?.scores?.[opp?.schoolId] ?? 0)) || 0)
-                }, 0)
-                const cleanSheets = tmMatches.filter(m => {
-                    const res = m.result as any
-                    const ps = m.participants as any[]
-                    const opp = ps.find((p: any) => p.schoolId !== id)
-                    return (parseInt(String(res?.scores?.[opp?.schoolId] ?? 0)) || 0) === 0
+                const tmMatches = sportMatches.filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id))
+                const cs = tmMatches.filter(m => {
+                    const opp = (m.participants as any[]).find((p: any) => p.schoolId !== id)
+                    return opp ? getScore(m, opp.schoolId) === 0 : false
                 }).length
-                const n = tmMatches.length || 1
-                return `  ${teamName}: Avg scored ${(scored / n).toFixed(2)}/game | Avg conceded ${(conceded / n).toFixed(2)}/game | Clean sheets ${cleanSheets}/${tmMatches.length}`
+                return `  ${teamName}: ${cs} clean sheet(s) in ${tmMatches.length} games`
             }).join('\n')
 
-            footballStatsText = [
+            sportStatsText = [
                 ``,
-                `FOOTBALL TOURNAMENT STATS (${footballMatches.length} matches played):`,
-                `  Avg goals/game: ${avgGoals} | Draw rate: ${drawRate} | BTTS rate: ${bttsRate}`,
+                `${sportType.toUpperCase()} TOURNAMENT STATS (${n} matches played):`,
+                `  Avg goals/game: ${n > 0 ? (totalGoals / n).toFixed(2) : 'N/A'} | Draw rate: ${n > 0 ? ((drawCount / n) * 100).toFixed(0) + '%' : 'N/A'} | BTTS rate: ${n > 0 ? ((bttsCount / n) * 100).toFixed(0) + '%' : 'N/A'}`,
                 ``,
-                `SCORING STATS (each team in this match):`,
-                teamStatsLines,
+                `SCORING AVERAGES (teams in this match):`,
+                buildTeamScoreLines('goals'),
+                ``,
+                `CLEAN SHEETS (teams in this match):`,
+                cleanSheetLines,
+            ].join('\n')
+
+        } else if (sportType === 'basketball') {
+            const totalPts = sportMatches.reduce((acc, m) => {
+                const ps = m.participants as any[]
+                return acc + ps.reduce((s: number, p: any) => s + getScore(m, p.schoolId), 0)
+            }, 0)
+            // Point margins
+            const margins = sportMatches.map(m => {
+                const ps = m.participants as any[]
+                const scores = ps.map((p: any) => getScore(m, p.schoolId))
+                return Math.abs(scores[0] - scores[1])
+            })
+            const avgMargin = margins.length > 0 ? (margins.reduce((a, b) => a + b, 0) / margins.length).toFixed(1) : 'N/A'
+            const closeGames = margins.filter(mg => mg <= 5).length // within 5 pts
+
+            sportStatsText = [
+                ``,
+                `BASKETBALL TOURNAMENT STATS (${n} matches played):`,
+                `  Avg total points/game: ${n > 0 ? (totalPts / n).toFixed(1) : 'N/A'} | Avg winning margin: ${avgMargin} pts | Close games (≤5 pts): ${closeGames}/${n}`,
+                ``,
+                `SCORING AVERAGES (teams in this match):`,
+                buildTeamScoreLines('points'),
+            ].join('\n')
+
+        } else if (sportType === 'volleyball') {
+            // Volleyball: scores = sets won
+            const totalSets = sportMatches.reduce((acc, m) => {
+                const ps = m.participants as any[]
+                return acc + ps.reduce((s: number, p: any) => s + getScore(m, p.schoolId), 0)
+            }, 0)
+            const straightSets = sportMatches.filter(m => {
+                const ps = m.participants as any[]
+                const scores = ps.map((p: any) => getScore(m, p.schoolId))
+                return scores.some(s => s === 0) // someone won 3-0
+            }).length
+
+            sportStatsText = [
+                ``,
+                `VOLLEYBALL TOURNAMENT STATS (${n} matches played):`,
+                `  Avg sets/match: ${n > 0 ? (totalSets / n).toFixed(1) : 'N/A'} | Straight-set wins (3-0): ${straightSets}/${n}`,
+                ``,
+                `SETS WON AVERAGES (teams in this match):`,
+                buildTeamScoreLines('sets'),
+            ].join('\n')
+
+        } else if (sportType === 'quiz') {
+            const totalPts = sportMatches.reduce((acc, m) => {
+                const ps = m.participants as any[]
+                return acc + ps.reduce((s: number, p: any) => s + getScore(m, p.schoolId), 0)
+            }, 0)
+            const margins = sportMatches.map(m => {
+                const ps = m.participants as any[]
+                const scores = ps.map((p: any) => getScore(m, p.schoolId)).sort((a, b) => b - a)
+                return scores[0] - (scores[1] || 0)
+            })
+            const avgMargin = margins.length > 0 ? (margins.reduce((a, b) => a + b, 0) / margins.length).toFixed(1) : 'N/A'
+
+            sportStatsText = [
+                ``,
+                `QUIZ TOURNAMENT STATS (${n} matches played):`,
+                `  Avg total points/match: ${n > 0 ? (totalPts / n).toFixed(1) : 'N/A'} | Avg winning margin: ${avgMargin} pts`,
+                ``,
+                `SCORING AVERAGES (teams in this match):`,
+                buildTeamScoreLines('points'),
+            ].join('\n')
+
+        } else {
+            // Generic fallback for any other sport
+            const totalPts = sportMatches.reduce((acc, m) => {
+                const ps = m.participants as any[]
+                return acc + ps.reduce((s: number, p: any) => s + getScore(m, p.schoolId), 0)
+            }, 0)
+            sportStatsText = [
+                ``,
+                `${sportType.toUpperCase()} TOURNAMENT STATS (${n} matches played):`,
+                `  Avg total score/match: ${n > 0 ? (totalPts / n).toFixed(1) : 'N/A'}`,
+                ``,
+                `SCORING AVERAGES (teams in this match):`,
+                buildTeamScoreLines('score'),
             ].join('\n')
         }
 
         // ── 6. Compose the full details string for the AI ────────────────────
         const details = [
-            `MATCH: ${match.sportType?.toUpperCase()} | ${match.gender?.toUpperCase()} | Stage: ${match.stage}`,
+            `MATCH: ${sportType.toUpperCase()} | ${match.gender?.toUpperCase()} | Stage: ${match.stage}`,
             `TEAMS: ${pNames}`,
             ``,
             `TOURNAMENT STANDINGS (current):`,
@@ -1352,7 +1434,7 @@ export async function getMatchSuggestions(matchId: string) {
             ``,
             `HEAD-TO-HEAD (this tournament):`,
             h2hText,
-            footballStatsText,
+            sportStatsText,
         ].join('\n')
 
         const { getAIMarketSuggestions } = await import("./ai-result-parser")
