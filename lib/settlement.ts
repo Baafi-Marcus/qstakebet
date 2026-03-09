@@ -807,16 +807,26 @@ export function isSelectionWinner(
         const diff = Math.abs(s1 - s2)
         const victor = s1 > s2 ? '1' : (s2 > s1 ? '2' : 'X')
         const isHomeLeg = victor === '1'
+        const isAwayLeg = victor === '2'
+        const isDraw = victor === 'X'
         const labelLower = label.toLowerCase()
 
-        const basis = `Margin: ${victor}-${diff}`
-        if (isHomeLeg && labelLower.includes('home by')) {
-            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true, basis }
-            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0"), basis }
+        const basis = isDraw ? "Result: Draw (0)" : `Result: ${isHomeLeg ? 'Home' : 'Away'} by ${diff}`
+
+        // Handle Draw/Margin 0
+        if (isDraw && (labelLower.includes('draw') || labelLower.includes('margin 0'))) {
+            return { resolved: true, isWin: true, basis }
         }
-        if (!isHomeLeg && labelLower.includes('away by')) {
-            if (labelLower.includes('+') && diff >= parseInt(labelLower.match(/\d+/)?.[0] || "0")) return { resolved: true, isWin: true, basis }
-            return { resolved: true, isWin: diff === parseInt(labelLower.match(/\d+/)?.[0] || "0"), basis }
+
+        if (isHomeLeg && labelLower.includes('home by')) {
+            const line = parseInt(labelLower.match(/\d+/)?.[0] || "0")
+            if (labelLower.includes('+')) return { resolved: true, isWin: diff >= line, basis }
+            return { resolved: true, isWin: diff === line, basis }
+        }
+        if (isAwayLeg && labelLower.includes('away by')) {
+            const line = parseInt(labelLower.match(/\d+/)?.[0] || "0")
+            if (labelLower.includes('+')) return { resolved: true, isWin: diff >= line, basis }
+            return { resolved: true, isWin: diff === line, basis }
         }
 
         return { resolved: true, isWin: false, basis }
