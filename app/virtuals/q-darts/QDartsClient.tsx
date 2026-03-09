@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
 import { VirtualsHeader } from '../components/VirtualsHeader'
+import { BetSlipContext } from '@/lib/store/context'
 import { useRouter } from 'next/navigation'
 import { simulateQDartsMatch } from '@/lib/q-darts-engine'
 import { generateQDartsMarkets, QDartsMarket, checkQDartsCorrelation, evaluateQDartsBet } from '@/lib/q-darts-odds'
@@ -26,7 +26,15 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     // Deterministic match loop synchronized to global epoch
     const gameState = useQDartsMatchLoop()
 
-    const [balanceType, setBalanceType] = useState<'cash' | 'gift'>('cash')
+    // Context synchronization
+    const context = React.useContext(BetSlipContext)
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
+    const bonusId = context?.bonusId
+    const setBonusId = context?.setBonusId || (() => { })
+    const bonusAmount = context?.bonusAmount || 0
+    const setBonusAmount = context?.setBonusAmount || (() => { })
+
     const [currentBalance, setCurrentBalance] = useState(userProfile.balance)
     const [currentBonusBalance, setCurrentBonusBalance] = useState(userProfile.bonusBalance)
     const [selections, setSelections] = useState<VirtualSelection[]>([])
@@ -215,8 +223,6 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                     onCategoryChange={() => { }}
                     setSelectedRegion={() => { }}
                     availableRegions={[]}
-                    balanceType={balanceType}
-                    onBalanceTypeChange={setBalanceType}
                     balance={currentBalance}
                     bonusBalance={currentBonusBalance}
                     hasPendingBets={placedBets.some(b => b.status === 'PENDING')}
