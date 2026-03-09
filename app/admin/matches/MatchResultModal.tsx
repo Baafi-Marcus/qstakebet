@@ -177,16 +177,25 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
         }
     }, [manualOutcomes, showPreview, match.id, winner, scores, footballTotals, quizTotals, basketballTotals, volleyballTotals, athleticsData, isQuiz, isFootball, isBasketball, isVolleyball, isAthletics])
 
-    const handleToggleSelection = (marketName: string, label: string, currentStatus: string) => {
+    const handleToggleSelection = (marketName: string, label: string, currentStatus: string, isManual: boolean) => {
         const key = `${marketName}:${label}`.toLowerCase().trim()
-        const nextStatus: Record<string, string> = {
-            'pending': 'won',
-            'won': 'lost',
-            'lost': 'void',
-            'void': 'pending' // back to auto
-        }
 
-        const newStatus = nextStatus[currentStatus] || 'won'
+        let newStatus: string
+
+        if (!isManual) {
+            // First click on an AUTO result: Overturn it to the most likely opposite
+            if (currentStatus === 'won') newStatus = 'lost'
+            else if (currentStatus === 'lost') newStatus = 'won'
+            else newStatus = 'won' // pending -> won
+        } else {
+            // Cycle through all states for subsequent manual adjustments
+            const nextStatus: Record<string, string> = {
+                'won': 'lost',
+                'lost': 'void',
+                'void': 'pending' // pending here will cause a delete/reset to auto
+            }
+            newStatus = nextStatus[currentStatus] || 'won'
+        }
 
         setManualOutcomes(prev => {
             const next = { ...prev }
@@ -1183,7 +1192,7 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                                                                 {market.selections.map((sel: any, sIdx: number) => (
                                                                     <div
                                                                         key={sIdx}
-                                                                        onClick={() => handleToggleSelection(market.marketName, sel.label, sel.status)}
+                                                                        onClick={() => handleToggleSelection(market.marketName, sel.label, sel.status, !!sel.isManual)}
                                                                         className={cn(
                                                                             "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group/sel hover:scale-[1.02] active:scale-95",
                                                                             sel.status === 'won' ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" :
