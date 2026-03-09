@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useMemo, useState } from 'react'
 import { VirtualsHeader } from '../components/VirtualsHeader'
 import { BetSlipContext } from '@/lib/store/context'
 import { useRouter } from 'next/navigation'
@@ -387,8 +388,6 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         isLocked={isLocked}
                                         balance={currentBalance}
                                         bonusBalance={currentBonusBalance}
-                                        balanceType={balanceType}
-                                        setBalanceType={setBalanceType}
                                     />
                                 </div>
                             </div>

@@ -5,6 +5,7 @@ import { VirtualSelection } from '@/lib/virtuals'
 import { ShieldAlert, Trash2, Zap, Ticket, Wallet } from 'lucide-react'
 import { checkQDartsCorrelation } from '@/lib/q-darts-odds'
 import { cn } from '@/lib/utils'
+import { BetSlipContext } from '@/lib/store/context'
 
 interface QDartsBetSlipProps {
     selections: VirtualSelection[]
@@ -14,8 +15,6 @@ interface QDartsBetSlipProps {
     isLocked: boolean
     balance: number
     bonusBalance: number
-    balanceType: 'cash' | 'gift'
-    setBalanceType: (type: 'cash' | 'gift') => void
 }
 
 export function QDartsBetSlip({
@@ -26,9 +25,15 @@ export function QDartsBetSlip({
     isLocked,
     balance,
     bonusBalance,
-    balanceType,
-    setBalanceType
 }: QDartsBetSlipProps) {
+    const context = React.useContext(BetSlipContext)
+    const balanceType = context?.balanceType || 'cash'
+    const setBalanceType = context?.setBalanceType || (() => { })
+    const bonusId = context?.bonusId
+    const setBonusId = context?.setBonusId || (() => { })
+    const bonusAmount = context?.bonusAmount || 0
+    const setBonusAmount = context?.setBonusAmount || (() => { })
+
     const [stake, setStake] = useState<string>('1.00')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
