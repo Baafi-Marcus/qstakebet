@@ -1182,7 +1182,9 @@ export async function parseResults(text: string) {
 }
 
 /**
- * Generate AI market suggestions for a specific match
+ * Generate AI market suggestions for a specific match.
+ * Sends structured tournament standings + head-to-head context so the AI
+ * can set fair, position-unbiased odds.
  */
 export async function getMatchSuggestions(matchId: string) {
     try {
@@ -1191,21 +1193,109 @@ export async function getMatchSuggestions(matchId: string) {
 
         const match = matchData[0]
         if (!match.tournamentId) throw new Error("Tournament ID missing")
-        const participants = match.participants as Array<{ name: string }> | null
+
+        const participants = match.participants as Array<{ name: string; schoolId: string }> | null
         const pNames = participants?.map(p => p.name).join(" vs ") || "Teams"
+        const teamIds = participants?.map(p => p.schoolId) || []
 
         // Get existing markets
         const currentOdds = (match.extendedOdds as Record<string, any>) || {}
         const currentMarkets = Object.keys(currentOdds)
 
-        // Get tournament context for better AI logic
-        const tPrevMatches = await db.select().from(matches).where(and(eq(matches.tournamentId, match.tournamentId), eq(matches.status, 'finished'))).limit(10)
-        const context = tPrevMatches.map(m => {
-            const [p1, p2] = m.participants as any[]
-            return `${p1.name} ${p1.result}-${p2.result} ${p2.name} (${m.stage})`
-        }).join("; ")
+        // ── 1. Fetch ALL finished matches in this tournament ──────────────────
+        const tAllMatches = await db.select().from(matches)
+            .where(and(
+                eq(matches.tournamentId, match.tournamentId!),
+                inArray(matches.status, ['finished', 'settled'])
+            ))
 
-        const details = `${match.sportType} match between ${pNames}. Gender: ${match.gender}. Stage: ${match.stage}. Tournament Context: ${context}`
+        // ── 2. Build a standings table for every team in the tournament ───────
+        const standingsMap: Record<string, {
+            name: string; played: number; won: number; drawn: number; lost: number;
+            gf: number; ga: number; points: number;
+        }> = {}
+
+        tAllMatches.forEach(m => {
+            const ps = m.participants as any[]
+            const res = m.result as any
+
+            ps.forEach(p => {
+                if (!standingsMap[p.schoolId]) {
+                    standingsMap[p.schoolId] = { name: p.name, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 }
+                }
+                const row = standingsMap[p.schoolId]
+                const opp = ps.find((x: any) => x.schoolId !== p.schoolId)
+
+                const pScore = parseInt(String(res?.scores?.[p.schoolId] ?? p.result ?? 0)) || 0
+                const oScore = parseInt(String(res?.scores?.[opp?.schoolId] ?? opp?.result ?? 0)) || 0
+
+                row.played++
+                row.gf += pScore
+                row.ga += oScore
+
+                if (res?.winner === p.schoolId) { row.won++; row.points += 3 }
+                else if (res?.winner === 'X' || res?.winner === 'draw') { row.drawn++; row.points += 1 }
+                else { row.lost++ }
+            })
+        })
+
+        // Sort standings: points desc → GD desc → GF desc
+        const standings = Object.entries(standingsMap)
+            .map(([id, s]) => ({ id, ...s, gd: s.gf - s.ga }))
+            .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf)
+
+        const standingsText = standings.length > 0
+            ? standings.map((s, i) =>
+                `  ${i + 1}. ${s.name} — P${s.played} W${s.won} D${s.drawn} L${s.lost} GF${s.gf} GA${s.ga} GD${s.gd > 0 ? '+' : ''}${s.gd} Pts${s.points}`
+            ).join('\n')
+            : '  (No matches played yet in this tournament)'
+
+        // ── 3. Build head-to-head record between these exact two teams ────────
+        const h2hMatches = tAllMatches.filter(m => {
+            const ids = (m.participants as any[]).map((p: any) => p.schoolId)
+            return teamIds.every(id => ids.includes(id))
+        })
+
+        const h2hText = h2hMatches.length > 0
+            ? h2hMatches.map(m => {
+                const [p1, p2] = m.participants as any[]
+                const res = m.result as any
+                const s1 = res?.scores?.[p1.schoolId] ?? p1.result ?? '?'
+                const s2 = res?.scores?.[p2.schoolId] ?? p2.result ?? '?'
+                return `  ${p1.name} ${s1} – ${s2} ${p2.name} (${m.stage})`
+            }).join('\n')
+            : '  (First meeting between these teams)'
+
+        // ── 4. Build recent form for each of the two teams ───────────────────
+        const recentFormLines = teamIds.map(id => {
+            const teamName = participants?.find(p => p.schoolId === id)?.name || id
+            const teamMatches = tAllMatches
+                .filter(m => (m.participants as any[]).some((p: any) => p.schoolId === id))
+                .slice(-5) // last 5
+            const form = teamMatches.map(m => {
+                const res = m.result as any
+                if (res?.winner === id) return 'W'
+                if (res?.winner === 'X' || res?.winner === 'draw') return 'D'
+                return 'L'
+            }).join('')
+            const row = standingsMap[id]
+            return `  ${teamName}: Form [${form || 'N/A'}] | Tournament: P${row?.played ?? 0} W${row?.won ?? 0} D${row?.drawn ?? 0} L${row?.lost ?? 0} Pts${row?.points ?? 0}`
+        }).join('\n')
+
+        // ── 5. Compose the full details string for the AI ────────────────────
+        const details = [
+            `MATCH: ${match.sportType?.toUpperCase()} | ${match.gender?.toUpperCase()} | Stage: ${match.stage}`,
+            `TEAMS: ${pNames}`,
+            ``,
+            `TOURNAMENT STANDINGS (current):`,
+            standingsText,
+            ``,
+            `TEAM FORM & STATS:`,
+            recentFormLines,
+            ``,
+            `HEAD-TO-HEAD (this tournament):`,
+            h2hText,
+        ].join('\n')
 
         const { getAIMarketSuggestions } = await import("./ai-result-parser")
         const suggestions = await getAIMarketSuggestions(details, currentMarkets)
@@ -1216,6 +1306,7 @@ export async function getMatchSuggestions(matchId: string) {
         return { success: false, error: "Failed to get suggestions" }
     }
 }
+
 
 /**
  * Publish approved markets to the match
