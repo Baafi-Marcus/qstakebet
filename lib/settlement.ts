@@ -30,9 +30,13 @@ export async function settleMatch(matchId: string) {
             if (pIds.length >= 2) {
                 const s1 = scores[pIds[0]];
                 const s2 = scores[pIds[1]];
-                if (s1 > s2) currentWinner = pIds[0];
-                else if (s2 > s1) currentWinner = pIds[1];
-                else currentWinner = 'X';
+
+                // Only auto-resolve if both scores are numbers
+                if (typeof s1 === 'number' && typeof s2 === 'number') {
+                    if (s1 > s2) currentWinner = pIds[0];
+                    else if (s2 > s1) currentWinner = pIds[1];
+                    else currentWinner = 'X';
+                }
             }
         }
 
@@ -167,11 +171,13 @@ export async function settleMatch(matchId: string) {
                 const isPending = !s.status || s.status === 'pending'
                 if (s.matchId === matchId && isPending) {
                     const resolution = isSelectionWinner(s.selectionId, s.marketName || "Match Winner", s.label || "", match, result || {})
+                    // console.log(`[DEBUG] Selection ${s.selectionId} resolution:`, JSON.stringify(resolution));
 
                     if (resolution.resolved) {
                         betUpdated = true
                         let newStatus = resolution.isWin ? 'won' : 'lost'
                         if (resolution.isVoid) newStatus = 'void'
+                        // console.log(`[DEBUG] Updating selection ${s.selectionId} status to: ${newStatus}`);
                         return { ...s, status: newStatus }
                     }
                 }
@@ -350,6 +356,7 @@ export async function settleMatch(matchId: string) {
                     }
                 } else {
                     // Bet is still pending (partial legs won), just update the selections
+                    // console.log(`[DEBUG] Updating bet ${bet.id} selections (pending)...`);
                     await db.update(bets).set({
                         selections: updatedSelections,
                         updatedAt: new Date()
@@ -392,8 +399,16 @@ export function isSelectionWinner(
     // 0. MANUAL OVERRIDE (Explicit Outcomes from Admin)
     const outcomes = (metadata.outcomes as Record<string, string>) || {}
     const normalizedMarket = marketName.toLowerCase().trim()
+    const selectionKey = `${marketName}:${label}`.toLowerCase().trim()
 
-    // Check for exact or normalized match in overrides
+    // 0a. Check for Selection-Level Override (e.g. "Over/Under 2.5:Over" -> "won")
+    if (outcomes[selectionKey]) {
+        if (outcomes[selectionKey] === 'void') return { resolved: true, isWin: false, isVoid: true }
+        if (outcomes[selectionKey] === 'won') return { resolved: true, isWin: true }
+        if (outcomes[selectionKey] === 'lost') return { resolved: true, isWin: false }
+    }
+
+    // 0b. Check for legacy Market-Level Override (e.g. "Match Winner" -> "team-id")
     const overrideKey = Object.keys(outcomes).find(k => k.toLowerCase().trim() === normalizedMarket)
     if (overrideKey && outcomes[overrideKey]) {
         if (outcomes[overrideKey] === 'void') {
@@ -408,6 +423,7 @@ export function isSelectionWinner(
 
     // Normalize Market Name for robust matching (Remove spaces/special chars)
     const norm = marketName.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+    // console.log(`[DEBUG] Market: ${marketName}, Normalized: ${norm}, Label: ${label}`);
 
     // Period detection (HT vs FT)
     const isHT = (norm.includes("ht") && !norm.includes("ft")) ||
@@ -432,7 +448,7 @@ export function isSelectionWinner(
         norm.includes("overunder") ||
         norm.includes("goals") ||
         norm.includes("points") ||
-        norm.includes("ou") ||
+        (norm.includes("ou") && !norm.includes("double")) || // Avoid 'double' overlap
         norm.includes("tg") ||
         norm.includes("tp") ||
         norm.includes("gls") ||
@@ -443,7 +459,8 @@ export function isSelectionWinner(
         norm.includes("bothteamstoscore") ||
         norm.includes("bts") ||
         norm.includes("bothscore") ||
-        norm.includes("gg") // Goal Goal
+        norm.includes("gg") || // Goal Goal
+        norm.includes("goalgoal")
 
     const isHandicap = norm.includes("handicap") ||
         norm.includes("spread") ||
@@ -465,6 +482,8 @@ export function isSelectionWinner(
         norm.includes("1stgoal")
 
     const isOddEven = (norm.includes("oddeven") || (norm.includes("odd") || norm.includes("even"))) && !norm.includes("over") && !isTotal
+
+    // console.log(`[DEBUG] Flags for ${norm}: MW=${isMatchWinner}, T=${isTotal}, BTTS=${isBTTS}, DC=${isDoubleChance}, DNB=${isDNB}, WM=${isWinningMargin}`);
 
     // --- ALIAS-AWARE HELPERS ---
     const getParticipant = (idOrName: string) => {
@@ -490,7 +509,7 @@ export function isSelectionWinner(
             const s2 = scores[pIds[1]];
             if (s1 > s2) currentWinner = pIds[0];
             else if (s2 > s1) currentWinner = pIds[1];
-            else currentWinner = 'X';
+            else if (typeof s1 === 'number' && typeof s2 === 'number') currentWinner = 'X';
         }
     }
 
@@ -707,10 +726,41 @@ export function isSelectionWinner(
         const homeId = participants[0]?.schoolId
         const awayId = participants[1]?.schoolId
         const winner = currentWinner
+        const l = label.toLowerCase()
+        console.log(`[DEBUG] Double Chance Match! Winner: ${winner}, Label: ${label}`);
 
+        // Handle standard keys
         if (selectionId === "1X" || label === "1X") return { resolved: true, isWin: winner === homeId || winner === 'X' }
         if (selectionId === "12" || label === "12") return { resolved: true, isWin: winner === homeId || winner === awayId }
         if (selectionId === "X2" || label === "X2") return { resolved: true, isWin: winner === awayId || winner === 'X' }
+
+        // Handle descriptive labels (e.g. "Team1 or Draw")
+        if (l.includes("or draw") || l.includes("/draw")) {
+            const teamName = label.split(/ or |\/| or Draw/i)[0].trim().toLowerCase()
+            const p = getParticipant(teamName)
+            console.log(`[DEBUG] Descriptive check: teamName=${teamName}, foundParticipant=${p?.schoolId}`);
+            if (p) {
+                const win = winner === p.schoolId || winner === 'X';
+                console.log(`[DEBUG] Result for ${teamName}: ${win}`);
+                return { resolved: true, isWin: win }
+            }
+        }
+        if (l.includes("draw or ")) {
+            const teamName = label.split(/draw or /i)[1].trim().toLowerCase()
+            const p = getParticipant(teamName)
+            if (p) {
+                return { resolved: true, isWin: winner === p.schoolId || winner === 'X' }
+            }
+        }
+        // Handle "Team1 or Team2"
+        if (l.includes(" or ") && !l.includes("draw")) {
+            const parts = label.split(/ or /i)
+            const p1 = getParticipant(parts[0].trim().toLowerCase())
+            const p2 = getParticipant(parts[1].trim().toLowerCase())
+            if (p1 && p2) {
+                return { resolved: true, isWin: winner === p1.schoolId || winner === p2.schoolId }
+            }
+        }
     }
 
     // 9. DRAW NO BET

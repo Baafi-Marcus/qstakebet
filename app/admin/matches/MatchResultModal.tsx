@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
-import { updateMatchResult, getActiveMarketsAction } from "@/lib/admin-actions"
+import { updateMatchResult, getActiveMarketsAction, getSettlementPreview } from "@/lib/admin-actions"
+import { CheckCircle, AlertCircle } from "lucide-react"
 import { validateScores } from "@/lib/match-utils"
 import { cn } from "@/lib/utils"
 
@@ -92,6 +93,8 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
     const [activeMarkets, setActiveMarkets] = useState<string[]>([])
     const [isConfirmed, setIsConfirmed] = useState(false)
     const [firstScorerId, setFirstScorerId] = useState<string>(match.metadata?.firstScorerId || "")
+    const [previewData, setPreviewData] = useState<any[]>([])
+    const [showPreview, setShowPreview] = useState(false)
 
     // Fetch active markets on mount
     useEffect(() => {
@@ -149,6 +152,52 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
         return { [p1]: w1, [p2]: w2 }
     }, [volleyballData, match.participants])
+
+    // Refresh preview when manual outcomes change while showing preview
+    useEffect(() => {
+        if (showPreview) {
+            const refreshPreview = async () => {
+                let finalScores = scores
+                if (isQuiz) { finalScores = quizTotals; }
+                if (isFootball) { finalScores = footballTotals; }
+                if (isBasketball) { finalScores = basketballTotals; }
+                if (isVolleyball) { finalScores = volleyballTotals; }
+                if (isAthletics) { finalScores = athleticsData; }
+
+                const res = await getSettlementPreview(match.id, {
+                    scores: finalScores,
+                    winner,
+                    metadata: { outcomes: manualOutcomes }
+                })
+                if (res.success) {
+                    setPreviewData(res.preview || [])
+                }
+            }
+            refreshPreview()
+        }
+    }, [manualOutcomes, showPreview, match.id, winner, scores, footballTotals, quizTotals, basketballTotals, volleyballTotals, athleticsData, isQuiz, isFootball, isBasketball, isVolleyball, isAthletics])
+
+    const handleToggleSelection = (marketName: string, label: string, currentStatus: string) => {
+        const key = `${marketName}:${label}`.toLowerCase().trim()
+        const nextStatus: Record<string, string> = {
+            'pending': 'won',
+            'won': 'lost',
+            'lost': 'void',
+            'void': 'pending' // back to auto
+        }
+
+        const newStatus = nextStatus[currentStatus] || 'won'
+
+        setManualOutcomes(prev => {
+            const next = { ...prev }
+            if (newStatus === 'pending') {
+                delete next[key]
+            } else {
+                next[key] = newStatus
+            }
+            return next
+        })
+    }
 
     // --- AUTO WINNER SELECTION (Only for Full Settlement) ---
     useEffect(() => {
@@ -312,6 +361,46 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 setActiveTab("markets"); // Switch them to the markets tab
                 return;
             }
+        }
+
+        let finalScores = scores
+        const metadata: any = {
+            ...(match.sportType === 'football' ? { footballDetails: footballData } : {}),
+            ...(match.sportType === 'basketball' ? { basketballDetails: basketballData } : {}),
+            ...(match.sportType === 'volleyball' ? { volleyballDetails: volleyballData } : {}),
+            ...(match.sportType === 'quiz' ? { quizDetails: quizData } : {}),
+            ...(match.sportType === 'athletics' ? { athleticsDetails: athleticsData } : {}),
+        }
+
+        if (isQuiz) { finalScores = quizTotals; }
+        if (isFootball) { finalScores = footballTotals; }
+        if (isBasketball) { finalScores = basketballTotals; }
+        if (isVolleyball) { finalScores = volleyballTotals; }
+        if (isAthletics) {
+            finalScores = athleticsData;
+        }
+
+        // --- NEW PREVIEW LOGIC ---
+        if (!isLiveUpdate && !showPreview) {
+            setLoading(true)
+            try {
+                const res = await getSettlementPreview(match.id, {
+                    scores: finalScores,
+                    winner,
+                    metadata: { ...metadata, outcomes: manualOutcomes }
+                })
+                if (res.success) {
+                    setPreviewData(res.preview || [])
+                    setShowPreview(true)
+                } else {
+                    setError(res.error || "Failed to generate preview")
+                }
+            } catch (err) {
+                setError("Preview generation failed")
+            } finally {
+                setLoading(false)
+            }
+            return
         }
 
         setLoading(true)
@@ -1027,99 +1116,167 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                         {/* 3. ACTIONS - Final Protocol Hub */}
                         <div className="flex flex-col gap-6 pt-10">
                             {!isLiveUpdate && (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                                    {/* Outcome Verification Summary */}
-                                    <div className="p-8 bg-slate-950/40 rounded-[2.5rem] border border-white/5 space-y-6 backdrop-blur-sm relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                                            <Sparkles className="w-16 h-16" />
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/10">
-                                                <Sparkles className="h-4 w-4 text-primary" />
-                                            </div>
-                                            <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Settlement Audit</span>
-                                        </div>
-
-                                        <div className="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-3">
-                                            {derivedOutcomes.map((o, idx) => (
-                                                <div key={idx} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0 group/item">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-slate-400 transition-colors">{o.market}</span>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={cn(
-                                                            "text-[10px] font-black uppercase tracking-tight px-3 py-1 rounded-full",
-                                                            o.type === 'auto' ? "bg-primary/10 text-primary border border-primary/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                                        )}>{o.result}</span>
-                                                    </div>
+                                <>
+                                    {/* Outcome Preview UI */}
+                                    {showPreview ? (
+                                        <div className="col-span-full animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="p-8 bg-black/60 rounded-[3rem] border border-white/10 space-y-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                                                    <Brain className="w-32 h-32" />
                                                 </div>
-                                            ))}
-                                            {derivedOutcomes.length === 0 && (
-                                                <div className="py-8 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No auto-derived outcomes</div>
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {/* Confirmation & Secondary Actions */}
-                                    <div className="space-y-4">
-                                        <label className="flex items-start gap-4 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] cursor-pointer hover:bg-primary/10 transition-all group relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-700" />
-                                            <div className="relative mt-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isConfirmed}
-                                                    onChange={(e) => setIsConfirmed(e.target.checked)}
-                                                    className="h-6 w-6 rounded-lg border-white/20 bg-black/50 checked:bg-primary focus:ring-primary transition-all cursor-pointer"
-                                                />
-                                            </div>
-                                            <div className="relative space-y-1">
-                                                <span className="text-[11px] font-black text-white uppercase tracking-widest group-hover:text-primary transition-colors block">Integrity Confirmation</span>
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight block leading-tight">I verify that all entered scores and selected winners are 100% accurate as per official records.</span>
-                                            </div>
-                                        </label>
+                                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
+                                                            <CheckCircle className="h-6 w-6 text-emerald-400" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-black text-white uppercase tracking-tight">Settlement Preview</h3>
+                                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Review market outcomes before final authorization</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPreview(false)}
+                                                        className="px-6 h-12 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                                                    >
+                                                        <Plus className="w-3 h-3 rotate-45" /> Back to Edit
+                                                    </button>
+                                                </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
-                                                type="button"
-                                                onClick={async () => {
-                                                    if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
-                                                    setLoading(true);
-                                                    await updateMatchResult(match.id, {
-                                                        scores: {},
-                                                        winner: 'void',
-                                                        status: 'cancelled',
-                                                        metadata: { voided: true }
-                                                    });
-                                                    setLoading(false);
-                                                    onSuccess();
-                                                    onClose();
-                                                }}
-                                                className="h-14 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500 font-black uppercase tracking-widest text-[9px] hover:bg-red-500/10 transition-all flex items-center justify-center gap-2 group"
-                                            >
-                                                <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                                Void Protocol
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={async () => {
-                                                    if (!confirm("End match as PENDING? Match will show 'Full Time - Awaiting Result' until you enter final scores.")) return;
-                                                    setLoading(true);
-                                                    await updateMatchResult(match.id, {
-                                                        scores: {},
-                                                        winner: '',
-                                                        status: 'pending',
-                                                        metadata: { pendingSince: new Date().toISOString() }
-                                                    });
-                                                    setLoading(false);
-                                                    onSuccess();
-                                                    onClose();
-                                                }}
-                                                className="h-14 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-amber-500 font-black uppercase tracking-widest text-[9px] hover:bg-amber-500/10 transition-all flex items-center justify-center gap-2 group"
-                                            >
-                                                <Clock className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                                Set Pending
-                                            </button>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                                    {previewData.map((market, idx) => (
+                                                        <div key={idx} className="p-5 bg-white/[0.03] border border-white/5 rounded-2xl space-y-4">
+                                                            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{market.marketName}</span>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                {market.selections.map((sel: any, sIdx: number) => (
+                                                                    <div
+                                                                        key={sIdx}
+                                                                        onClick={() => handleToggleSelection(market.marketName, sel.label, sel.status)}
+                                                                        className={cn(
+                                                                            "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group/sel hover:scale-[1.02] active:scale-95",
+                                                                            sel.status === 'won' ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" :
+                                                                                sel.status === 'lost' ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                                                                                    "bg-slate-500/10 border-slate-500/30 text-slate-400"
+                                                                        )}
+                                                                    >
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[10px] font-black uppercase tracking-tight truncate">{sel.label}</span>
+                                                                            {manualOutcomes[`${market.marketName}:${sel.label}`.toLowerCase().trim()] && (
+                                                                                <span className="text-[7px] font-bold text-white/40 uppercase tracking-tighter">Manual Override</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            {sel.status === 'won' ? <CheckCircle className="w-3 h-3" /> : (sel.status === 'lost' ? <X className="w-3 h-3" /> : <Clock className="w-3 h-3" />)}
+                                                                            <span className="text-[8px] font-black uppercase tracking-widest">{sel.status}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                                            {/* Outcome Verification Summary */}
+                                            <div className="p-8 bg-slate-950/40 rounded-[2.5rem] border border-white/5 space-y-6 backdrop-blur-sm relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-700">
+                                                    <Sparkles className="w-16 h-16" />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/10">
+                                                        <Sparkles className="h-4 w-4 text-primary" />
+                                                    </div>
+                                                    <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Settlement Audit</span>
+                                                </div>
+
+                                                <div className="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-3">
+                                                    {derivedOutcomes.map((o, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0 group/item">
+                                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-slate-400 transition-colors">{o.market}</span>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className={cn(
+                                                                    "text-[10px] font-black uppercase tracking-tight px-3 py-1 rounded-full",
+                                                                    o.type === 'auto' ? "bg-primary/10 text-primary border border-primary/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                                                )}>{o.result}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {derivedOutcomes.length === 0 && (
+                                                        <div className="py-8 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No auto-derived outcomes</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Confirmation & Secondary Actions */}
+                                            <div className="space-y-4">
+                                                <label className="flex items-start gap-4 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] cursor-pointer hover:bg-primary/10 transition-all group relative overflow-hidden">
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-700" />
+                                                    <div className="relative mt-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isConfirmed}
+                                                            onChange={(e) => setIsConfirmed(e.target.checked)}
+                                                            className="h-6 w-6 rounded-lg border-white/20 bg-black/50 checked:bg-primary focus:ring-primary transition-all cursor-pointer"
+                                                        />
+                                                    </div>
+                                                    <div className="relative space-y-1">
+                                                        <span className="text-[11px] font-black text-white uppercase tracking-widest group-hover:text-primary transition-colors block">Integrity Confirmation</span>
+                                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight block leading-tight">I verify that all entered scores and selected winners are 100% accurate as per official records.</span>
+                                                    </div>
+                                                </label>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            if (!confirm("Are you sure you want to VOID this match? All bets will be refunded.")) return;
+                                                            setLoading(true);
+                                                            await updateMatchResult(match.id, {
+                                                                scores: {},
+                                                                winner: 'void',
+                                                                status: 'cancelled',
+                                                                metadata: { voided: true }
+                                                            });
+                                                            setLoading(false);
+                                                            onSuccess();
+                                                            onClose();
+                                                        }}
+                                                        className="h-14 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500 font-black uppercase tracking-widest text-[9px] hover:bg-red-500/10 transition-all flex items-center justify-center gap-2 group"
+                                                    >
+                                                        <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                                        Void Protocol
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            if (!confirm("End match as PENDING? Match will show 'Full Time - Awaiting Result' until you enter final scores.")) return;
+                                                            setLoading(true);
+                                                            await updateMatchResult(match.id, {
+                                                                scores: {},
+                                                                winner: '',
+                                                                status: 'pending',
+                                                                metadata: { pendingSince: new Date().toISOString() }
+                                                            });
+                                                            setLoading(false);
+                                                            onSuccess();
+                                                            onClose();
+                                                        }}
+                                                        className="h-14 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-amber-500 font-black uppercase tracking-widest text-[9px] hover:bg-amber-500/10 transition-all flex items-center justify-center gap-2 group"
+                                                    >
+                                                        <Clock className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                                        Set Pending
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -1133,16 +1290,18 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
 
                                 <button
                                     type="submit"
-                                    disabled={loading || (!isLiveUpdate && !isConfirmed)}
-                                    className={`order-1 sm:order-2 flex-1 h-20 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-4 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-30 disabled:grayscale disabled:hover:scale-100 shadow-2xl relative overflow-hidden group w-full ${isLiveUpdate ? "bg-red-600 text-white shadow-red-900/20" : "bg-primary text-slate-950 shadow-primary/20"}`}
+                                    disabled={loading || (!isLiveUpdate && !isConfirmed && showPreview)}
+                                    className={`order-1 sm:order-2 flex-1 h-20 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-4 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-30 disabled:grayscale disabled:hover:scale-100 shadow-2xl relative overflow-hidden group w-full ${isLiveUpdate ? "bg-red-600 text-white shadow-red-900/20" : (showPreview ? "bg-emerald-500 text-white shadow-emerald-900/20" : "bg-primary text-slate-950 shadow-primary/20")}`}
                                 >
                                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                                     {loading ? (
                                         <Loader2 className="h-6 w-6 animate-spin" />
                                     ) : (
                                         <>
-                                            <span className="relative z-10">{isLiveUpdate ? "Broadcast Live Update" : "Authorize Final Settlement"}</span>
-                                            <Zap className={`h-5 w-5 relative z-10 ${isLiveUpdate ? 'text-white/50' : 'text-slate-950/50'}`} />
+                                            <span className="relative z-10">
+                                                {isLiveUpdate ? "Broadcast Live Update" : (showPreview ? "Confirm & Finalize Settlement" : "Preview Settlement Outcome")}
+                                            </span>
+                                            <Zap className={`h-5 w-5 relative z-10 ${isLiveUpdate || showPreview ? 'text-white/50' : 'text-slate-950/50'}`} />
                                         </>
                                     )}
                                 </button>

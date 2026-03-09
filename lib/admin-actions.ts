@@ -1442,6 +1442,91 @@ export async function getActiveMarketsAction(matchId: string) {
     }
 }
 
+/**
+ * Generates a preview of how markets will be settled based on a score
+ */
+export async function getSettlementPreview(matchId: string, resultData: {
+    scores: { [schoolId: string]: number }
+    winner: string
+    metadata?: any
+}) {
+    if (!(await isAdmin())) return { success: false, error: "Unauthorized", preview: [] };
+    try {
+        const { isSelectionWinner } = await import("./settlement")
+
+        // Fetch match details
+        const matchData = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+        if (matchData.length === 0) return { success: false, error: "Match not found", preview: [] }
+        const match = matchData[0] as any
+
+        const preview: Array<{
+            marketName: string
+            selections: Array<{
+                label: string
+                status: 'won' | 'lost' | 'void' | 'pending'
+            }>
+        }> = []
+
+        const extendedOdds = match.extendedOdds as Record<string, Record<string, number>> || {}
+
+        // 1. Process each market in extendedOdds
+        for (const [marketName, odds] of Object.entries(extendedOdds)) {
+            const selections: any[] = []
+
+            for (const label of Object.keys(odds)) {
+                const selectionId = `${matchId}-${marketName}-${label}`
+                const resolution = isSelectionWinner(selectionId, marketName, label, match, resultData)
+
+                if (resolution.resolved) {
+                    selections.push({
+                        label,
+                        status: resolution.isVoid ? 'void' : (resolution.isWin ? 'won' : 'lost')
+                    })
+                } else {
+                    selections.push({
+                        label,
+                        status: 'pending'
+                    })
+                }
+            }
+
+            if (selections.length > 0) {
+                preview.push({ marketName, selections })
+            }
+        }
+
+        // 2. Add Match Winner if not explicitly in extendedOdds
+        const hasMatchWinner = preview.some(p => p.marketName === "Match Winner")
+        if (!hasMatchWinner) {
+            const selections: any[] = []
+            const participants = match.participants as any[]
+
+            // Teams
+            participants.forEach(p => {
+                const resolution = isSelectionWinner(`${matchId}-Match Winner-${p.name}`, "Match Winner", p.name, match, resultData)
+                selections.push({
+                    label: p.name,
+                    status: resolution.resolved ? (resolution.isWin ? 'won' : 'lost') : 'pending'
+                })
+            })
+
+            // Draw
+            const drawRes = isSelectionWinner(`${matchId}-Match Winner-Draw`, "Match Winner", "Draw", match, resultData)
+            selections.push({
+                label: "Draw",
+                status: drawRes.resolved ? (drawRes.isWin ? 'won' : 'lost') : 'pending'
+            })
+
+            preview.push({ marketName: "Match Winner", selections })
+        }
+
+        return { success: true, preview };
+    } catch (error) {
+        console.error("Error generating settlement preview:", error);
+        return { success: false, error: "Failed to generate preview", preview: [] };
+    }
+}
+
 export async function updateTournamentOutright(tournamentId: string, data: {
     isOutrightEnabled: boolean,
     outrightOdds: { schoolId: string, odd: number, status: string }[]

@@ -29,7 +29,8 @@ async function main() {
             const upcomingToStart = await db.select().from(matches).where(
                 and(
                     eq(matches.status, 'upcoming'),
-                    lte(matches.scheduledAt, now)
+                    lte(matches.scheduledAt, now),
+                    eq(matches.isVirtual, true) // Only auto-start virtual matches
                 )
             );
 
