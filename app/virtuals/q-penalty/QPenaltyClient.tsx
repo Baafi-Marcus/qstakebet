@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { VirtualsHeader } from '../components/VirtualsHeader'
 import { BetSlipContext } from '@/lib/store/context'
 import { useRouter } from 'next/navigation'
@@ -8,13 +8,18 @@ import { simulateQPenaltyMatch } from '@/lib/q-penalty-engine'
 import { generateQPenaltyMarkets, evaluateQPenaltyBet, checkQPenaltyCorrelation } from '@/lib/q-penalty-odds'
 import { useQPenaltyMatchLoop } from '@/hooks/useQPenaltyMatchLoop'
 import { VirtualSelection } from '@/lib/virtuals'
-import { ShieldAlert, Info, Trophy } from 'lucide-react'
+import { ShieldAlert, Info, Trophy, Timer, AlertTriangle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
 import { audio } from '@/lib/audio'
-// We'll build these next
 import { QPenaltyLivePlayer } from './components/QPenaltyLivePlayer'
 import { QPenaltyGoalView } from './components/QPenaltyGoalView'
+import { placeBet } from '@/lib/bet-actions'
+import { getUserWalletBalance } from '@/lib/wallet-actions'
+import { getUserGifts } from '@/lib/user-actions'
+import { settleQPenaltyBet, getPlayableSchools } from '@/lib/virtual-actions'
+import { VirtualGameHistory } from '../components/VirtualGameHistory'
+import { GiftSelectionModal } from '@/components/ui/GiftSelectionModal'
 
 interface QPenaltyClientProps {
     userProfile?: { balance: number; bonusBalance: number };
@@ -28,78 +33,146 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
 
     const [currentBalance, setCurrentBalance] = useState(userProfile.balance)
     const [currentBonusBalance, setCurrentBonusBalance] = useState(userProfile.bonusBalance)
-    const [selections, setSelections] = useState<VirtualSelection[]>([])
     const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-    const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
     const [previousResult, setPreviousResult] = useState<string>('AWAITING MATCH')
 
-    const lastServerBalance = React.useRef(userProfile.balance)
-    const lastServerBonus = React.useRef(userProfile.bonusBalance)
-    const hasSyncedOnMount = React.useRef(false)
+    const [showExitConfirm, setShowExitConfirm] = useState(false)
+    const [showGiftModal, setShowGiftModal] = useState(false)
 
-    const [placedBets, setPlacedBets] = useState<any[]>([])
+    const [placedBets, setPlacedBets] = useState<any[]>([]) // Pending in current UI
+    const [betHistory, setBetHistory] = useState<any[]>([]) // Separate Q-Penalty history
+    const [playableSchools, setPlayableSchools] = useState<any[]>([])
+    const [userGifts, setUserGifts] = useState<any[]>([])
 
-    // Persistence & Sync
-    React.useEffect(() => {
-        const savedBets = localStorage.getItem('qpenalty_placed_bets')
-        const savedBalance = localStorage.getItem('qpenalty_balance')
-        
-        if (!hasSyncedOnMount.current) {
-            if (savedBets) setPlacedBets(JSON.parse(savedBets))
-            setCurrentBalance(savedBalance ? parseFloat(savedBalance) : userProfile.balance)
-            hasSyncedOnMount.current = true
-        } else {
-            if (userProfile.balance > lastServerBalance.current) {
-                setCurrentBalance(prev => prev + (userProfile.balance - lastServerBalance.current))
+    // Navigation Guard
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
+                e.preventDefault()
+                e.returnValue = ''
             }
         }
-        lastServerBalance.current = userProfile.balance
-    }, [userProfile.balance])
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [placedBets, context?.selections])
+
+    // Persistence & Sync
+    useEffect(() => {
+        const refresh = async () => {
+            const result = await getUserWalletBalance()
+            setCurrentBalance(result.balance)
+            setCurrentBonusBalance(result.bonusBalance)
+            
+            const [schools, gifts] = await Promise.all([
+                getPlayableSchools('university'),
+                getUserGifts()
+            ])
+            setPlayableSchools(schools)
+            if (gifts.success) setUserGifts(gifts.gifts)
+
+            // Move storage logic here to avoid synchronous setState warning
+            const savedHistory = localStorage.getItem('q_penalty_history')
+            if (savedHistory) {
+                const history = JSON.parse(savedHistory)
+                setBetHistory(history)
+                if (history.length > 0 && history[0].outcome) {
+                    const outcome = history[0].outcome
+                    const winner = outcome.winner === 'A' ? outcome.teamA : outcome.teamB
+                    setPreviousResult(`${winner.shortName} (${outcome.scoreA}-${outcome.scoreB})`)
+                }
+            }
+        }
+        refresh()
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem('q_penalty_history', JSON.stringify(betHistory))
+    }, [betHistory])
 
     // Match outcome generation
     const { outcome, markets } = useMemo(() => {
         const matchId = `QP-${gameState.roundId}-${gameState.matchSeed}`
-        const sim = simulateQPenaltyMatch(matchId, gameState.matchSeed, gameState.timestamp)
+        const sim = simulateQPenaltyMatch(matchId, gameState.matchSeed, gameState.timestamp, playableSchools)
         const mkts = generateQPenaltyMarkets(sim)
         return { outcome: sim, markets: mkts }
-    }, [gameState.matchSeed, gameState.roundId, gameState.timestamp])
+    }, [gameState.matchSeed, gameState.roundId, gameState.timestamp, playableSchools])
 
     // Settlement
-    React.useEffect(() => {
+    useEffect(() => {
         if (gameState.phase === 'SETTLEMENT') {
-            setPreviousResult(`${outcome.teamA.shortName} ${outcome.scoreA} - ${outcome.scoreB} ${outcome.teamB.shortName}`)
-            
-            setPlacedBets(prev => prev.map(bet => {
-                if (bet.status !== 'PENDING') return bet
-                const selResults = bet.selections.map((sel: any) => evaluateQPenaltyBet(sel, outcome))
-                const allWon = selResults.every((res: boolean) => res === true)
-                
-                if (allWon) {
-                    setCurrentBalance(curr => curr + bet.payout)
+            const processSettlement = async () => {
+                const pending = placedBets.filter(b => b.status === 'PENDING')
+                if (pending.length === 0) return
+
+                for (const bet of pending) {
+                    const result = await settleQPenaltyBet(bet.id, gameState.matchSeed, gameState.timestamp)
+                    if (result.success) {
+                        const status = (result as any).status?.toUpperCase() || 'WON'
+                        setPlacedBets(prev => prev.map(b => b.id === bet.id ? { ...b, status } : b))
+                        // Also Add to history
+                        setBetHistory(prev => [{
+                             ...bet, 
+                             status,
+                             outcome: outcome // Save outcome for later viewing
+                        }, ...prev].slice(0, 50))
+                    }
                 }
-                return { ...bet, status: allWon ? 'WON' : 'LOST' }
-            }))
+                
+                // Refresh balance
+                const wallet = await getUserWalletBalance()
+                setCurrentBalance(wallet.balance)
+                setCurrentBonusBalance(wallet.bonusBalance)
+            }
+            processSettlement()
         }
         if (gameState.phase === 'RESET') {
-            setSelections([])
+            const handleReset = async () => {
+                context?.clearSlip()
+                const winner = outcome.winner === 'A' ? outcome.teamA : outcome.teamB
+                setPreviousResult(`${winner.shortName} (${outcome.scoreA}-${outcome.scoreB})`)
+                // Refresh balance one last time for the user
+                const wallet = await getUserWalletBalance()
+                setCurrentBalance(wallet.balance)
+                setCurrentBonusBalance(wallet.bonusBalance)
+            }
+            handleReset()
         }
-    }, [gameState.phase, outcome])
+    }, [gameState.phase, outcome, placedBets, context, gameState.matchSeed, gameState.timestamp])
 
     const handlePlaceBet = async (stake: number, totalOdds: number, potentialPayout: number) => {
-        await new Promise(r => setTimeout(r, 500))
-        setCurrentBalance(prev => prev - stake)
-        setPlacedBets(prev => [...prev, {
-            id: `bet-${Date.now()}`,
-            stake,
-            selections: [...selections],
-            status: 'PENDING',
-            payout: potentialPayout,
-            timestamp: Date.now()
-        }])
-        haptics.success()
-        audio.success()
-        setSelections([])
-        setIsBetSlipOpen(false)
+        if (!isAuthenticated) {
+             alert("Please login to place bets")
+             return
+        }
+
+        const selections = context?.selections || []
+        const bonusId = context?.bonusId
+        const bonusAmount = context?.useBonus ? context?.bonusAmount : 0
+
+        const result = await placeBet(stake, selections as any, bonusId, bonusAmount, 'multi')
+        
+        if (result.success) {
+            const betId = (result as any).betId
+            setPlacedBets(prev => [...prev, {
+                id: betId,
+                stake,
+                selections: [...selections],
+                status: 'PENDING',
+                payout: potentialPayout,
+                timestamp: Date.now()
+            }])
+            
+            // Refresh balance
+            const wallet = await getUserWalletBalance()
+            setCurrentBalance(wallet.balance)
+            setCurrentBonusBalance(wallet.bonusBalance)
+
+            haptics.success()
+            audio.success()
+            context?.clearSlip()
+        } else {
+            alert((result as any).error || "Failed to place bet")
+        }
     }
 
     const isLocked = gameState.phase !== 'BETTING_OPEN'
@@ -107,8 +180,14 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
     return (
         <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-hidden h-screen">
             <VirtualsHeader
-                onBack={() => router.push('/virtuals')}
-                selectedCategory={'all'}
+                onBack={() => {
+                    if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
+                        setShowExitConfirm(true)
+                    } else {
+                        router.push('/virtuals')
+                    }
+                }}
+                selectedCategory="all"
                 onCategoryChange={() => { }}
                 setSelectedRegion={() => { }}
                 availableRegions={[]}
@@ -117,8 +196,10 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
                 hasPendingBets={placedBets.some(b => b.status === 'PENDING')}
                 onOpenHistory={() => setIsHistoryOpen(true)}
                 isAuthenticated={isAuthenticated}
+                isSimulationActive={gameState.phase !== 'BETTING_OPEN'}
                 onNextRound={() => { }}
                 disableSkip={true}
+                setLocalShowGiftModal={setShowGiftModal}
                 customSubNavNode={
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest text-wrap">Last Round:</span>
@@ -161,7 +242,7 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
                                 market.selections.length === 3 ? "grid-cols-3" : "grid-cols-2"
                             )}>
                                 {market.selections.map(sel => {
-                                    const isSelected = selections.some(s => s.selectionId === sel.id)
+                                    const isSelected = context?.checkSelected(sel.id)
                                     return (
                                         <button
                                             key={sel.id}
@@ -169,19 +250,19 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
                                             onClick={() => {
                                                 haptics.light()
                                                 audio.light()
-                                                if (isSelected) setSelections(prev => prev.filter(s => s.selectionId !== sel.id))
-                                                else setSelections(prev => [...prev, {
-                                                    matchId: outcome.matchId,
-                                                    matchLabel: `${outcome.teamA.shortName} vs ${outcome.teamB.shortName}`,
-                                                    schoolA: outcome.teamA.shortName,
-                                                    schoolB: outcome.teamB.shortName,
-                                                    schoolC: '',
-                                                    marketName: market.name,
-                                                    selectionId: sel.id,
-                                                    label: sel.label,
-                                                    odds: sel.odds,
-                                                    timestamp: Date.now()
-                                                }])
+                                                if (isSelected) {
+                                                    context?.removeSelection(sel.id)
+                                                } else {
+                                                    context?.addSelection({
+                                                        matchId: outcome.matchId,
+                                                        matchLabel: `${outcome.teamA.shortName} vs ${outcome.teamB.shortName}`,
+                                                        marketName: market.name,
+                                                        selectionId: sel.id,
+                                                        label: sel.label,
+                                                        odds: sel.odds,
+                                                        sportType: 'quiz'
+                                                    })
+                                                }
                                             }}
                                             className={cn(
                                                 "p-3 rounded-2xl border flex flex-col items-center justify-center transition-all min-h-[64px]",
@@ -202,26 +283,79 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
             </main>
 
             {/* Floating Betslip */}
-            {selections.length > 0 && (
+            {(context?.selections?.length || 0) > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
                     <button 
-                        onClick={() => setIsBetSlipOpen(true)}
+                        onClick={() => context?.openSlip()}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10"
                     >
                         <div className="flex flex-col items-start">
                              <span className="text-[10px] font-black uppercase opacity-70">Review Bet</span>
-                             <span className="text-sm font-black">{selections.length} Selected</span>
+                             <span className="text-sm font-black">{context?.selections.length} Selected</span>
                         </div>
                         <div className="flex items-center gap-3">
                              <div className="h-8 w-[1px] bg-white/20" />
                              <div className="text-right">
-                                 <span className="text-[10px] font-black uppercase opacity-70">Closes In</span>
-                                 <div className="text-sm font-black font-mono">{gameState.timeRemaining}s</div>
+                                  <span className="text-[10px] font-black uppercase opacity-70">Closes In</span>
+                                  <div className="text-sm font-black font-mono">{gameState.timeRemaining}s</div>
                              </div>
                         </div>
                     </button>
                 </div>
             )}
+
+            {/* Exit Confirmation Modal */}
+            {showExitConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 space-y-6 shadow-2xl scale-in-center">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
+                                 <AlertTriangle className="h-8 w-8 text-amber-500" />
+                             </div>
+                             <div>
+                                 <h3 className="text-xl font-black uppercase tracking-tight">Leave Game?</h3>
+                                 <p className="text-sm text-slate-400 font-medium px-4 mt-1">You have pending bets or selections. Leaving may result in missing the final result.</p>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                             <button 
+                                 onClick={() => router.push('/virtuals')}
+                                 className="w-full p-4.5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                             >
+                                 Exit Anyway
+                             </button>
+                             <button 
+                                 onClick={() => setShowExitConfirm(false)}
+                                 className="w-full p-4.5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5"
+                             >
+                                 Stay & Play
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <VirtualGameHistory 
+                isOpen={isHistoryOpen}
+                onClose={() => setIsHistoryOpen(false)}
+                betHistory={betHistory}
+                gameType="penalty"
+            />
+
+            <GiftSelectionModal 
+                isOpen={showGiftModal}
+                onClose={() => setShowGiftModal(false)}
+                gifts={userGifts} 
+                onApply={(giftId, amount) => {
+                    context?.setBonusId(giftId)
+                    context?.setBonusAmount(amount)
+                    context?.setUseBonus(!!giftId)
+                    context?.setBalanceType(giftId ? 'gift' : 'cash')
+                }}
+                totalOdds={context?.selections.reduce((acc, s) => acc * s.odds, 1) || 1.0}
+                selectionsCount={context?.selections.length || 0}
+                totalStake={context?.stake || 1}
+            />
         </div>
     )
 }

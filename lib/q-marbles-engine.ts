@@ -26,17 +26,39 @@ export interface QMarblesRaceOutcome {
 export function simulateQMarblesRace(
     matchId: string,
     seed: number,
-    timestamp?: number
+    timestamp?: number,
+    providedSchools?: { name: string, shortName?: string, color?: string }[]
 ): QMarblesRaceOutcome {
     // 1. Select 6 marbles (Universities)
-    // We'll use the first 6 from the UNIVERSITIES record for consistency
-    const allIds = Object.keys(UNIVERSITIES) as UniversityID[]
-    const selectedIds = allIds.slice(0, 6)
+    let selectedMarbles: UniversityInfo[] = []
+
+    if (providedSchools && providedSchools.length >= 6) {
+        // Pick 6 unique schools using seed
+        const indices = new Set<number>()
+        let i = 0
+        while (indices.size < 6 && i < 100) {
+            indices.add(Math.floor(seededRandom(seed + 50 + i) * providedSchools.length))
+            i++
+        }
+        const picked = Array.from(indices).map(idx => providedSchools[idx])
+        selectedMarbles = picked.map((s, idx) => ({
+            id: `M${idx}` as any,
+            name: s.name,
+            shortName: s.shortName || s.name.split(' ')[0],
+            color: s.color || `hsl(${(idx * 60) % 360}, 70%, 50%)`
+        }))
+    } else {
+        const allIds = Object.keys(UNIVERSITIES) as UniversityID[]
+        const selectedIds = allIds.slice(0, 6)
+        selectedMarbles = selectedIds.map(id => UNIVERSITIES[id])
+    }
     
-    const marbles: MarbleInfo[] = selectedIds.map((id, idx) => ({
-        ...UNIVERSITIES[id],
+    const marbles: MarbleInfo[] = selectedMarbles.map((m, idx) => ({
+        ...m,
         speedBoost: 0.9 + (seededRandom(seed + idx) * 0.2) // 0.9 to 1.1
     }))
+
+    const selectedIds = marbles.map(m => m.id as UniversityID)
 
     const snapshots: MarbleSnapshot[][] = []
     const currentPositions = selectedIds.map(() => 0)

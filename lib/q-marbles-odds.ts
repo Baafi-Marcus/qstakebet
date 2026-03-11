@@ -25,7 +25,7 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         selections: outcome.marbles.map(m => ({
             id: `win-${m.id}`,
             label: m.shortName,
-            odds: 4.5 + (seededRandom(outcome.timestamp + m.id.length) * 2) // Roughly 6 runners
+            odds: 4.0 + (seededRandom(outcome.timestamp + m.id.length) * 2.5) // 4.0 to 6.5
         }))
     })
 
@@ -37,12 +37,11 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         selections: outcome.marbles.map(m => ({
             id: `place-${m.id}`,
             label: m.shortName,
-            odds: 1.8 + (seededRandom(outcome.timestamp + m.id.length * 2) * 0.5)
+            odds: 1.6 + (seededRandom(outcome.timestamp + m.id.length * 2) * 0.4)
         }))
     })
 
     // 3. Forecast (Top 2 Exact)
-    // We'll generate a few high-value options for simplicity
     const tops = outcome.marbles.slice(0, 3)
     const forecastSelections: QMarblesSelection[] = []
     for (let i = 0; i < tops.length; i++) {
@@ -51,7 +50,7 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
             forecastSelections.push({
                 id: `fc-${tops[i].id}-${tops[j].id}`,
                 label: `${tops[i].shortName} > ${tops[j].shortName}`,
-                odds: 15.0 + (seededRandom(outcome.timestamp + i + j) * 10)
+                odds: 10.0 + (seededRandom(outcome.timestamp + i + j) * 8) // 10.0 to 18.0
             })
         }
     }
@@ -68,8 +67,8 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         name: 'Marble Index',
         description: 'Predict if the winning marble has an odd or even index.',
         selections: [
-            { id: 'odd', label: 'Odd Index', odds: 1.95 },
-            { id: 'even', label: 'Even Index', odds: 1.95 }
+            { id: 'odd', label: 'Odd Index', odds: 1.85 },
+            { id: 'even', label: 'Even Index', odds: 1.85 }
         ]
     })
 

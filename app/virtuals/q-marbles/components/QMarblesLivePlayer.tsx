@@ -19,6 +19,7 @@ export function QMarblesLivePlayer({ outcome, gameState }: QMarblesLivePlayerPro
     const currentStepData = outcome.snapshots[currentStep]
 
     const standings = useMemo(() => {
+        if (!isInProgress && !isSettlement) return outcome.marbles.map(m => ({ ...m, position: 0 }))
         if (!currentStepData) return outcome.marbles.map(m => ({ ...m, position: 0 }))
         
         return [...currentStepData]
@@ -27,7 +28,7 @@ export function QMarblesLivePlayer({ outcome, gameState }: QMarblesLivePlayerPro
                 const marble = outcome.marbles.find(m => m.id === snap.marbleId)!
                 return { ...marble, position: snap.position }
             })
-    }, [currentStepData, outcome.marbles])
+    }, [currentStepData, outcome.marbles, isInProgress, isSettlement])
 
     return (
         <div className="w-full bg-slate-900 shadow-2xl p-4 flex flex-col gap-4 border-b border-white/5">

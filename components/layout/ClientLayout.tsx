@@ -86,7 +86,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                             const noBetslipPaths = [
                                 '/auth',
                                 '/admin',
-                                '/virtuals',
                                 '/account',
                                 '/rewards',
                                 '/help',

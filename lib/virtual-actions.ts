@@ -271,3 +271,127 @@ export async function settleVirtualBet(betId: string, roundId: number, userSeed:
         return { success: false, error: "Failed to settle virtual bet" }
     }
 }
+
+export async function settleQPenaltyBet(betId: string, seed: number, timestamp: number) {
+    try {
+        const { auth } = await import("@/lib/auth")
+        const session = await auth()
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+        const { bets, wallets, transactions } = await import("@/lib/db/schema")
+        const { sql } = await import("drizzle-orm")
+        const { simulateQPenaltyMatch } = await import("@/lib/q-penalty-engine")
+        const { evaluateQPenaltyBet } = await import("@/lib/q-penalty-odds")
+
+        // 1. Fetch Bet
+        const betData = await db.select().from(bets).where(eq(bets.id, betId)).limit(1)
+        if (betData.length === 0) return { success: false, error: "Bet not found" }
+        const bet = betData[0]
+        if (bet.status !== 'pending') return { success: true, alreadySettled: true }
+
+        // 2. Regenerate Outcome
+        const matchId = `QP-${seed}-${timestamp}`
+        const outcome = simulateQPenaltyMatch(matchId, seed, timestamp)
+
+        // 3. Evaluate Wins
+        const selections = bet.selections as any[]
+        const selResults = selections.map(sel => evaluateQPenaltyBet(sel, outcome))
+        const allWon = selResults.every(res => res === true)
+        const payoutAmount = allWon ? bet.potentialPayout : 0
+
+        // 4. Update DB
+        return await db.transaction(async (tx) => {
+            await tx.update(bets).set({
+                status: allWon ? 'won' : 'lost',
+                settledAt: new Date(),
+                updatedAt: new Date()
+            }).where(eq(bets.id, betId))
+
+            if (allWon && payoutAmount > 0) {
+                const walletData = await tx.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                const wallet = walletData[0]
+                
+                await tx.update(wallets).set({
+                    balance: sql`${wallets.balance} + ${payoutAmount}`,
+                    updatedAt: new Date()
+                }).where(eq(wallets.userId, bet.userId))
+
+                await tx.insert(transactions).values({
+                    id: `txn-qp-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: bet.userId,
+                    walletId: wallet.id,
+                    amount: payoutAmount,
+                    type: "bet_payout",
+                    balanceBefore: wallet.balance,
+                    balanceAfter: Number(wallet.balance) + payoutAmount,
+                    reference: bet.id,
+                    description: `Q-Penalty Winnings: ${betId}`
+                })
+            }
+            return { success: true, status: allWon ? 'won' : 'lost', payout: payoutAmount }
+        })
+    } catch (e) {
+        console.error("Q-Penalty settlement error:", e)
+        return { success: false, error: "Settlement failed" }
+    }
+}
+
+export async function settleQMarblesBet(betId: string, seed: number, timestamp: number) {
+    try {
+        const { auth } = await import("@/lib/auth")
+        const session = await auth()
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+        const { bets, wallets, transactions } = await import("@/lib/db/schema")
+        const { sql } = await import("drizzle-orm")
+        const { simulateQMarblesRace } = await import("@/lib/q-marbles-engine")
+        const { evaluateQMarblesBet } = await import("@/lib/q-marbles-odds")
+
+        const betData = await db.select().from(bets).where(eq(bets.id, betId)).limit(1)
+        if (betData.length === 0) return { success: false, error: "Bet not found" }
+        const bet = betData[0]
+        if (bet.status !== 'pending') return { success: true, alreadySettled: true }
+
+        const raceId = `QM-${seed}-${timestamp}`
+        const outcome = simulateQMarblesRace(raceId, seed, timestamp)
+
+        const selections = bet.selections as any[]
+        const selResults = selections.map(sel => evaluateQMarblesBet(sel, outcome))
+        const allWon = selResults.every(res => res === true)
+        const payoutAmount = allWon ? bet.potentialPayout : 0
+
+        return await db.transaction(async (tx) => {
+            await tx.update(bets).set({
+                status: allWon ? 'won' : 'lost',
+                settledAt: new Date(),
+                updatedAt: new Date()
+            }).where(eq(bets.id, betId))
+
+            if (allWon && payoutAmount > 0) {
+                const walletData = await tx.select().from(wallets).where(eq(wallets.userId, bet.userId)).limit(1)
+                const wallet = walletData[0]
+
+                await tx.update(wallets).set({
+                    balance: sql`${wallets.balance} + ${payoutAmount}`,
+                    updatedAt: new Date()
+                }).where(eq(wallets.userId, bet.userId))
+
+                await tx.insert(transactions).values({
+                    id: `txn-qm-${Math.random().toString(36).substr(2, 9)}`,
+                    userId: bet.userId,
+                    walletId: wallet.id,
+                    amount: payoutAmount,
+                    type: "bet_payout",
+                    balanceBefore: wallet.balance,
+                    balanceAfter: Number(wallet.balance) + payoutAmount,
+                    reference: bet.id,
+                    description: `Q-Marbles Winnings: ${betId}`
+                })
+            }
+            return { success: true, status: allWon ? 'won' : 'lost', payout: payoutAmount }
+        })
+    } catch (e) {
+        console.error("Q-Marbles settlement error:", e)
+        return { success: false, error: "Settlement failed" }
+    }
+}

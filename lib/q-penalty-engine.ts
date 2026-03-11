@@ -49,16 +49,38 @@ const DIRECTIONS: ('left' | 'center' | 'right')[] = ['left', 'center', 'right']
 export function simulateQPenaltyMatch(
     matchId: string,
     seed: number,
-    timestamp?: number
+    timestamp?: number,
+    providedSchools?: { name: string, shortName?: string, color?: string }[]
 ): QPenaltyMatchOutcome {
     // 1. Pick 2 unique universities
-    const allIds = Object.keys(UNIVERSITIES) as UniversityID[]
-    const p1Idx = Math.floor(seededRandom(seed + 1) * allIds.length)
-    let p2Idx = Math.floor(seededRandom(seed + 2) * allIds.length)
-    if (p1Idx === p2Idx) p2Idx = (p2Idx + 1) % allIds.length
+    let teams: UniversityInfo[] = []
+    
+    if (providedSchools && providedSchools.length >= 2) {
+        const p1Idx = Math.floor(seededRandom(seed + 1) * providedSchools.length)
+        let p2Idx = Math.floor(seededRandom(seed + 2) * providedSchools.length)
+        if (p1Idx === p2Idx) p2Idx = (p2Idx + 1) % providedSchools.length
 
-    const teamA = UNIVERSITIES[allIds[p1Idx]]
-    const teamB = UNIVERSITIES[allIds[p2Idx]]
+        const s1 = providedSchools[p1Idx]
+        const s2 = providedSchools[p2Idx]
+
+        const mapToInfo = (s: any, idx: number): UniversityInfo => ({
+            id: (idx === 0 ? 'A' : 'B') as any,
+            name: s.name,
+            shortName: s.shortName || s.name.split(' ')[0],
+            color: s.color || `hsl(${seededRandom(seed + idx * 100) * 360}, 70%, 50%)`
+        })
+
+        teams = [mapToInfo(s1, 0), mapToInfo(s2, 1)]
+    } else {
+        const allIds = Object.keys(UNIVERSITIES) as UniversityID[]
+        const p1Idx = Math.floor(seededRandom(seed + 1) * allIds.length)
+        let p2Idx = Math.floor(seededRandom(seed + 2) * allIds.length)
+        if (p1Idx === p2Idx) p2Idx = (p2Idx + 1) % allIds.length
+        teams = [UNIVERSITIES[allIds[p1Idx]], UNIVERSITIES[allIds[p2Idx]]]
+    }
+
+    const teamA = teams[0]
+    const teamB = teams[1]
 
     const attemptsA: PenaltyAttempt[] = []
     const attemptsB: PenaltyAttempt[] = []
