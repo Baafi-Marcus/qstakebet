@@ -157,17 +157,41 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
         }
     }, [isAuthenticated])
 
-    // Navigation Protection
+    // Navigation Protection for System "Back" Button and Swipe-back
+    const blockRef = useRef(false)
+    useEffect(() => {
+        blockRef.current = pendingSlips.length > 0 || isSimulating || selections.length > 0
+    }, [pendingSlips.length, isSimulating, selections.length])
+
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (pendingSlips.length > 0 || isSimulating || selections.length > 0) {
+            if (blockRef.current) {
                 e.preventDefault()
                 e.returnValue = ''
             }
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [pendingSlips.length, isSimulating, selections.length])
+
+        window.history.pushState(null, '', window.location.href)
+        const handlePopState = () => {
+            if (blockRef.current) {
+                window.history.pushState(null, '', window.location.href)
+                setConfirmDialog({
+                    title: "Leave Game?",
+                    message: "You have pending bets or selections. Leaving may result in missing the final result.",
+                    onConfirm: () => router.push('/')
+                })
+            } else {
+                router.back()
+            }
+        }
+        window.addEventListener('popstate', handlePopState)
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+            window.removeEventListener('popstate', handlePopState)
+        }
+    }, [router])
 
     const handleLeaveGame = () => {
         const hasActiveBets = pendingSlips.length > 0 || isSimulating

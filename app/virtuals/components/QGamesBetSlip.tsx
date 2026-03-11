@@ -114,85 +114,79 @@ export function QGamesBetSlip({
             </div>
 
             {/* Footer Summary & Action */}
-            <div className="p-4 bg-slate-950 border-t border-white/5 flex flex-col gap-4">
-                {/* Balance Selector */}
-                <div className="flex gap-2 mb-2">
+            <div className="p-3 bg-slate-950 border-t border-white/5 flex flex-col gap-3">
+                
+                {/* Balance & Odds Header - Compact Grid */}
+                <div className="grid grid-cols-3 gap-2 items-end">
                     <button
                         onClick={() => setBalanceType('cash')}
                         className={cn(
-                            "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                            "py-1.5 px-2 rounded-lg flex items-center justify-between border transition-all",
                             balanceType === 'cash' ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
                         )}
                     >
-                        <div className="flex items-center gap-1.5">
-                            <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Cash</span>
-                        </div>
-                        <span className={cn("text-xs font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
+                        <Wallet className={cn("h-3 w-3", balanceType === 'cash' ? "text-green-500" : "text-slate-500")} />
+                        <span className={cn("text-[10px] font-black font-mono", balanceType === 'cash' ? "text-white" : "text-slate-500")}>
                             {balance.toFixed(2)}
                         </span>
                     </button>
+                    
                     <button
                         onClick={() => setBalanceType('gift')}
                         className={cn(
-                            "flex-1 py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all",
+                            "py-1.5 px-2 rounded-lg flex items-center justify-between border transition-all",
                             balanceType === 'gift' ? "bg-purple-500/10 border-purple-500/40" : "bg-slate-800/40 border-white/5 opacity-60"
                         )}
                     >
-                        <div className="flex items-center gap-1.5">
-                            <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Gift</span>
-                        </div>
-                        <span className={cn("text-xs font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
+                        <Zap className={cn("h-3 w-3", balanceType === 'gift' ? "text-purple-400" : "text-slate-500")} />
+                        <span className={cn("text-[10px] font-black font-mono", balanceType === 'gift' ? "text-purple-300" : "text-slate-500")}>
                             {bonusBalance.toFixed(2)}
                         </span>
                     </button>
+
+                    <div className="flex flex-col items-end justify-center">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Total Odds</span>
+                        <span className="text-sm font-mono font-black text-emerald-400 leading-none">{totalOdds.toFixed(2)}</span>
+                    </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Odds</span>
-                    <span className="text-xl font-mono font-black text-emerald-400">{totalOdds.toFixed(2)}</span>
+                {/* Stake Input & Action Button Container */}
+                <div className="flex gap-2">
+                    <div className="relative w-1/3">
+                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-black text-xs">GHS</span>
+                         <input
+                             type="number"
+                             value={stake}
+                             onChange={e => setStake(e.target.value)}
+                             disabled={isLocked}
+                             className="w-full h-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-11 pr-2 text-white font-mono font-black text-sm focus:outline-none focus:border-purple-500 transition-colors placeholder:text-slate-700"
+                             placeholder="0.00"
+                         />
+                    </div>
+                    
+                    <button
+                         disabled={hasConflicts || isLocked || isSubmitting || numStake <= 0}
+                         onClick={handlePlaceBet}
+                         className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all relative overflow-hidden ${hasConflicts || isLocked || numStake <= 0
+                             ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                             : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                             }`}
+                    >
+                         <span className="font-black uppercase tracking-widest text-[11px]">
+                             {isSubmitting ? 'Processing...' : isLocked ? 'Locked' : 'Place Bet'}
+                         </span>
+                         {!(hasConflicts || isLocked || numStake <= 0) && (
+                             <span className="text-[10px] font-mono font-bold opacity-80 mt-0.5">
+                                 Win: {potentialPayout.toFixed(2)}
+                             </span>
+                         )}
+
+                         {/* Animated shine effect */}
+                         {!(hasConflicts || isLocked || numStake <= 0 || isSubmitting) && (
+                             <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 animate-shine" />
+                         )}
+                    </button>
                 </div>
-
-                {/* Stake Input */}
-                <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black text-sm">GHS</span>
-                    <input
-                        type="number"
-                        value={stake}
-                        onChange={e => setStake(e.target.value)}
-                        disabled={isLocked}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-14 pr-4 text-white font-mono font-black text-lg focus:outline-none focus:border-purple-500 transition-colors placeholder:text-slate-700"
-                        placeholder="0.00"
-                    />
-                    {balanceType === 'gift' && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-purple-400 bg-purple-950/50 px-2 py-1 rounded-lg">
-                            <Zap className="h-3 w-3" />
-                            <span className="text-[10px] font-black uppercase">Gift Active</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex justify-between items-center pb-2">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Potential Win</span>
-                    <span className="text-lg font-mono font-black text-white">{potentialPayout.toFixed(2)}</span>
-                </div>
-
-                <button
-                    disabled={hasConflicts || isLocked || isSubmitting || numStake <= 0}
-                    onClick={handlePlaceBet}
-                    className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all relative overflow-hidden ${hasConflicts || isLocked || numStake <= 0
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                        }`}
-                >
-                    {isSubmitting ? 'Processing...' : isLocked ? 'Betting Locked' : 'Place Bet'}
-
-                    {/* Animated shine effect if active */}
-                    {!(hasConflicts || isLocked || numStake <= 0 || isSubmitting) && (
-                        <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 animate-shine" />
-                    )}
-                </button>
             </div>
         </div>
     )
