@@ -6,14 +6,17 @@ import { eq, sql } from 'drizzle-orm'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://qstakebet.vercel.app'
 
-    // Fetch all settled or upcoming matches for the sitemap
-    const allMatches = await db.select({ id: matches.id, lastModified: matches.createdAt }).from(matches).limit(500)
+    // Fetch only upcoming & live matches — these are the public-facing pages Google can crawl
+    const allMatches = await db.select({ id: matches.id, lastModified: matches.createdAt })
+        .from(matches)
+        .where(sql`${matches.status} IN ('upcoming', 'live', 'scheduled')`)
+        .limit(500)
 
     const matchEntries = allMatches.map((m) => ({
-        url: `${baseUrl}/match/${m.id}`,
+        url: `${baseUrl}/matches/${m.id}`,   // ✅ correct path: /matches/[id]
         lastModified: m.lastModified || new Date(),
-        changeFrequency: 'daily' as const,
-        priority: 0.7,
+        changeFrequency: 'hourly' as const,
+        priority: 0.8,
     }))
 
     return [
