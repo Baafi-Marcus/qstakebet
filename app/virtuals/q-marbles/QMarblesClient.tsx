@@ -289,7 +289,7 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
 
             {/* Floating Betslip */}
             {selections.length > 0 && !isBetSlipOpen && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+                <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
                     <button 
                         onClick={() => setIsBetSlipOpen(true)}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4.5 rounded-[2rem] shadow-[0_20px_50px_rgba(16,185,129,0.4)] flex items-center justify-between animate-in slide-in-from-bottom-12 backdrop-blur-md transition-all active:scale-95"

@@ -301,7 +301,7 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
 
             {/* Floating Betslip */}
             {selections.length > 0 && !isBetSlipOpen && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+                <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
                     <button 
                         onClick={() => setIsBetSlipOpen(true)}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10 active:scale-95 transition-all"
