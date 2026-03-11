@@ -92,7 +92,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                                 '/how-to-play',
                                 '/privacy',
                                 '/terms',
-                                '/cookies'
+                                '/cookies',
+                                '/virtuals'
                             ]
                             const hideBetslip = noBetslipPaths.some(path => pathname?.startsWith(path))
 

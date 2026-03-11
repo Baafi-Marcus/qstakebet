@@ -329,7 +329,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                     {selections.length > 0 && !isBetSlipOpen && (
                         <button
                             onClick={() => setIsBetSlipOpen(true)}
-                            className="fixed bottom-24 lg:bottom-6 right-6 z-50 flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] transition-all animate-in slide-in-from-bottom-10 active:scale-95"
+                            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] transition-all animate-in slide-in-from-bottom-10 active:scale-95"
                         >
                             <div className="flex flex-col items-start leading-none gap-1 border-r border-white/20 pr-3">
                                 <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Betslip</span>
