@@ -11,6 +11,10 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@neondatabase/serverless": "^1.0.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "@react-three/rapier": "^2.2.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -25,6 +29,7 @@
     "react-dom": "^19.2.3",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.4.0",
+    "three": "^0.183.2",
     "tsx": "^4.21.0",
     "use-sync-external-store": "^1.6.0",
     "zod": "^4.3.6",

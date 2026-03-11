@@ -3,10 +3,108 @@
 import React, { useMemo } from 'react'
 import { QMarblesRaceOutcome } from '@/lib/q-marbles-engine'
 import { cn } from '@/lib/utils'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
+import { Environment, Text, ContactShadows } from '@react-three/drei'
+import { EffectComposer, DepthOfField, Vignette } from '@react-three/postprocessing'
+import * as THREE from 'three'
 
 interface QMarblesTrackProps {
     outcome: QMarblesRaceOutcome
     gameState: any
+}
+
+// --- Internal 3D Components ---
+
+function TrackSurface() {
+    return (
+        <group>
+            {/* The Main Incline */}
+            <RigidBody type="fixed" friction={0.1} restitution={0.2} position={[0, -2, 0]} rotation={[-Math.PI / 2 + 0.1, 0, 0]}>
+                <mesh receiveShadow>
+                    <planeGeometry args={[20, 100, 64, 64]} />
+                    <meshStandardMaterial color="#1e293b" roughness={0.8} />
+                </mesh>
+            </RigidBody>
+
+            {/* Invisible Walls to keep marbles on track */}
+            <RigidBody type="fixed" position={[-5, 0, 0]}>
+                <CuboidCollider args={[1, 10, 50]} />
+            </RigidBody>
+            <RigidBody type="fixed" position={[5, 0, 0]}>
+                <CuboidCollider args={[1, 10, 50]} />
+            </RigidBody>
+            {/* Starting Gate */}
+            <RigidBody type="fixed" position={[0, 0, -25]}>
+                <CuboidCollider args={[10, 10, 1]} />
+            </RigidBody>
+        </group>
+    )
+}
+
+function PhysicalMarble({ marbleData, index, isPlaying, startZ }: { marbleData: any, index: number, isPlaying: boolean, startZ: number }) {
+    const bodyRef = React.useRef<any>(null)
+    const color = new THREE.Color(marbleData.color)
+    const startX = -3 + (index * 1.2)
+
+    useFrame((state, delta) => {
+        if (!bodyRef.current || !isPlaying) return
+
+        const baseForce = 2.0 * marbleData.speedBoost
+        const time = state.clock.getElapsedTime()
+        const jitterX = (Math.sin(time * 10 + index) * 0.2) + (Math.random() - 0.5) * 0.5
+        const jitterZ = (Math.random() - 0.5) * 0.2
+        
+        bodyRef.current.applyImpulse({ x: jitterX * delta * 5, y: 0, z: (baseForce + jitterZ) * delta * 50 }, true)
+        bodyRef.current.applyTorqueImpulse({ x: (Math.random() - 0.5) * delta, y: (Math.random() - 0.5) * delta, z: (Math.random() - 0.5) * delta }, true)
+    })
+
+    return (
+        <RigidBody 
+            ref={bodyRef} 
+            position={[startX, 5, startZ]} 
+            restitution={0.5} 
+            friction={0.2}
+            colliders="ball"
+            mass={1}
+        >
+            <mesh castShadow receiveShadow>
+                <sphereGeometry args={[0.4, 32, 32]} />
+                <meshPhysicalMaterial 
+                    color={color} 
+                    roughness={0.1} 
+                    metalness={0.1}
+                    clearcoat={1}
+                    clearcoatRoughness={0.1}
+                />
+            </mesh>
+            <Text
+                position={[0, 0.8, 0]}
+                fontSize={0.3}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.02}
+                outlineColor="black"
+            >
+                {marbleData.shortName}
+            </Text>
+        </RigidBody>
+    )
+}
+
+function CameraRig({ isPlaying }: { isPlaying: boolean }) {
+    useFrame((state) => {
+        if (isPlaying) {
+            state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, 20, 0.01)
+            state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, 5, 0.01)
+            state.camera.lookAt(0, 0, state.camera.position.z + 10)
+        } else {
+            state.camera.position.set(0, 15, -30)
+            state.camera.lookAt(0, 0, 0)
+        }
+    })
+    return null
 }
 
 export function QMarblesTrack({ outcome, gameState }: QMarblesTrackProps) {
@@ -17,13 +115,8 @@ export function QMarblesTrack({ outcome, gameState }: QMarblesTrackProps) {
     const currentStep = Math.min(outcome.snapshots.length - 1, Math.floor(timeElapsed / 0.75))
     const currentStepData = outcome.snapshots[currentStep]
 
-    // Define a winding SVG path for the marbles to follow
-    // This is a "S" curve mimicking the reference image
-    const trackPath = "M 50,350 C 150,350 250,50 400,50 C 550,50 650,350 750,350"
-    
-    // Sort marbles by position for the leaderboard
     const rankedMarbles = useMemo(() => {
-        if (!currentStepData) return []
+        if (!currentStepData) return outcome.marbles
         return [...outcome.marbles].sort((a, b) => {
             const posA = currentStepData.find(s => s.marbleId === a.id)?.position || 0
             const posB = currentStepData.find(s => s.marbleId === b.id)?.position || 0
@@ -45,12 +138,7 @@ export function QMarblesTrack({ outcome, gameState }: QMarblesTrackProps) {
 
     return (
         <div className="w-full h-full bg-[#f8fafc] rounded-3xl border border-slate-200 relative overflow-hidden flex shadow-inner">
-            {/* Environmental Background (Light themed like reference) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-50 to-white" />
-            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]" />
-
-            {/* Sidebar Leaderboard (Matching Reference) */}
-            <div className="w-40 h-full bg-slate-900/90 backdrop-blur-md z-30 flex flex-col border-r border-white/5 shadow-2xl">
+            <div className="w-40 h-full bg-slate-900/90 backdrop-blur-md z-30 flex flex-col border-r border-white/5 shadow-2xl absolute left-0 top-0">
                  <div className="p-3 border-b border-white/10 bg-black/20">
                       <div className="flex items-center justify-between">
                            <span className="text-[10px] font-black italic text-white/40 tracking-tighter">03:45 +1 LAP</span>
@@ -75,54 +163,38 @@ export function QMarblesTrack({ outcome, gameState }: QMarblesTrackProps) {
                  </div>
             </div>
 
-            {/* Main Race Arena */}
-            <div className="flex-1 relative p-4 overflow-hidden perspective-[1000px]">
-                {/* 3D Track SVG */}
-                <svg viewBox="0 0 800 400" className="w-full h-full drop-shadow-2xl translate-y-4 rotate-x-[20deg]">
-                    <defs>
-                        <mask id="trackMask">
-                            <path d={trackPath} stroke="white" strokeWidth="60" fill="none" strokeLinecap="round" />
-                        </mask>
-                        <linearGradient id="trackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#475569" />
-                            <stop offset="100%" stopColor="#1e293b" />
-                        </linearGradient>
-                    </defs>
+            <div className="flex-1 relative overflow-hidden ml-40">
+                <React.Suspense fallback={<div className="w-full h-full flex items-center justify-center text-slate-500 font-mono text-xs">Loading 3D Engine...</div>}>
+                    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 15, -30], fov: 45 }}>
+                        <color attach="background" args={['#e2e8f0']} />
+                        <ambientLight intensity={0.5} />
+                        <directionalLight castShadow position={[10, 20, 10]} intensity={1.5} shadow-mapSize={[1024, 1024]} />
+                        <Environment preset="city" />
 
-                    {/* Track Bed/Curbs */}
-                    <path d={trackPath} stroke="#cbd5e1" strokeWidth="68" fill="none" strokeLinecap="round" className="opacity-50" />
-                    <path d={trackPath} stroke="#ef4444" strokeWidth="66" fill="none" strokeLinecap="round" strokeDasharray="10 20" />
-                    <path d={trackPath} stroke="#ffffff" strokeWidth="66" fill="none" strokeLinecap="round" strokeDasharray="10 20" strokeDashoffset="15" />
-                    
-                    {/* Main Road */}
-                    <path d={trackPath} stroke="url(#trackGrad)" strokeWidth="60" fill="none" strokeLinecap="round" id="racePath" />
-                    
-                    {/* Centered Dashed Line */}
-                    <path d={trackPath} stroke="white" strokeWidth="1" fill="none" strokeDasharray="10 15" className="opacity-20" />
+                        <Physics gravity={[0, -9.81, 0]}>
+                            <TrackSurface />
+                            
+                            {outcome.marbles.map((marble, i) => (
+                                <PhysicalMarble 
+                                    key={marble.id} 
+                                    marbleData={marble} 
+                                    index={i} 
+                                    isPlaying={isInProgress} 
+                                    startZ={-20} 
+                                />
+                            ))}
+                        </Physics>
 
-                    {/* Finish Line (at the end of path) */}
-                    <g transform="translate(750, 350) rotate(-45)">
-                        <rect x="-30" y="-5" width="60" height="10" fill="white" className="opacity-20" />
-                    </g>
+                        <CameraRig isPlaying={isInProgress} />
 
-                    {/* Marbles on Track */}
-                    {outcome.marbles.map((marble) => {
-                        const snap = currentStepData.find(s => s.marbleId === marble.id)
-                        const posPercent = snap ? snap.position / 100 : 0
-                        
-                        return (
-                            <MarbleOnPath 
-                                key={marble.id}
-                                pathId="racePath"
-                                percentage={posPercent}
-                                color={marble.color}
-                                name={marble.shortName}
-                            />
-                        )
-                    })}
-                </svg>
+                        <EffectComposer>
+                            <DepthOfField focusDistance={0.01} focalLength={0.2} bokehScale={2} height={480} />
+                            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+                        </EffectComposer>
+                        <ContactShadows resolution={1024} scale={20} blur={2} opacity={0.5} far={10} color="#0f172a" />
+                    </Canvas>
+                </React.Suspense>
 
-                {/* Photo Finish Indicator */}
                 {isSettlement && outcome.isPhotoFinish && (
                     <div className="absolute top-4 right-4 z-30 bg-amber-500 text-black px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-xl animate-bounce">
                         Photo Finish!
@@ -130,42 +202,5 @@ export function QMarblesTrack({ outcome, gameState }: QMarblesTrackProps) {
                 )}
             </div>
         </div>
-    )
-}
-
-function MarbleOnPath({ pathId, percentage, color, name }: { pathId: string, percentage: number, color: string, name: string }) {
-    const [point, setPoint] = React.useState({ x: 0, y: 0 })
-    const pathRef = React.useRef<SVGPathElement | null>(null)
-
-    React.useEffect(() => {
-        const path = document.getElementById(pathId) as SVGPathElement | null
-        if (path) {
-            const length = path.getTotalLength()
-            const p = path.getPointAtLength(length * percentage)
-            setPoint({ x: p.x, y: p.y })
-        }
-    }, [percentage, pathId])
-
-    return (
-        <g transform={`translate(${point.x}, ${point.y})`}>
-            {/* Shadow */}
-            <circle r="10" fill="black" className="opacity-20" transform="translate(4, 4)" />
-            
-            {/* Marble Body */}
-            <defs>
-                <radialGradient id={`grad-${name}`} cx="30%" cy="30%" r="50%">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.8" />
-                    <stop offset="60%" stopColor={color} />
-                    <stop offset="100%" stopColor="black" stopOpacity="0.4" />
-                </radialGradient>
-            </defs>
-            <circle r="8" fill={`url(#grad-${name})`} className="stroke-white/20 stroke-[0.5]" />
-            
-            {/* Inner Glow */}
-            <circle r="3" cx="-2" cy="-2" fill="white" className="opacity-40" />
-            
-            {/* Name Tag (Small) */}
-            <text y="-14" textAnchor="middle" className="text-[6px] font-black fill-slate-900 uppercase tracking-widest">{name}</text>
-        </g>
     )
 }

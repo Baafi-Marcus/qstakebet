@@ -67,7 +67,7 @@ export function simulateQPenaltyMatch(
         const mapToInfo = (s: any, idx: number): UniversityInfo => ({
             id: (idx === 0 ? 'A' : 'B') as any,
             name: s.name,
-            shortName: s.shortName || s.name.split(' ')[0],
+            shortName: s.shortName || s.name,
             color: s.color || `hsl(${seededRandom(seed + idx * 100) * 360}, 70%, 50%)`
         })
 

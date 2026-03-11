@@ -20,6 +20,7 @@ import { getUserGifts } from '@/lib/user-actions'
 import { settleQMarblesBet, getPlayableSchools } from '@/lib/virtual-actions'
 import { VirtualGameHistory } from '../components/VirtualGameHistory'
 import { GiftSelectionModal } from '@/components/ui/GiftSelectionModal'
+import { QGamesBetSlip } from '../components/QGamesBetSlip'
 
 interface QMarblesClientProps {
     userProfile?: { balance: number; bonusBalance: number };
@@ -35,6 +36,8 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
     const [currentBonusBalance, setCurrentBonusBalance] = useState(userProfile.bonusBalance)
     const [isHistoryOpen, setIsHistoryOpen] = useState(false)
     const [previousWinner, setPreviousWinner] = useState<string>('AWAITING RACE')
+    const [selections, setSelections] = useState<VirtualSelection[]>([])
+    const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
     const [showGiftModal, setShowGiftModal] = useState(false)
 
@@ -46,14 +49,14 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
     // Navigation Guard
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
+            if (placedBets.some(b => b.status === 'PENDING') || selections.length > 0) {
                 e.preventDefault()
                 e.returnValue = ''
             }
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [placedBets, context?.selections])
+    }, [placedBets, selections.length])
 
     // Persistence & Sync
     useEffect(() => {
@@ -125,8 +128,8 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
         }
         if (gameState.phase === 'RESET') {
             const handleReset = async () => {
-                context?.clearSlip()
-                const winner = outcome.marbles.find(m => m.id === outcome.winner)
+                setSelections([])
+                const winner = outcome.marbles.find((m: any) => m.id === outcome.winner)
                 setPreviousWinner(winner?.shortName || 'Unknown')
                 // Refresh balance
                 const wallet = await getUserWalletBalance()
@@ -135,7 +138,7 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
             }
             handleReset()
         }
-    }, [gameState.phase, outcome, placedBets, context, gameState.matchSeed, gameState.timestamp])
+    }, [gameState.phase, outcome, placedBets, gameState.matchSeed, gameState.timestamp])
 
     const handlePlaceBet = async (stake: number, totalOdds: number, potentialPayout: number) => {
         if (!isAuthenticated) {
@@ -143,9 +146,8 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
              return
         }
 
-        const selections = context?.selections || []
         const bonusId = context?.bonusId
-        const bonusAmount = context?.useBonus ? context?.bonusAmount : 0
+        const bonusAmount = context?.balanceType === 'gift' ? stake : 0
 
         const result = await placeBet(stake, selections as any, bonusId, bonusAmount, 'multi')
         
@@ -167,19 +169,20 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
 
             haptics.success()
             audio.success()
-            context?.clearSlip()
+            setSelections([])
         } else {
             alert((result as any).error || "Failed to place bet")
         }
     }
 
     const isLocked = gameState.phase !== 'BETTING_OPEN'
+    const hasConflicts = false // Q-Marbles rarely has strict exclusive conflict rules. Update if odds engine changes.
 
     return (
         <div className="min-h-screen bg-slate-950 text-white flex flex-col font-inter">
             <VirtualsHeader
                 onBack={() => {
-                    if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
+                    if (placedBets.some(b => b.status === 'PENDING') || selections.length > 0) {
                         setShowExitConfirm(true)
                     } else {
                         router.push('/virtuals')
@@ -244,7 +247,7 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
                                 market.id === 'winner' || market.id === 'place' ? "grid-cols-3" : "grid-cols-2"
                             )}>
                                 {market.selections.map(sel => {
-                                    const isSelected = context?.checkSelected(sel.id)
+                                    const isSelected = selections.some(s => s.selectionId === sel.id)
                                     return (
                                         <button
                                             key={sel.id}
@@ -253,9 +256,9 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
                                                 haptics.light()
                                                 audio.light()
                                                 if (isSelected) {
-                                                    context?.removeSelection(sel.id)
+                                                    setSelections(prev => prev.filter(s => s.selectionId !== sel.id))
                                                 } else {
-                                                    context?.addSelection({
+                                                    setSelections(prev => [...prev, {
                                                         matchId: outcome.matchId,
                                                         matchLabel: `Marble Race #${gameState.roundId}`,
                                                         marketName: market.name,
@@ -263,7 +266,7 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
                                                         label: sel.label,
                                                         odds: sel.odds,
                                                         sportType: 'quiz'
-                                                    })
+                                                    } as unknown as VirtualSelection])
                                                 }
                                             }}
                                             className={cn(
@@ -285,15 +288,15 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
             </main>
 
             {/* Floating Betslip */}
-            {(context?.selections?.length || 0) > 0 && (
+            {selections.length > 0 && !isBetSlipOpen && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
                     <button 
-                        onClick={() => context?.openSlip()}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4.5 rounded-[2rem] shadow-[0_20px_50px_rgba(16,185,129,0.4)] flex items-center justify-between animate-in slide-in-from-bottom-12 backdrop-blur-md"
+                        onClick={() => setIsBetSlipOpen(true)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4.5 rounded-[2rem] shadow-[0_20px_50px_rgba(16,185,129,0.4)] flex items-center justify-between animate-in slide-in-from-bottom-12 backdrop-blur-md transition-all active:scale-95"
                     >
                         <div className="flex flex-col items-start leading-none gap-1">
                              <span className="text-[10px] font-black uppercase opacity-60 tracking-wider">Your Selections</span>
-                             <span className="text-base font-black">{context?.selections.length} {context?.selections.length === 1 ? 'Market' : 'Markets'}</span>
+                             <span className="text-base font-black">{selections.length} {selections.length === 1 ? 'Market' : 'Markets'}</span>
                         </div>
                         <div className="flex items-center gap-4">
                              <div className="h-10 w-[1px] bg-white/10" />
@@ -303,6 +306,58 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
                              </div>
                         </div>
                     </button>
+                </div>
+            )}
+
+            {/* FULL SCREEN BETSLIP OVERLAY */}
+            {isBetSlipOpen && (
+                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300 flex flex-col items-center justify-center p-4">
+                    <div className="w-full max-w-2xl h-full max-h-[90vh] bg-slate-900 rounded-[2.5rem] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative">
+                        {/* Header with Timer */}
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-slate-800/50">
+                            <div className="flex flex-col">
+                                <h2 className="text-lg font-black uppercase tracking-[0.2em] text-emerald-400">Review Selections</h2>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Global Q-MARBLES #{gameState.roundId}</span>
+                            </div>
+                            <div className="flex items-center gap-6">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Closing In</span>
+                                    <span className={cn(
+                                        "text-xl font-mono font-black",
+                                        gameState.timeRemaining < 10 ? "text-red-500 animate-pulse" : "text-amber-400"
+                                    )}>
+                                        {gameState.phase === 'BETTING_OPEN' ? `${gameState.timeRemaining}s` : 'LOCKED'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setIsBetSlipOpen(false)}
+                                    className="p-3 hover:bg-white/10 rounded-2xl transition-all"
+                                >
+                                    <X className="h-6 w-6 text-slate-400" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden">
+                            <QGamesBetSlip
+                                selections={selections}
+                                onClear={() => { setSelections([]); setIsBetSlipOpen(false); }}
+                                onRemove={(id: string) => {
+                                    const newSels = selections.filter(s => s.selectionId !== id);
+                                    setSelections(newSels);
+                                    if (newSels.length === 0) setIsBetSlipOpen(false);
+                                }}
+                                onPlaceBet={async (s: number, o: number, p: number) => {
+                                    await handlePlaceBet(s, o, p);
+                                    setIsBetSlipOpen(false);
+                                }}
+                                isLocked={isLocked}
+                                balance={currentBalance}
+                                bonusBalance={currentBonusBalance}
+                                hasConflicts={hasConflicts}
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -354,9 +409,9 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
                     context?.setUseBonus(!!giftId)
                     context?.setBalanceType(giftId ? 'gift' : 'cash')
                 }}
-                totalOdds={context?.selections.reduce((acc, s) => acc * s.odds, 1) || 1.0}
-                selectionsCount={context?.selections.length || 0}
-                totalStake={context?.stake || 1}
+                totalOdds={selections.reduce((acc, s) => acc * s.odds, 1) || 1.0}
+                selectionsCount={selections.length || 0}
+                totalStake={selections.length > 0 ? 1 : 1}
             />
         </div>
     )

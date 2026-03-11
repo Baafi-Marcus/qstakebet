@@ -44,7 +44,7 @@ export function simulateQMarblesRace(
         selectedMarbles = picked.map((s, idx) => ({
             id: `M${idx}` as any,
             name: s.name,
-            shortName: s.shortName || s.name.split(' ')[0],
+            shortName: s.shortName || s.name,
             color: s.color || `hsl(${(idx * 60) % 360}, 70%, 50%)`
         }))
     } else {

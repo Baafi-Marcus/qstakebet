@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Selection as BetSlipSelection, BetSlipContext } from "@/lib/store/context"
 import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
 import { cn } from "@/lib/utils"
+import { AlertTriangle } from "lucide-react"
 import {
     generateVirtualMatches,
     simulateMatch,
@@ -79,6 +80,7 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
     const [currentCommentary, setCurrentCommentary] = useState<string>("Ready for kickoff!")
     const [autoNextRoundCountdown, setAutoNextRoundCountdown] = useState<number | null>(null)
     const [countdown, setCountdown] = useState<string | null>(null)
+    const [confirmDialog, setConfirmDialog] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
 
     // Context synchronization
     const context = React.useContext(BetSlipContext)
@@ -171,15 +173,14 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
         const hasActiveBets = pendingSlips.length > 0 || isSimulating
         const isBetting = selections.length > 0
 
-        let confirmMsg = "Are you sure you want to exit NSMQ Virtuals?"
-        if (hasActiveBets) {
-            confirmMsg = "You have active bets or a match in progress! Are you sure you want to leave?"
-        } else if (isBetting) {
-            confirmMsg = "Your current selections will be cleared. Are you sure you want to leave?"
-        }
-
-        if (window.confirm(confirmMsg)) {
-            router.push('/virtuals')
+        if (hasActiveBets || isBetting) {
+             setConfirmDialog({
+                 title: "Leave Game?",
+                 message: "You have pending bets or selections. Leaving may result in missing the final result.",
+                 onConfirm: () => router.push('/virtuals')
+             })
+        } else {
+             router.push('/virtuals')
         }
     }
 
@@ -220,9 +221,15 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
 
     const handleNextRound = () => {
         if (selections.length > 0) {
-            if (!window.confirm("Finding new matches will clear your current bet slip selections. Continue?")) {
-                return;
-            }
+            setConfirmDialog({
+                title: "Clear Selections?",
+                message: "Finding new matches will clear your current bet slip selections. Continue?",
+                onConfirm: () => {
+                     setConfirmDialog(null)
+                     nextRound()
+                }
+            })
+            return;
         }
         nextRound();
     }
@@ -583,6 +590,37 @@ export function VirtualsClient({ profile, schools, userSeed = 0, user, level = '
                     checkSelected={(sid) => selections.some(s => s.selectionId === sid)}
                     checkIsCorrelated={() => false}
                 />
+            )}
+
+            {/* Custom Confirm Dialog Modal */}
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 space-y-6 shadow-2xl scale-in-center">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
+                                 <AlertTriangle className="h-8 w-8 text-amber-500" />
+                             </div>
+                             <div>
+                                 <h3 className="text-xl font-black uppercase tracking-tight">{confirmDialog.title}</h3>
+                                 <p className="text-sm text-slate-400 font-medium px-4 mt-1">{confirmDialog.message}</p>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                             <button 
+                                 onClick={confirmDialog.onConfirm}
+                                 className="w-full p-4.5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                             >
+                                 Yes, Continue
+                             </button>
+                             <button 
+                                 onClick={() => setConfirmDialog(null)}
+                                 className="w-full p-4.5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5"
+                             >
+                                 Cancel
+                             </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

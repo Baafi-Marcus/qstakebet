@@ -52,23 +52,16 @@ export function VirtualsHeader({
             {/* Top Row: Navigation & Actions */}
             <div className="flex items-center justify-between px-4 h-14 border-b border-white/5 md:border-b-0">
                 <div className="flex items-center gap-3">
-                    {!isSimulationActive ? (
-                        <button
-                            onClick={onBack}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all active:scale-90 border border-white/5"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </button>
-                    ) : (
+                    <button
+                        onClick={onBack}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all active:scale-90 border border-white/5"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    {isSimulationActive && !disableSkip && (
                         <button
                             onClick={onSkip}
-                            disabled={disableSkip}
-                            className={cn(
-                                "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg animate-in fade-in",
-                                disableSkip
-                                    ? "bg-slate-800 text-white/30 cursor-not-allowed"
-                                    : "bg-purple-600 hover:bg-purple-500 text-white active:scale-95"
-                            )}
+                            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg animate-in fade-in bg-purple-600 hover:bg-purple-500 text-white active:scale-95"
                         >
                             Skip
                         </button>

@@ -3,11 +3,11 @@
 import React, { useState } from 'react'
 import { VirtualSelection } from '@/lib/virtuals'
 import { ShieldAlert, Trash2, Zap, Ticket, Wallet } from 'lucide-react'
-import { checkQDartsCorrelation } from '@/lib/q-darts-odds'
+
 import { cn } from '@/lib/utils'
 import { BetSlipContext } from '@/lib/store/context'
 
-interface QDartsBetSlipProps {
+interface QGamesBetSlipProps {
     selections: VirtualSelection[]
     onClear: () => void
     onRemove: (id: string) => void
@@ -15,9 +15,10 @@ interface QDartsBetSlipProps {
     isLocked: boolean
     balance: number
     bonusBalance: number
+    hasConflicts: boolean
 }
 
-export function QDartsBetSlip({
+export function QGamesBetSlip({
     selections,
     onClear,
     onRemove,
@@ -25,7 +26,8 @@ export function QDartsBetSlip({
     isLocked,
     balance,
     bonusBalance,
-}: QDartsBetSlipProps) {
+    hasConflicts,
+}: QGamesBetSlipProps) {
     const context = React.useContext(BetSlipContext)
     const balanceType = context?.balanceType || 'cash'
     const setBalanceType = context?.setBalanceType || (() => { })
@@ -41,8 +43,7 @@ export function QDartsBetSlip({
     // Total odds is the product of all individual odds.
     const totalOdds = selections.reduce((acc, sel) => acc * sel.odds, 1)
 
-    // Safety correlation check
-    const hasConflicts = checkQDartsCorrelation(selections)
+
 
     const numStake = Math.max(0, parseFloat(stake) || 0)
     const potentialPayout = numStake * totalOdds

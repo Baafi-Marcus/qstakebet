@@ -8,9 +8,9 @@ import { simulateQDartsMatch } from '@/lib/q-darts-engine'
 import { generateQDartsMarkets, QDartsMarket, checkQDartsCorrelation, evaluateQDartsBet } from '@/lib/q-darts-odds'
 import { useQDartsMatchLoop } from '@/hooks/useQDartsMatchLoop'
 import { VirtualSelection } from '@/lib/virtuals'
-import { ShieldAlert, Info, Target } from 'lucide-react'
+import { ShieldAlert, Info, Target, AlertTriangle } from 'lucide-react'
 import { QDartsLivePlayer } from './components/QDartsLivePlayer'
-import { QDartsBetSlip } from './components/QDartsBetSlip'
+import { QGamesBetSlip } from '../components/QGamesBetSlip'
 import { QDarts3DBoard } from './components/QDarts3DBoard'
 import { cn } from '@/lib/utils'
 import { haptics } from '@/lib/haptics'
@@ -43,6 +43,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
     const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
     // We track the exact historical match score to show on top during subsequent rounds
     const [previousScore, setPreviousScore] = useState<string>('AWAITING MATCH')
+    const [showExitConfirm, setShowExitConfirm] = useState(false)
 
     // Track the last seen server values specifically to detect deposits
     const lastServerBalance = React.useRef(userProfile.balance)
@@ -132,11 +133,9 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
 
     const handleLeaveGame = () => {
         const hasActiveBets = placedBets.some(b => b.status === 'PENDING')
-        const confirmMsg = hasActiveBets
-            ? "You have active bets! Are you sure you want to leave the game?"
-            : "Are you sure you want to exit Q-DARTS?"
-
-        if (window.confirm(confirmMsg)) {
+        if (hasActiveBets || selections.length > 0) {
+            setShowExitConfirm(true)
+        } else {
             router.push('/virtuals')
         }
     }
@@ -373,7 +372,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                 </div>
 
                                 <div className="flex-1 overflow-hidden">
-                                    <QDartsBetSlip
+                                    <QGamesBetSlip
                                         selections={selections}
                                         onClear={() => { setSelections([]); setIsBetSlipOpen(false); }}
                                         onRemove={(id: string) => {
@@ -388,6 +387,7 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                                         isLocked={isLocked}
                                         balance={currentBalance}
                                         bonusBalance={currentBonusBalance}
+                                        hasConflicts={hasConflicts}
                                     />
                                 </div>
                             </div>
@@ -395,6 +395,37 @@ export default function QDartsClient({ userProfile = { balance: 0, bonusBalance:
                     )}
                 </main>
             </div>
+
+            {/* Exit Confirmation Modal */}
+            {showExitConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 space-y-6 shadow-2xl scale-in-center">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
+                                 <AlertTriangle className="h-8 w-8 text-amber-500" />
+                             </div>
+                             <div>
+                                 <h3 className="text-xl font-black uppercase tracking-tight">Leave Game?</h3>
+                                 <p className="text-sm text-slate-400 font-medium px-4 mt-1">You have pending bets or selections. Leaving may result in missing the final result.</p>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                             <button 
+                                 onClick={() => router.push('/virtuals')}
+                                 className="w-full p-4.5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                             >
+                                 Exit Anyway
+                             </button>
+                             <button 
+                                 onClick={() => setShowExitConfirm(false)}
+                                 className="w-full p-4.5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all border border-white/5"
+                             >
+                                 Stay & Play
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* BET HISTORY OVERLAY */}
             {isHistoryOpen && (
