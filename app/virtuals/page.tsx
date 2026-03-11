@@ -47,6 +47,34 @@ export default function VirtualsHubPage() {
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-purple-400 transition-colors text-center">Q-DARTS</span>
                     </Link>
 
+                    {/* Q-PENALTY Card */}
+                    <Link href="/virtuals/q-penalty" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
+                        <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-emerald-500/50 group-hover:shadow-[0_0_60px_rgba(16,185,129,0.2)] overflow-hidden">
+                            <Image
+                                src="/images/virtuals/q-penalty-hub.png"
+                                alt="Q-PENALTY"
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, 25vw"
+                            />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-emerald-400 transition-colors text-center">Q-PENALTY</span>
+                    </Link>
+
+                    {/* Q-MARBLES Card */}
+                    <Link href="/virtuals/q-marbles" className="group flex flex-col items-center gap-4 transition-transform active:scale-95 w-full max-w-[180px] md:max-w-none">
+                        <div className="aspect-square w-full relative bg-slate-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] transition-all group-hover:border-amber-500/50 group-hover:shadow-[0_0_60px_rgba(245,158,11,0.2)] overflow-hidden">
+                            <Image
+                                src="/images/virtuals/q-marbles-hub.png"
+                                alt="Q-MARBLES"
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 50vw, 25vw"
+                            />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-amber-400 transition-colors text-center">Q-MARBLES</span>
+                    </Link>
+
 
                 </div>
             </div>
