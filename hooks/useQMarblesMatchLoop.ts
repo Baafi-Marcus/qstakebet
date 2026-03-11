@@ -11,7 +11,7 @@ export interface QMarblesMatchState {
 }
 
 const PHASE_DURATIONS: Record<QMarblesPhase, number> = {
-    'BETTING_OPEN': 60,
+    'BETTING_OPEN': 30, // Reduced
     'BETTING_LOCKED': 5,
     'IN_PROGRESS': 30,
     'SETTLEMENT': 5,
@@ -19,46 +19,42 @@ const PHASE_DURATIONS: Record<QMarblesPhase, number> = {
 }
 
 export function useQMarblesMatchLoop() {
-    const TOTAL_CYCLE = 60 + 5 + 30 + 5 + 5 // 105 seconds
-
-    // Generate a session-specific start time and seed on mount
-    const sessionData = useMemo(() => ({
-        startTime: Date.now(),
-        seedBase: Math.floor(Math.random() * 1000000)
-    }), [])
+    const TOTAL_CYCLE = 30 + 5 + 30 + 5 + 5 // 75 seconds
+    const EPOCH = 1735689600000
+    const SEED_BASE = 999111
 
     const calculateState = (): QMarblesMatchState => {
         const now = Date.now()
-        const elapsedSinceStart = (now - sessionData.startTime) / 1000
-        const totalCyclesElapsed = Math.floor(elapsedSinceStart / TOTAL_CYCLE)
-        const secondInRound = elapsedSinceStart % TOTAL_CYCLE
+        const elapsedSinceEpoch = (now - EPOCH) / 1000
+        const totalCyclesElapsed = Math.floor(elapsedSinceEpoch / TOTAL_CYCLE)
+        const secondInRound = elapsedSinceEpoch % TOTAL_CYCLE
 
         let phase: QMarblesPhase = 'BETTING_OPEN'
         let timeRemaining = 0
 
-        if (secondInRound < 60) {
+        if (secondInRound < 30) {
             phase = 'BETTING_OPEN'
-            timeRemaining = Math.ceil(60 - secondInRound)
-        } else if (secondInRound < 65) {
+            timeRemaining = Math.ceil(30 - secondInRound)
+        } else if (secondInRound < 35) {
             phase = 'BETTING_LOCKED'
-            timeRemaining = Math.ceil(65 - secondInRound)
-        } else if (secondInRound < 95) {
+            timeRemaining = Math.ceil(35 - secondInRound)
+        } else if (secondInRound < 65) {
             phase = 'IN_PROGRESS'
-            timeRemaining = Math.ceil(95 - secondInRound)
-        } else if (secondInRound < 100) {
+            timeRemaining = Math.ceil(65 - secondInRound)
+        } else if (secondInRound < 70) {
             phase = 'SETTLEMENT'
-            timeRemaining = Math.ceil(100 - secondInRound)
+            timeRemaining = Math.ceil(70 - secondInRound)
         } else {
             phase = 'RESET'
-            timeRemaining = Math.ceil(105 - secondInRound)
+            timeRemaining = Math.ceil(75 - secondInRound)
         }
 
         return {
             phase,
             timeRemaining,
-            matchSeed: (sessionData.seedBase + totalCyclesElapsed * 98765) % 1000000,
+            matchSeed: (SEED_BASE + totalCyclesElapsed * 888) % 1000000,
             roundId: totalCyclesElapsed + 1,
-            timestamp: sessionData.startTime + (totalCyclesElapsed * TOTAL_CYCLE * 1000)
+            timestamp: EPOCH + (totalCyclesElapsed * TOTAL_CYCLE * 1000)
         }
     }
 

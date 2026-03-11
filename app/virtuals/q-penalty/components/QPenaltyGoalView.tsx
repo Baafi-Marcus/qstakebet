@@ -131,34 +131,41 @@ export function QPenaltyGoalView({ outcome, gameState }: QPenaltyGoalViewProps) 
                      <div className="absolute -bottom-2 -left-4 -right-4 h-8 bg-black/40 blur-md rounded-full -z-10" />
                 </div>
                 
-                {/* Goalkeeper (Enhanced) */}
+                {/* Goalkeeper (Enhanced with legs) */}
                 <div 
                     className={cn(
-                        "absolute bottom-4 left-1/2 -translate-x-1/2 w-24 h-28 transition-all duration-[600ms] flex flex-col items-center justify-end z-20",
+                        "absolute bottom-4 left-1/2 -translate-x-1/2 w-28 h-32 transition-all duration-[600ms] flex flex-col items-center justify-end z-20",
                         isKicking && currentAttempt && (
-                            currentAttempt.goalieDirection === 'left' ? "-translate-x-44 -rotate-[30deg] -translate-y-4" : 
-                            currentAttempt.goalieDirection === 'right' ? "translate-x-44 rotate-[30deg] -translate-y-4" : 
-                            currentAttempt.goalieDirection === 'center' ? "-translate-y-16 scale-105" : ""
+                            currentAttempt.goalieDirection === 'left' ? "-translate-x-52 -rotate-[35deg] -translate-y-6" : 
+                            currentAttempt.goalieDirection === 'right' ? "translate-x-52 rotate-[35deg] -translate-y-6" : 
+                            currentAttempt.goalieDirection === 'center' ? "-translate-y-20 scale-110" : ""
                         )
                     )}
                 >
-                    <svg viewBox="0 0 100 120" className="w-full h-full filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transform-gpu">
+                    <svg viewBox="0 0 100 140" className="w-full h-full filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)] transform-gpu">
                         <defs>
                              <linearGradient id="gkKit" x1="0%" y1="0%" x2="0%" y2="100%">
                                   <stop offset="0%" stopColor="#facc15" />
                                   <stop offset="100%" stopColor="#ca8a04" />
                              </linearGradient>
-                             <filter id="shadow">
-                                <feDropShadow dx="0" dy="5" stdDeviation="3" floodOpacity="0.5"/>
-                             </filter>
                         </defs>
-                        {/* Realistic Body Shape */}
+                        {/* Head */}
                         <circle cx="50" cy="20" r="12" fill="#fde68a" />
+                        {/* Torso */}
                         <path d="M25 35 Q50 30 75 35 L80 80 Q50 85 20 80 Z" fill="url(#gkKit)" />
+                        
+                        {/* Legs (Fix: Added) */}
+                        <path d="M30 80 L25 125 Q25 135 35 135 L42 135" stroke="#1e293b" strokeWidth="14" strokeLinecap="round" fill="none" />
+                        <path d="M70 80 L75 125 Q75 135 65 135 L58 135" stroke="#1e293b" strokeWidth="14" strokeLinecap="round" fill="none" />
+                        
+                        {/* Boots */}
+                        <rect x="25" y="125" width="18" height="10" rx="4" fill="black" />
+                        <rect x="57" y="125" width="18" height="10" rx="4" fill="black" />
+
                         {/* Animated Arms */}
                         <path 
                             d={cn(
-                                "M30 40 L5 60", 
+                                "M30 40 L5 65", 
                                 isKicking && currentAttempt?.goalieDirection === 'left' ? "M30 40 L0 10" : "",
                                 isKicking && currentAttempt?.goalieDirection === 'right' ? "M30 40 L20 75" : ""
                             )} 
@@ -167,7 +174,7 @@ export function QPenaltyGoalView({ outcome, gameState }: QPenaltyGoalViewProps) 
                         />
                         <path 
                             d={cn(
-                                "M70 40 L95 60",
+                                "M70 40 L95 65",
                                 isKicking && currentAttempt?.goalieDirection === 'right' ? "M70 40 L100 10" : "",
                                 isKicking && currentAttempt?.goalieDirection === 'left' ? "M70 40 L80 75" : ""
                             )} 
@@ -175,19 +182,19 @@ export function QPenaltyGoalView({ outcome, gameState }: QPenaltyGoalViewProps) 
                             className="transition-all duration-300"
                         />
                          {/* Gloves */}
-                         <rect x={isKicking && currentAttempt?.goalieDirection === 'left' ? "-5" : "0"} y={isKicking && currentAttempt?.goalieDirection === 'left' ? "5" : "55"} width="12" height="12" rx="4" fill="white" />
-                         <rect x={isKicking && currentAttempt?.goalieDirection === 'right' ? "93" : "88"} y={isKicking && currentAttempt?.goalieDirection === 'right' ? "5" : "55"} width="12" height="12" rx="4" fill="white" />
+                         <rect x={isKicking && currentAttempt?.goalieDirection === 'left' ? "-5" : "0"} y={isKicking && currentAttempt?.goalieDirection === 'left' ? "5" : "60"} width="14" height="14" rx="4" fill="white" />
+                         <rect x={isKicking && currentAttempt?.goalieDirection === 'right' ? "93" : "88"} y={isKicking && currentAttempt?.goalieDirection === 'right' ? "5" : "60"} width="14" height="14" rx="4" fill="white" />
                     </svg>
                 </div>
 
                 {/* Kicker Shadow (Spotlight style) */}
-                <div className="absolute bottom-[-60px] w-24 h-8 bg-black/40 blur-xl rounded-full z-0 transform scale-x-150" />
+                <div className="absolute bottom-[-60px] w-28 h-10 bg-black/50 blur-2xl rounded-full z-0 transform scale-x-150" />
 
                 {/* The Ball (Enhanced with motion blur) */}
                 <div 
                     className={cn(
-                        "absolute left-1/2 -ml-4 bottom-[-40px] w-8 h-8 transition-all duration-[450ms] ease-out z-30",
-                        currentAttempt ? getBallPos(currentAttempt.direction) : "translate-y-32 scale-150"
+                        "absolute left-1/2 -ml-5 bottom-[-45px] w-10 h-10 transition-all duration-[450ms] ease-out z-30",
+                        currentAttempt ? getBallPos(currentAttempt.direction) : "translate-y-36 scale-150"
                     )}
                 >
                     <div className={cn(
@@ -195,36 +202,35 @@ export function QPenaltyGoalView({ outcome, gameState }: QPenaltyGoalViewProps) 
                         isFlying && "blur-[0.5px] scale-x-110"
                     )}>
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/football-no-lines.png')] opacity-60" />
-                        <div className="absolute top-1 left-1 w-2 h-2 bg-white/80 rounded-full blur-[1px]" />
-                        {/* Rotation animation could be added here */}
+                        <div className="absolute top-1 left-2 w-3 h-3 bg-white/80 rounded-full blur-[1px]" />
                         <div className="w-full h-full border border-black/10 rounded-full" />
                     </div>
                 </div>
             </div>
 
-            {/* Kick Indicator (Broadcast Style) */}
-            <div className="absolute bottom-8 right-8 z-40 bg-white p-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slide-in-right">
-                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-900 border border-slate-200">
+            {/* Kick Indicator (Lowered to avoid blocking) */}
+            <div className="absolute bottom-4 right-6 z-40 bg-white p-2 rounded-xl shadow-2xl flex items-center gap-2 animate-slide-in-right opacity-80 scale-90">
+                 <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-900 border border-slate-200 text-[10px]">
                       {currentRound + 1}
                  </div>
                  <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Penalty No.</span>
-                      <span className="text-sm font-black text-slate-900 uppercase italic">
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">Shot</span>
+                      <span className="text-[10px] font-black text-slate-900 uppercase italic">
                            {isPlayerBTurn ? outcome.teamB.shortName : outcome.teamA.shortName}
                       </span>
                  </div>
             </div>
 
-            {/* Result Popup (Matching visual intensity) */}
+            {/* Result Popup - Larger and higher */}
             {isFinished && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none pb-20">
                     <div className={cn(
-                        "px-10 py-4 rounded-3xl backdrop-blur-xl border-4 transform skew-x-[-12deg] shadow-[0_0_80px_rgba(0,0,0,0.4)] animate-in zoom-in-50 duration-300",
+                        "px-12 py-6 rounded-[2rem] backdrop-blur-2xl border-4 transform skew-x-[-15deg] shadow-[0_0_100px_rgba(0,0,0,0.5)] animate-in zoom-in-75 duration-300",
                         currentAttempt?.isScored 
-                            ? "bg-emerald-500/90 border-emerald-400 text-white" 
-                            : "bg-red-500/90 border-red-400 text-white"
+                            ? "bg-emerald-500/95 border-emerald-300 text-white" 
+                            : "bg-red-500/95 border-red-300 text-white"
                     )}>
-                        <div className="text-7xl font-black uppercase italic tracking-tighter drop-shadow-lg">
+                        <div className="text-8xl font-black uppercase italic tracking-tighter drop-shadow-2xl">
                             {currentAttempt?.isScored ? "GOAL!" : "MISSED"}
                         </div>
                     </div>

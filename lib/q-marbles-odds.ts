@@ -17,7 +17,7 @@ export interface QMarblesMarket {
 export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesMarket[] {
     const markets: QMarblesMarket[] = []
 
-    // 1. Race Winner
+    // 1. Race Winner - Target ~15-20% margin for 4 marbles
     markets.push({
         id: 'winner',
         name: 'Winner',
@@ -25,7 +25,7 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         selections: outcome.marbles.map(m => ({
             id: `win-${m.id}`,
             label: m.shortName,
-            odds: 4.0 + (seededRandom(outcome.timestamp + m.id.length) * 2.5) // 4.0 to 6.5
+            odds: 3.0 + (seededRandom(outcome.timestamp + m.id.length) * 0.5) // 3.0 to 3.5
         }))
     })
 
@@ -37,7 +37,7 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         selections: outcome.marbles.map(m => ({
             id: `place-${m.id}`,
             label: m.shortName,
-            odds: 1.6 + (seededRandom(outcome.timestamp + m.id.length * 2) * 0.4)
+            odds: 1.25 + (seededRandom(outcome.timestamp + m.id.length * 2) * 0.15)
         }))
     })
 
@@ -50,7 +50,7 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
             forecastSelections.push({
                 id: `fc-${tops[i].id}-${tops[j].id}`,
                 label: `${tops[i].shortName} > ${tops[j].shortName}`,
-                odds: 10.0 + (seededRandom(outcome.timestamp + i + j) * 8) // 10.0 to 18.0
+                odds: 6.0 + (seededRandom(outcome.timestamp + i + j) * 4) // 6.0 to 10.0
             })
         }
     }
@@ -67,8 +67,8 @@ export function generateQMarblesMarkets(outcome: QMarblesRaceOutcome): QMarblesM
         name: 'Marble Index',
         description: 'Predict if the winning marble has an odd or even index.',
         selections: [
-            { id: 'odd', label: 'Odd Index', odds: 1.85 },
-            { id: 'even', label: 'Even Index', odds: 1.85 }
+            { id: 'odd', label: 'Odd Index', odds: 1.75 },
+            { id: 'even', label: 'Even Index', odds: 1.75 }
         ]
     })
 

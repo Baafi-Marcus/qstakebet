@@ -178,7 +178,7 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
     const isLocked = gameState.phase !== 'BETTING_OPEN'
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-hidden h-screen">
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col">
             <VirtualsHeader
                 onBack={() => {
                     if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
@@ -214,7 +214,7 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
                     <QPenaltyLivePlayer outcome={outcome} gameState={gameState} />
                     
                     {/* The Pitch/Goal Area */}
-                    <div className="w-full aspect-video bg-slate-900 border-b border-white/5 relative overflow-hidden bg-gradient-to-b from-slate-900 to-emerald-950/20">
+                    <div className="w-full aspect-[16/9] md:aspect-[21/9] bg-slate-900 border-b border-white/5 relative overflow-hidden bg-gradient-to-b from-slate-900 to-emerald-950/20">
                          <QPenaltyGoalView outcome={outcome} gameState={gameState} />
                          
                          {/* Phase Overlay */}
@@ -226,11 +226,25 @@ export default function QPenaltyClient({ userProfile = { balance: 0, bonusBalanc
                                  {gameState.timeRemaining}s
                              </div>
                          </div>
+
+                         {/* Commentary Overlay (Lowered and cleaned) */}
+                         {gameState.phase === 'IN_PROGRESS' && (
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                                <div className="bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4">
+                                    <span className="text-sm font-black text-white italic uppercase tracking-wider">
+                                        {outcome.commentary[Math.floor((30 - gameState.timeRemaining) / 3)] || "Intense Shootout..."}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Markets Section */}
-                <div className="p-4 space-y-6 pb-32">
+                {/* Markets Section - Auto-hide during match */}
+                <div className={cn(
+                    "p-4 space-y-6 pb-32 transition-all duration-700 ease-in-out",
+                    gameState.phase === 'IN_PROGRESS' ? "opacity-0 h-0 overflow-hidden pointer-events-none translate-y-20" : "opacity-100"
+                )}>
                     {markets.map(market => (
                         <div key={market.id} className="space-y-3">
                             <div className="flex items-center gap-2 px-1">

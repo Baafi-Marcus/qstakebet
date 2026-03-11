@@ -2,23 +2,23 @@
 
 import { db } from "@/lib/db"
 import { virtualSchoolStats, schools, schoolStrengths } from "@/lib/db/schema"
-import { eq, inArray, desc } from "drizzle-orm"
+import { eq, inArray, desc, and } from "drizzle-orm"
 import { VirtualMatchOutcome, VirtualSchool, generateVirtualMatches, checkSelectionWin } from "@/lib/virtuals"
 
 // ... existing code ...
 
 export async function getPlayableSchools(level?: string): Promise<VirtualSchool[]> {
     try {
-        const query = db.select({
-            name: schools.name,
-            region: schools.region
-        }).from(schools);
-
+        const conditions = [eq(schools.type, 'school')]
         if (level) {
-            query.where(eq(schools.level, level));
+            conditions.push(eq(schools.level, level))
         }
 
-        const allSchools = await query;
+        const allSchools = await db.select({
+            name: schools.name,
+            region: schools.region
+        }).from(schools)
+        .where(and(...conditions));
 
         if (allSchools.length > 0) {
             return allSchools;

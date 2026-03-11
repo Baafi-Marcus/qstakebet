@@ -20,14 +20,14 @@ export interface QPenaltyMarket {
 export function generateQPenaltyMarkets(outcome: QPenaltyMatchOutcome): QPenaltyMarket[] {
     const markets: QPenaltyMarket[] = []
 
-    // 1. Match Winner (1X2)
+    // 1. Match Winner (1X2) - ~14% margin
     markets.push({
         id: '1x2',
         name: 'Match Winner',
         description: 'Predict the winner of the shootout.',
         selections: [
-            { id: 'winner-a', label: outcome.teamA.shortName, odds: 1.85 },
-            { id: 'winner-b', label: outcome.teamB.shortName, odds: 1.85 }
+            { id: 'winner-a', label: outcome.teamA.shortName, odds: 1.75 },
+            { id: 'winner-b', label: outcome.teamB.shortName, odds: 1.75 }
         ]
     })
 
@@ -37,10 +37,10 @@ export function generateQPenaltyMarkets(outcome: QPenaltyMatchOutcome): QPenalty
         name: 'Total Goals',
         description: 'Total goals scored in the shootout.',
         selections: [
-            { id: 'ov-5.5', label: 'Over 5.5', odds: 1.35 },
-            { id: 'un-5.5', label: 'Under 5.5', odds: 2.40 },
-            { id: 'ov-7.5', label: 'Over 7.5', odds: 1.90 },
-            { id: 'un-7.5', label: 'Under 7.5', odds: 1.80 }
+            { id: 'ov-5.5', label: 'Over 5.5', odds: 1.30 },
+            { id: 'un-5.5', label: 'Under 5.5', odds: 2.30 },
+            { id: 'ov-7.5', label: 'Over 7.5', odds: 1.80 },
+            { id: 'un-7.5', label: 'Under 7.5', odds: 1.70 }
         ]
     })
 
@@ -50,8 +50,8 @@ export function generateQPenaltyMarkets(outcome: QPenaltyMatchOutcome): QPenalty
         name: 'Both Scored First Round',
         description: 'Will both teams score their very first penalty?',
         selections: [
-            { id: 'btts-yes', label: 'Yes', odds: 1.55 },
-            { id: 'btts-no', label: 'No', odds: 2.25 }
+            { id: 'btts-yes', label: 'Yes', odds: 1.45 },
+            { id: 'btts-no', label: 'No', odds: 2.10 }
         ]
     })
 
@@ -61,8 +61,8 @@ export function generateQPenaltyMarkets(outcome: QPenaltyMatchOutcome): QPenalty
         name: 'Sudden Death',
         description: 'Will the shootout go past the first 5 rounds?',
         selections: [
-            { id: 'sd-yes', label: 'Yes', odds: 3.20 },
-            { id: 'sd-no', label: 'No', odds: 1.25 }
+            { id: 'sd-yes', label: 'Yes', odds: 2.80 },
+            { id: 'sd-no', label: 'No', odds: 1.20 }
         ]
     })
 
@@ -72,8 +72,8 @@ export function generateQPenaltyMarkets(outcome: QPenaltyMatchOutcome): QPenalty
         name: 'First to Miss',
         description: 'Which team will be the first to miss a penalty?',
         selections: [
-            { id: 'miss-a', label: outcome.teamA.shortName, odds: 1.85 },
-            { id: 'miss-b', label: outcome.teamB.shortName, odds: 1.85 }
+            { id: 'miss-a', label: outcome.teamA.shortName, odds: 1.75 },
+            { id: 'miss-b', label: outcome.teamB.shortName, odds: 1.75 }
         ]
     })
 

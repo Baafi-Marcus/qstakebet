@@ -42,6 +42,7 @@ export interface QPenaltyMatchOutcome {
     totalGoals: number
     firstTeamToMiss?: 'A' | 'B'
     bothTeamsScoredInFirstRound: boolean
+    commentary: string[]
 }
 
 const DIRECTIONS: ('left' | 'center' | 'right')[] = ['left', 'center', 'right']
@@ -147,6 +148,17 @@ export function simulateQPenaltyMatch(
     // Final winner
     const winner = scoreA > scoreB ? 'A' : 'B'
 
+    // Generate Commentary
+    const commentary: string[] = []
+    const totalRounds = attemptsA.length
+    for (let i = 0; i < totalRounds; i++) {
+        const attA = attemptsA[i]
+        const attB = attemptsB[i]
+        commentary.push(`${teamA.shortName} ${attA.isScored ? 'SCORES!' : 'MISSES!'}`)
+        commentary.push(`${teamB.shortName} stepping up...`)
+        commentary.push(`${teamB.shortName} ${attB.isScored ? 'SCORES!' : 'MISSES!'}`)
+    }
+
     return {
         matchId,
         timestamp: timestamp || Date.now(),
@@ -160,6 +172,7 @@ export function simulateQPenaltyMatch(
         wentToSuddenDeath,
         totalGoals: scoreA + scoreB,
         firstTeamToMiss,
-        bothTeamsScoredInFirstRound: attemptsA[0].isScored && attemptsB[0].isScored
+        bothTeamsScoredInFirstRound: attemptsA[0].isScored && attemptsB[0].isScored,
+        commentary
     }
 }

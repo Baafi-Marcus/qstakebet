@@ -176,7 +176,7 @@ export default function QMarblesClient({ userProfile = { balance: 0, bonusBalanc
     const isLocked = gameState.phase !== 'BETTING_OPEN'
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-hidden h-screen font-inter">
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col font-inter">
             <VirtualsHeader
                 onBack={() => {
                     if (placedBets.some(b => b.status === 'PENDING') || (context?.selections?.length || 0) > 0) {
