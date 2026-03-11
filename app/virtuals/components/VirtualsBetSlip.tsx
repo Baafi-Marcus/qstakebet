@@ -319,10 +319,7 @@ export function VirtualsBetSlip({
                                                         <X className="h-3 w-3" />
                                                     </button>
 
-                                                    <div onClick={() => {
-                                                        const m = matches.find(m => m.id === sel.matchId);
-                                                        if (m) { setSelectedMatchForDetails(m); setShowSlip(false); }
-                                                    }} className="p-4 cursor-pointer">
+                                                    <div className="p-4">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex flex-col">
                                                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{sel.marketName}</span>
