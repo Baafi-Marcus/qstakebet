@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, History, Wallet, Gift, Settings, LogOut, ChevronRight, HelpCircle, BookOpen } from "lucide-react"
+import { User, History, Settings, LogOut, ChevronRight, HelpCircle, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import { useEffect, useState } from "react"
@@ -11,19 +11,17 @@ import { useEffect, useState } from "react"
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession()
     const pathname = usePathname()
-    const [balance, setBalance] = useState<number>(0)
+    const [lifetimePoints, setLifetimePoints] = useState<number>(0)
 
     useEffect(() => {
         getUserProfileSummary().then((res: any) => {
-            if (res.success) setBalance(res.balance ?? 0)
+            if (res.success) setLifetimePoints(res.lifetimePoints ?? 0)
         })
     }, [pathname])
 
     const menuItems = [
         { href: "/account/profile", label: "My Profile", icon: User },
-        { href: "/account/bets", label: "My Bets", icon: History },
-        { href: "/account/wallet", label: "Wallet & Balance", icon: Wallet },
-        { href: "/account/bonuses", label: "Offers & Bonuses", icon: Gift },
+        { href: "/account/predictions", label: "My Predictions", icon: History },
         { href: "/help", label: "Help Center", icon: HelpCircle },
         { href: "/how-to-play", label: "How to Play", icon: BookOpen },
         { href: "/account/settings", label: "Settings", icon: Settings },

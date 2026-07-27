@@ -6,36 +6,24 @@ import Link from "next/link"
 export default function HelpCenterPage() {
     const faqs = [
         {
-            question: "How do I deposit funds?",
-            answer: "Click on the 'Deposit' button in your profile menu or wallet. You can deposit using Mobile Money (MTN, Telecel, AirtelTigo). Minimum deposit is 1 GHS."
+            question: "How do I start playing?",
+            answer: "Since we've transitioned to a pure Fantasy and Prediction platform, there are no real-money deposits required. Just create an account and start playing!"
         },
         {
-            question: "How do I withdraw my winnings?",
-            answer: "Go to your profile menu and click 'Withdraw'. Enter the amount (min 1 GHS, max 1,000 GHS). Funds will be sent directly to your verified phone number's MoMo account automatically."
+            question: "How do I predict matches?",
+            answer: "Go to the 'Predictions' tab, select the match you want to predict, and enter your predicted outcome."
         },
         {
-            question: "How long do withdrawals take?",
-            answer: "Withdrawals are processed automatically via Paystack and typically complete within minutes. You'll receive the money directly to your MoMo account."
+            question: "How are Fantasy points calculated?",
+            answer: "Points are awarded based on real-life NSMQ performance. Correct answers, speed, and overall performance in the tournament all contribute to your squad's total score."
         },
         {
-            question: "What is bonus balance?",
-            answer: "Bonus balance is promotional funds that can be used for betting but cannot be withdrawn. Wager bonus funds to convert them to withdrawable cash."
+            question: "Is there a limit on how many predictions I can make?",
+            answer: "You can make one prediction per match."
         },
         {
             question: "How do I verify my phone number?",
             answer: "During registration, you'll receive an OTP code via SMS. Enter this code to verify your phone number. You can update your phone number in Settings."
-        },
-        {
-            question: "What are the betting limits?",
-            answer: "Minimum bet varies by game. Maximum bet and payout limits depend on the specific market and event. Check individual games for details."
-        },
-        {
-            question: "How do I place a bet?",
-            answer: "Browse matches, click on odds to add to your bet slip, enter your stake, and confirm your bet. You can place single bets or combine multiple selections."
-        },
-        {
-            question: "Can I cancel a bet?",
-            answer: "Once a bet is confirmed, it cannot be cancelled. Please review your selections carefully before confirming."
         }
     ]
 

@@ -2,19 +2,12 @@
 
 import { usePathname } from "next/navigation"
 import { BottomNav } from "./BottomNav"
-import { BetSlipSidebar } from "./BetSlipSidebar"
 import { Header } from "./Header"
 import { SubNavBar } from "./SubNavBar"
 import { Footer } from "./Footer"
-import { FloatingBetSlipButton } from "./FloatingBetSlipButton"
-import { InteractiveLayer } from "./InteractiveLayer"
 import { SessionProvider } from "next-auth/react"
 import React, { useEffect, useState, useContext } from "react"
-import { BetSlipContext, BetSlipProvider } from "@/lib/store/context"
-import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
-import { getMatchById } from "@/lib/data"
-import { Match, Announcement } from "@/lib/types" // Added Announcement type
-import { useBetSlip } from "@/lib/store/useBetSlip"
+import { Announcement } from "@/lib/types"
 import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 import { getActiveAnnouncements } from "@/lib/announcement-actions"
 import { PullToRefresh } from "@/components/ui/PullToRefresh"
@@ -40,112 +33,44 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     if (isAdmin) {
         return (
             <SessionProvider>
-                <BetSlipProvider>
-                    <div className="min-h-screen bg-background">
-                        {children}
-                    </div>
-                </BetSlipProvider>
+                <div className="min-h-screen bg-background">
+                    {children}
+                </div>
             </SessionProvider>
         )
     }
 
     return (
         <SessionProvider>
-            <BetSlipProvider>
-                <SplashScreen>
-                    <div className="min-h-screen flex flex-col bg-background">
-                        {/* Sticky Main Header */}
-                        {!isVirtuals && <Header />}
+            <SplashScreen>
+                <div className="min-h-screen flex flex-col bg-background">
+                    {/* Sticky Main Header */}
+                    {!isVirtuals && <Header />}
 
-                        {/* Ad/Announcement Bar between Main Nav and SubNav - Homepage only */}
-                        {pathname === "/" && announcements.length > 0 && (
-                            <AdBannerCarousel announcements={announcements} />
-                        )}
+                    {/* Ad/Announcement Bar between Main Nav and SubNav - Homepage only */}
+                    {pathname === "/" && announcements.length > 0 && (
+                        <AdBannerCarousel announcements={announcements} />
+                    )}
 
-                        {/* Sticky Secondary Navigation (Sports/Regions) */}
-                        {(() => {
-                            const hideSubNav = isVirtuals || isAuthPage || pathname === "/account/bets" || pathname === "/account/profile"
-                            if (hideSubNav) return null
-                            return <SubNavBar />
-                        })()}
+                    {/* Sticky Secondary Navigation (Sports/Regions) removed for pure NSMQ focus */}
 
-                        <div className="flex-1 flex flex-col">
-                            <PullToRefresh disabled={isAuthPage || isAdmin}>
-                                <main className="flex-1 min-w-0">
-                                    {children}
-                                </main>
-                            </PullToRefresh>
-                        </div>
-
-                        {/* Standard Footer */}
-                        {!isVirtuals && !isAuthPage && <Footer />}
-
-                        {/* Overlay components */}
-                        {(() => {
-                            const noBetslipPaths = [
-                                '/auth',
-                                '/admin',
-                                '/virtuals',
-                                '/account',
-                                '/rewards',
-                                '/help',
-                                '/how-to-play',
-                                '/privacy',
-                                '/terms',
-                                '/cookies'
-                            ]
-                            const hideBetslip = noBetslipPaths.some(path => pathname?.startsWith(path))
-
-                            if (hideBetslip) {
-                                return (
-                                    <>
-                                        {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
-                                        <InteractiveLayer />
-                                    </>
-                                )
-                            }
-
-                            return (
-                                <>
-                                    <BetSlipSidebar />
-                                    <FloatingBetSlipButton />
-                                    <BottomNav />
-                                    <GlobalMatchDetails />
-                                    <InteractiveLayer />
-                                </>
-                            )
-                        })()}
+                    <div className="flex-1 flex flex-col">
+                        <PullToRefresh disabled={isAuthPage || isAdmin}>
+                            <main className="flex-1 min-w-0">
+                                {children}
+                            </main>
+                        </PullToRefresh>
                     </div>
-                </SplashScreen>
-            </BetSlipProvider>
+
+                    {/* Standard Footer */}
+                    {!isVirtuals && !isAuthPage && <Footer />}
+
+                    {/* Overlay components */}
+                    {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
+                </div>
+            </SplashScreen>
         </SessionProvider>
     )
 }
 
-function GlobalMatchDetails() {
-    const context = useContext(BetSlipContext)
-    const { addSelection, checkSelected } = useBetSlip()
-    const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
 
-    useEffect(() => {
-        let active = true;
-        if (context?.selectedMatchId) {
-            getMatchById(context.selectedMatchId).then(match => {
-                if (active && match) setSelectedMatch(match)
-            })
-        }
-        return () => { active = false }
-    }, [context?.selectedMatchId])
-
-    const isMatchLoaded = selectedMatch && context?.selectedMatchId === selectedMatch.id;
-    if (!context?.selectedMatchId || !isMatchLoaded) return null
-
-    return (
-        <MatchDetailsModal
-            match={selectedMatch}
-            onClose={() => context?.setSelectedMatchId(null)}
-            onOddsClick={addSelection}
-            checkSelected={checkSelected}
-        />
-    )
-}

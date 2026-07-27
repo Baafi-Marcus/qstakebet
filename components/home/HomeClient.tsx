@@ -1,21 +1,14 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { Trophy, Search, Filter, Calendar } from "lucide-react"
+import { useState, useMemo } from "react"
+import Link from "next/link"
+import { Trophy, Calendar, Sparkles, MessageSquare, Zap, Target, Search } from "lucide-react"
 import { Match } from "@/lib/types"
-import { MatchRow } from "@/components/ui/MatchRow"
-import { MatchDetailsModal } from "@/components/ui/MatchDetailsModal"
-import { useBetSlip } from "@/lib/store/useBetSlip"
-import { SkeletonMatch } from "@/components/ui/SkeletonComponents"
-import { cn } from "@/lib/utils"
-import { haptics } from "@/lib/haptics"
-import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 
 interface HomeClientProps {
     initialMatches: Match[]
 }
 
-// Helper to get ordinal suffix
 function getOrdinalSuffix(day: number): string {
     if (day > 3 && day < 21) return 'th';
     switch (day % 10) {
@@ -26,369 +19,244 @@ function getOrdinalSuffix(day: number): string {
     }
 }
 
-// Helper to get date group label
 function getDateGroupLabel(date: Date): string {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    const matchDate = new Date(date);
-    matchDate.setHours(0, 0, 0, 0);
+    const matchDate = new Date(date)
+    matchDate.setHours(0, 0, 0, 0)
 
-    const isToday = matchDate.getTime() === today.getTime();
+    const isToday = matchDate.getTime() === today.getTime()
 
-    const day = matchDate.getDate();
-    const month = matchDate.toLocaleDateString('en-GB', { month: 'short' });
-    const year = matchDate.getFullYear();
-    const formattedDate = `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+    const day = matchDate.getDate()
+    const month = matchDate.toLocaleDateString('en-GB', { month: 'short' })
+    const year = matchDate.getFullYear()
+    const formattedDate = `${day}${getOrdinalSuffix(day)} ${month} ${year}`
 
     if (isToday) {
-        return `Today ${formattedDate}`;
+        return `Today ${formattedDate}`
     } else {
-        const weekday = matchDate.toLocaleDateString('en-GB', { weekday: 'short' });
-        return `${weekday} ${formattedDate}`;
+        const weekday = matchDate.toLocaleDateString('en-GB', { weekday: 'short' })
+        return `${weekday} ${formattedDate}`
     }
 }
 
 export function HomeClient({ initialMatches }: HomeClientProps) {
-    const [activeMarket, setActiveMarket] = useState<'winner' | 'total_points'>('winner')
-    const [activeLevel, setActiveLevel] = useState<'shs' | 'university'>('shs')
-    const [activeDateTab, setActiveDateTab] = useState<'today' | 'tomorrow' | 'upcoming' | 'all'>('today')
     const [searchQuery, setSearchQuery] = useState("")
-    const [selectedMatchForDetails, setSelectedMatchForDetails] = useState<Match | null>(null)
-    const { addSelection, selections } = useBetSlip()
 
+    // Filter matches purely by search query
     const filteredMatches = initialMatches.filter(m => {
-        const matchesLevel = m.level === activeLevel
         const matchesSearch = m.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
             m.participants.some(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-
-        // Date Tabs Logic
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        const afterTomorrow = new Date(tomorrow);
-        afterTomorrow.setDate(tomorrow.getDate() + 1);
-
-        const matchDate = m.scheduledAt ? new Date(m.scheduledAt) : null;
-        if (matchDate) {
-            matchDate.setHours(0, 0, 0, 0);
-        }
-
-        let dateMatch = false;
-        if (activeDateTab === 'today') {
-            dateMatch = !matchDate || matchDate.getTime() === today.getTime() || m.isLive;
-        } else if (activeDateTab === 'tomorrow') {
-            dateMatch = matchDate?.getTime() === tomorrow.getTime();
-        } else if (activeDateTab === 'upcoming') {
-            dateMatch = matchDate ? matchDate.getTime() >= afterTomorrow.getTime() : false;
-        } else if (activeDateTab === 'all') {
-            dateMatch = true;
-        }
-
-        return matchesLevel && matchesSearch && dateMatch
+        return matchesSearch
     })
 
-    // Group matches by date
+    // Group matches by scheduled date
     const groupedMatches = useMemo(() => {
-        const groups: { [key: string]: Match[] } = {};
+        const groups: { [key: string]: Match[] } = {}
 
         filteredMatches.forEach(match => {
-            let groupKey = "Live & Recent";
+            let groupKey = "Live & Recent"
 
             if (match.scheduledAt) {
-                const schedDate = new Date(match.scheduledAt);
-                groupKey = getDateGroupLabel(schedDate);
+                const schedDate = new Date(match.scheduledAt)
+                groupKey = getDateGroupLabel(schedDate)
             } else if (match.isLive) {
-                groupKey = "Live & Recent";
+                groupKey = "Live & Recent"
             }
 
             if (!groups[groupKey]) {
-                groups[groupKey] = [];
+                groups[groupKey] = []
             }
-            groups[groupKey].push(match);
-        });
+            groups[groupKey].push(match)
+        })
 
-        // Sort groups by date priority
-        const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-            const priority: { [key: string]: number } = {
-                "Live & Recent": 0,
-                "Today": 1,
-                "Tomorrow": 2
-            };
-
-            const aPriority = priority[a] ?? 3;
-            const bPriority = priority[b] ?? 3;
-
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
-
-            // For other dates, sort chronologically
-            return a.localeCompare(b);
-        });
-
-        return sortedGroupKeys.map(key => ({
-            label: key,
-            matches: groups[key]
-        }));
-    }, [filteredMatches]);
-
-    // Check if a selection is in the bet slip
-    const checkSelected = (selectionId: string) => {
-        return selections.some(s => s.selectionId === selectionId)
-    }
-
-    const availableMarkets = useMemo(() => {
-        const markets = new Set<string>();
-        markets.add('winner');
-        markets.add('total_points');
-        filteredMatches.forEach(m => {
-            if (m.extendedOdds) {
-                Object.keys(m.extendedOdds).forEach(k => {
-                    // Map common keys to friendly IDs
-                    if (k === 'winningMargin') markets.add('winning_margin');
-                    else if (k === 'highestScoringRound') markets.add('highest_scoring_round');
-                    else if (k === 'roundWinner') markets.add('round_winner');
-                    else if (k === 'perfectRound') markets.add('perfect_round');
-                    else if (k === 'shutoutRound') markets.add('shutout_round');
-                    else if (k === 'comebackWin') markets.add('comeback_win');
-                    else if (k === 'leadChanges') markets.add('lead_changes');
-                    else markets.add(k);
-                });
-            }
-        });
-        return Array.from(markets).map(m => ({
-            id: m,
-            label: m === 'winner' ? 'Match Winner' :
-                m === 'total_points' ? 'Total Points' :
-                    m.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
-        }));
-    }, [filteredMatches]);
-
-    // Reset active market if not available in current filtered matches
-    useEffect(() => {
-        if (availableMarkets.length > 0 && !availableMarkets.find(m => m.id === activeMarket)) {
-            setActiveMarket('winner');
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [availableMarkets]);
-
-    const [isRefreshing, setIsRefreshing] = useState(false)
-    const [pullDistance, setPullDistance] = useState(0)
-    const [startY, setStartY] = useState(0)
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (window.scrollY === 0) {
-            setStartY(e.touches[0].clientY)
-        }
-    }
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (startY === 0) return
-        const currentY = e.touches[0].clientY
-        const distance = currentY - startY
-        if (distance > 0 && distance < 150 && window.scrollY === 0) {
-            setPullDistance(distance)
-        }
-    }
-
-    const handleTouchEnd = () => {
-        if (pullDistance > 80) {
-            onRefresh()
-        }
-        setPullDistance(0)
-        setStartY(0)
-    }
-
-    const onRefresh = () => {
-        setIsRefreshing(true)
-        // Simulate background refresh
-        setTimeout(() => {
-            setIsRefreshing(false)
-        }, 1500)
-    }
+        // Format as list
+        return Object.entries(groups).map(([label, matchesList]) => ({
+            label,
+            matches: matchesList
+        })).sort((a, b) => {
+            if (a.label.includes("Today")) return -1
+            if (b.label.includes("Today")) return 1
+            if (a.label.includes("Live")) return -1
+            if (b.label.includes("Live")) return 1
+            return 0
+        })
+    }, [filteredMatches])
 
     return (
-        <div
-            className="max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 sm:space-y-10 relative"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
-            {/* Pull to Refresh Indicator */}
-            <div
-                className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none transition-all duration-200"
-                style={{
-                    transform: `translateY(${pullDistance - 40}px)`,
-                    opacity: pullDistance / 80
-                }}
-            >
-                <div className="bg-purple-600 p-2 rounded-full shadow-lg shadow-purple-600/20">
-                    <Filter className={cn("h-4 w-4 text-white", pullDistance > 80 ? "animate-spin" : "rotate-180")} />
+        <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-10">
+            
+            {/* Hero Banner Section */}
+            <div className="relative rounded-[2.5rem] p-8 md:p-12 overflow-hidden bg-slate-900 border border-white/5 shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-900/60 via-indigo-950/20 to-transparent z-0 animate-in fade-in duration-1000" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+                
+                <div className="relative z-10 max-w-2xl flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-yellow-400 animate-spin" style={{ animationDuration: '3s' }} />
+                        <span className="text-xs font-black tracking-widest text-purple-400 uppercase">Free To Play Quiz Fantasy</span>
+                    </div>
+                    
+                    <h1 className="text-4xl md:text-6xl font-black font-russo bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
+                        NSMQ Fantasy & Fan Ecosystem
+                    </h1>
+                    
+                    <p className="text-slate-400 text-sm md:text-md leading-relaxed mt-2">
+                        Prove your academic pride! Build your weekly 3-school lineup, earn baseline points from official quiz scores, unlock modifiers, and banter with fellow alumni in local chat channels.
+                    </p>
                 </div>
             </div>
 
-            {/* Level Switcher */}
-            <div className="flex justify-center mb-2">
-                <div className="flex p-1 bg-slate-950/50 border border-white/5 rounded-2xl">
-                    {[
-                        { id: 'shs', label: 'SHS Games' },
-                        { id: 'university', label: 'University' }
-                    ].map((level) => (
-                        <button
-                            key={level.id}
-                            onClick={() => {
-                                haptics.light();
-                                setActiveLevel(level.id as any);
-                            }}
-                            className={cn(
-                                "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-                                activeLevel === level.id
-                                    ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40"
-                                    : "text-slate-500 hover:text-slate-300"
-                            )}
-                        >
-                            {level.label}
-                        </button>
-                    ))}
+            {/* Quick Action Navigation Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* Card 1: Draft */}
+                <Link href="/fantasy" className="group relative bg-slate-900/50 hover:bg-slate-900 border border-white/5 hover:border-purple-500/30 p-6 rounded-3xl transition-all duration-300 shadow-xl flex flex-col gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center transition-all group-hover:scale-110">
+                        <Zap className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-lg text-white">Draft Lineup</h3>
+                        <p className="text-slate-500 text-xs mt-1 leading-relaxed">Spend 100 virtual credits to draft exactly 3 schools. Adjust your team strategy weekly based on active matchups.</p>
+                    </div>
+                </Link>
+
+                {/* Card 2: Chat */}
+                <Link href="/chat" className="group relative bg-slate-900/50 hover:bg-slate-900 border border-white/5 hover:border-purple-500/30 p-6 rounded-3xl transition-all duration-300 shadow-xl flex flex-col gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center transition-all group-hover:scale-110">
+                        <MessageSquare className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-lg text-white">Banter Chat Rooms</h3>
+                        <p className="text-slate-500 text-xs mt-1 leading-relaxed">Claim your permanent school badge and discuss real-time scores, updates, and historic rivalries.</p>
+                    </div>
+                </Link>
+
+                {/* Card 3: Leaderboard */}
+                <Link href="/leaderboard" className="group relative bg-slate-900/50 hover:bg-slate-900 border border-white/5 hover:border-purple-500/30 p-6 rounded-3xl transition-all duration-300 shadow-xl flex flex-col gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center transition-all group-hover:scale-110">
+                        <Trophy className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-lg text-white">National Rankings</h3>
+                        <p className="text-slate-500 text-xs mt-1 leading-relaxed">Track weekly standings and cumulative lifetime points to see where you rank as a Quiz Manager in Ghana.</p>
+                    </div>
+                </Link>
+
+            </div>
+
+            {/* Fixtures & Results List */}
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-white flex items-center gap-2">
+                        <Target className="h-5 w-5 text-purple-500" /> Match Schedules & Results
+                    </h2>
+                    
+                    {/* Simple search */}
+                    <div className="relative w-full md:w-72">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <input
+                            type="text"
+                            placeholder="Filter fixtures..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-900 border border-white/5 text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-8">
+                    {groupedMatches.length > 0 ? (
+                        groupedMatches.map(group => (
+                            <div key={group.label} className="space-y-4">
+                                <div className="flex items-center gap-2.5 px-2">
+                                    <Calendar className="h-4.5 w-4.5 text-purple-500" />
+                                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-300">{group.label}</h3>
+                                    <div className="flex-1 h-px bg-white/5" />
+                                    <span className="text-[10px] text-slate-500 font-bold">{group.matches.length} Contests</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    {group.matches.map(match => {
+                                        const participants = (match.participants as any[]) || []
+                                        const result = (match.result as any) || {}
+                                        const scores = result.scores || {}
+                                        
+                                        return (
+                                            <div 
+                                                key={match.id}
+                                                className="bg-slate-900/40 border border-white/5 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                            >
+                                                {/* Stage & Details */}
+                                                <div>
+                                                    <span className="text-[10px] font-black uppercase text-purple-400 bg-purple-500/5 px-2.5 py-1 rounded-full border border-purple-500/10">
+                                                        {match.stage}
+                                                    </span>
+                                                    <div className="text-xs text-slate-500 mt-2 font-semibold">
+                                                        {match.scheduledAt ? new Date(match.scheduledAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : "Schedule Pending"}
+                                                    </div>
+                                                </div>
+
+                                                {/* Schools and Scores */}
+                                                <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 max-w-3xl">
+                                                    {participants.map((p, idx) => {
+                                                        const isWinner = result.winner === p.schoolId
+                                                        const score = scores[p.schoolId]
+
+                                                        return (
+                                                            <div 
+                                                                key={idx}
+                                                                className={`flex-1 p-3.5 rounded-xl border flex items-center justify-between gap-4 ${
+                                                                    isWinner
+                                                                        ? "bg-amber-500/5 border-amber-500/25"
+                                                                        : "bg-slate-950/60 border-white/5"
+                                                                }`}
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <div className="font-extrabold text-xs text-white truncate">{p.name}</div>
+                                                                    <div className="text-[9px] text-slate-500 font-bold uppercase mt-0.5">{p.region}</div>
+                                                                </div>
+                                                                {score !== undefined && (
+                                                                    <span className={`text-md font-black px-2 py-0.5 rounded ${isWinner ? "text-amber-400" : "text-slate-300"}`}>
+                                                                        {score}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                {/* Live Status Badge */}
+                                                <div>
+                                                    {match.isLive ? (
+                                                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-red-500/10 text-red-500 px-3 py-1 rounded-full border border-red-500/25 animate-pulse shrink-0">
+                                                            ● Live Quiz
+                                                        </span>
+                                                    ) : match.status === 'finished' || match.status === 'settled' ? (
+                                                        <span className="text-[9px] font-black uppercase bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-white/5 shrink-0">
+                                                            Finished
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[9px] font-black uppercase bg-slate-900 text-slate-500 px-3 py-1 rounded-full border border-white/5 shrink-0">
+                                                            Upcoming
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-16 text-center text-slate-500 text-sm border border-white/5 border-dashed rounded-3xl">
+                            No match schedules match your filter query.
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Conditional Filters & Search */}
-            {initialMatches.length > 0 && (
-                <>
-                    {/* Date Tabs */}
-                    <div className="flex justify-center -mt-4">
-                        <div className="flex gap-2 p-1 bg-slate-900/40 border border-white/5 rounded-xl">
-                            {[
-                                { id: 'today', label: 'Today' },
-                                { id: 'tomorrow', label: 'Tomorrow' },
-                                { id: 'upcoming', label: 'Upcoming' },
-                                { id: 'all', label: 'All' }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        haptics.light();
-                                        setActiveDateTab(tab.id as any);
-                                    }}
-                                    className={cn(
-                                        "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                                        activeDateTab === tab.id
-                                            ? "bg-slate-800 text-white shadow-sm"
-                                            : "text-slate-500 hover:text-slate-400"
-                                    )}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Market Controls */}
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-                        <div className="flex bg-slate-950/80 border border-white/5 overflow-x-auto no-scrollbar py-2 px-4 -mx-4 md:-mx-8 w-full md:w-auto rounded-xl md:rounded-full">
-                            <div className="flex items-center gap-3 min-w-max">
-                                {availableMarkets.map((m) => (
-                                    <button
-                                        key={m.id}
-                                        onClick={() => {
-                                            haptics.light();
-                                            setActiveMarket(m.id as any);
-                                        }}
-                                        className={cn(
-                                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border whitespace-nowrap",
-                                            activeMarket === m.id
-                                                ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20"
-                                                : "bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300"
-                                        )}
-                                    >
-                                        {m.label.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search..."
-                                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Matches List - Grouped by Date */}
-            <div className="space-y-6 sm:space-y-8">
-                {isRefreshing ? (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3 px-4">
-                            <Calendar className="h-5 w-5 text-purple-500 animate-pulse" />
-                            <div className="h-6 w-48 bg-slate-800 animate-pulse rounded" />
-                        </div>
-                        <div className="space-y-3">
-                            {[1, 2, 3].map(i => <SkeletonMatch key={i} />)}
-                        </div>
-                    </div>
-                ) : groupedMatches.length > 0 ? (
-                    groupedMatches.map((group) => (
-                        <div key={group.label} className="space-y-3 sm:space-y-4">
-                            {/* Date Header */}
-                            <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4">
-                                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                                <h2 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight">
-                                    {group.label}
-                                </h2>
-                                <div className="flex-1 h-px bg-white/5" />
-                                <span className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                    {group.matches.length} {group.matches.length === 1 ? 'Match' : 'Matches'}
-                                </span>
-                            </div>
-
-                            {/* Matches in this group */}
-                            <div className="bg-slate-900/20 border border-white/5 rounded-2xl sm:rounded-[2.5rem] overflow-hidden divide-y divide-white/5">
-                                {group.matches.map((match) => (
-                                    <MatchRow
-                                        key={match.id}
-                                        match={match}
-                                        activeMarket={activeMarket}
-                                        onOddsClick={addSelection}
-                                        checkSelected={checkSelected}
-                                        onMoreClick={(m) => setSelectedMatchForDetails(m)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="p-20 text-center space-y-4 bg-slate-900/20 rounded-3xl border border-dashed border-white/5">
-                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                            <Trophy className="h-8 w-8 text-slate-700" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-white font-bold">No matches found</p>
-                            <p className="text-slate-500 text-xs uppercase tracking-widest font-black">Adjust your filters or search</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {selectedMatchForDetails && (
-                <MatchDetailsModal
-                    match={selectedMatchForDetails}
-                    onClose={() => setSelectedMatchForDetails(null)}
-                    onOddsClick={addSelection}
-                    checkSelected={checkSelected}
-                />
-            )}
         </div>
     )
 }

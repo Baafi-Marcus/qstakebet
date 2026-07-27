@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, wallets, transactions, bets } from "./db/schema"
+import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, predictions } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
@@ -536,20 +536,20 @@ export async function updateMatch(id: string, data: {
 }
 
 export async function deleteMatch(id: string) {
-    // Safety check: Don't delete if bets exist
-    const linkedBets = await db.select().from(bets).limit(1);
-    // Note: Since 'bets' table uses JSONB for selections, we filter in JS for now or use SQL JSON search
-    // For large scale, we'd use: where(sql`exists (select 1 from jsonb_array_elements(${bets.selections}) as s where s->>'matchId' = ${id})`)
+    // Safety check: Don't delete if predictions exist
+    const linkedBets = await db.select().from(predictions).limit(1);
+    // Note: Since 'predictions' table uses JSONB for selections, we filter in JS for now or use SQL JSON search
+    // For large scale, we'd use: where(sql`exists (select 1 from jsonb_array_elements(${predictions.selections}) as s where s->>'matchId' = ${id})`)
 
     // Quick JS filter for safety in intermediate scale
-    const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
+    const allPendingBets = await db.select().from(predictions).where(eq(predictions.status, "pending"));
     const hasBets = allPendingBets.some(b => {
         const selections = b.selections as any[];
         return selections.some(s => s.matchId === id);
     });
 
     if (hasBets) {
-        return { success: false, error: "Cannot delete match with active bets. Void the bets first." };
+        return { success: false, error: "Cannot delete match with active predictions. Void the predictions first." };
     }
 
     try {
@@ -672,7 +672,6 @@ export async function updateMatchResult(matchId: string, resultData: {
     metadata?: any
 }) {
     try {
-        const { settleMatch } = await import("./settlement")
         const { recordMatchUpdate } = await import("./match-helpers")
 
         // Fetch current match state for history
@@ -711,9 +710,8 @@ export async function updateMatchResult(matchId: string, resultData: {
             })
             .where(eq(matches.id, matchId))
 
-        // If match is finished, trigger settlement + Update History Stats
+        // If match is finished, trigger history update
         if (resultData.status === "finished") {
-            const settlementResult = await settleMatch(matchId)
 
             // Update Real School Stats (Background)
             // Fetch match details to get sport type and school IDs
@@ -728,7 +726,7 @@ export async function updateMatchResult(matchId: string, resultData: {
 
             return {
                 success: true,
-                message: `Match result saved. ${settlementResult.settledCount || 0} bets settled.`
+                message: `Match result saved and stats updated.`
             }
         }
 
@@ -1072,45 +1070,7 @@ export async function lockMatches(matchIds: string[]) {
  * Manually adjust a user's wallet balance (Admin Only)
  */
 export async function adjustUserBalance(userId: string, amount: number, reason: string) {
-    try {
-        const session = await auth()
-        if (!session?.user?.id) throw new Error("Unauthorized")
-
-        // Verify admin
-        const admin = await db.query.users.findFirst({
-            where: eq(users.id, session.user.id),
-            columns: { id: true, role: true }
-        })
-        if (admin?.role !== 'admin') throw new Error("Forbidden")
-
-        const userWallet = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-        if (!userWallet.length) throw new Error("Wallet not found")
-
-        const wallet = userWallet[0]
-        const balanceBefore = Number(wallet.balance)
-        const balanceAfter = balanceBefore + amount
-
-        await db.update(wallets)
-            .set({ balance: balanceAfter, updatedAt: new Date() })
-            .where(eq(wallets.id, wallet.id))
-
-        await db.insert(transactions).values({
-            id: `txn-${Math.random().toString(36).substr(2, 9)}`,
-            userId: userId,
-            walletId: wallet.id,
-            amount: amount,
-            type: amount > 0 ? "bonus" : "withdrawal",
-            balanceBefore: balanceBefore,
-            balanceAfter: balanceAfter,
-            reference: `admin-adj-${admin.id}`,
-            description: `Admin Adjustment: ${reason}`
-        })
-
-        return { success: true, newBalance: balanceAfter }
-    } catch (error) {
-        console.error("Balance adjustment error:", error)
-        return { success: false, error: "Failed to adjust balance" }
-    }
+    return { success: false, error: "Not supported" }
 }
 
 /**
@@ -1118,25 +1078,7 @@ export async function adjustUserBalance(userId: string, amount: number, reason: 
  * Used in the Admin UI to highlight markets that need settlement.
  */
 export async function getActiveMarketsAction(matchId: string) {
-    try {
-        const allPendingBets = await db.select().from(bets).where(eq(bets.status, "pending"));
-
-        const activeMarkets = new Set<string>();
-
-        allPendingBets.forEach(bet => {
-            const selections = bet.selections as any[];
-            selections.forEach(s => {
-                if (s.matchId === matchId && s.status === 'pending') {
-                    if (s.marketName) activeMarkets.add(s.marketName);
-                }
-            });
-        });
-
-        return { success: true, activeMarkets: Array.from(activeMarkets) };
-    } catch (error) {
-        console.error("Error fetching active markets:", error);
-        return { success: false, error: "Failed to fetch active markets", activeMarkets: [] };
-    }
+    return { success: true, activeMarkets: [] as string[] };
 }
 
 export async function updateTournamentOutright(tournamentId: string, data: {
@@ -1162,8 +1104,6 @@ export async function updateTournamentOutright(tournamentId: string, data: {
 
 export async function settleTournamentWinner(tournamentId: string, winnerId: string) {
     try {
-        const { settleOutrightBets } = await import("./settlement")
-
         // 1. Update tournament status and winner
         await db.update(tournaments)
             .set({
@@ -1172,15 +1112,11 @@ export async function settleTournamentWinner(tournamentId: string, winnerId: str
             })
             .where(eq(tournaments.id, tournamentId));
 
-        // 2. Settle bets
-        const settlementResult = await settleOutrightBets(tournamentId, winnerId);
-
         revalidateTag("tournaments")
-        revalidateTag("bets")
 
         return {
             success: true,
-            message: `Tournament settled. Winner declared. ${settlementResult.settledCount || 0} bets processed.`
+            message: `Tournament settled. Winner declared.`
         };
     } catch (error) {
         console.error("Error settling tournament winner:", error);

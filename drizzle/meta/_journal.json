@@ -8,6 +8,13 @@
       "when": 1769827600467,
       "tag": "0000_petite_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783877055843,
+      "tag": "0001_petite_madame_hydra",
+      "breakpoints": true
     }
   ]
 }

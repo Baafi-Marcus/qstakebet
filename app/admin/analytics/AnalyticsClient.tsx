@@ -1,15 +1,15 @@
 "use client"
 
 import {
-    TrendingUp,
     Users,
     Trophy,
-    Wallet,
     Activity,
     ArrowUpRight,
-    ArrowDownRight,
     PieChart,
-    BarChart3
+    BarChart3,
+    MessageSquare,
+    Gamepad2,
+    School
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -20,38 +20,37 @@ export function AnalyticsClient({ data }: { data: any }) {
         <div className="space-y-8 pb-20">
             <div>
                 <h1 className="text-3xl font-black text-white tracking-tight uppercase">Platform Intelligence</h1>
-                <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Real-time financial and operational insights</p>
+                <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Real-time engagement and operational insights</p>
             </div>
 
             {/* Primary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
-                    label="Total Stakes"
-                    value={`₵ ${summary.totalVolume.toLocaleString()}`}
-                    subValue={`${summary.totalBets} Total Bets`}
-                    icon={TrendingUp}
-                    trend={summary.last24hVolume > 0 ? "up" : "neutral"}
-                    trendValue={summary.last24hVolume > 0 ? `₵ ${summary.last24hVolume.toLocaleString()} (24h)` : "No recent activity"}
-                />
-                <MetricCard
-                    label="Platform Profit"
-                    value={`₵ ${summary.estimatedProfit.toLocaleString()}`}
-                    subValue={`${100 - summary.payoutRatio.toFixed(1)}% Retention`}
-                    icon={Wallet}
-                    color="text-emerald-400"
-                />
-                <MetricCard
                     label="Total Users"
                     value={summary.totalUsers.toLocaleString()}
-                    subValue="Active Predictors"
+                    subValue="Active Accounts"
                     icon={Users}
                     color="text-blue-400"
                 />
                 <MetricCard
-                    label="Payout Ratio"
-                    value={`${summary.payoutRatio.toFixed(1)}%`}
-                    subValue="Wins vs Stakes"
-                    icon={Activity}
+                    label="Fantasy Lineups"
+                    value={summary.totalLineups.toLocaleString()}
+                    subValue="Created Squads"
+                    icon={Gamepad2}
+                    color="text-purple-400"
+                />
+                <MetricCard
+                    label="Chat Messages"
+                    value={summary.totalMessages.toLocaleString()}
+                    subValue="Total Engagement"
+                    icon={MessageSquare}
+                    color="text-emerald-400"
+                />
+                <MetricCard
+                    label="Participating Schools"
+                    value={summary.totalSchools.toLocaleString()}
+                    subValue="Across Tournaments"
+                    icon={School}
                     color="text-pink-400"
                 />
             </div>
@@ -91,11 +90,11 @@ export function AnalyticsClient({ data }: { data: any }) {
                     </div>
                 </div>
 
-                {/* Performance Analytics (Placeholders for now) */}
+                {/* Performance Analytics */}
                 <div className="lg:col-span-2 bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8">
                     <h3 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-8 flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-pink-500" />
-                        Winning Probability vs Actual
+                        Community Engagement Overview
                     </h3>
 
                     <div className="flex flex-col items-center justify-center h-64 border border-dashed border-white/5 rounded-3xl bg-black/20">
@@ -110,12 +109,12 @@ export function AnalyticsClient({ data }: { data: any }) {
 
                     <div className="mt-8 grid grid-cols-2 gap-4">
                         <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Most Profitable Sport</p>
-                            <p className="text-white font-black text-sm uppercase">Football Quiz</p>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Most Active Feature</p>
+                            <p className="text-white font-black text-sm uppercase">Fantasy League</p>
                         </div>
                         <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Highest Stakes Range</p>
-                            <p className="text-white font-black text-sm uppercase">₵ 50 - ₵ 200</p>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Avg Members Per Room</p>
+                            <p className="text-white font-black text-sm uppercase">{summary.avgMembersPerRoom}</p>
                         </div>
                     </div>
                 </div>

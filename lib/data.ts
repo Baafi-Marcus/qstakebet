@@ -35,6 +35,7 @@ function mapDbMatchToMatch(dbMatch: unknown): Match {
 const getActiveMatchFilter = (twentyFourHoursAgo: Date) => {
     return and(
         eq(matches.isVirtual, false),
+        eq(matches.sportType, "quiz"),
         or(
             // 1. Matches that are NOT finished, settled, or cancelled
             and(

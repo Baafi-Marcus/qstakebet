@@ -1,8 +1,7 @@
 import { db } from "./db";
-import { matches, bets } from "./db/schema";
+import { matches } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { simulateMatch, VirtualMatchOutcome } from "./virtuals";
-import { settleMatch } from "./settlement";
 
 /**
  * Initializes a scheduled match for global live progression.
@@ -82,8 +81,8 @@ export async function processMatchTicks() {
                 lastTickAt: now
             }).where(eq(matches.id, match.id));
 
-            console.log(`Match ${match.id} finished. Triggering settlement...`);
-            await settleMatch(match.id);
+            console.log(`Match ${match.id} finished.`);
+            // Removed settleMatch as it is now handled by settleFantasyLineups separately
         } else {
             // Just update round and result (partial result)
             // Create a truncated result for current round

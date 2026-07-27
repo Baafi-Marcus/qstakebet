@@ -15,7 +15,9 @@ import {
     LogOut,
     HelpCircle,
     BookOpen,
-    MessageSquare
+    MessageSquare,
+    Trophy,
+    Zap
 } from "lucide-react"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import Link from "next/link"
@@ -23,17 +25,15 @@ import Link from "next/link"
 export default function ProfilePage() {
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState<any>(null)
-    const [showBalance, setShowBalance] = useState(true)
-
-    const [bonusCount, setBonusCount] = useState(0)
+    const [points, setPoints] = useState<number | null>(null)
 
     useEffect(() => {
         getUserProfileSummary().then((res: any) => {
             if (res.success) setData(res)
-        })
-        import("@/lib/user-actions").then(m => m.getUserBonusesCount()).then(res => {
-            if (res.success) setBonusCount(res.count)
             setLoading(false)
+        })
+        import("@/lib/fantasy-actions").then(m => m.getUserFantasyStats()).then(res => {
+            if (res.success) setPoints(res.lifetimePoints ?? 0)
         })
     }, [])
 
@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
     if (!data) return <div className="p-8 text-center text-slate-500">Failed to load profile.</div>
 
-    const { user, balance, bonusBalance } = data
+    const { user } = data
 
     return (
         <div className="max-w-md mx-auto bg-[#1a1c23] text-white min-h-[500px] rounded-3xl overflow-hidden shadow-2xl">
@@ -78,27 +78,20 @@ export default function ProfilePage() {
             </div>
 
 
-            {/* Balance Card */}
+            {/* Fantasy Card */}
             <div className="px-6 mb-6">
                 <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4">
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Available Balance</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">GHS {balance.toFixed(2)}</p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Lifetime Points</p>
+                        <p className="text-3xl font-black text-white tracking-tighter">{points !== null ? points : "0"} pts</p>
                     </div>
                     <div className="flex gap-3">
                         <Link
-                            href="/account/deposit"
-                            className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95"
+                            href="/fantasy"
+                            className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 active:scale-95"
                         >
-                            <ArrowUpFromLine className="h-4 w-4" />
-                            Deposit
-                        </Link>
-                        <Link
-                            href="/account/withdraw"
-                            className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95"
-                        >
-                            <ArrowRightLeft className="h-4 w-4" />
-                            Withdraw
+                            <Zap className="h-4 w-4" />
+                            Draft Lineup
                         </Link>
                     </div>
                 </div>
@@ -108,19 +101,19 @@ export default function ProfilePage() {
             <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
                 <div className="grid grid-cols-3 gap-y-8 py-8 px-2">
                     <NavButton
-                        href="/account/bets"
+                        href="/account/predictions"
                         icon={History}
-                        label="Bet History"
+                        label="Predictions"
                     />
                     <NavButton
-                        href="/account/wallet"
-                        icon={ArrowRightLeft}
-                        label="Transactions"
+                        href="/leaderboard"
+                        icon={Trophy}
+                        label="Leaderboard"
                     />
                     <NavButton
-                        href="/account/bonuses"
-                        icon={Gift}
-                        label={`Gifts (${bonusCount})`}
+                        href="/chat"
+                        icon={MessageSquare}
+                        label="Banter Rooms"
                     />
 
                     <NavButton

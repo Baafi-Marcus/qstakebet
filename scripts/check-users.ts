@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import { db } from "../lib/db";
+import { db } from "../lib/db/index";
 import { users } from "../lib/db/schema";
 
 async function manageUsers() {

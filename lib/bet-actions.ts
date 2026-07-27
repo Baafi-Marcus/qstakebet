@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { bets, transactions, wallets, matches, tournaments } from "@/lib/db/schema"
+import { predictions, matches, tournaments } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
@@ -84,16 +84,8 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
 
         // Handle Virtual Matches
         if (selection.matchId.startsWith('vmt-') || selection.matchId.startsWith('vr-')) {
-            const parts = selection.matchId.split('-');
-            const roundId = parseInt(parts[1]);
-            const currentRoundId = Math.floor(Date.now() / 60000);
-
-            if (roundId < currentRoundId) {
-                return {
-                    success: false,
-                    error: `The virtual match "${selection.matchLabel}" has already started. Please remove it.`
-                }
-            }
+            // For Instant Virtuals, we allow betting on any round ID. 
+            // Results are uniquely seeded per user, so they never expire.
             continue;
         }
 
@@ -116,188 +108,30 @@ export async function placeBet(stake: number, selections: SelectionInput[], bonu
     }
 
     try {
-        return await db.transaction(async (tx) => {
-            // 1. Get user wallet and check balance
-            const userWallets = await tx.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-
-            if (!userWallets.length) {
-                throw new Error("Wallet not found")
-            }
-
-            const wallet = userWallets[0]
-
-            // Calculate required cash stake
-            // FEATURE: Cap bonus deduction at stake amount
-            const actualBonusStake = Math.min(stake, bonusAmount)
-            const cashAmount = Math.max(0, stake - actualBonusStake)
-
-            // Validate Gift usage if applicable
-            if (actualBonusStake > 0) {
-                if (wallet.bonusBalance < actualBonusStake) {
-                    throw new Error("Insufficient bonus balance for the selected gift amount.")
-                }
-
-                // Check bonus eligibility (min odds, min selections)
-                if (bonusId) {
-                    const { bonuses: bonusesTable } = await import("@/lib/db/schema")
-                    const bonusData = await tx.select().from(bonusesTable).where(eq(bonusesTable.id, bonusId)).limit(1)
-
-                    if (bonusData.length > 0) {
-                        const b = bonusData[0]
-                        const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
-
-                        if (b.minOdds && totalOdds < b.minOdds) {
-                            throw new Error(`This bonus requires minimum total odds of ${b.minOdds.toFixed(2)}. Your current odds are ${totalOdds.toFixed(2)}.`)
-                        }
-                        if (b.minSelections && selections.length < b.minSelections) {
-                            throw new Error(`This bonus requires at least ${b.minSelections} selections.`)
-                        }
-                    }
-                }
-            }
-
-            // Validate Cash balance
-            if (cashAmount > 0) {
-                if (wallet.balance < cashAmount) {
-                    throw new Error("Insufficient balance to cover the remaining stake.")
-                }
-            }
-
-            // 2. Calculate total odds and Potential Payout
-            const totalOdds = selections.reduce((acc, curr) => acc * curr.odds, 1)
-
-            let potentialPayout = 0
-            if (mode === 'single') {
-                const stakePerSelection = stake / selections.length
-                potentialPayout = selections.reduce((acc, s) => acc + (stakePerSelection * s.odds), 0)
-            } else {
-                potentialPayout = stake * totalOdds
-            }
-
-            let bonusGiftAmount = 0
-            // Multi-Bonus only applies to cash multi-bets of 3+ legs
-            if (selections.length >= 3 && bonusAmount === 0 && mode === 'multi') {
-                const { MULTI_BONUS } = await import("@/lib/constants")
-                const count = selections.length
-                let bonusPct = 0
-
-                Object.entries(MULTI_BONUS.SCALING)
-                    .sort((a, b) => Number(b[0]) - Number(a[0]))
-                    .some(([threshold, percent]) => {
-                        if (count >= Number(threshold)) {
-                            bonusPct = Number(percent)
-                            return true
-                        }
-                        return false
-                    })
-
-                const baseWin = potentialPayout
-                const rawBonus = baseWin * (bonusPct / 100)
-                bonusGiftAmount = Math.min(rawBonus, MULTI_BONUS.MAX_BONUS_AMOUNT_CAP)
-            }
-
-            potentialPayout += bonusGiftAmount
-
-            // 3. Payout Limit Check
-            if (potentialPayout > FINANCE_LIMITS.BET.MAX_PAYOUT) {
-                throw new Error(`Potential payout (GHS ${potentialPayout.toFixed(2)}) exceeds the maximum limit of GHS ${FINANCE_LIMITS.BET.MAX_PAYOUT}.`)
-            }
-
-            // 4. Create the Bet
-            const betId = `bet-${Math.random().toString(36).substr(2, 9)}`
-            await tx.insert(bets).values({
-                id: betId,
-                userId,
-                stake,
-                totalOdds,
-                potentialPayout,
-                status: "pending",
-                selections: selections, // JSONB column
-                mode: mode, // "single" or "multi"
-                isBonusBet: bonusAmount > 0,
-                bonusUsed: bonusId,
-                bonusAmountUsed: bonusAmount,
-                bonusGiftAmount: bonusGiftAmount,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            })
-
-            // 4. Deduct balances
-            if (actualBonusStake > 0) {
-                // If a specific bonus voucher was used, update its individual record
-                if (bonusId) {
-                    const { bonuses: bonusesTable } = await import("@/lib/db/schema")
-                    const bonusData = await tx.select().from(bonusesTable).where(eq(bonusesTable.id, bonusId)).limit(1)
-
-                    if (bonusData.length > 0) {
-                        const currentBonus = bonusData[0]
-                        const newBonusAmount = Math.max(0, currentBonus.amount - actualBonusStake)
-
-                        await tx.update(bonusesTable)
-                            .set({
-                                amount: newBonusAmount,
-                                status: newBonusAmount <= 0 ? "used" : "active",
-                                usedAt: new Date(),
-                                betId: betId
-                            })
-                            .where(eq(bonusesTable.id, bonusId))
-                    }
-                }
-
-                // ALWAYS deduct from the wallet's cumulative bonusBalance if actualBonusStake > 0
-                await tx.update(wallets)
-                    .set({
-                        bonusBalance: sql`${wallets.bonusBalance} - ${actualBonusStake}`,
-                        updatedAt: new Date()
-                    })
-                    .where(eq(wallets.id, wallet.id))
-            }
-
-            if (cashAmount > 0) {
-                await tx.update(wallets)
-                    .set({
-                        balance: sql`${wallets.balance} - ${cashAmount}`,
-                        turnoverWagered: sql`${wallets.turnoverWagered} + ${cashAmount}`,
-                        updatedAt: new Date()
-                    })
-                    .where(eq(wallets.id, wallet.id))
-            }
-
-            // 5. Record the transaction
-            const isBonus = actualBonusStake > 0
-            await tx.insert(transactions).values({
-                id: `txn-${Math.random().toString(36).substring(2, 11)}`,
-                userId,
-                walletId: wallet.id,
-                type: isBonus ? "bonus_stake" : "bet_stake",
-                amount: stake,
-                balanceBefore: isBonus ? wallet.bonusBalance : wallet.balance,
-                balanceAfter: isBonus ? wallet.bonusBalance - actualBonusStake : wallet.balance - cashAmount,
-                paymentStatus: "success",
-                description: `Staked on bet ${betId}${isBonus ? ` (GHS ${actualBonusStake.toFixed(2)} Gift)` : ""}`,
-                createdAt: new Date()
-            })
-
-            // 6. Record stake for dynamic odds (after successful transaction)
-            const { recordBetStake } = await import("@/lib/odds-engine")
-            for (const selection of selections) {
-                // Record stake for dynamic odds (Skip for outrights as they are handled differently)
-                if (!selection.tournamentId && !selection.matchId.startsWith('outright-')) {
-                    await recordBetStake(selection.matchId, selection.selectionId, stake)
-                }
-            }
-
-            // 7. Revalidate paths
-            const { revalidatePath } = await import("next/cache")
-            revalidatePath("/account/wallet")
-            revalidatePath("/account/bets")
-            revalidatePath("/")
-
-            return { success: true, betId }
+        const betId = `prd-${Math.random().toString(36).substr(2, 9)}`
+        await db.insert(predictions).values({
+            id: betId,
+            userId,
+            status: "pending",
+            selections: selections,
+            mode: mode,
+            createdAt: new Date(),
+            updatedAt: new Date()
         })
+        
+        // Record stake for dynamic odds
+        const { recordBetStake } = await import("@/lib/odds-engine")
+        for (const selection of selections) {
+            if (!selection.tournamentId && !selection.matchId.startsWith('outright-')) {
+                // Use a default small weight for prediction instead of stake
+                await recordBetStake(selection.matchId, selection.selectionId, 1)
+            }
+        }
+        
+        return { success: true, betId }
     } catch (error: unknown) {
-        console.error("Bet placement error:", error)
-        const errorMessage = error instanceof Error ? error.message : "Failed to place bet. Please try again."
+        console.error("Prediction placement error:", error)
+        const errorMessage = error instanceof Error ? error.message : "Failed to place prediction. Please try again."
         return { success: false, error: errorMessage }
     }
 }
@@ -309,51 +143,7 @@ export async function bookBet(selections: SelectionInput[]) {
     if (!selections.length) return { success: false, error: "Slip is empty" }
 
     try {
-        const { bookedBets } = await import("@/lib/db/schema")
-
-        // Sort selections to ensure consistent fingerprinting (idempotency)
-        const sortedSelections = [...selections].sort((a, b) => {
-            if (a.matchId !== b.matchId) return a.matchId.localeCompare(b.matchId)
-            return a.selectionId.localeCompare(b.selectionId)
-        })
-
-        // Check if this exact slip (same matches + same markets) has been booked before
-        // We use sql comparison for jsonb content
-        const existing = await db.select()
-            .from(bookedBets)
-            .where(sql`${bookedBets.selections}::jsonb = ${JSON.stringify(sortedSelections)}::jsonb`)
-            .limit(1)
-
-        if (existing.length > 0) {
-            return { success: true, code: existing[0].code }
-        }
-
-        // Generate a 6-char alphanumeric code (no hyphens)
-        const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Avoid ambiguous chars
-        let code = ''
-        const existingCodes = await db.select({ code: bookedBets.code }).from(bookedBets)
-        const codeSet = new Set(existingCodes.map(c => c.code))
-
-        // Ensure uniqueness for the new code
-        let isUnique = false
-        while (!isUnique) {
-            code = ''
-            for (let i = 0; i < 6; i++) {
-                code += characters.charAt(Math.floor(Math.random() * characters.length))
-            }
-            if (!codeSet.has(code)) isUnique = true
-        }
-
-        const id = `bk-${Math.random().toString(36).substring(2, 11)}`
-
-        await db.insert(bookedBets).values({
-            id,
-            code,
-            selections: sortedSelections,
-            createdAt: new Date()
-        })
-
-        return { success: true, code }
+        return { success: false, error: "Booking is disabled" }
     } catch (error) {
         console.error("Booking error:", error)
         return { success: false, error: "Failed to book bet" }
@@ -367,40 +157,11 @@ export async function loadBookedBet(code: string) {
     if (!code) return { success: false, error: "Please enter a code" }
 
     try {
-        const { bookedBets, matches } = await import("@/lib/db/schema")
         const cleanCode = code.trim().toUpperCase()
 
-        const results = await db.select()
-            .from(bookedBets)
-            .where(eq(bookedBets.code, cleanCode))
-            .limit(1)
+        return { success: false, error: "Booking code not found" }
 
-        if (!results.length) {
-            return { success: false, error: "Booking code not found" }
-        }
-
-        const booked = results[0]
-        const selections = booked.selections as SelectionInput[]
-
-        // Enrich selections with current match data (status, results)
-        const enrichedSelections = await Promise.all(selections.map(async (sel) => {
-            const matchData = await db.select().from(matches)
-                .where(eq(matches.id, sel.matchId))
-                .limit(1)
-
-            if (matchData.length) {
-                const match = matchData[0]
-                return {
-                    ...sel,
-                    matchStatus: match.status,
-                    matchResult: match.result as any,
-                    currentOdds: (match.odds as Record<string, any>)?.[sel.selectionId] || sel.odds // Update odds if changed
-                }
-            }
-            return sel
-        }))
-
-        return { success: true, selections: enrichedSelections }
+        return { success: true, selections: [] }
     } catch (error) {
         console.error("Load booking error:", error)
         return { success: false, error: "Failed to load booking code" }

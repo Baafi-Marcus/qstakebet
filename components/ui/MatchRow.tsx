@@ -6,7 +6,6 @@ import { OddsButton } from "./OddsButton"
 import { MatchTimer } from "./MatchTimer"
 import { normalizeMarketName, cn } from "@/lib/utils"
 import { Match } from "@/lib/types"
-import { Selection } from "@/lib/store/useBetSlip"
 import { getMatchLockStatus } from "@/lib/match-utils"
 import { haptics } from "@/lib/haptics"
 
@@ -34,7 +33,7 @@ interface MatchRowProps {
     isFinished?: boolean
     currentScores?: [number, number, number]
     currentRoundIdx?: number
-    onOddsClick: (selection: Selection) => void
+    onOddsClick: (selection: any) => void
     checkSelected: (selectionId: string) => boolean
     checkIsCorrelated?: (matchId: string, marketName: string) => boolean
     onMoreClick?: (match: Match) => void

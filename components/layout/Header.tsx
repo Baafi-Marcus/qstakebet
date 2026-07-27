@@ -2,23 +2,27 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen, ArrowUpRight, ArrowDownLeft } from "lucide-react"
+import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen, ArrowUpRight, ArrowDownLeft, ShieldAlert } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
-import { getUserWalletBalance } from "@/lib/wallet-actions"
+import { getUserFantasyStats } from "@/lib/fantasy-actions"
 
 export function Header() {
     const { data: session, status } = useSession()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
-    const [balance, setBalance] = useState<number | null>(null)
+    const [points, setPoints] = useState<number | null>(null)
     const pathname = usePathname()
 
     React.useEffect(() => {
         if (status === "authenticated") {
-            getUserWalletBalance().then(data => setBalance(data.balance))
+            getUserFantasyStats().then(data => {
+                if (data.success) {
+                    setPoints(data.lifetimePoints ?? 0)
+                }
+            })
         }
     }, [status])
 
@@ -34,9 +38,10 @@ export function Header() {
     }
 
     const navLinks = [
-        { href: "/", label: "Featured", icon: Star },
-        { href: "/tournaments", label: "Tournaments", icon: Trophy },
-        { href: "/virtuals", label: "Virtuals", icon: Zap, status: "NEW" },
+        { href: "/", label: "Home", icon: Star },
+        { href: "/fantasy", label: "Fantasy Draft", icon: Zap, status: "HOT" },
+        { href: "/chat", label: "Banter Rooms", icon: MessageSquare },
+        { href: "/leaderboard", label: "Rankings", icon: Trophy },
     ]
 
     const isLoggedIn = status === "authenticated"
@@ -85,18 +90,12 @@ export function Header() {
                     <div className="flex items-center space-x-2 md:space-x-4">
                         {isLoggedIn ? (
                             <>
-                                <div className="flex items-center gap-2 bg-slate-900 rounded-full px-2 md:px-3 py-1 border border-white/10 h-9">
-                                    <Wallet className="h-3 md:h-4 w-3 md:w-4 text-accent" />
-                                    <span className="text-xs md:text-sm font-mono font-black text-foreground">
-                                        GHS {balance !== null ? balance.toFixed(2) : "..."}
-                                    </span>
-                                </div>
                                 <Link
-                                    href="/account/deposit"
+                                    href="/fantasy"
                                     className="bg-primary hover:bg-primary/90 text-white font-black px-3 py-2 md:px-4 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
                                 >
                                     <Zap className="h-3 w-3" />
-                                    <span className="hidden sm:inline">DEPOSIT</span>
+                                    <span className="hidden sm:inline">MY SQUAD</span>
                                 </Link>
 
                                 <div className="relative hidden md:block">
@@ -126,31 +125,32 @@ export function Header() {
                                                 <div className="px-4 py-4 border-b border-white/5 bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
                                                     <div className="space-y-3">
                                                         <div>
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Balance</p>
-                                                            <p className="text-2xl font-black text-white tracking-tighter">GHS {balance !== null ? balance.toFixed(2) : "0.00"}</p>
+                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Lifetime Points</p>
+                                                            <p className="text-2xl font-black text-white tracking-tighter">{points !== null ? points : "0"} pts</p>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Link
-                                                                href="/account/deposit"
+                                                                href="/fantasy"
                                                                 onClick={() => setIsProfileOpen(false)}
-                                                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                                                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-1.5 active:scale-95"
                                                             >
-                                                                <ArrowUpRight className="h-3 w-3" />
-                                                                Deposit
-                                                            </Link>
-                                                            <Link
-                                                                href="/account/withdraw"
-                                                                onClick={() => setIsProfileOpen(false)}
-                                                                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95"
-                                                            >
-                                                                <ArrowDownLeft className="h-3 w-3" />
-                                                                Withdraw
+                                                                <Zap className="h-3 w-3" />
+                                                                Draft Lineup
                                                             </Link>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="p-2 space-y-1">
+                                                    {session?.user?.role === "admin" && (
+                                                        <Link
+                                                            href="/admin"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all border border-purple-500/20 shadow-sm"
+                                                        >
+                                                            <ShieldAlert className="h-4 w-4 text-purple-400" /> Admin Dashboard
+                                                        </Link>
+                                                    )}
                                                     <Link
                                                         href="/account/profile"
                                                         onClick={() => setIsProfileOpen(false)}
@@ -159,11 +159,11 @@ export function Header() {
                                                         <User className="h-4 w-4" /> My Profile
                                                     </Link>
                                                     <Link
-                                                        href="/account/bets"
+                                                        href="/fantasy"
                                                         onClick={() => setIsProfileOpen(false)}
                                                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
                                                     >
-                                                        <Trophy className="h-4 w-4" /> My Bets
+                                                        <Trophy className="h-4 w-4" /> My Lineup
                                                     </Link>
                                                     <Link
                                                         href="/account/settings"
@@ -288,11 +288,11 @@ export function Header() {
                                         <User className="h-4 w-4" /> My Profile
                                     </Link>
                                     <Link
-                                        href="/account/bets"
+                                        href="/fantasy"
                                         onClick={() => setIsMenuOpen(false)}
                                         className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
                                     >
-                                        <Trophy className="h-4 w-4" /> My Bets
+                                        <Trophy className="h-4 w-4" /> My Lineup
                                     </Link>
                                     <Link
                                         href="/how-to-play"

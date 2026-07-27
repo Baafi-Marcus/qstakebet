@@ -80,7 +80,7 @@ export default function SettingsPage() {
         <div className="space-y-10 pb-20">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href="/account/wallet" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
+                <Link href="/account/profile" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
                     <ArrowLeft className="h-6 w-6" />
                 </Link>
                 <div>
@@ -113,7 +113,7 @@ export default function SettingsPage() {
                         </div>
                         <div>
                             <h3 className="text-lg font-black text-white">Phone Number</h3>
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Withdrawal Account</p>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Primary Contact</p>
                         </div>
                     </div>
                     {!showPhoneUpdate && (
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                         <p className="text-xs text-amber-400 font-bold">
-                            Changing your phone number will update your withdrawal account. Make sure it&apos;s a valid MoMo number.
+                            Changing your phone number will update your primary contact account.
                         </p>
                     </div>
                 </div>

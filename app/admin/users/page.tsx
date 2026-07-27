@@ -1,10 +1,9 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Search, Ban, CheckCircle, ArrowUpRight, Wallet } from "lucide-react"
+import { Search, Ban, CheckCircle, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
 import { getUsers, updateUserStatus } from "@/lib/admin-user-actions"
-import { BalanceAdjustmentModal } from "./BalanceAdjustmentModal"
 import { BroadcastSMSModal } from "./BroadcastSMSModal"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,7 +18,6 @@ interface AdminUser {
     role: string
     status: string
     createdAt: Date | null
-    balance: number | null
     referralCount: number
     linkClicks: number
 }
@@ -30,8 +28,7 @@ export default function UsersPage() {
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
 
-    // Balance Adjustment Modal State
-    const [adjustingUser, setAdjustingUser] = useState<AdminUser | null>(null)
+    // Broadcast Modal State
     const [showBroadcast, setShowBroadcast] = useState(false)
 
     useEffect(() => {
@@ -113,7 +110,6 @@ export default function UsersPage() {
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Role/Status</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Growth (C/R)</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Balance</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Joined</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Actions</th>
                             </tr>
@@ -164,22 +160,12 @@ export default function UsersPage() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <div className="text-sm font-black text-white font-mono">GHS {u.balance?.toFixed(2) || '0.00'}</div>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
                                         <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                             {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={() => setAdjustingUser(u)}
-                                                className="p-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-500 transition-all active:scale-95"
-                                                title="Adjust Balance"
-                                            >
-                                                <Wallet className="h-4 w-4" />
-                                            </button>
                                             <Link
                                                 href={`/admin/users/${u.id}`}
                                                 className="p-2.5 rounded-xl bg-white/5 hover:bg-primary/20 text-slate-400 hover:text-primary transition-all active:scale-95"
@@ -205,21 +191,6 @@ export default function UsersPage() {
                     </table>
                 </div>
             </div>
-
-            {adjustingUser && (
-                <BalanceAdjustmentModal
-                    userId={adjustingUser.id}
-                    userName={adjustingUser.name || 'Unknown User'}
-                    currentBalance={adjustingUser.balance || 0}
-                    onClose={() => setAdjustingUser(null)}
-                    onSuccess={async () => {
-                        const refresh = await getUsers(debouncedSearch)
-                        if (refresh.success) {
-                            setUsers((refresh.users as unknown as AdminUser[]) || [])
-                        }
-                    }}
-                />
-            )}
 
             {showBroadcast && (
                 <BroadcastSMSModal

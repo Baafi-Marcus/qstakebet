@@ -22,16 +22,13 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
     { name: "Intelligence", href: "/admin", icon: LayoutDashboard },
-    { name: "Adverts", href: "/admin/announcements", icon: Megaphone },
+    { name: "Verify Scores", href: "/admin/verify-results", icon: Megaphone },
     { name: "User Registry", href: "/admin/users", icon: Users },
-    { name: "Bonuses", href: "/admin/bonuses", icon: Gift },
-    { name: "Payouts", href: "/admin/withdrawals", icon: CreditCard },
-    { name: "Live Dashboard", href: "/admin/live", icon: Radio },
-    { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Tournaments", href: "/admin/tournaments", icon: Trophy },
     { name: "Institutions", href: "/admin/schools", icon: School },
+    { name: "Live Dashboard", href: "/admin/live", icon: Radio },
+    { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Match Log", href: "/admin/matches/log", icon: Swords },
-    { name: "Analytics", href: "/admin/analytics", icon: LineChart },
 ]
 
 export function AdminSidebar() {

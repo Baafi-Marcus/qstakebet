@@ -30,7 +30,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     const phone = (credentials.phone as string).replace(/\s+/g, "")
                     console.log("Auth Attempt - Phone:", phone);
 
-                    const user = await db.select().from(users).where(eq(users.phone, phone)).limit(1)
+                    const user = await db.select({
+                        id: users.id,
+                        email: users.email,
+                        name: users.name,
+                        phone: users.phone,
+                        passwordHash: users.passwordHash,
+                        status: users.status,
+                        role: users.role
+                    }).from(users).where(eq(users.phone, phone)).limit(1)
 
                     if (!user || user.length === 0) {
                         console.error("Auth Failure - User not found:", phone);

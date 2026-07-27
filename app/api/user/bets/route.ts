@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { bets } from "@/lib/db/schema"
+import { predictions } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
@@ -16,9 +16,9 @@ export async function GET(request: Request) {
 
     try {
         let userBets = await db.select()
-            .from(bets)
-            .where(eq(bets.userId, session.user.id))
-            .orderBy(desc(bets.createdAt))
+            .from(predictions)
+            .where(eq(predictions.userId, session.user.id))
+            .orderBy(desc(predictions.createdAt))
             .limit(limit || 20)
 
         // Filter by type if specified

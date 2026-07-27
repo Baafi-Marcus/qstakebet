@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
@@ -11,6 +12,15 @@ export default function AdminLayout({
 }) {
     const pathname = usePathname()
     const isLoginPage = pathname === "/admin/login"
+    const [timeString, setTimeString] = useState<string>("")
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeString(new Date().toLocaleTimeString())
+        }, 1000)
+        
+        return () => clearInterval(interval)
+    }, [])
 
     if (isLoginPage) {
         return <>{children}</>
@@ -30,10 +40,10 @@ export default function AdminLayout({
             <footer className="py-6 px-10 border-t border-white/5 bg-slate-950/50">
                 <div className="flex items-center justify-between">
                     <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                        QSTAKEbet Management Console v2.0
+                        QSTAKE Management Console v2.0
                     </div>
                     <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                        Server Time: {new Date().toLocaleTimeString()}
+                        Console Time: {timeString || "..."}
                     </div>
                 </div>
             </footer>

@@ -1,4 +1,4 @@
-import { Trophy, Users, Calendar, Activity, TrendingUp, ShieldCheck, CreditCard } from "lucide-react"
+import { Trophy, Users, Activity, MessageSquare } from "lucide-react"
 import { getAdminAnalytics } from "@/lib/admin-analytics-actions"
 import Link from "next/link"
 
@@ -26,31 +26,23 @@ export default async function AdminDashboardPage() {
                 </div>
             </div>
 
-            {/* Dense Stats Grid */}
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: "Active Tournaments", value: summary.totalTournaments.toString(), icon: Trophy, color: "text-purple-400", href: "/admin/tournaments" },
-                    { label: "Total Schools", value: summary.totalSchools.toString(), icon: Users, color: "text-blue-400", href: "/admin/schools" },
-                    { label: "Platform Profit", value: `₵ ${summary.estimatedProfit.toLocaleString()}`, icon: ShieldCheck, color: "text-orange-400", href: "/admin/analytics" },
-                    { label: "24h Volume", value: `₵ ${summary.last24hVolume.toLocaleString()}`, icon: TrendingUp, color: "text-pink-400", href: "/admin/analytics" },
                     { label: "Total Users", value: summary.totalUsers.toString(), icon: Users, color: "text-teal-400", href: "/admin/users" },
-                    { label: "Total Tickets", value: summary.totalBets.toString(), icon: Activity, color: "text-indigo-400", href: "/admin/matches/log" },
-                    {
-                        label: "Pending Payouts",
-                        value: summary.pendingWithdrawals.toString(),
-                        icon: CreditCard,
-                        color: summary.pendingWithdrawals > 0 ? "text-red-400" : "text-green-400",
-                        href: "/admin/withdrawals",
-                        alert: summary.pendingWithdrawals > 0
-                    },
-                    { label: "Payout Ratio", value: `${summary.payoutRatio.toFixed(1)}%`, icon: Activity, color: "text-yellow-400", href: "/admin/analytics" },
+                    { label: "Total Schools", value: summary.totalSchools.toString(), icon: Trophy, color: "text-blue-400", href: "/admin/schools" },
+                    { label: "Active Tournaments", value: summary.totalTournaments.toString(), icon: Trophy, color: "text-purple-400", href: "/admin/tournaments" },
+                    { label: "Lineups Drafted", value: summary.totalLineups.toString(), icon: Activity, color: "text-orange-400", href: "/admin/verify-results" },
+                    { label: "Chat Messages", value: summary.totalMessages.toString(), icon: MessageSquare, color: "text-pink-400", href: "/chat" },
+                    { label: "Custom Groups", value: summary.totalRooms.toString(), icon: Users, color: "text-indigo-400", href: "/chat" },
+                    { label: "Total Group Joins", value: summary.totalMemberships.toString(), icon: Users, color: "text-green-400", href: "/chat" },
+                    { label: "Avg Group Size", value: `${summary.avgMembersPerRoom} members`, icon: Activity, color: "text-yellow-400", href: "/chat" },
                 ].map((stat, i) => (
                     <Link
                         key={i}
                         href={stat.href}
-                        className={`bg-slate-900 border ${stat.alert ? 'border-red-500/30' : 'border-white/10'} p-4 rounded-lg flex items-start justify-between hover:bg-white/5 transition-colors group cursor-pointer relative overflow-hidden`}
+                        className="bg-slate-900 border border-white/10 p-4 rounded-lg flex items-start justify-between hover:bg-white/5 transition-colors group cursor-pointer relative overflow-hidden"
                     >
-                        {stat.alert && <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/1 blur-[40px] -mr-12 -mt-12" />}
                         <div>
                             <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
                             <div className="text-2xl font-mono font-bold text-white tracking-tight">{stat.value}</div>
@@ -60,7 +52,7 @@ export default async function AdminDashboardPage() {
                 ))}
             </div>
 
-            {/* System Health Table - Flat */}
+            {/* Health and Match Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-slate-900 border border-white/10 rounded-lg">
                     <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
@@ -69,10 +61,10 @@ export default async function AdminDashboardPage() {
                     <div>
                         {[
                             { name: "Database Connection", status: "Operational", color: "text-green-500" },
-                            { name: "Odds Engine (Auto-Calc)", status: "Active", color: "text-blue-500" },
-                            { name: "Virtual Simulation Service", status: "Synced (1s ago)", color: "text-green-500" },
-                            { name: "Payment Gateway", status: "Manual Mode", color: "text-purple-500" },
-                            { name: "SMS Notification Service", status: "Operational", color: "text-green-500" },
+                            { name: "NSMQ Scraper API Node", status: "Active", color: "text-blue-500" },
+                            { name: "Lineup Scoring & Settlement Engine", status: "Synced", color: "text-green-500" },
+                            { name: "Banter Rooms Chat Sync", status: "Connected", color: "text-emerald-500" },
+                            { name: "Alumni Leaderboards Generator", status: "Operational", color: "text-green-500" },
                         ].map((item, idx) => (
                             <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
                                 <span className="text-xs font-bold text-slate-400 font-mono">{item.name}</span>

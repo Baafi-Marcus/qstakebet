@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Zap } from "lucide-react"
 import { OddsButton } from "./OddsButton"
 import { Match } from "@/lib/types"
-import { Selection } from "@/lib/store/useBetSlip"
 
 export function MatchCard({
     match,
@@ -13,7 +12,7 @@ export function MatchCard({
     checkSelected
 }: {
     match: Match,
-    onOddsClick?: (selection: Selection) => void,
+    onOddsClick?: (selection: any) => void,
     checkSelected?: (selectionId: string) => boolean
 }) {
     // Format time (simple helper)

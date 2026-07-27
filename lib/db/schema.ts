@@ -11,6 +11,7 @@ export const schools = pgTable("schools", {
     location: text("location"),
     parentId: text("parent_id"), // Self-reference for University -> Hall/Dept
     type: text("type").default("school").notNull(), // "school", "hall", "department", "program"
+    aliases: jsonb("aliases").default([]).$type<string[]>(), // Old names for backward compatibility
     createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -42,6 +43,7 @@ export const matches = pgTable("matches", {
     stage: text("stage").notNull(), // e.g. "Zone 1", "Quarter Final"
     odds: jsonb("odds").notNull(), // Maintain for backward compatibility or direct access
     extendedOdds: jsonb("extended_odds"),
+    metadata: jsonb("metadata"), // General market metadata, tooltips, etc.
     baseOdds: jsonb("base_odds").$type<Record<string, number>>(), // Original odds before adjustment
     lastRecalculatedAt: timestamp("last_recalculated_at"),
     currentRound: integer("current_round").default(0).notNull(),
@@ -92,6 +94,8 @@ export const users = pgTable("users", {
     linkClicks: integer("link_clicks").default(0).notNull(),
     linkClicksRewardClaimed: boolean("link_clicks_reward_claimed").default(false).notNull(),
     loyaltyPoints: integer("loyalty_points").default(0).notNull(),
+    almaMater: text("alma_mater"),
+    lifetimePoints: integer("lifetime_points").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -124,110 +128,22 @@ export const sessions = pgTable("sessions", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const wallets = pgTable("wallets", {
-    id: text("id").primaryKey(), // Format: wlt-xxxxx
-    userId: text("user_id").notNull().references(() => users.id).unique(),
-    balance: real("balance").default(0).notNull(),
-    bonusBalance: real("bonus_balance").default(0).notNull(),
-    lockedBalance: real("locked_balance").default(0).notNull(), // Funds pending withdrawal or bonus turnover
-    turnoverWagered: real("turnover_wagered").default(0).notNull(), // Amount wagered since last deposit
-    currency: text("currency").default("GHS").notNull(), // Ghana Cedis
-    lastDepositAt: timestamp("last_deposit_at"),
-    lastWithdrawalAt: timestamp("last_withdrawal_at"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
-});
+// Removed wallets table
 
-export const bets = pgTable("bets", {
-    id: text("id").primaryKey(), // Format: bet-xxxxx
+export const predictions = pgTable("predictions", {
+    id: text("id").primaryKey(), // Format: prd-xxxxx
     userId: text("user_id").notNull().references(() => users.id),
     selections: jsonb("selections").notNull(), // Array of Selection objects
-    stake: real("stake").notNull(),
-    totalOdds: real("total_odds").notNull(),
-    potentialPayout: real("potential_payout").notNull(),
     status: text("status").default("pending").notNull(), // "pending", "won", "lost", "void"
-    bonusUsed: text("bonus_id"), // If bonus was used
-    isBonusBet: boolean("is_bonus_bet").default(false).notNull(),
     mode: text("mode").default("multi").notNull(), // "single", "multi"
-    bonusAmountUsed: real("bonus_amount_used").default(0),
-    bonusGiftAmount: real("bonus_gift_amount").default(0),
     settledAt: timestamp("settled_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const transactions = pgTable("transactions", {
-    id: text("id").primaryKey(), // Format: txn-xxxxx
-    userId: text("user_id").notNull().references(() => users.id),
-    walletId: text("wallet_id").notNull().references(() => wallets.id),
-    type: text("type").notNull(), // "deposit", "withdrawal", "bet_stake", "bet_payout", "bonus", "referral_bonus"
-    amount: real("amount").notNull(),
-    balanceBefore: real("balance_before").notNull(),
-    balanceAfter: real("balance_after").notNull(),
-    reference: text("reference"), // bet ID, deposit reference, etc.
-    description: text("description"),
+// Removed transactions table
 
-    // Moolre Payment Fields
-    paymentProvider: text("payment_provider"), // "moolre", "manual"
-    paymentReference: text("payment_reference"), // Moolre transaction reference
-    paymentStatus: text("payment_status"), // "pending", "success", "failed"
-    paymentMethod: text("payment_method"), // "mtn_momo", "telecel_cash", "at_money"
-    paymentMetadata: jsonb("payment_metadata"), // Store full Moolre response
-
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const bonuses = pgTable("bonuses", {
-    id: text("id").primaryKey(), // Format: bns-xxxxx
-    userId: text("user_id").notNull().references(() => users.id),
-    type: text("type").notNull(), // "welcome", "deposit", "referral", "free_bet", "cashback"
-    amount: real("amount").notNull(),
-    initialAmount: real("initial_amount").default(0), // Track original value for partial usage
-    status: text("status").default("active").notNull(), // "active", "used", "expired"
-
-    // Bonus Conditions
-    minOdds: real("min_odds"), // Minimum odds requirement
-    minSelections: integer("min_selections"), // Minimum selections in bet slip
-    expiresAt: timestamp("expires_at"),
-
-    // Tracking
-    usedAt: timestamp("used_at"),
-    betId: text("bet_id").references(() => bets.id), // If used on a bet
-
-    createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const withdrawalRequests = pgTable("withdrawal_requests", {
-    id: text("id").primaryKey(), // Format: wrq-xxxxx
-    userId: text("user_id").notNull().references(() => users.id),
-    amount: real("amount").notNull(),
-    status: text("status").default("pending").notNull(), // "pending", "approved", "rejected", "paid"
-    paymentMethod: text("payment_method").notNull(), // "mtn_momo", "telecel_cash", "at_money"
-    accountNumber: text("account_number").notNull(),
-    accountName: text("account_name"),
-    adminId: text("admin_id").references(() => users.id),
-    adminNotes: text("admin_notes"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const referrals = pgTable("referrals", {
-    id: text("id").primaryKey(),
-    referrerId: text("referrer_id").notNull().references(() => users.id),
-    referredUserId: text("referred_user_id").notNull().references(() => users.id),
-    referralCode: text("referral_code").notNull(),
-
-    // Rewards
-    referrerBonus: real("referrer_bonus").default(0),
-    referredBonus: real("referred_bonus").default(0),
-
-    // Status
-    status: text("status").default("pending").notNull(), // "pending", "completed"
-    completedAt: timestamp("completed_at"), // When referred user makes first deposit
-
-    createdAt: timestamp("created_at").defaultNow(),
-});
+// Removed bonuses, withdrawal_requests, and referrals tables
 
 export const virtualSchoolStats = pgTable("virtual_school_stats", {
     id: text("id").primaryKey(), // vss-xxxxx
@@ -265,12 +181,7 @@ export const realSchoolStats = pgTable("real_school_stats", {
     lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
-export const bookedBets = pgTable("booked_bets", {
-    id: text("id").primaryKey(),
-    code: text("code").notNull().unique(),
-    selections: jsonb("selections").notNull(),
-    createdAt: timestamp("created_at").defaultNow(),
-});
+// Removed booked_bets table
 
 export const apiKeys = pgTable("api_keys", {
     id: text("id").primaryKey(), // key-xxxxx
@@ -284,19 +195,7 @@ export const apiKeys = pgTable("api_keys", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const usersRelations = relations(users, ({ one }) => ({
-    wallet: one(wallets, {
-        fields: [users.id],
-        references: [wallets.userId],
-    }),
-}));
-
-export const walletsRelations = relations(wallets, ({ one }) => ({
-    user: one(users, {
-        fields: [wallets.userId],
-        references: [users.id],
-    }),
-}));
+// Removed relations
 
 
 export const matchHistory = pgTable("match_history", {
@@ -329,6 +228,64 @@ export const smsLogs = pgTable("sms_logs", {
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const platformSettings = pgTable("platform_settings", {
+    key: text("key").primaryKey(), // e.g. "maintenance_mode", "min_bet"
+    value: jsonb("value").notNull(), // Stoes any JSON data
+    description: text("description"),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const chatRooms = pgTable("chat_rooms", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    matchId: text("match_id").references(() => matches.id),
+    creatorId: text("creator_id").references(() => users.id),
+    isPublic: boolean("is_public").default(true).notNull(),
+    inviteCode: text("invite_code").unique(),
+    type: text("type").default("public").notNull(),
+    status: text("status").default("active").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+    id: text("id").primaryKey(),
+    channel: text("channel").default("global").notNull(),
+    roomId: text("room_id").references(() => chatRooms.id),
+    userId: text("user_id").notNull().references(() => users.id),
+    content: text("content").notNull(),
+    type: text("type").default("text").notNull(),
+    status: text("status").default("active").notNull(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const chatRoomMembers = pgTable("chat_room_members", {
+    id: text("id").primaryKey(),
+    roomId: text("room_id").notNull().references(() => chatRooms.id),
+    userId: text("user_id").notNull().references(() => users.id),
+    role: text("role").default("member").notNull(),
+    status: text("status").default("active").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const fantasyLineups = pgTable("fantasy_lineups", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id),
+    school1Id: text("school1_id").notNull().references(() => schools.id),
+    school2Id: text("school2_id").notNull().references(() => schools.id),
+    school3Id: text("school3_id").notNull().references(() => schools.id),
+    gameWeek: text("game_week").notNull(),
+    pointsEarned: integer("points_earned").default(0).notNull(),
+    rank: integer("rank"),
+    substitutionsMade: integer("substitutions_made").default(0).notNull(),
+    creditsSpent: integer("credits_spent").default(0).notNull(),
+    status: text("status").default("active").notNull(),
+    pointsBreakdown: jsonb("points_breakdown"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;
@@ -336,17 +293,9 @@ export type Match = typeof matches.$inferSelect;
 export type SchoolStrength = typeof schoolStrengths.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
-export type Wallet = typeof wallets.$inferSelect;
-export type Bet = typeof bets.$inferSelect;
-export type Transaction = typeof transactions.$inferSelect;
-export type Bonus = typeof bonuses.$inferSelect;
-export type Referral = typeof referrals.$inferSelect;
-export type ReferralClick = typeof referralClicks.$inferSelect;
-export type Announcement = typeof announcements.$inferSelect;
-export type VirtualSchoolStat = typeof virtualSchoolStats.$inferSelect;
-export type RealSchoolStat = typeof realSchoolStats.$inferSelect;
-export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
-export type NewWithdrawalRequest = typeof withdrawalRequests.$inferInsert;
-export type VerificationCode = typeof verificationCodes.$inferSelect;
+export type Prediction = typeof predictions.$inferSelect;
 export type MatchHistory = typeof matchHistory.$inferSelect;
 export type NewMatchHistory = typeof matchHistory.$inferInsert;
+export type FantasyLineup = typeof fantasyLineups.$inferSelect;
+export type ChatRoom = typeof chatRooms.$inferSelect;
+export type ChatMessage = typeof chatMessages.$inferSelect;
