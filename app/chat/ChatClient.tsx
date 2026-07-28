@@ -347,7 +347,7 @@ export function ChatClient({ initialMessages, currentUser }: ChatClientProps) {
                     <div>
                         <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">School Badge</div>
                         <div className="text-sm font-black text-white mt-0.5">
-                            {currentUser.almaMater ? currentUser.almaMater : "None Configured"}
+                            {currentUser.almaMater ? currentUser.almaMater : "Coming soon"}
                         </div>
                     </div>
                     {currentUser.almaMater && (

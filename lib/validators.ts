@@ -15,6 +15,7 @@ export const RegisterUserSchema = z.object({
     phone: z.string().regex(phoneRegex, "Invalid Ghana phone number (e.g., 024xxxxxxx)"),
     password: passwordSchema,
     referredBy: z.string().optional(),
+    almaMater: z.string().optional(),
     otp: z.string().length(6, "OTP must be 6 digits")
 });
 

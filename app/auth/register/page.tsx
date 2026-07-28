@@ -3,7 +3,7 @@
 import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift } from "lucide-react"
+import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift, GraduationCap } from "lucide-react"
 import { registerUser } from "@/lib/auth-actions"
 import { ReferralSharePopup } from "@/components/ui/ReferralSharePopup"
 
@@ -18,6 +18,7 @@ function RegisterForm() {
         confirmPassword: "",
         name: "",
         phone: "",
+        almaMater: "",
         referredBy: refCode || ""
     })
     const [otp, setOtp] = useState("")
@@ -113,6 +114,7 @@ function RegisterForm() {
                 password: formData.password,
                 name: formData.name,
                 phone: formData.phone,
+                almaMater: formData.almaMater || undefined,
                 referredBy: formData.referredBy || undefined,
                 otp // Pass OTP for server-side verification
             })
@@ -203,6 +205,23 @@ function RegisterForm() {
                                     required
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Alma Mater Field */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Alma Mater (School) <span className="text-slate-500 text-xs ml-1">(Optional)</span>
+                            </label>
+                            <div className="relative">
+                                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Prempeh College"
+                                    value={formData.almaMater}
+                                    onChange={(e) => setFormData({ ...formData, almaMater: e.target.value })}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>

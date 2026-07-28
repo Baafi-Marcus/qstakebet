@@ -15,6 +15,7 @@ export async function registerUser(data: {
     name: string
     phone: string
     referredBy?: string
+    almaMater?: string
     otp?: string
 }) {
     // Rate limit: 3 registrations per hour per IP
@@ -64,6 +65,7 @@ export async function registerUser(data: {
             phoneVerified: new Date(),
             referralCode,
             referredBy: data.referredBy || null,
+            almaMater: data.almaMater || null,
             role: data.phone === process.env.ADMIN_PHONE ? "admin" : "user",
             status: "active"
         }).returning()
