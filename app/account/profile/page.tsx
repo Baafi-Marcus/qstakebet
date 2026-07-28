@@ -33,7 +33,7 @@ export default function ProfilePage() {
             setLoading(false)
         })
         import("@/lib/fantasy-actions").then(m => m.getUserFantasyStats()).then(res => {
-            if (res.success) setPoints(res.lifetimePoints ?? 0)
+            if (res.success) setPoints(res.totalFantasyPoints ?? 0)
         })
     }, [])
 

@@ -20,7 +20,7 @@ export function Header() {
         if (status === "authenticated") {
             getUserFantasyStats().then(data => {
                 if (data.success) {
-                    setPoints(data.lifetimePoints ?? 0)
+                    setPoints(data.totalFantasyPoints ?? 0)
                 }
             })
         }

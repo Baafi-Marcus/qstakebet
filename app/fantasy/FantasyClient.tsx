@@ -54,8 +54,10 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
     useEffect(() => {
         if (!deadline) {
             if (activeGameWeek === "Off-Season") {
-                setIsLocked(true)
-                setTimeLeft("Off-Season")
+                setTimeout(() => {
+                    setIsLocked(true)
+                    setTimeLeft("Off-Season")
+                }, 0)
             }
             return
         }
