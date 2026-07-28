@@ -125,13 +125,13 @@ export function ImportFixturesModal({ isOpen, onClose }: ImportFixturesModalProp
                             <div className="flex gap-2 mb-6 p-1 bg-black/40 rounded-xl w-fit">
                                 <button
                                     onClick={() => setMode("text")}
-                                    className={\`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 \${mode === "text" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}\`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${mode === "text" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
                                 >
                                     <FileText className="h-4 w-4" /> Raw Text
                                 </button>
                                 <button
                                     onClick={() => setMode("image")}
-                                    className={\`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 \${mode === "image" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}\`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${mode === "image" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
                                 >
                                     <ImageIcon className="h-4 w-4" /> Image Upload
                                 </button>
