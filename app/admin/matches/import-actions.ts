@@ -34,9 +34,10 @@ Each object in the array must match this exact structure:
 {
     "stage": string (e.g. "Quarter Final", "Zone 1"),
     "scheduledAt": string (ISO 8601 UTC timestamp of when the match starts),
+    "status": string ("upcoming" if it's a fixture, "completed" if it's a final result/already played),
     "participants": [
-        { "schoolId": string, "name": string },
-        { "schoolId": string, "name": string },
+        { "schoolId": string, "name": string, "score": number | null },
+        { "schoolId": string, "name": string, "score": number | null },
         ...
     ]
 }
@@ -44,6 +45,7 @@ Each object in the array must match this exact structure:
 CRITICAL INSTRUCTIONS:
 - Use the provided school list to fuzzy match the names in the image/text to find the exact "schoolId". If a school is not in the list, omit the match or leave schoolId null.
 - If there is no specific time, default to 10:00:00 UTC on the date of the match.
+- If the image or text contains points/scores, set status to "completed" and fill in the "score". If it's just a fixture with no scores, set status to "upcoming".
 - Output ONLY valid JSON, do not include markdown \`\`\`json blocks.
 `
 
@@ -86,25 +88,41 @@ export async function saveImportedMatches(matchesData: any[]) {
             
         const tournamentId = activeTournaments.length > 0 ? activeTournaments[0].id : "default-tournament"
 
-        const newMatches = matchesData.map(m => ({
-            id: `match-${Math.random().toString(36).substr(2, 9)}`,
-            tournamentId,
-            stage: m.stage || "Unknown Stage",
-            scheduledAt: new Date(m.scheduledAt),
-            participants: m.participants.map((p: any) => ({
-                schoolId: p.schoolId,
-                name: p.name,
-                odd: 2.0 // Default odd, can be updated later
-            })),
-            status: "upcoming",
-            isLive: false,
-            odds: {},
-            currentRound: 0,
-            isVirtual: false,
-            sportType: "quiz",
-            gender: "male",
-            margin: 0.1
-        }))
+        const newMatches = matchesData.map(m => {
+            const matchStatus = m.status === "completed" ? "completed" : "upcoming";
+            
+            // Build result object if it's completed
+            let resultData = null;
+            if (matchStatus === "completed") {
+                resultData = {
+                    scores: m.participants.reduce((acc: any, p: any) => {
+                        acc[p.schoolId || p.name] = p.score || 0;
+                        return acc;
+                    }, {})
+                };
+            }
+
+            return {
+                id: `match-${Math.random().toString(36).substr(2, 9)}`,
+                tournamentId,
+                stage: m.stage || "Unknown Stage",
+                scheduledAt: new Date(m.scheduledAt),
+                participants: m.participants.map((p: any) => ({
+                    schoolId: p.schoolId,
+                    name: p.name,
+                    odd: 2.0 // Default odd, can be updated later
+                })),
+                status: matchStatus,
+                isLive: false,
+                result: resultData,
+                odds: {},
+                currentRound: 0,
+                isVirtual: false,
+                sportType: "quiz",
+                gender: "male",
+                margin: 0.1
+            }
+        })
 
         await db.insert(matches).values(newMatches)
         revalidatePath("/admin/matches")

@@ -197,13 +197,23 @@ export function ImportFixturesModal({ isOpen, onClose }: ImportFixturesModalProp
                                 {parsedMatches.map((match, i) => (
                                     <div key={i} className="bg-black/40 border border-white/10 rounded-xl p-4">
                                         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-3">
-                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{match.stage}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{match.stage}</span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold ${match.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                                    {match.status || 'upcoming'}
+                                                </span>
+                                            </div>
                                             <span className="text-xs text-slate-400">{new Date(match.scheduledAt).toLocaleString()}</span>
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             {match.participants?.map((p: any, j: number) => (
                                                 <div key={j} className="flex items-center justify-between">
-                                                    <span className="text-white font-medium">{p.name}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-white font-medium">{p.name}</span>
+                                                        {p.score !== undefined && p.score !== null && (
+                                                            <span className="text-sm font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md">{p.score} pts</span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-xs text-slate-500 font-mono">{p.schoolId || "UNKNOWN ID"}</span>
                                                 </div>
                                             ))}
