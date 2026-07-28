@@ -1,16 +1,26 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { db } from "@/lib/db";
-import { pendingResults } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { pendingResults, apiKeys } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(req: Request) {
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            return NextResponse.json({ error: "Gemini API key is not configured" }, { status: 500 });
+        let geminiKey = process.env.GEMINI_API_KEY;
+
+        if (!geminiKey) {
+            const dbKeys = await db.select().from(apiKeys).where(and(eq(apiKeys.provider, "gemini"), eq(apiKeys.isActive, true))).limit(1);
+            if (dbKeys.length > 0) {
+                geminiKey = dbKeys[0].key;
+                await db.update(apiKeys).set({ usageCount: dbKeys[0].usageCount + 1, lastUsedAt: new Date() }).where(eq(apiKeys.id, dbKeys[0].id));
+            }
         }
+
+        if (!geminiKey) {
+            return NextResponse.json({ error: "Gemini API key is not configured in ENV or Admin Panel" }, { status: 500 });
+        }
+
+        const genAI = new GoogleGenerativeAI(geminiKey);
 
         const body = await req.json();
         const { text, source = "webhook" } = body;
