@@ -1,13 +1,13 @@
-import { getLeaderboard } from "@/lib/fantasy-actions"
+import { getLeaderboard, getActiveFantasyStage } from "@/lib/fantasy-actions"
 import { LeaderboardClient } from "./LeaderboardClient"
 
 export const dynamic = 'force-dynamic'
 
 export default async function LeaderboardPage() {
-    const activeGameWeek = "National Finals"
+    const activeStage = await getActiveFantasyStage()
     
     // Load both weekly and lifetime leaderboards
-    const weeklyStandings = await getLeaderboard(activeGameWeek)
+    const weeklyStandings = await getLeaderboard(activeStage.gameWeek)
     const lifetimeStandings = await getLeaderboard()
 
     return (
@@ -15,7 +15,7 @@ export default async function LeaderboardPage() {
             <LeaderboardClient
                 initialWeekly={weeklyStandings}
                 initialLifetime={lifetimeStandings}
-                gameWeek={activeGameWeek}
+                gameWeek={activeStage.gameWeek}
             />
         </div>
     )

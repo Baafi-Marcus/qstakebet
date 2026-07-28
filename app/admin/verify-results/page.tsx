@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { matches, tournaments } from "@/lib/db/schema"
+import { matches, tournaments, pendingResults } from "@/lib/db/schema"
 import { eq, ne } from "drizzle-orm"
 import { VerifyResultsClient } from "./VerifyResultsClient"
+import { ApprovalQueue } from "@/components/admin/ApprovalQueue"
 
 export const dynamic = 'force-dynamic'
 
@@ -27,9 +28,21 @@ export default async function AdminVerifyResultsPage() {
         tournamentName: r.tournamentName || "Unknown Tournament"
     }))
 
+    // Load pending results
+    const pending = await db.select().from(pendingResults).where(eq(pendingResults.status, 'pending'))
+
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8">
-            <VerifyResultsClient initialMatches={mappedMatches} />
+        <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8 space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold text-white mb-2">Social Media Sync Queue</h1>
+                <p className="text-gray-400 mb-6">Approve or reject automated result extractions from social media.</p>
+                <ApprovalQueue initialPending={pending} matches={mappedMatches} />
+            </div>
+
+            <div className="pt-8 border-t border-gray-800">
+                <h2 className="text-2xl font-bold text-white mb-6">Manual Result Entry</h2>
+                <VerifyResultsClient initialMatches={mappedMatches} />
+            </div>
         </div>
     )
 }

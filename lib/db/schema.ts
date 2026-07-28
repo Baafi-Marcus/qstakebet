@@ -96,6 +96,7 @@ export const users = pgTable("users", {
     loyaltyPoints: integer("loyalty_points").default(0).notNull(),
     almaMater: text("alma_mater"),
     lifetimePoints: integer("lifetime_points").default(0).notNull(),
+    totalFantasyPoints: integer("total_fantasy_points").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -268,6 +269,16 @@ export const chatRoomMembers = pgTable("chat_room_members", {
     joinedAt: timestamp("joined_at").defaultNow(),
 });
 
+export const pendingResults = pgTable("pending_results", {
+    id: text("id").primaryKey(), // pr-xxxxx
+    source: text("source").notNull(), // "twitter", "facebook"
+    rawText: text("raw_text").notNull(),
+    parsedData: jsonb("parsed_data").notNull(), // { round: number, scores: [{ schoolName: string, score: number }] }
+    status: text("status").default("pending").notNull(), // "pending", "approved", "rejected", "ignored"
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const fantasyLineups = pgTable("fantasy_lineups", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(() => users.id),
@@ -299,3 +310,4 @@ export type NewMatchHistory = typeof matchHistory.$inferInsert;
 export type FantasyLineup = typeof fantasyLineups.$inferSelect;
 export type ChatRoom = typeof chatRooms.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type PendingResult = typeof pendingResults.$inferSelect;

@@ -82,7 +82,7 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                             : "text-slate-400 hover:text-slate-200"
                     }`}
                 >
-                    <Star className="h-4 w-4 shrink-0" /> Weekly Standings ({gameWeek})
+                    <Star className="h-4 w-4 shrink-0" /> Stage Standings ({gameWeek})
                 </button>
                 <button
                     onClick={() => setActiveTab("lifetime")}
@@ -92,7 +92,7 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                             : "text-slate-400 hover:text-slate-200"
                     }`}
                 >
-                    <Award className="h-4 w-4 shrink-0" /> Lifetime Standings (Overall)
+                    <Award className="h-4 w-4 shrink-0" /> Overall Standings
                 </button>
             </div>
 

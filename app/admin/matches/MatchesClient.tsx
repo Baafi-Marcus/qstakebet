@@ -10,7 +10,8 @@ import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
 import { MatchHistoryModal } from "./MatchHistoryModal"
-import { Lock, History } from "lucide-react"
+import { ImportFixturesModal } from "./ImportFixturesModal"
+import { Lock, History, Image as ImageIcon } from "lucide-react"
 import { MatchTimer } from "@/components/ui/MatchTimer"
 
 export function MatchesClient({
@@ -31,6 +32,7 @@ export function MatchesClient({
     const [selectedMatchForAI, setSelectedMatchForAI] = useState<Match | null>(null)
     const [selectedMatchForHistory, setSelectedMatchForHistory] = useState<Match | null>(null)
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
     // Bulk Start/Lock State
     const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([])
@@ -242,6 +244,13 @@ export function MatchesClient({
                     <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest font-bold">Monitor & Resolve Competition Events</p>
                 </div>
                 <div className="flex gap-3">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95 uppercase tracking-wide"
+                    >
+                        <ImageIcon className="h-5 w-5" />
+                        Import Fixtures
+                    </button>
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
                         className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20 active:scale-95 uppercase tracking-wide"
@@ -678,6 +687,11 @@ export function MatchesClient({
                     onClose={() => setSelectedMatchForHistory(null)}
                 />
             )}
+
+            <ImportFixturesModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+            />
         </div>
     )
 }

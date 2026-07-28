@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import { submitLineup } from "@/lib/fantasy-actions"
-import { Search, Trophy, Sparkles, X, Coins, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react"
+import { Search, Trophy, Sparkles, X, Coins, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Clock } from "lucide-react"
 
 type School = {
     id: string
@@ -16,6 +16,7 @@ type FantasyClientProps = {
     initialSchools: School[]
     currentLineup: any | null
     activeGameWeek: string
+    deadline: Date | null
 }
 
 const REGIONS = [
@@ -23,7 +24,7 @@ const REGIONS = [
     "Eastern", "Western", "Northern", "Bono", "Bono East", "Ahafo"
 ]
 
-export function FantasyClient({ initialSchools, currentLineup, activeGameWeek }: FantasyClientProps) {
+export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, deadline }: FantasyClientProps) {
     const [schoolsList] = useState<School[]>(initialSchools)
     const [selectedSchools, setSelectedSchools] = useState<School[]>(() => {
         if (currentLineup?.schools) {
@@ -41,7 +42,52 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek }:
     const creditsSpent = selectedSchools.reduce((sum, s) => sum + s.creditCost, 0)
     const remainingCredits = 100 - creditsSpent
 
+    // Calculate pending substitutions
+    const originalSchoolIds = currentLineup?.schools?.map((s: School) => s.id) || []
+    const newSchoolIds = selectedSchools.map(s => s.id)
+    const pendingSubs = newSchoolIds.filter(id => !originalSchoolIds.includes(id)).length
+    const totalSubstitutions = (currentLineup?.substitutionsMade || 0) + pendingSubs
+
+    const [isLocked, setIsLocked] = useState(false)
+    const [timeLeft, setTimeLeft] = useState("")
+
+    useEffect(() => {
+        if (!deadline) {
+            if (activeGameWeek === "Off-Season") {
+                setIsLocked(true)
+                setTimeLeft("Off-Season")
+            }
+            return
+        }
+
+        const updateTimer = () => {
+            const now = new Date()
+            const timeDiff = new Date(deadline).getTime() - now.getTime()
+
+            if (timeDiff <= 0) {
+                setIsLocked(true)
+                setTimeLeft("Locked")
+                return
+            }
+
+            // Calculate hours, mins, secs
+            const h = Math.floor(timeDiff / (1000 * 60 * 60))
+            const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+            const s = Math.floor((timeDiff % (1000 * 60)) / 1000)
+
+            setTimeLeft(`${h}h ${m}m ${s}s`)
+        }
+
+        updateTimer()
+        const interval = setInterval(updateTimer, 1000)
+        return () => clearInterval(interval)
+    }, [deadline, activeGameWeek])
+
     const handleSelect = (school: School) => {
+        if (isLocked) {
+            setMessage({ type: "error", text: "The draft is currently locked." })
+            return
+        }
         if (selectedSchools.find(s => s.id === school.id)) {
             // Remove
             setSelectedSchools(prev => prev.filter(s => s.id !== school.id))
@@ -125,11 +171,27 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek }:
                             Build your ultimate 3-school squad for <strong className="text-white">{activeGameWeek}</strong>.
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
-                        <Coins className="h-6 w-6 text-yellow-400" />
-                        <div>
-                            <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Remaining Budget</div>
-                            <div className="text-xl font-black text-white">{remainingCredits} / 100 Credits</div>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                            <Clock className={`h-6 w-6 ${isLocked ? "text-rose-500" : "text-amber-400 animate-pulse"}`} />
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Deadline</div>
+                                <div className={`text-xl font-black ${isLocked ? "text-rose-500" : "text-white"}`}>{timeLeft}</div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                            <RefreshCw className="h-6 w-6 text-cyan-400" />
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Substitutions</div>
+                                <div className="text-xl font-black text-white">{totalSubstitutions} Made</div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                            <Coins className="h-6 w-6 text-yellow-400" />
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Remaining Budget</div>
+                                <div className="text-xl font-black text-white">{remainingCredits} / 100 Credits</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -207,20 +269,26 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek }:
                         <p className={`text-sm ${
                             message ? (message.type === 'success' ? "text-emerald-400" : "text-rose-400") : "text-slate-400"
                         }`}>
-                            {message ? message.text : `Budget: ${creditsSpent} spent, ${remainingCredits} remaining. (Exact 3-school lineup required)`}
+                            {message ? message.text : (
+                                pendingSubs > 0 
+                                    ? `Locking in will consume ${pendingSubs} substitution${pendingSubs > 1 ? 's' : ''}.` 
+                                    : `Budget: ${creditsSpent} spent, ${remainingCredits} remaining. (Exact 3-school lineup required)`
+                            )}
                         </p>
                     </div>
                     
                     <button
                         onClick={handleLockIn}
-                        disabled={isPending || selectedSchools.length !== 3}
+                        disabled={isPending || selectedSchools.length !== 3 || isLocked}
                         className={`w-full md:w-auto px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 ${
-                            selectedSchools.length === 3
-                                ? "bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] cursor-pointer"
-                                : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                            isLocked 
+                                ? "bg-slate-900 text-rose-500/50 cursor-not-allowed border border-rose-500/20"
+                                : selectedSchools.length === 3
+                                    ? "bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] cursor-pointer"
+                                    : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
                         }`}
                     >
-                        {isPending ? "Locking in..." : (
+                        {isLocked ? "Draft Locked" : isPending ? "Locking in..." : (
                             <>
                                 Lock In Lineup <ArrowRight className="h-4 w-4" />
                             </>
@@ -301,11 +369,11 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek }:
 
                                     <button
                                         onClick={() => handleSelect(school)}
-                                        disabled={disabled}
+                                        disabled={disabled || isLocked}
                                         className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                                             isSelected
                                                 ? "bg-purple-600 text-white"
-                                                : disabled
+                                                : (disabled || isLocked)
                                                     ? "bg-slate-900 text-slate-700 border border-white/5 cursor-not-allowed"
                                                     : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
                                         }`}

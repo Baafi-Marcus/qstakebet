@@ -196,8 +196,9 @@ export default function SettingsPage() {
                                     value={formData.provider}
                                     onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
                                 >
-                                    <option value="github_models">GitHub Models</option>
-                                    <option value="openai">OpenAI</option>
+                                    <option className="bg-slate-900 text-white" value="github_models">GitHub Models</option>
+                                    <option className="bg-slate-900 text-white" value="openai">OpenAI</option>
+                                    <option className="bg-slate-900 text-white" value="gemini">Gemini API</option>
                                 </select>
                             </div>
 
