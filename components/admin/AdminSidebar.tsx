@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { TrophyIcon as Trophy, UsersIcon as Users, Cog6ToothIcon as Settings, SignalIcon as Activity, GiftIcon as Gift, MegaphoneIcon as Megaphone } from "@heroicons/react/24/solid";
+import { TrophyIcon as Trophy, UsersIcon as Users, Cog6ToothIcon as Settings, SignalIcon as Activity, GiftIcon as Gift, MegaphoneIcon as Megaphone, PhotoIcon as Photo } from "@heroicons/react/24/solid";
 import { Squares2X2Icon as LayoutDashboard, BuildingLibraryIcon as School, RocketLaunchIcon as Swords, PresentationChartLineIcon as LineChart, ComputerDesktopIcon as Monitor, CreditCardIcon as CreditCard, WifiIcon as Radio } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 
@@ -11,6 +11,7 @@ const navItems = [
     { name: "Intelligence", href: "/admin", icon: LayoutDashboard },
     { name: "Verify Scores", href: "/admin/verify-results", icon: Megaphone },
     { name: "User Registry", href: "/admin/users", icon: Users },
+    { name: "Banners & Ads", href: "/admin/announcements", icon: Photo },
     { name: "Tournaments", href: "/admin/tournaments", icon: Trophy },
     { name: "Institutions", href: "/admin/schools", icon: School },
     { name: "Live Dashboard", href: "/admin/live", icon: Radio },
@@ -27,7 +28,7 @@ export function AdminSidebar() {
                 <div>
                     <div className="text-[10px] font-black text-muted-foreground/70 uppercase tracking-[0.2em] mb-4 px-4">Core Management</div>
                     <div className="space-y-1">
-                        {navItems.slice(0, 3).map((item) => (
+                        {navItems.slice(0, 4).map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
@@ -48,7 +49,7 @@ export function AdminSidebar() {
                 <div>
                     <div className="text-[10px] font-black text-muted-foreground/70 uppercase tracking-[0.2em] mb-4 px-4">Assets & Logs</div>
                     <div className="space-y-1">
-                        {navItems.slice(3).map((item) => (
+                        {navItems.slice(4).map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
