@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
         // Use a reliable Twitter Scraper (apidojo/tweet-scraper)
         const input = {
-            searchTerms: ["from:NSMQGhana"],
+            twitterHandles: ["NSMQGhana"],
             maxItems: maxItems,
             sort: "Latest",
             tweetLanguage: "en",
