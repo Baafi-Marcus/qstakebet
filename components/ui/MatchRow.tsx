@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { BoltIcon as Zap, ChevronDownIcon as ChevronDown, LockClosedIcon as Lock, ChevronRightIcon as ChevronRight, CalendarIcon as Calendar } from "@heroicons/react/24/solid";
 import { OddsButton } from "./OddsButton"
 import { MatchTimer } from "./MatchTimer"
-import { normalizeMarketName, cn } from "@/lib/utils"
+import { normalizeMarketName, cn, getStageBadgeStyles } from "@/lib/utils"
 import { Match } from "@/lib/types"
 import { getMatchLockStatus } from "@/lib/match-utils"
 import { haptics } from "@/lib/haptics"
@@ -158,13 +158,8 @@ export function MatchRow({
                             className="text-[9px] font-bold"
                         />
                     ) : (
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                            {match.isVirtual
-                                ? `VIRTUAL • ${match.stage}`
-                                : match.tournamentName
-                                    ? `${match.tournamentName} • ${match.stage}`
-                                    : match.stage
-                            }
+                        <span className={cn("px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border", getStageBadgeStyles(match.stage))}>
+                            {match.stage}
                         </span>
                     )}
                     {match.isVirtual && !internalIsLive && (

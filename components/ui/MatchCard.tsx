@@ -5,6 +5,7 @@ import Link from "next/link"
 import { BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { OddsButton } from "./OddsButton"
 import { Match } from "@/lib/types"
+import { cn, getStageBadgeStyles } from "@/lib/utils"
 
 export function MatchCard({
     match,
@@ -27,7 +28,9 @@ export function MatchCard({
     return (
         <div className="bg-card border border-border/50 rounded-[2rem] shadow-xl hover:border-purple-500/30 transition-all duration-300 p-6 group">
             <div className="flex justify-between items-center mb-4 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
-                <span className="bg-muted px-2.5 py-1 rounded-full">{match.stage}</span>
+                <span className={cn("px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border", getStageBadgeStyles(match.stage))}>
+                    {match.stage}
+                </span>
                 {timeDisplay}
             </div>
 
