@@ -11,7 +11,8 @@ import {
     postRoomMessage, 
     getRoomLeaderboard 
 } from "@/lib/chat-actions"
-import { Send, Shield, Hash, MessageSquare, RefreshCw, Sparkles, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X } from "lucide-react"
+import { Send, Shield, Hash, MessageSquare, RefreshCw, Sparkles, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X, ArrowLeft } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 type ChatMessage = {
     id: string
@@ -79,6 +80,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     const [sidebarTab, setSidebarTab] = useState<"global" | "custom">("global")
     const [activeId, setActiveId] = useState<string>("fantasy-tavern") // can be channel id or custom room id
     const [customRooms, setCustomRooms] = useState<CustomRoom[]>([])
+    const [mobileView, setMobileView] = useState<"sidebar" | "chat">("sidebar")
     
     // Messages and Input
     const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
@@ -186,6 +188,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                 setCustomRooms(rooms as CustomRoom[])
                 setActiveId(res.roomId)
                 setSidebarTab("custom")
+                setMobileView("chat")
                 setIsCreatingModal(false)
                 setNewRoomName("")
             } else {
@@ -206,6 +209,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                 setCustomRooms(rooms as CustomRoom[])
                 setActiveId(res.roomId)
                 setSidebarTab("custom")
+                setMobileView("chat")
                 setIsJoiningModal(false)
                 setJoinCodeInput("")
             } else {
@@ -230,10 +234,10 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     })
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8 h-[calc(100vh-6rem)] flex flex-col md:flex-row gap-6 relative">
+        <div className="max-w-7xl mx-auto px-2 md:px-4 py-4 md:py-8 h-[calc(100vh-6rem)] flex flex-col md:flex-row gap-4 md:gap-6 relative">
             
             {/* Sidebar Columns */}
-            <div className="w-full md:w-80 flex flex-col gap-4 shrink-0 h-full">
+            <div className={cn("w-full md:w-80 flex flex-col gap-4 shrink-0 h-full", mobileView === "chat" ? "hidden md:flex" : "flex")}>
                 
                 {/* Custom/Global Tabs Switcher */}
                 <div className="flex bg-slate-900/50 p-1 border border-white/5 rounded-2xl">
@@ -266,6 +270,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         onClick={() => {
                                             setActiveId(ch.id)
                                             setShowRankings(false)
+                                            setMobileView("chat")
                                         }}
                                         className={`w-full text-left p-4 rounded-2xl border transition-all ${
                                             activeId === ch.id
@@ -292,6 +297,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                             onClick={() => {
                                                 setActiveId(room.id)
                                                 setShowRankings(false)
+                                                setMobileView("chat")
                                             }}
                                             className={`w-full text-left p-4 rounded-2xl border transition-all ${
                                                 activeId === room.id
@@ -361,30 +367,39 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
             </div>
 
             {/* Chat Board Area */}
-            <div className="flex-1 flex flex-col bg-slate-900 border border-white/5 rounded-3xl overflow-hidden h-full">
+            <div className={cn("flex-1 flex flex-col bg-slate-900 border border-white/5 rounded-3xl overflow-hidden h-full", mobileView === "sidebar" ? "hidden md:flex" : "flex")}>
                 
                 {/* Room/Channel Header */}
-                <div className="bg-slate-950 border-b border-white/5 px-6 py-4 flex items-center justify-between shrink-0">
-                    <div className="min-w-0 flex-1 pr-4">
-                        <h3 className="font-extrabold text-md text-white flex items-center gap-1.5 truncate">
-                            {isCustomRoomActive ? (
-                                <>
-                                    <Users className="h-5 w-5 text-purple-400 shrink-0" />
-                                    {activeRoomDetails?.name}
-                                </>
-                            ) : (
-                                <>
-                                    <Hash className="h-5 w-5 text-purple-400 shrink-0" />
-                                    {GLOBAL_CHANNELS.find(c => c.id === activeId)?.name}
-                                </>
-                            )}
-                        </h3>
-                        <p className="text-slate-500 text-[10px] font-semibold mt-0.5 truncate">
-                            {isCustomRoomActive 
-                                ? `Created Group • Share code: ${activeRoomDetails?.inviteCode}` 
-                                : GLOBAL_CHANNELS.find(c => c.id === activeId)?.desc
-                            }
-                        </p>
+                <div className="bg-slate-950 border-b border-white/5 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+                    <div className="min-w-0 flex-1 pr-4 flex items-center">
+                        {/* Mobile Back Button */}
+                        <button
+                            onClick={() => setMobileView("sidebar")}
+                            className="mr-3 p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors md:hidden cursor-pointer"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </button>
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-extrabold text-md text-white flex items-center gap-1.5 truncate">
+                                {isCustomRoomActive ? (
+                                    <>
+                                        <Users className="h-5 w-5 text-purple-400 shrink-0" />
+                                        {activeRoomDetails?.name}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Hash className="h-5 w-5 text-purple-400 shrink-0" />
+                                        {GLOBAL_CHANNELS.find(c => c.id === activeId)?.name}
+                                    </>
+                                )}
+                            </h3>
+                            <p className="text-slate-500 text-[10px] font-semibold mt-0.5 truncate">
+                                {isCustomRoomActive 
+                                    ? `Created Group • Share code: ${activeRoomDetails?.inviteCode}` 
+                                    : GLOBAL_CHANNELS.find(c => c.id === activeId)?.desc
+                                }
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
