@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react"
 import { settleFantasyLineups } from "@/lib/settlement"
-import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight } from "@heroicons/react/24/solid";
+import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight, SparklesIcon as Sparkles } from "@heroicons/react/24/solid";
+import { extractMatchResultFromText } from "@/lib/admin-actions";
 
 type Match = {
     id: string
@@ -31,6 +32,8 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
     const [dailyHigh, setDailyHigh] = useState<string[]>([])
 
     const [isPending, startTransition] = useTransition()
+    const [isExtracting, startExtractTransition] = useTransition()
+    const [aiText, setAiText] = useState("")
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
     const handleSelectMatch = (match: Match) => {
@@ -65,6 +68,23 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
         } else if (type === 'high') {
             setDailyHigh(prev => prev.includes(schoolId) ? prev.filter(id => id !== schoolId) : [...prev, schoolId])
         }
+    }
+
+    
+    const handleExtractScores = () => {
+        if (!selectedMatch || !aiText.trim()) return
+
+        startExtractTransition(async () => {
+            const res = await extractMatchResultFromText(aiText, selectedMatch.id)
+            if (res.success && res.customScores) {
+                // Merge extracted scores with existing
+                setScores(prev => ({ ...prev, ...res.customScores }))
+                setMessage({ type: "success", text: "AI successfully extracted and mapped the scores!" })
+                setAiText("") // clear text area
+            } else {
+                setMessage({ type: "error", text: res.error || "Failed to extract scores from text" })
+            }
+        })
     }
 
     const handleSettle = () => {

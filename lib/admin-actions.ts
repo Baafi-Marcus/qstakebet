@@ -3,7 +3,7 @@
 import { db } from "./db"
 import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, predictions, pendingResults } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
-import { type ParsedResult } from "./ai-result-parser"
+import { parseResultsWithAI, type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
 import { settleFantasyLineups } from "./settlement"
@@ -1251,3 +1251,60 @@ export async function rejectPendingResult(id: string) {
         return { success: false, error: "Failed to reject result" };
     }
 }
+
+import { GoogleGenerativeAI } from "@google/generative-ai"
+
+export async function extractMatchResultFromText(text: string, matchId: string) {
+    try {
+        // 1. Get Match from DB
+        const match = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+        if (match.length === 0) return { success: false, error: "Match not found" };
+
+        const participants = (match[0].participants as any[]) || [];
+        if (participants.length === 0) return { success: false, error: "Match has no participants" };
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) return { success: false, error: "GEMINI_API_KEY is not set" };
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `You are a sports result extractor. Extract the final scores for the following schools from the text provided.
+Return ONLY a valid JSON array of objects, where each object has a "schoolName" and a "score" (number). Do not include markdown or conversational text.
+Schools to look for: ${participants.map(p => p.name).join(", ")}
+
+Text:
+${text}
+`;
+
+        const result = await model.generateContent(prompt);
+        let rawText = result.response.text().trim();
+        if (rawText.startsWith("\`\`\`json")) {
+            rawText = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+        }
+
+        const parsedScores = JSON.parse(rawText) as { schoolName: string, score: number }[];
+
+        const customScores: Record<string, number> = {};
+        for (const parsedScore of parsedScores) {
+            const participant = participants.find(p => 
+                p.name.toLowerCase().includes(parsedScore.schoolName.toLowerCase()) || 
+                parsedScore.schoolName.toLowerCase().includes(p.name.toLowerCase())
+            );
+            
+            if (participant) {
+                customScores[participant.schoolId] = parsedScore.score;
+            }
+        }
+
+        if (Object.keys(customScores).length === 0) {
+            return { success: false, error: "Could not map extracted scores to the match participants." };
+        }
+
+        return { success: true, customScores };
+    } catch (error: any) {
+        console.error("Error extracting text:", error);
+        return { success: false, error: error.message || "Failed to extract result" };
+    }
+}
+

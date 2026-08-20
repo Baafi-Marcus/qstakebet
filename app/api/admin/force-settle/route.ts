@@ -11,7 +11,7 @@ export async function GET(request: Request) {
         
         if (!matchId) return NextResponse.json({ error: "Missing matchId" }, { status: 400 });
 
-        let customScores: Record<string, number> = {};
+        const customScores: Record<string, number> = {};
         
         // Define scores based on matchId
         if (matchId === 'nsmq-2026-m1') {
