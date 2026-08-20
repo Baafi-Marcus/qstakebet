@@ -3,6 +3,7 @@
 import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { UserPlusIcon as UserPlus, EnvelopeIcon as Mail, LockClosedIcon as Lock, UserIcon as User, PhoneIcon as Phone, ExclamationCircleIcon as AlertCircle, GiftIcon as Gift, AcademicCapIcon as GraduationCap } from "@heroicons/react/24/solid";
 import { registerUser } from "@/lib/auth-actions"
 import { ReferralSharePopup } from "@/components/ui/ReferralSharePopup"
@@ -144,9 +145,12 @@ function RegisterForm() {
             <div className="relative w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-black text-foreground mb-2 italic tracking-tighter">
-                        QSTAKE<span className="text-purple-400">bet</span>
-                    </h1>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                        <Image src="/logo.svg" alt="QSTAKEbet Logo" width={48} height={48} className="animate-bounce-slow" />
+                        <h1 className="text-4xl font-black text-foreground italic tracking-tighter">
+                            QSTAKE<span className="text-purple-400">bet</span>
+                        </h1>
+                    </div>
                     <p className="text-muted-foreground">Create your account and start betting</p>
                 </div>
 

@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Motion Lines on the right -->
+  <path d="M360 216 H408 M380 256 H438 M360 296 H398" stroke="#0040FF" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Left Hemisphere of the Brain -->
+  <path d="M256 150 C210 150 170 180 150 220 C130 235 120 260 124 285 C128 310 148 330 170 338 C180 342 195 342 205 338 C215 348 230 354 256 354" stroke="#002DFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="#2AD0FF" fill-opacity="0.15"/>
+  <path d="M190 190 C175 200 160 220 165 240 C170 260 190 265 205 250 C215 240 215 220 200 205 Z" fill="#2AD0FF"/>
+  <path d="M160 260 C150 270 145 285 152 295 C160 305 175 305 185 290 C190 280 185 265 175 260 Z" fill="#FFFFFF"/>
+  <path d="M210 270 C195 280 185 300 195 315 C205 330 225 325 235 310 C240 295 230 280 220 275 Z" fill="#2AD0FF"/>
+  <path d="M240 180 C225 190 215 210 225 225 C235 240 255 235 260 220 C265 205 255 190 245 185 Z" fill="#2AD0FF"/>
+
+  <!-- Right Hemisphere of the Brain -->
+  <path d="M256 150 C302 150 342 180 362 220 C382 235 392 260 388 285 C384 310 364 330 342 338 C332 342 317 342 307 338 C297 348 282 354 256 354" stroke="#002DFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="#2AD0FF" fill-opacity="0.15"/>
+  <path d="M322 190 C337 200 352 220 347 240 C342 260 322 265 307 250 C297 240 297 220 312 205 Z" fill="#2AD0FF"/>
+  <path d="M352 260 C362 270 367 285 360 295 C352 305 337 305 327 290 C322 280 327 265 337 260 Z" fill="#FFFFFF"/>
+  <path d="M302 270 C317 280 327 300 317 315 C307 330 287 325 277 310 C272 295 282 280 292 275 Z" fill="#2AD0FF"/>
+  <path d="M272 180 C287 190 297 210 287 225 C277 240 257 235 252 220 C247 205 257 190 267 185 Z" fill="#2AD0FF"/>
+
+  <!-- Left Lightning Leg (Front leg running) -->
+  <path d="M195 330 L160 385 H205 L170 445 L225 375 H185 L215 330 Z" fill="#002DFF"/>
+
+  <!-- Right Lightning Leg (Back leg running) -->
+  <path d="M317 330 L290 385 H335 L300 445 L355 375 H315 L335 330 Z" fill="#002DFF"/>
+</svg>

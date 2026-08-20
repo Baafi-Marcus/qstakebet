@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
     Bars3Icon,
     UserIcon,
@@ -72,7 +73,14 @@ export function Header() {
                             <span className="sr-only">Toggle Menu</span>
                         </button>
 
-                        <Link href="/" className="flex items-center space-x-2">
+                        <Link href="/" className="flex items-center gap-2.5 group">
+                            <Image 
+                                src="/logo.svg" 
+                                alt="QSTAKEbet Logo" 
+                                width={32} 
+                                height={32} 
+                                className="transition-transform group-hover:scale-110 duration-200"
+                            />
                             <span className="font-display font-medium text-xl text-primary font-black tracking-tight">
                                 QSTAKE<span className="text-foreground">bet</span>
                             </span>
@@ -256,9 +264,12 @@ export function Header() {
                     />
                     <div className="absolute left-0 top-0 bottom-0 w-64 bg-popover border-r border-border shadow-2xl animate-in slide-in-from-left duration-300">
                         <div className="p-4 border-b border-border flex items-center justify-between">
-                            <span className="font-display font-black text-lg text-primary tracking-tight">
-                                QSTAKE<span className="text-foreground">bet</span>
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <Image src="/logo.svg" alt="QSTAKEbet Logo" width={24} height={24} />
+                                <span className="font-display font-black text-lg text-primary tracking-tight">
+                                    QSTAKE<span className="text-foreground">bet</span>
+                                </span>
+                            </div>
                             <button
                                 onClick={() => setIsMenuOpen(false)}
                                 className="p-1 hover:bg-accent rounded-full"

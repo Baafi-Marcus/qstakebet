@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { KeyIcon as KeyRound, PhoneIcon as Phone, LockClosedIcon as Lock, ExclamationCircleIcon as AlertCircle, ArrowLeftIcon as ArrowLeft, CheckCircleIcon as CheckCircle2 } from "@heroicons/react/24/solid";
 import { resetPassword } from "@/lib/auth-actions"
 
@@ -122,15 +123,17 @@ export default function ForgotPasswordPage() {
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
             </div>
 
             <div className="relative w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-black text-foreground mb-2 italic tracking-tighter">
-                        QSTAKE<span className="text-purple-400">bet</span>
-                    </h1>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                        <Image src="/logo.svg" alt="QSTAKEbet Logo" width={48} height={48} className="animate-bounce-slow" />
+                        <h1 className="text-4xl font-black text-foreground italic tracking-tighter">
+                            QSTAKE<span className="text-purple-400">bet</span>
+                        </h1>
+                    </div>
                     <p className="text-muted-foreground">Security & Account Recovery</p>
                 </div>
 
