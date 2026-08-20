@@ -135,7 +135,6 @@ export const getFeaturedMatches = unstable_cache(
             .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
             .where(getActiveMatchFilter(twentyFourHoursAgo))
             .orderBy(desc(matches.isLive), desc(matches.startTime))
-            .limit(10)
 
         return results.map(r => ({
             ...mapDbMatchToMatch(r.match),
