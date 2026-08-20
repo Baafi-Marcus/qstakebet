@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { upsertTournamentRoster, updateTournament, updateTournamentOutright, settleTournamentWinner } from "@/lib/admin-actions"
-import { Trophy, Users, Calendar, ArrowLeft, Wand2, Activity, CheckCircle2, Clock, List, Target, Shield, Zap, Calculator } from "lucide-react"
+import { TrophyIcon as Trophy, UsersIcon as Users, CalendarIcon as Calendar, ArrowLeftIcon as ArrowLeft, SparklesIcon as Wand2, SignalIcon as Activity, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, ListBulletIcon as List, ViewfinderCircleIcon as Target, ShieldCheckIcon as Shield, BoltIcon as Zap, CalculatorIcon as Calculator } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react"
+import { ChevronLeftIcon as ChevronLeft, ChevronRightIcon as ChevronRight, ArrowTopRightOnSquareIcon as ExternalLink } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import Image from "next/image"
 import { Announcement } from "@/lib/types" // Using central types
@@ -52,7 +52,7 @@ export function AdBannerCarousel({ announcements }: AdBannerCarouselProps) {
 
     return (
         <div
-            className="w-full bg-[#0f1115] overflow-hidden border-b border-white/5 relative group h-[140px] md:h-[220px]"
+            className="w-full bg-background overflow-hidden border-b border-border relative group h-[140px] md:h-[220px]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >

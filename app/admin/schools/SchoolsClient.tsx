@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Search, Plus, Edit2, Trash2, X, Save, RefreshCcw, TrendingUp, Zap } from "lucide-react"
+import { MagnifyingGlassIcon as Search, PlusIcon as Plus, PencilSquareIcon as Edit2, TrashIcon as Trash2, XMarkIcon as X, DocumentCheckIcon as Save, ArrowPathRoundedSquareIcon as RefreshCcw, ArrowTrendingUpIcon as TrendingUp, BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 import { createSchoolAction, updateSchoolAction, deleteSchoolAction } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"

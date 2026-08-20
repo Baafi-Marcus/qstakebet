@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
 import { Inter, Outfit, Russo_One } from "next/font/google";
+import Script from "next/script";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { SplashScreen } from "@/components/ui/SplashScreen";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+
+const THEME_INIT_SCRIPT = `
+(function () {
+  try {
+    var stored = localStorage.getItem("qstakebet-theme");
+    var theme = stored === "light" || stored === "dark" ? stored : "dark";
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  } catch (e) {}
+})();
+`;
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -37,7 +50,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
+      </head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased pb-16 lg:pb-0",
@@ -45,8 +63,11 @@ export default function RootLayout({
           outfit.variable,
           russo.variable
         )}
+        suppressHydrationWarning
       >
-        <ClientLayout>{children}</ClientLayout>
+        <ThemeProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </ThemeProvider>
       </body>
     </html>
   );

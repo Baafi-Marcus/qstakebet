@@ -2,7 +2,8 @@
 "use client"
 import React from "react"
 import Image from "next/image"
-import { X, Copy, Share2, Download, Send, Activity, Info, Loader2, MessageCircle, Twitter, Share, Search } from "lucide-react"
+import { XMarkIcon as X, DocumentDuplicateIcon as Copy, ArrowUpOnSquareIcon as Share2, ArrowDownTrayIcon as Download, PaperAirplaneIcon as Send, SignalIcon as Activity, InformationCircleIcon as Info, ArrowPathIcon as Loader2, ChatBubbleOvalLeftIcon as MessageCircle, ShareIcon as Share, MagnifyingGlassIcon as Search } from "@heroicons/react/24/solid";
+import { Twitter } from "lucide-react";
 import { toJpeg } from 'html-to-image'
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -72,7 +73,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <div
                 ref={contentRef}
-                className="relative bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                className="relative bg-card border border-border w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 flex items-center justify-between">
@@ -89,7 +90,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                 <div className="flex gap-6 mb-8 items-start">
                     {/* Ticket Preview Thumbnail */}
                     <div className="relative group flex-shrink-0">
-                        <div className="w-32 h-44 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg relative cursor-zoom-in">
+                        <div className="w-32 h-44 bg-muted rounded-xl border border-border overflow-hidden shadow-lg relative cursor-zoom-in">
                             {previewUrl ? (
                                 <Image
                                     src={previewUrl}
@@ -100,28 +101,28 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Loader2 className="h-6 w-6 text-slate-600 animate-spin" />
+                                    <Loader2 className="h-6 w-6 text-muted-foreground/70 animate-spin" />
                                 </div>
                             )}
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-100 group-hover:opacity-0 transition-opacity">
                                 <Search className="h-8 w-8 text-white/50" />
                             </div>
                         </div>
-                        <p className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+                        <p className="mt-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight">
                             {format(currentTime, "dd/MM/yyyy HH:mm")}
                         </p>
                     </div>
 
                     {/* Booking Info */}
                     <div className="flex-1 text-left pt-2">
-                        <h2 className="text-slate-400 text-xs font-black uppercase tracking-[0.1em] mb-1">Booking Code</h2>
+                        <h2 className="text-muted-foreground text-xs font-black uppercase tracking-[0.1em] mb-1">Booking Code</h2>
                         <div className="flex items-center gap-3 mb-4 group cursor-pointer"
                             onClick={() => {
                                 navigator.clipboard.writeText(code)
                                 alert("Code copied!")
                             }}>
-                            <span className="text-4xl font-black text-white tracking-widest font-mono group-hover:text-primary transition-colors">{code}</span>
-                            <Copy className="h-5 w-5 text-slate-500 group-hover:text-primary" />
+                            <span className="text-4xl font-black text-foreground tracking-widest font-mono group-hover:text-primary transition-colors">{code}</span>
+                            <Copy className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
                         </div>
 
                         <button
@@ -143,11 +144,11 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                         <button
                             onClick={handleDownloadImage}
                             disabled={isDownloading}
-                            className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 disabled:opacity-50"
+                            className="w-12 h-12 bg-muted hover:bg-accent text-foreground rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 disabled:opacity-50"
                         >
                             {isDownloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
                         </button>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase text-center leading-tight">Save<br />Image</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase text-center leading-tight">Save<br />Image</span>
                     </div>
 
                     {/* Copy Link */}
@@ -157,22 +158,22 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                                 navigator.clipboard.writeText(`https://qstakebet.vercel.app/book/${code}`)
                                 alert("Link copied!")
                             }}
-                            className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                            className="w-12 h-12 bg-muted hover:bg-accent text-foreground rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110"
                         >
                             <Share2 className="h-5 w-5" />
                         </button>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase text-center leading-tight">Copy<br />Link</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase text-center leading-tight">Copy<br />Link</span>
                     </div>
 
                     {/* X (Twitter) */}
                     <div className="flex flex-col items-center gap-2">
                         <button
                             onClick={() => window.open(`https://twitter.com/intent/tweet?text=Check out my bet on QSTAKE! Booking Code: ${code}&url=https://qstakebet.vercel.app/book/${code}`)}
-                            className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110"
+                            className="w-12 h-12 bg-muted hover:bg-accent text-foreground rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110"
                         >
                             <Twitter className="h-5 w-5" />
                         </button>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase text-center leading-tight">X</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase text-center leading-tight">X</span>
                     </div>
 
                     {/* Telegram */}
@@ -183,7 +184,7 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                         >
                             <Send className="h-5 w-5" />
                         </button>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase text-center leading-tight">Telegram</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase text-center leading-tight">Telegram</span>
                     </div>
 
                     {/* WhatsApp */}
@@ -194,13 +195,13 @@ export function BookingSuccessModal({ code, selections, totalOdds, onClose, onLo
                         >
                             <MessageCircle className="h-5 w-5" />
                         </button>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase text-center leading-tight">WhatsApp</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase text-center leading-tight">WhatsApp</span>
                     </div>
                 </div>
 
                 <button
                     onClick={onClose}
-                    className="w-full py-4 rounded-xl font-black uppercase tracking-widest bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all border border-white/5"
+                    className="w-full py-4 rounded-xl font-black uppercase tracking-widest bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-all border border-border/50"
                 >
                     Return to Betslip
                 </button>

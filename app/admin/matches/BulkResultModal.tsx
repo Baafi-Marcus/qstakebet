@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, Upload, Sparkles, Loader2, CheckCircle, XCircle } from "lucide-react"
+import { XMarkIcon as X, ArrowUpTrayIcon as Upload, SparklesIcon as Sparkles, ArrowPathIcon as Loader2, CheckCircleIcon as CheckCircle, XCircleIcon as XCircle } from "@heroicons/react/24/solid";
 import { parseResults, bulkUpdateResults } from "@/lib/admin-actions"
 
 interface BulkResultModalProps {

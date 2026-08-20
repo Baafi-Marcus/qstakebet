@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { settleFantasyLineups } from "@/lib/settlement"
-import { ShieldAlert, CheckCircle, Info, Calendar, Trophy, ChevronRight } from "lucide-react"
+import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight } from "@heroicons/react/24/solid";
 
 type Match = {
     id: string

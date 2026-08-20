@@ -5,7 +5,7 @@ import { OddsButton } from "@/components/ui/OddsButton";
 import { normalizeMarketName } from "@/lib/utils";
 import { getMatchById } from "@/lib/data";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, MapPin, Trophy } from "lucide-react";
+import { ArrowLeftIcon as ArrowLeft, ClockIcon as Clock, MapPinIcon as MapPin, TrophyIcon as Trophy } from "@heroicons/react/24/solid";
 import Link from "next/link";
 
 type Props = {
@@ -41,7 +41,7 @@ export default async function MatchDetailPage({ params }: Props) {
 
                     <div className="bg-card md:rounded-xl overflow-hidden border-b md:border border-border">
                         {/* Match Header */}
-                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-center relative overflow-hidden">
+                        <div className="bg-gradient-to-br from-card to-muted p-6 text-center relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Trophy className="h-32 w-32 text-accent" />
                             </div>
@@ -55,16 +55,16 @@ export default async function MatchDetailPage({ params }: Props) {
                                 {match.participants.map((p, idx) => (
                                     <React.Fragment key={p.schoolId}>
                                         <div className="flex-1 min-w-[120px] text-center">
-                                            <h2 className="text-xl md:text-2xl font-bold font-display text-white mb-1 uppercase tracking-tight">{p.name}</h2>
+                                            <h2 className="text-xl md:text-2xl font-bold font-display text-foreground mb-1 uppercase tracking-tight">{p.name}</h2>
                                         </div>
                                         {idx < match.participants.length - 1 && (
-                                            <div className="text-slate-500 font-mono text-[10px] uppercase font-bold px-2">VS</div>
+                                            <div className="text-muted-foreground font-mono text-[10px] uppercase font-bold px-2">VS</div>
                                         )}
                                     </React.Fragment>
                                 ))}
                             </div>
 
-                            <div className="inline-flex items-center bg-black/30 rounded-full px-4 py-1.5 text-xs text-muted-foreground backdrop-blur-sm border border-white/5">
+                            <div className="inline-flex items-center bg-background/30 rounded-full px-4 py-1.5 text-xs text-muted-foreground backdrop-blur-sm border border-border/50">
                                 <Clock className="h-3 w-3 mr-2" />
                                 {match.isLive ? <span className="text-red-500 font-bold animate-pulse mr-2">LIVE NOW</span> : match.startTime}
                                 <span className="mx-2">•</span>
@@ -83,8 +83,8 @@ export default async function MatchDetailPage({ params }: Props) {
                         {/* Markets Content */}
                         <div className="p-4 md:p-6 space-y-6">
                             {/* Main Market */}
-                            <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-md">
-                                <h3 className="text-sm font-bold text-white mb-5 flex items-center gap-2 uppercase tracking-wide">
+                            <div className="bg-card/50 rounded-2xl p-6 border border-border/50 backdrop-blur-md">
+                                <h3 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2 uppercase tracking-wide">
                                     <div className="w-1.5 h-4 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.5)]"></div>
                                     Match Winner
                                 </h3>

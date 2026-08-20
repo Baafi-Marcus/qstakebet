@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ChevronDown } from "lucide-react"
+import { ChevronDownIcon as ChevronDown } from "@heroicons/react/24/solid";
 
 // A simplified version that mimics the Radix UI Select API but uses native select for simplicity
 // This is because implementing a full custom Select without Radix is complex

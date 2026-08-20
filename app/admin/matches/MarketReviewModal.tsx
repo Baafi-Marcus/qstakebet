@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, Loader2, Sparkles, Check, Trash2, RotateCcw, Save } from "lucide-react"
+import { XMarkIcon as X, ArrowPathIcon as Loader2, SparklesIcon as Sparkles, CheckIcon as Check, TrashIcon as Trash2, ArrowUturnLeftIcon as RotateCcw, DocumentCheckIcon as Save } from "@heroicons/react/24/solid";
 import { Match } from "@/lib/types"
 import { getMatchSuggestions, publishMatchMarkets } from "@/lib/admin-actions"
 

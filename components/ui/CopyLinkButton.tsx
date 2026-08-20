@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Copy, Check } from "lucide-react"
+import { DocumentDuplicateIcon as Copy, CheckIcon as Check } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 
 export function CopyLinkButton({ referralCode }: { referralCode: string }) {

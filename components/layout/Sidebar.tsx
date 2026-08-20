@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Trophy, Star, Zap, MessageSquare } from "lucide-react"
+import { TrophyIcon as Trophy, StarIcon as Star, BoltIcon as Zap, ChatBubbleLeftRightIcon as MessageSquare } from "@heroicons/react/24/solid";
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -31,10 +31,10 @@ export function Sidebar() {
                                         "flex items-center rounded-xl px-4 py-2.5 text-sm font-bold transition-all",
                                         isActive
                                             ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
-                                            : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     )}
                                 >
-                                    <item.icon className={cn("mr-3 h-4 w-4", isActive ? "text-white" : "text-slate-500")} />
+                                    <item.icon className={cn("mr-3 h-4 w-4", isActive ? "text-white" : "text-muted-foreground")} />
                                     {item.label}
                                 </Link>
                             )
@@ -45,7 +45,7 @@ export function Sidebar() {
                 <div className="px-7 pt-4">
                     <Link
                         href="/admin"
-                        className="text-[10px] font-black text-slate-600 hover:text-purple-400 transition-colors uppercase tracking-[0.2em] border-t border-white/5 pt-4 block"
+                        className="text-[10px] font-black text-muted-foreground/70 hover:text-purple-400 transition-colors uppercase tracking-[0.2em] border-t border-border pt-4 block"
                     >
                         Admin Dashboard
                     </Link>

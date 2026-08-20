@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Trophy, Crown, Medal, Award, Star, Hash } from "lucide-react"
+import { TrophyIcon as Trophy, SparklesIcon as Crown, FireIcon as Medal, CheckBadgeIcon as Award, StarIcon as Star, HashtagIcon as Hash } from "@heroicons/react/24/solid";
 
 type LeaderboardRow = {
     username: string | null
@@ -47,14 +47,14 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
             case 3:
                 return <Medal className="h-5 w-5 text-amber-600 fill-amber-600/20" />
             default:
-                return <span className="text-[10px] font-black text-slate-500">{rank}</span>
+                return <span className="text-[10px] font-black text-muted-foreground">{rank}</span>
         }
     }
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
             {/* Header banner */}
-            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-slate-900 border border-white/5 shadow-2xl">
+            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 via-transparent to-transparent z-0" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -62,10 +62,10 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                             <Trophy className="h-6 w-6 text-yellow-400" />
                             <span className="text-xs font-black tracking-widest text-purple-400 uppercase">Quiz Managers Rankings</span>
                         </div>
-                        <h1 className="text-3xl font-extrabold font-russo bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                        <h1 className="text-3xl font-extrabold font-russo bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
                             Leaderboard Standings
                         </h1>
-                        <p className="text-slate-400 text-sm mt-1">
+                        <p className="text-muted-foreground text-sm mt-1">
                             Who holds the bragging rights? Check rankings across Ghana.
                         </p>
                     </div>
@@ -73,13 +73,13 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
             </div>
 
             {/* Tab toggles */}
-            <div className="flex bg-slate-900 border border-white/5 p-1.5 rounded-2xl mb-6">
+            <div className="flex bg-card border border-border/50 p-1.5 rounded-2xl mb-6">
                 <button
                     onClick={() => setActiveTab("weekly")}
                     className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         activeTab === "weekly"
                             ? "bg-purple-600 text-white"
-                            : "text-slate-400 hover:text-slate-200"
+                            : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
                     <Star className="h-4 w-4 shrink-0" /> Stage Standings ({gameWeek})
@@ -89,7 +89,7 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                     className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         activeTab === "lifetime"
                             ? "bg-purple-600 text-white"
-                            : "text-slate-400 hover:text-slate-200"
+                            : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
                     <Award className="h-4 w-4 shrink-0" /> Overall Standings
@@ -97,10 +97,10 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
             </div>
 
             {/* Leaderboard Table Card */}
-            <div className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-                
+            <div className="bg-card border border-border/50 rounded-3xl overflow-hidden shadow-2xl">
+
                 {/* Table Header */}
-                <div className="grid grid-cols-12 px-6 py-4 bg-slate-950 border-b border-white/5 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                <div className="grid grid-cols-12 px-6 py-4 bg-muted border-b border-border/50 text-[10px] font-black uppercase text-muted-foreground tracking-wider">
                     <div className="col-span-2 text-center">Rank</div>
                     <div className="col-span-6">Quiz Manager</div>
                     <div className="col-span-2">Badge</div>
@@ -108,26 +108,26 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                 </div>
 
                 {/* Table Rows */}
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-border/50">
                     {data.length > 0 ? (
                         data.map((row, index) => {
                             const rank = index + 1
                             const acronym = getSchoolAcronym(row.almaMater)
 
                             return (
-                                <div 
+                                <div
                                     key={index}
-                                    className={`grid grid-cols-12 px-6 py-4.5 items-center transition-colors hover:bg-white/[0.02] ${
-                                        rank <= 3 ? "bg-white/[0.01]" : ""
+                                    className={`grid grid-cols-12 px-6 py-4.5 items-center transition-colors hover:bg-accent ${
+                                        rank <= 3 ? "bg-accent/50" : ""
                                     }`}
                                 >
                                     <div className="col-span-2 flex justify-center">
-                                        <div className="h-8 w-8 rounded-full bg-slate-950/80 border border-white/5 flex items-center justify-center">
+                                        <div className="h-8 w-8 rounded-full bg-muted border border-border/50 flex items-center justify-center">
                                             {getRankIcon(rank)}
                                         </div>
                                     </div>
                                     <div className="col-span-6">
-                                        <span className="font-extrabold text-sm text-white">
+                                        <span className="font-extrabold text-sm text-foreground">
                                             {row.username || "Anonymous Player"}
                                         </span>
                                     </div>
@@ -137,7 +137,7 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                                                 {acronym}
                                             </span>
                                         ) : (
-                                            <span className="text-[9px] font-bold text-slate-600">-</span>
+                                            <span className="text-[9px] font-bold text-muted-foreground/70">-</span>
                                         )}
                                     </div>
                                     <div className="col-span-2 text-right">
@@ -149,8 +149,8 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                             )
                         })
                     ) : (
-                        <div className="py-16 text-center text-slate-500 text-sm">
-                            <Hash className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+                        <div className="py-16 text-center text-muted-foreground text-sm">
+                            <Hash className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
                             No standings entries recorded for this tab yet.
                         </div>
                     )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ChevronLeft, Trophy, Shield, Smartphone, Mail, Calendar, Ban, CheckCircle } from "lucide-react"
+import { ChevronLeftIcon as ChevronLeft, TrophyIcon as Trophy, ShieldCheckIcon as Shield, DevicePhoneMobileIcon as Smartphone, EnvelopeIcon as Mail, CalendarIcon as Calendar, NoSymbolIcon as Ban, CheckCircleIcon as CheckCircle } from "@heroicons/react/24/solid";
 import { getUserDetails, updateUserStatus } from "@/lib/admin-user-actions"
 import { cn } from "@/lib/utils"
 

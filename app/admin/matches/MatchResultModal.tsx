@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { X, Trophy, Loader2, Brain, Zap, Target, HelpCircle, Sparkles, Plus, Minus, AlertTriangle, Clock } from "lucide-react"
+import { XMarkIcon as X, TrophyIcon as Trophy, ArrowPathIcon as Loader2, LightBulbIcon as Brain, BoltIcon as Zap, ViewfinderCircleIcon as Target, QuestionMarkCircleIcon as HelpCircle, SparklesIcon as Sparkles, PlusIcon as Plus, MinusIcon as Minus, ExclamationTriangleIcon as AlertTriangle, ClockIcon as Clock } from "@heroicons/react/24/solid";
 import { updateMatchResult, getActiveMarketsAction } from "@/lib/admin-actions"
 import { validateScores } from "@/lib/match-utils"
 

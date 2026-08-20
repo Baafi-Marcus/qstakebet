@@ -1,17 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Activity, Search, X, Loader2, Sparkles } from "lucide-react"
+import { PlusIcon as Plus, SignalIcon as Activity, MagnifyingGlassIcon as Search, XMarkIcon as X, ArrowPathIcon as Loader2, SparklesIcon as Sparkles, PencilIcon as Pencil, TrashIcon as Trash2, ClockIcon as Clock, LockClosedIcon as Lock, ArchiveBoxIcon as History, PhotoIcon as ImageIcon } from "@heroicons/react/24/solid";
 import { Match, Tournament, School } from "@/lib/types"
 import { createMatch, startMatches, lockMatches, updateMatch, deleteMatch } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, Clock } from "lucide-react"
 import { MatchResultModal } from "./MatchResultModal"
 import { BulkResultModal } from "./BulkResultModal"
 import { MarketReviewModal } from "./MarketReviewModal"
 import { MatchHistoryModal } from "./MatchHistoryModal"
 import { ImportFixturesModal } from "./ImportFixturesModal"
-import { Lock, History, Image as ImageIcon } from "lucide-react"
 import { MatchTimer } from "@/components/ui/MatchTimer"
 
 export function MatchesClient({

@@ -27,7 +27,7 @@ export default function AdminLayout({
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col">
+        <div className="min-h-screen bg-background flex flex-col">
             <AdminHeader />
             <div className="flex flex-1">
                 <AdminSidebar />
@@ -37,12 +37,12 @@ export default function AdminLayout({
             </div>
 
             {/* Admin Footer */}
-            <footer className="py-6 px-10 border-t border-white/5 bg-slate-950/50">
+            <footer className="py-6 px-10 border-t border-border/50 bg-background/50">
                 <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <div className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">
                         QSTAKE Management Console v2.0
                     </div>
-                    <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <div className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">
                         Console Time: {timeString || "..."}
                     </div>
                 </div>

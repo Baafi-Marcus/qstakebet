@@ -7,7 +7,7 @@ export { Skeleton } // Re-export for compatibility
 
 export function SkeletonMatch() {
     return (
-        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 space-y-4">
+        <div className="bg-card/40 border border-border/50 rounded-2xl p-4 space-y-4">
             <div className="flex justify-between items-center">
                 <Skeleton className="h-3 w-24" />
                 <Skeleton className="h-3 w-16" />
@@ -43,7 +43,7 @@ export function SkeletonMarket() {
 
 export function SkeletonWallet() {
     return (
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 space-y-4">
+        <div className="bg-gradient-to-br from-muted to-card rounded-2xl p-6 space-y-4">
             <Skeleton className="h-3 w-20" />
             <Skeleton className="h-8 w-40" />
             <div className="flex gap-4">

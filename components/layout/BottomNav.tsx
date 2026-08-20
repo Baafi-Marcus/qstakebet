@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, User, Zap, Trophy, MessageSquare } from "lucide-react"
+import { HomeIcon as Home, UserIcon as User, BoltIcon as Zap, TrophyIcon as Trophy, ChatBubbleLeftRightIcon as MessageSquare } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 import { useRef, useLayoutEffect } from "react"
 import gsap from "gsap"
@@ -52,7 +52,7 @@ export function BottomNav() {
     return (
         <div className="fixed bottom-6 left-4 right-4 z-[100] lg:hidden" ref={navRef}>
             {/* Glassmorphic Background */}
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem]" />
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem]" />
 
             {/* Sliding Active Indicator */}
             <div
@@ -72,7 +72,7 @@ export function BottomNav() {
                             onClick={handleNavClick}
                             className={cn(
                                 "flex flex-col items-center justify-center gap-1 transition-all active:scale-90 flex-1",
-                                isActive ? "text-purple-400" : "text-slate-500 hover:text-slate-300"
+                                isActive ? "text-purple-400" : "text-muted-foreground hover:text-foreground/80"
                             )}
                         >
                             <item.icon className={cn("h-5 w-5", isActive && "fill-purple-400/20")} />

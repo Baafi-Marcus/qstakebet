@@ -1,24 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-    Eye,
-    EyeOff,
-    Settings,
-    ChevronRight,
-    Wallet,
-    History,
-    ArrowRightLeft,
-    Gift,
-    Loader2,
-    ArrowUpFromLine,
-    LogOut,
-    HelpCircle,
-    BookOpen,
-    MessageSquare,
-    Trophy,
-    Zap
-} from "lucide-react"
+import { EyeIcon as Eye, EyeSlashIcon as EyeOff, Cog6ToothIcon as Settings, ChevronRightIcon as ChevronRight, ArchiveBoxIcon as History, GiftIcon as Gift, ArrowPathIcon as Loader2, ArrowRightStartOnRectangleIcon as LogOut, QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen, ChatBubbleLeftRightIcon as MessageSquare, TrophyIcon as Trophy, BoltIcon as Zap } from "@heroicons/react/24/solid";
+import { WalletIcon as Wallet, ArrowsRightLeftIcon as ArrowRightLeft, ArrowUpCircleIcon as ArrowUpFromLine } from "@heroicons/react/24/solid";
 import { getUserProfileSummary } from "@/lib/user-actions"
 import Link from "next/link"
 
@@ -43,17 +27,17 @@ export default function ProfilePage() {
         </div>
     )
 
-    if (!data) return <div className="p-8 text-center text-slate-500">Failed to load profile.</div>
+    if (!data) return <div className="p-8 text-center text-muted-foreground">Failed to load profile.</div>
 
     const { user } = data
 
     return (
-        <div className="max-w-md mx-auto bg-[#1a1c23] text-white min-h-[500px] rounded-3xl overflow-hidden shadow-2xl">
+        <div className="max-w-md mx-auto bg-card text-foreground min-h-[500px] rounded-3xl overflow-hidden shadow-2xl">
             {/* Header Section */}
             <div className="p-6">
                 <div className="flex items-center justify-between mb-2">
                     <Link href="/account/settings" className="flex items-center gap-3 group">
-                        <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 flex items-center justify-center">
+                        <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
                             {user.image ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
@@ -66,13 +50,13 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-1">
                             <div className="flex flex-col">
                                 <span className="text-xl font-bold tracking-tight leading-tight">{user.name}</span>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{user.phone || user.email}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user.phone || user.email}</span>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-slate-500 group-hover:text-white transition-colors" />
+                            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                         </div>
                     </Link>
-                    <Link href="/account/settings" className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                        <Settings className="h-7 w-7 text-slate-300" />
+                    <Link href="/account/settings" className="p-2 hover:bg-accent rounded-full transition-colors">
+                        <Settings className="h-7 w-7 text-muted-foreground" />
                     </Link>
                 </div>
             </div>
@@ -80,10 +64,10 @@ export default function ProfilePage() {
 
             {/* Fantasy Card */}
             <div className="px-6 mb-6">
-                <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-4">
+                <div className="bg-card border border-border/50 rounded-3xl p-6 space-y-4">
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Lifetime Points</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">{points !== null ? points : "0"} pts</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Lifetime Points</p>
+                        <p className="text-3xl font-black text-foreground tracking-tighter">{points !== null ? points : "0"} pts</p>
                     </div>
                     <div className="flex gap-3">
                         <Link
@@ -98,7 +82,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Navigation Grid */}
-            <div className="bg-[#121418] rounded-t-[2.5rem] border-t border-white/5 pb-10">
+            <div className="bg-background rounded-t-[2.5rem] border-t border-border/50 pb-10">
                 <div className="grid grid-cols-3 gap-y-8 py-8 px-2">
                     <NavButton
                         href="/account/predictions"
@@ -159,10 +143,10 @@ export default function ProfilePage() {
 function NavButton({ href, icon: Icon, label }: { href: string, icon: any, label: string }) {
     return (
         <Link href={href} className="flex flex-col items-center gap-3 group px-2">
-            <div className="h-10 w-10 flex items-center justify-center text-slate-200 group-hover:text-white transition-colors">
+            <div className="h-10 w-10 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
                 <Icon className="h-8 w-8" />
             </div>
-            <span className="text-[11px] font-bold text-slate-100 text-center leading-tight uppercase tracking-tight">
+            <span className="text-[11px] font-bold text-foreground/80 text-center leading-tight uppercase tracking-tight">
                 {label}
             </span>
         </Link>

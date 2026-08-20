@@ -1,6 +1,6 @@
 "use client"
 
-import { HelpCircle, MessageSquare, Mail, Phone } from "lucide-react"
+import { QuestionMarkCircleIcon as HelpCircle, ChatBubbleLeftRightIcon as MessageSquare, EnvelopeIcon as Mail, PhoneIcon as Phone } from "@heroicons/react/24/solid";
 import Link from "next/link"
 
 export default function HelpCenterPage() {
@@ -28,7 +28,7 @@ export default function HelpCenterPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-[#0f1115] text-white pb-20">
+        <div className="min-h-screen bg-background text-foreground pb-20">
             <main className="container max-w-4xl mx-auto px-4 pt-12">
                 <div className="space-y-12">
                     {/* Header */}
@@ -37,16 +37,16 @@ export default function HelpCenterPage() {
                             <HelpCircle className="h-12 w-12 text-purple-400" />
                         </div>
                         <h1 className="text-4xl font-black">Help Center</h1>
-                        <p className="text-slate-400 font-medium text-lg">Find answers to common questions</p>
+                        <p className="text-muted-foreground font-medium text-lg">Find answers to common questions</p>
                     </div>
 
                     {/* FAQs */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-black mb-6">Frequently Asked Questions</h2>
                         {faqs.map((faq, index) => (
-                            <div key={index} className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 space-y-3">
-                                <h3 className="text-lg font-black text-white">{faq.question}</h3>
-                                <p className="text-slate-400 leading-relaxed">{faq.answer}</p>
+                            <div key={index} className="bg-card/50 border border-border/50 rounded-2xl p-6 space-y-3">
+                                <h3 className="text-lg font-black text-foreground">{faq.question}</h3>
+                                <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
                             </div>
                         ))}
                     </div>
@@ -55,7 +55,7 @@ export default function HelpCenterPage() {
                     <div className="bg-gradient-to-br from-purple-600/10 to-indigo-600/10 border border-purple-500/20 rounded-3xl p-8 space-y-6">
                         <div className="text-center space-y-2">
                             <h2 className="text-2xl font-black">Still Need Help?</h2>
-                            <p className="text-slate-400">Our support team is here to assist you</p>
+                            <p className="text-muted-foreground">Our support team is here to assist you</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -67,7 +67,7 @@ export default function HelpCenterPage() {
                             >
                                 <MessageSquare className="h-6 w-6 text-emerald-400" />
                                 <div>
-                                    <p className="font-black text-white">WhatsApp Support</p>
+                                    <p className="font-black text-foreground">WhatsApp Support</p>
                                     <p className="text-xs text-emerald-400">Chat with us now</p>
                                 </div>
                             </a>
@@ -78,7 +78,7 @@ export default function HelpCenterPage() {
                             >
                                 <Phone className="h-6 w-6 text-blue-400" />
                                 <div>
-                                    <p className="font-black text-white">Call Us</p>
+                                    <p className="font-black text-foreground">Call Us</p>
                                     <p className="text-xs text-blue-400">+233 27 601 9798</p>
                                 </div>
                             </a>
@@ -87,7 +87,7 @@ export default function HelpCenterPage() {
 
                     {/* Additional Resources */}
                     <div className="text-center space-y-4">
-                        <p className="text-slate-500 text-sm">Looking for more information?</p>
+                        <p className="text-muted-foreground text-sm">Looking for more information?</p>
                         <Link
                             href="/how-to-play"
                             className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all"

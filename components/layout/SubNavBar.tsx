@@ -4,18 +4,8 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import {
-    Trophy,
-    Map,
-    Flag,
-    Star,
-    Zap,
-    Timer,
-    ChevronDown,
-    LayoutGrid,
-    X,
-    Ticket
-} from "lucide-react"
+import { TrophyIcon as Trophy, StarIcon as Star, BoltIcon as Zap, ClockIcon as Timer, ChevronDownIcon as ChevronDown, XMarkIcon as X } from "@heroicons/react/24/solid";
+import { MapIcon as Map, FlagIcon as Flag, TableCellsIcon as LayoutGrid, TicketIcon as Ticket } from "@heroicons/react/24/solid";
 import { RegionsMenu } from "./RegionsMenu"
 
 const SPORTS = [
@@ -63,7 +53,7 @@ export function SubNavBar() {
         <div
             ref={navRef}
             className={cn(
-                "w-full bg-slate-900/50 backdrop-blur-md border-b border-white/5 sticky top-14",
+                "w-full bg-card/50 backdrop-blur-md border-b border-border sticky top-14",
                 isRegionsOpen ? "z-[9999]" : "z-40"
             )}
         >
@@ -72,14 +62,14 @@ export function SubNavBar() {
                 <div className="flex-1 overflow-x-auto no-scrollbar pr-2">
                     <div className="flex items-center h-full gap-4 sm:gap-6">
                         {/* Main Sections */}
-                        <div className="flex items-center gap-0.5 sm:gap-1 border-r border-white/10 pr-2 sm:pr-4">
+                        <div className="flex items-center gap-0.5 sm:gap-1 border-r border-border pr-2 sm:pr-4">
                             <Link
                                 href="/"
                                 className={cn(
                                     "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black whitespace-nowrap", // Removed transition-all
                                     pathname === "/"
                                         ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
-                                        : "text-slate-400 hover:text-white"
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -91,7 +81,7 @@ export function SubNavBar() {
                                     "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all whitespace-nowrap",
                                     pathname === "/live"
                                         ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
-                                        : "text-slate-400 hover:text-white"
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <Timer className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -120,7 +110,7 @@ export function SubNavBar() {
                                         href={sport.href}
                                         className={cn(
                                             "flex items-center gap-1.5 px-0.5 py-1 text-[9px] sm:text-[11px] font-bold transition-all whitespace-nowrap uppercase tracking-tighter",
-                                            isActive ? "text-purple-400 border-b-2 border-purple-400" : "text-slate-400 hover:text-white"
+                                            isActive ? "text-purple-400 border-b-2 border-purple-400" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
                                         <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -156,8 +146,8 @@ export function SubNavBar() {
                         className={cn(
                             "flex items-center gap-1.5 px-2 sm:px-4 py-1.5 rounded-full border text-[9px] sm:text-[11px] font-black tracking-widest uppercase transition-all",
                             isRegionsOpen
-                                ? "bg-white text-black border-white"
-                                : "bg-transparent text-white border-white/20 hover:border-white/40"
+                                ? "bg-foreground text-background border-foreground"
+                                : "bg-transparent text-foreground border-border hover:border-foreground/40"
                         )}
                     >
                         <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />

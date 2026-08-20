@@ -2,7 +2,7 @@
 
 import React from "react"
 import Link from "next/link"
-import { Zap } from "lucide-react"
+import { BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { OddsButton } from "./OddsButton"
 import { Match } from "@/lib/types"
 
@@ -25,9 +25,9 @@ export function MatchCard({
     const matchLabel = match.participants.map(p => p.name).join(' vs ')
 
     return (
-        <div className="bg-slate-900 border border-white/5 rounded-[2rem] shadow-xl hover:border-purple-500/30 transition-all duration-300 p-6 group">
-            <div className="flex justify-between items-center mb-4 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
-                <span className="bg-white/5 px-2.5 py-1 rounded-full">{match.stage}</span>
+        <div className="bg-card border border-border/50 rounded-[2rem] shadow-xl hover:border-purple-500/30 transition-all duration-300 p-6 group">
+            <div className="flex justify-between items-center mb-4 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+                <span className="bg-muted px-2.5 py-1 rounded-full">{match.stage}</span>
                 {timeDisplay}
             </div>
 
@@ -35,12 +35,12 @@ export function MatchCard({
                 {match.participants.map((p, idx) => (
                     <React.Fragment key={p.schoolId}>
                         <div className="flex-1 min-w-[80px]">
-                            <div className="text-sm font-black text-white uppercase tracking-tighter leading-tight line-clamp-2 h-8 flex items-center justify-center">
+                            <div className="text-sm font-black text-foreground uppercase tracking-tighter leading-tight line-clamp-2 h-8 flex items-center justify-center">
                                 {p.name}
                             </div>
                         </div>
                         {idx < match.participants.length - 1 && (
-                            <div className="text-slate-700 font-bold text-[9px] uppercase tracking-widest">VS</div>
+                            <div className="text-muted-foreground/50 font-bold text-[9px] uppercase tracking-widest">VS</div>
                         )}
                     </React.Fragment>
                 ))}

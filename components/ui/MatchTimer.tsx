@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Timer } from "lucide-react";
+import { ClockIcon as Timer } from "@heroicons/react/24/solid";
 
 interface MatchTimerProps {
     startTime?: string;
@@ -86,7 +86,7 @@ export function MatchTimer({ startTime, status, sportType, metadata, className, 
             )}
             <span className={cn(
                 "font-bold uppercase tracking-widest",
-                (status === 'live' || isLive) ? "text-red-500" : "text-slate-500",
+                (status === 'live' || isLive) ? "text-red-500" : "text-muted-foreground",
                 // Quiz special style
                 sportType === 'quiz' && (status === 'live' || isLive) && "animate-pulse"
             )}>

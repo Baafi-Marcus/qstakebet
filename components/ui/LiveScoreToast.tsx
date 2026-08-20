@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react"
 import gsap from "gsap"
-import { Bell, Zap } from "lucide-react"
+import { BellIcon as Bell, BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 
 interface LiveScoreToastProps {
@@ -40,7 +40,7 @@ export function LiveScoreToast({ matchLabel, newScore, teamName }: LiveScoreToas
             ref={toastRef}
             className="fixed bottom-24 left-4 right-4 z-[150] md:left-auto md:right-8 md:w-80"
         >
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center gap-4 overflow-hidden relative">
+            <div className="bg-popover/90 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-2xl flex items-center gap-4 overflow-hidden relative">
                 {/* Glow Effect */}
                 <div className="absolute inset-y-0 left-0 w-1 bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
 
@@ -49,16 +49,16 @@ export function LiveScoreToast({ matchLabel, newScore, teamName }: LiveScoreToas
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5 flex items-center gap-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                         Live Goal: {matchLabel}
                     </p>
-                    <p className="text-sm font-bold text-white truncate">
+                    <p className="text-sm font-bold text-foreground truncate">
                         <span className="text-purple-400">{teamName}</span> scores!
                     </p>
                 </div>
 
-                <div className="text-xl font-black italic text-white pr-2 tabular-nums">
+                <div className="text-xl font-black italic text-foreground pr-2 tabular-nums">
                     {newScore}
                 </div>
             </div>

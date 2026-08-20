@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, DollarSign, Loader2, AlertCircle } from "lucide-react"
+import { XMarkIcon as X, CurrencyDollarIcon as DollarSign, ArrowPathIcon as Loader2, ExclamationCircleIcon as AlertCircle } from "@heroicons/react/24/solid";
 import { adjustUserBalance } from "@/lib/admin-actions"
 
 interface BalanceAdjustmentModalProps {

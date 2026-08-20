@@ -47,6 +47,7 @@ type ChatClientProps = {
         almaMater?: string | null
         role?: string | null
     }
+    activeGameWeek?: string
 }
 
 const GLOBAL_CHANNELS = [
@@ -73,7 +74,7 @@ function getSchoolAcronym(name: string | null) {
     return parts.map(p => p[0]).join("").toUpperCase().substring(0, 6)
 }
 
-export function ChatClient({ initialMessages, currentUser }: ChatClientProps) {
+export function ChatClient({ initialMessages, currentUser, activeGameWeek }: ChatClientProps) {
     // Rooms and Channels Navigation state
     const [sidebarTab, setSidebarTab] = useState<"global" | "custom">("global")
     const [activeId, setActiveId] = useState<string>("fantasy-tavern") // can be channel id or custom room id
@@ -140,13 +141,13 @@ export function ChatClient({ initialMessages, currentUser }: ChatClientProps) {
     // Load custom room rankings if panel is open
     useEffect(() => {
         if (showRankings && isCustomRoomActive) {
-            getRoomLeaderboard(activeId, "National Finals").then(res => {
+            getRoomLeaderboard(activeId, activeGameWeek || "National Finals").then(res => {
                 if (res.success && res.data) {
                     setRankingsList(res.data as GroupMemberRank[])
                 }
             })
         }
-    }, [showRankings, activeId, isCustomRoomActive])
+    }, [showRankings, activeId, isCustomRoomActive, activeGameWeek])
 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault()

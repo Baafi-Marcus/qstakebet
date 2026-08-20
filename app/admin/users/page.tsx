@@ -1,13 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Search, Ban, CheckCircle, ArrowUpRight } from "lucide-react"
+import { MagnifyingGlassIcon as Search, NoSymbolIcon as Ban, CheckCircleIcon as CheckCircle, ArrowUpRightIcon as ArrowUpRight, PaperAirplaneIcon as Send } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { getUsers, updateUserStatus } from "@/lib/admin-user-actions"
 import { BroadcastSMSModal } from "./BroadcastSMSModal"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Send } from "lucide-react"
 
 interface AdminUser {
     // ... existing interface ...

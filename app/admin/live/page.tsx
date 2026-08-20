@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { RefreshCw, AlertCircle, TrendingUp } from "lucide-react"
+import { ArrowPathRoundedSquareIcon as RefreshCw, ExclamationCircleIcon as AlertCircle, ArrowTrendingUpIcon as TrendingUp } from "@heroicons/react/24/solid";
 import { getLiveMatchesWithStatus } from "@/lib/match-helpers"
 
 interface LiveMatch {
@@ -75,20 +75,20 @@ export default function LiveDashboardPage() {
     const staleCount = matches.filter(m => m.staleness === "stale").length
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-background p-8">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-white uppercase tracking-tight">Live Dashboard</h1>
-                        <p className="text-sm text-slate-400 font-bold mt-1">Real-time match management</p>
+                        <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Live Dashboard</h1>
+                        <p className="text-sm text-muted-foreground font-bold mt-1">Real-time match management</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setAutoRefresh(!autoRefresh)}
                             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${autoRefresh
                                 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                : "bg-slate-800 text-slate-400 border border-white/10"
+                                : "bg-muted text-muted-foreground border border-border"
                                 }`}
                         >
                             {autoRefresh ? "Auto-Refresh ON" : "Auto-Refresh OFF"}
@@ -120,9 +120,9 @@ export default function LiveDashboardPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                        <div className="text-3xl font-black text-white">{matches.length}</div>
-                        <div className="text-xs font-black text-slate-500 uppercase tracking-widest mt-1">Live Matches</div>
+                    <div className="bg-card border border-border rounded-2xl p-6">
+                        <div className="text-3xl font-black text-foreground">{matches.length}</div>
+                        <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mt-1">Live Matches</div>
                     </div>
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
                         <div className="text-3xl font-black text-emerald-500">{matches.filter(m => m.staleness === "fresh").length}</div>
@@ -139,7 +139,7 @@ export default function LiveDashboardPage() {
                 </div>
 
                 {/* Last Sync */}
-                <div className="text-xs text-slate-500 font-bold flex items-center gap-2">
+                <div className="text-xs text-muted-foreground font-bold flex items-center gap-2">
                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
                     Last synced: {lastSync.toLocaleTimeString()}
                 </div>
@@ -147,13 +147,13 @@ export default function LiveDashboardPage() {
                 {/* Matches Grid */}
                 {loading ? (
                     <div className="text-center py-12">
-                        <RefreshCw className="h-8 w-8 text-slate-500 animate-spin mx-auto mb-4" />
-                        <p className="text-slate-400 font-bold">Loading live matches...</p>
+                        <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin mx-auto mb-4" />
+                        <p className="text-muted-foreground font-bold">Loading live matches...</p>
                     </div>
                 ) : matches.length === 0 ? (
-                    <div className="text-center py-12 bg-white/5 border border-white/10 rounded-2xl">
-                        <TrendingUp className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400 font-bold">No live matches at the moment</p>
+                    <div className="text-center py-12 bg-card border border-border rounded-2xl">
+                        <TrendingUp className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+                        <p className="text-muted-foreground font-bold">No live matches at the moment</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -164,8 +164,8 @@ export default function LiveDashboardPage() {
                             >
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
-                                        <div className="text-xs font-black text-slate-500 uppercase tracking-widest">{match.sportType}</div>
-                                        <div className="text-sm font-bold text-white mt-1">{match.stage}</div>
+                                        <div className="text-xs font-black text-muted-foreground uppercase tracking-widest">{match.sportType}</div>
+                                        <div className="text-sm font-bold text-foreground mt-1">{match.stage}</div>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Last Update</div>
@@ -176,9 +176,9 @@ export default function LiveDashboardPage() {
                                 {/* Participants */}
                                 <div className="space-y-2">
                                     {match.participants.map((p: any, idx: number) => (
-                                        <div key={p.schoolId} className="flex items-center justify-between bg-black/20 rounded-xl p-3">
-                                            <span className="text-sm font-bold text-white">{p.name}</span>
-                                            <span className="text-lg font-black text-white">
+                                        <div key={p.schoolId} className="flex items-center justify-between bg-background/20 rounded-xl p-3">
+                                            <span className="text-sm font-bold text-foreground">{p.name}</span>
+                                            <span className="text-lg font-black text-foreground">
                                                 {match.result?.scores?.[p.schoolId] || 0}
                                             </span>
                                         </div>
@@ -186,8 +186,8 @@ export default function LiveDashboardPage() {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="mt-4 pt-4 border-t border-white/10">
-                                    <button className="w-full h-10 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
+                                <div className="mt-4 pt-4 border-t border-border">
+                                    <button className="w-full h-10 bg-foreground/10 hover:bg-foreground/20 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
                                         Quick Update
                                     </button>
                                 </div>

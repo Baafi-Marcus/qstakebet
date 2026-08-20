@@ -32,7 +32,7 @@ export function OddsButton({
             type="button"
             className={cn(
                 "flex flex-col items-center justify-center p-2 rounded-md transition-colors",
-                isSelected ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700",
+                isSelected ? "bg-purple-600 text-white" : "bg-card text-foreground/80 hover:bg-muted",
                 className
             )}
             onClick={(e) => {

@@ -11,7 +11,7 @@ export default async function LeaderboardPage() {
     const lifetimeStandings = await getLeaderboard()
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className="min-h-screen bg-background text-foreground">
             <LeaderboardClient
                 initialWeekly={weeklyStandings}
                 initialLifetime={lifetimeStandings}

@@ -3,7 +3,7 @@
 import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { UserPlus, Mail, Lock, User, Phone, AlertCircle, Gift, GraduationCap } from "lucide-react"
+import { UserPlusIcon as UserPlus, EnvelopeIcon as Mail, LockClosedIcon as Lock, UserIcon as User, PhoneIcon as Phone, ExclamationCircleIcon as AlertCircle, GiftIcon as Gift, AcademicCapIcon as GraduationCap } from "@heroicons/react/24/solid";
 import { registerUser } from "@/lib/auth-actions"
 import { ReferralSharePopup } from "@/components/ui/ReferralSharePopup"
 
@@ -134,7 +134,7 @@ function RegisterForm() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-background flex items-center justify-center p-4">
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
@@ -144,19 +144,19 @@ function RegisterForm() {
             <div className="relative w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-black text-white mb-2 italic tracking-tighter">
+                    <h1 className="text-4xl font-black text-foreground mb-2 italic tracking-tighter">
                         QSTAKE<span className="text-purple-400">bet</span>
                     </h1>
-                    <p className="text-slate-400">Create your account and start betting</p>
+                    <p className="text-muted-foreground">Create your account and start betting</p>
                 </div>
 
                 {/* Register Card */}
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                <div className="bg-card/40 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.35)]">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 bg-purple-500/10 rounded-xl">
                             <UserPlus className="h-6 w-6 text-purple-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Create Account</h2>
+                        <h2 className="text-2xl font-bold text-foreground">Create Account</h2>
                     </div>
 
                     {/* Welcome Bonus Banner */}
@@ -164,7 +164,7 @@ function RegisterForm() {
                         <Gift className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm font-semibold text-purple-300">Welcome Bonus!</p>
-                            <p className="text-xs text-slate-400 mt-1">Get 10 GHS free bet when you sign up</p>
+                            <p className="text-xs text-muted-foreground mt-1">Get 10 GHS free bet when you sign up</p>
                         </div>
                     </div>
 
@@ -178,69 +178,69 @@ function RegisterForm() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Name Field */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Full Name
                             </label>
                             <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="text"
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>
                         </div>
 
                         {/* Email Field */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Email Address
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="email"
                                     required
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>
                         </div>
 
                         {/* Alma Mater Field */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Alma Mater (School) <span className="text-slate-500 text-xs ml-1">(Optional)</span>
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
+                                Alma Mater (School) <span className="text-muted-foreground text-xs ml-1">(Optional)</span>
                             </label>
                             <div className="relative">
-                                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="text"
                                     placeholder="e.g. Prempeh College"
                                     value={formData.almaMater}
                                     onChange={(e) => setFormData({ ...formData, almaMater: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>
                         </div>
 
                         {/* Phone Field (Required) & OTP */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Phone Number
                             </label>
                             <div className="relative flex gap-2">
                                 <div className="relative w-full">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                     <input
                                         type="tel"
                                         required
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                     />
                                 </div>
                                 <button
@@ -257,21 +257,21 @@ function RegisterForm() {
                         {/* OTP Field (Visible after sending) */}
                         {otpSent && (
                             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-foreground/80 mb-2">
                                     Enter Verification Code
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-500 font-bold text-xs border border-slate-500 rounded">#</div>
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-muted-foreground font-bold text-xs border border-muted-foreground rounded">#</div>
                                     <input
                                         type="text"
                                         required
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all tracking-widest text-lg verified-inputs"
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all tracking-widest text-lg verified-inputs"
                                         maxLength={6}
                                     />
                                 </div>
-                                <p className="text-xs text-slate-500 mt-2">
+                                <p className="text-xs text-muted-foreground mt-2">
                                     Enter the 6-digit code sent to your phone.
                                 </p>
                             </div>
@@ -279,50 +279,50 @@ function RegisterForm() {
 
                         {/* Password Field */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Password
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="password"
                                     required
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>
                         </div>
 
                         {/* Confirm Password Field */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Confirm Password
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="password"
                                     required
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>
                         </div>
 
                         {/* Referral Code Field (Optional) */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Referral Code <span className="text-slate-500">(Optional)</span>
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
+                                Referral Code <span className="text-muted-foreground">(Optional)</span>
                             </label>
                             <div className="relative">
-                                <Gift className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                <Gift className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <input
                                     type="text"
                                     value={formData.referredBy}
                                     onChange={(e) => setFormData({ ...formData, referredBy: e.target.value.toUpperCase() })}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all uppercase verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all uppercase verified-inputs"
                                 />
                             </div>
                         </div>
@@ -335,9 +335,9 @@ function RegisterForm() {
                                 required
                                 checked={agreedToTerms}
                                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                className="mt-1 h-4 w-4 rounded border-white/10 bg-black/40 text-purple-600 focus:ring-purple-500/20 focus:ring-offset-0 transition-all cursor-pointer"
+                                className="mt-1 h-4 w-4 rounded border-input bg-background/40 text-purple-600 focus:ring-purple-500/20 focus:ring-offset-0 transition-all cursor-pointer"
                             />
-                            <label htmlFor="terms" className="text-sm text-slate-400 leading-tight cursor-pointer select-none">
+                            <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight cursor-pointer select-none">
                                 I agree to the <Link href="/terms" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Terms & Conditions</Link> and <Link href="/privacy" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Privacy Policy</Link>
                             </label>
                         </div>
@@ -355,10 +355,10 @@ function RegisterForm() {
                     {/* Divider */}
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/10" />
+                            <div className="w-full border-t border-border" />
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-slate-900/50 text-slate-400">
+                            <span className="px-4 bg-card/50 text-muted-foreground">
                                 Already have an account?
                             </span>
                         </div>
@@ -367,14 +367,14 @@ function RegisterForm() {
                     {/* Login Link */}
                     <Link
                         href="/auth/login"
-                        className="block w-full text-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+                        className="block w-full text-center bg-foreground/5 hover:bg-foreground/10 border border-border text-foreground font-semibold py-3 px-6 rounded-xl transition-all duration-200"
                     >
                         Sign In
                     </Link>
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-slate-500 text-sm mt-6">
+                <p className="text-center text-muted-foreground text-sm mt-6">
                     By creating an account, you agree to our Terms of Service and Privacy Policy
                 </p>
             </div>
@@ -396,7 +396,7 @@ function RegisterForm() {
 export default function RegisterPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary" />
             </div>
         }>

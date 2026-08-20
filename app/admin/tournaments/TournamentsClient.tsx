@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trophy, MapPin, Calendar, Activity, ChevronRight, Search, X, Loader2, Building2, GraduationCap, ChevronLeft, Users, Layers } from "lucide-react"
+import { PlusIcon as Plus, TrophyIcon as Trophy, MapPinIcon as MapPin, CalendarIcon as Calendar, SignalIcon as Activity, ChevronRightIcon as ChevronRight, MagnifyingGlassIcon as Search, XMarkIcon as X, ArrowPathIcon as Loader2, BuildingOfficeIcon as Building2, AcademicCapIcon as GraduationCap, ChevronLeftIcon as ChevronLeft, UsersIcon as Users, Square3Stack3DIcon as Layers, PencilIcon as Pencil, TrashIcon as Trash2 } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { Tournament, School } from "@/lib/types"
 import { createTournament, updateTournament, deleteTournament } from "@/lib/admin-actions"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2 } from "lucide-react"
 
 const STEPS = ["Basics", "Details", "Format"]
 

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Gift, X, Zap } from "lucide-react"
+import { GiftIcon as Gift, XMarkIcon as X, BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 
 interface GiftSelectionModalProps {
@@ -47,17 +47,17 @@ export function GiftSelectionModal({
     return (
         <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4 pb-0 sm:p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-[#1a1c23] w-full max-w-[340px] rounded-t-[2.5rem] sm:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
+            <div className="relative bg-popover w-full max-w-[340px] rounded-t-[2.5rem] sm:rounded-[2rem] border border-border/50 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
                 <div className="p-4 pt-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2.5 bg-purple-600/20 rounded-xl">
                             <Gift className="h-6 w-6 text-purple-400" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Select Gift</h3>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Available Balance</p>
+                            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Select Gift</h3>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Available Balance</p>
                         </div>
-                        <button onClick={onClose} className="ml-auto p-2 text-slate-500 hover:text-white transition-colors">
+                        <button onClick={onClose} className="ml-auto p-2 text-muted-foreground hover:text-foreground transition-colors">
                             <X className="h-4 w-4" />
                         </button>
                     </div>
@@ -65,7 +65,7 @@ export function GiftSelectionModal({
                     <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                         {gifts.length === 0 ? (
                             <div className="py-12 text-center">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No gifts available</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">No gifts available</p>
                             </div>
                         ) : (
                             gifts.map((gift) => {
@@ -78,7 +78,7 @@ export function GiftSelectionModal({
                                         key={gift.id}
                                         className={cn(
                                             "p-4 rounded-2xl border transition-all cursor-pointer group",
-                                            selectedGiftId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-slate-900 border-white/5 hover:border-purple-500/50",
+                                            selectedGiftId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-card border-border/50 hover:border-purple-500/50",
                                             isIneligible && "opacity-50 grayscale"
                                         )}
                                         onClick={() => {
@@ -89,12 +89,12 @@ export function GiftSelectionModal({
                                     >
                                         <div className="flex justify-between items-center">
                                             <div>
-                                                <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", selectedGiftId === gift.id ? "text-purple-200" : "text-slate-500")}>
+                                                <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", selectedGiftId === gift.id ? "text-purple-200" : "text-muted-foreground")}>
                                                     {gift.type}
                                                     {isOddsIneligible && " • Min Odds " + gift.minOdds.toFixed(2)}
                                                     {isSelectionIneligible && " • Min " + gift.minSelections + " Selections"}
                                                 </span>
-                                                <span className={cn("text-lg font-black", selectedGiftId === gift.id ? "text-white" : "text-slate-200")}>GHS {gift.amount.toFixed(2)}</span>
+                                                <span className={cn("text-lg font-black", selectedGiftId === gift.id ? "text-white" : "text-foreground/90")}>GHS {gift.amount.toFixed(2)}</span>
                                             </div>
                                             {selectedGiftId === gift.id && (
                                                 <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
@@ -109,11 +109,11 @@ export function GiftSelectionModal({
                     </div>
 
                     {selectedGiftId && (
-                        <div className="mt-4 pt-4 border-t border-white/5 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="mt-4 pt-4 border-t border-border/50 space-y-3 animate-in fade-in slide-in-from-top-2">
                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">Use Amount</span>
-                                <div className="flex items-center gap-2 bg-slate-900 rounded-xl px-3 py-2 border border-white/5">
-                                    <span className="text-xs font-bold text-slate-600">GHS</span>
+                                <span className="text-[10px] font-black text-muted-foreground uppercase">Use Amount</span>
+                                <div className="flex items-center gap-2 bg-card rounded-xl px-3 py-2 border border-border/50">
+                                    <span className="text-xs font-bold text-muted-foreground/70">GHS</span>
                                     <input
                                         type="number"
                                         value={selectedAmount}
@@ -124,7 +124,7 @@ export function GiftSelectionModal({
                                                 setSelectedAmount(val)
                                             }
                                         }}
-                                        className="w-20 bg-transparent text-right font-black text-sm text-white focus:outline-none"
+                                        className="w-20 bg-transparent text-right font-black text-sm text-foreground focus:outline-none"
                                     />
                                 </div>
                             </div>
@@ -136,7 +136,7 @@ export function GiftSelectionModal({
                                             setSelectedAmount(gift.amount)
                                         }
                                     }}
-                                    className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase rounded-lg transition-all"
+                                    className="flex-1 py-1.5 bg-muted hover:bg-muted/70 text-muted-foreground text-[10px] font-black uppercase rounded-lg transition-all"
                                 >
                                     Use Max
                                 </button>
@@ -161,7 +161,7 @@ export function GiftSelectionModal({
                                 onApply(undefined, 0)
                                 onClose()
                             }}
-                            className="py-4 bg-slate-900 hover:bg-slate-800 text-slate-500 font-black text-[10px] uppercase rounded-2xl transition-all"
+                            className="py-4 bg-card hover:bg-muted text-muted-foreground font-black text-[10px] uppercase rounded-2xl transition-all"
                         >
                             Clear Selection
                         </button>

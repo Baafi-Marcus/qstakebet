@@ -1,6 +1,6 @@
 import { getAllMatches } from "@/lib/data"
 import { HomeClient } from "@/components/home/HomeClient"
-import { Timer } from "lucide-react"
+import { ClockIcon as Timer } from "@heroicons/react/24/solid";
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +28,7 @@ export default async function LivePage() {
                         <div className="p-2 bg-purple-500/10 rounded-xl">
                             <Timer className="h-6 w-6 text-purple-400 animate-pulse" />
                         </div>
-                        <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Live & Today&apos;s Matches</h1>
+                        <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter">Live & Today&apos;s Matches</h1>
                     </div>
                 </div>
                 <HomeClient initialMatches={todayMatches} />

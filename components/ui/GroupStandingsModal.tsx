@@ -9,7 +9,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { BarChart2, X, Trophy } from "lucide-react"
+import { ChartBarIcon as BarChart2, XMarkIcon as X, TrophyIcon as Trophy } from "@heroicons/react/24/solid";
 import type { Match } from "@/lib/types"
 
 interface GroupStandingsModalProps {
@@ -32,12 +32,12 @@ export function GroupStandingsModal({
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="h-11 px-6 rounded-2xl bg-white/5 border-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all gap-2 font-black uppercase tracking-tight text-xs">
+                <Button variant="outline" className="h-11 px-6 rounded-2xl bg-accent border-border/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-all gap-2 font-black uppercase tracking-tight text-xs">
                     <BarChart2 className="h-4 w-4" />
                     Standings
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl bg-slate-950 border-white/5 p-0 overflow-hidden rounded-[2.5rem]">
+            <DialogContent className="max-w-2xl bg-popover border-border/50 p-0 overflow-hidden rounded-[2.5rem]">
                 <DialogHeader className="p-6 pb-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -45,8 +45,8 @@ export function GroupStandingsModal({
                                 <BarChart2 className="h-5 w-5 text-purple-400" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">Final Group Standings</DialogTitle>
-                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{tournamentName}</p>
+                                <DialogTitle className="text-xl font-black text-foreground uppercase tracking-tight">Final Group Standings</DialogTitle>
+                                <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">{tournamentName}</p>
                             </div>
                         </div>
                     </div>
@@ -78,15 +78,15 @@ export function GroupStandingsModal({
                         if (sorted.length === 0) return null
 
                         return (
-                            <div key={group} className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
-                                <div className="px-5 py-3 bg-white/5 flex items-center justify-between border-b border-white/5">
-                                    <span className="text-xs font-black text-white uppercase">{group}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Finished</span>
+                            <div key={group} className="bg-muted border border-border/50 rounded-3xl overflow-hidden">
+                                <div className="px-5 py-3 bg-muted flex items-center justify-between border-b border-border/50">
+                                    <span className="text-xs font-black text-foreground uppercase">{group}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Finished</span>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-slate-500 text-[9px]">
+                                            <tr className="border-b border-border/50 text-muted-foreground text-[9px]">
                                                 <th className="text-left px-5 py-2 font-black">#</th>
                                                 <th className="text-left px-0 pr-4 py-2 font-black">Team</th>
                                                 {["P", "W", "D", "L", "PTS"].map(h => <th key={h} className="text-center px-2 py-2 font-black">{h}</th>)}
@@ -94,13 +94,13 @@ export function GroupStandingsModal({
                                         </thead>
                                         <tbody>
                                             {sorted.map((s: any, idx: number) => (
-                                                <tr key={s.id} className="border-b last:border-0 border-white/5 hover:bg-white/5 transition-colors">
+                                                <tr key={s.id} className="border-b last:border-0 border-border/50 hover:bg-accent transition-colors">
                                                     <td className="px-5 py-3">
-                                                        <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
+                                                        <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>{idx + 1}</span>
                                                     </td>
-                                                    <td className="py-3 pr-4 font-bold text-white uppercase truncate max-w-[120px]">{s.name}</td>
+                                                    <td className="py-3 pr-4 font-bold text-foreground uppercase truncate max-w-[120px]">{s.name}</td>
                                                     {[s.p, s.w, s.d, s.l].map((v, i) => (
-                                                        <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
+                                                        <td key={i} className="text-center px-2 py-3 text-muted-foreground font-bold">{v}</td>
                                                     ))}
                                                     <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
                                                 </tr>

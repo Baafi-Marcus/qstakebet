@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { tournaments, matches, schools } from "@/lib/db/schema"
 import { eq, sql, inArray, and } from "drizzle-orm"
 import { notFound } from "next/navigation"
-import { Trophy, BarChart2, ChevronLeft, CalendarDays, Target, Shield, Zap } from "lucide-react"
+import { TrophyIcon as Trophy, ChartBarIcon as BarChart2, ChevronLeftIcon as ChevronLeft, CalendarDaysIcon as CalendarDays, ViewfinderCircleIcon as Target, ShieldCheckIcon as Shield, BoltIcon as Zap } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { TournamentFixturesModal } from "@/components/ui/TournamentFixturesModal"
 import { GroupStandingsModal } from "@/components/ui/GroupStandingsModal"
@@ -74,25 +74,25 @@ export default async function CompetitionPage({ params }: Props) {
             <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Link href="/tournaments" className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all shadow-xl">
+                        <Link href="/tournaments" className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all shadow-xl">
                             <ChevronLeft className="h-5 w-5" />
                         </Link>
                         <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20">
                             <Trophy className="h-6 w-6 text-purple-400" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">
+                            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight">
                                 {regionLabel} {sportLabel && <span className="text-purple-400">{sportLabel}</span>} Competitions
                             </h1>
-                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
+                            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-0.5">Live Standings & Fixtures</p>
                         </div>
                     </div>
                 </div>
 
                 {tournamentData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 bg-slate-900/40 border border-white/5 rounded-[2.5rem] text-center space-y-4">
-                        <BarChart2 className="h-12 w-12 text-slate-700" />
-                        <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">
+                    <div className="flex flex-col items-center justify-center py-24 bg-card/40 border border-border/50 rounded-[2.5rem] text-center space-y-4">
+                        <BarChart2 className="h-12 w-12 text-muted-foreground/50" />
+                        <p className="text-muted-foreground font-bold uppercase text-xs tracking-widest">
                             No active {sportLabel ? sportLabel.toLowerCase() : ''} tournaments in this region yet
                         </p>
                     </div>
@@ -112,12 +112,12 @@ export default async function CompetitionPage({ params }: Props) {
                             return (
                                 <div key={tournament.id} className="space-y-4">
                                     {/* Tournament Header */}
-                                    <div className="flex items-center justify-between gap-4 p-5 bg-slate-900/60 border border-white/5 rounded-[2rem]">
+                                    <div className="flex items-center justify-between gap-4 p-5 bg-card/60 border border-border/50 rounded-[2rem]">
                                         <div>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">
                                                 {tournament.sportType} · {tournament.gender} · {tournament.year}
                                             </span>
-                                            <h2 className="text-xl font-black text-white uppercase tracking-tight">{tournament.name}</h2>
+                                            <h2 className="text-xl font-black text-foreground uppercase tracking-tight">{tournament.name}</h2>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {allGroupsFinished && (
@@ -139,7 +139,7 @@ export default async function CompetitionPage({ params }: Props) {
 
                                     {/* Tournament Winner Prediction (Outright) */}
                                     {tournament.isOutrightEnabled && tournament.outrightOdds && tournament.outrightOdds.length > 0 && !tournament.winnerId && (
-                                        <div className="bg-slate-900/60 border border-purple-500/20 rounded-[2rem] p-6 space-y-4 shadow-lg shadow-purple-900/10 overflow-hidden relative group">
+                                        <div className="bg-card/60 border border-purple-500/20 rounded-[2rem] p-6 space-y-4 shadow-lg shadow-purple-900/10 overflow-hidden relative group">
                                             {/* Decorative Background */}
                                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                 <Target className="h-24 w-24 text-purple-500" />
@@ -147,11 +147,11 @@ export default async function CompetitionPage({ params }: Props) {
 
                                             <div className="flex items-center justify-between relative z-10">
                                                 <div className="space-y-1">
-                                                    <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                                    <h3 className="text-sm font-black text-foreground uppercase tracking-tight flex items-center gap-2">
                                                         <Trophy className="h-4 w-4 text-purple-400" />
                                                         Tournament Winner
                                                     </h3>
-                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Predict the overall champion</p>
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Predict the overall champion</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
@@ -211,15 +211,15 @@ export default async function CompetitionPage({ params }: Props) {
                                                 if (sorted.length === 0) return null
 
                                                 return (
-                                                    <div key={group} className="bg-slate-900/40 border border-white/5 rounded-[2rem] overflow-hidden">
-                                                        <div className="px-5 py-3 bg-white/5 border-b border-white/5 flex items-center justify-between">
-                                                            <span className="text-sm font-black text-white uppercase">{group}</span>
-                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Group Stage</span>
+                                                    <div key={group} className="bg-card/40 border border-border/50 rounded-[2rem] overflow-hidden">
+                                                        <div className="px-5 py-3 bg-muted/50 border-b border-border/50 flex items-center justify-between">
+                                                            <span className="text-sm font-black text-foreground uppercase">{group}</span>
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Group Stage</span>
                                                         </div>
                                                         <div className="overflow-x-auto">
                                                             <table className="w-full text-xs">
                                                                 <thead>
-                                                                    <tr className="border-b border-white/5 text-slate-500 text-[10px]">
+                                                                    <tr className="border-b border-border/50 text-muted-foreground text-[10px]">
                                                                         <th className="text-left px-5 py-2 font-black">#</th>
                                                                         <th className="text-left px-0 pr-4 py-2 font-black">Team</th>
                                                                         {["P", "W", "D", "L", "GD"].map(h => <th key={h} className="text-center px-2 py-2 font-black">{h}</th>)}
@@ -228,13 +228,13 @@ export default async function CompetitionPage({ params }: Props) {
                                                                 </thead>
                                                                 <tbody>
                                                                     {sorted.map((s: any, idx: number) => (
-                                                                        <tr key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                                        <tr key={s.id} className="border-b border-border/50 hover:bg-accent/50 transition-colors">
                                                                             <td className="px-5 py-3">
-                                                                                <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'}`}>{idx + 1}</span>
+                                                                                <span className={`w-5 h-5 inline-flex items-center justify-center rounded-md text-[9px] font-black ${idx < 2 ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>{idx + 1}</span>
                                                                             </td>
-                                                                            <td className="py-3 pr-4 font-bold text-white uppercase">{s.name}</td>
+                                                                            <td className="py-3 pr-4 font-bold text-foreground uppercase">{s.name}</td>
                                                                             {[s.p, s.w, s.d, s.l, s.gf - s.ga > 0 ? `+${s.gf - s.ga}` : s.gf - s.ga].map((v, i) => (
-                                                                                <td key={i} className="text-center px-2 py-3 text-slate-400 font-bold">{v}</td>
+                                                                                <td key={i} className="text-center px-2 py-3 text-muted-foreground font-bold">{v}</td>
                                                                             ))}
                                                                             <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
                                                                         </tr>
@@ -271,11 +271,11 @@ export default async function CompetitionPage({ params }: Props) {
                                             if (winners.length === 0 && !allGroupsFinished) return null
 
                                             return (
-                                                <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 space-y-4">
-                                                    <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                                <div className="bg-card/40 border border-border/50 rounded-[2rem] p-6 space-y-4">
+                                                    <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-4">
                                                         <div>
                                                             <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Tournament Progress</p>
-                                                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Teams Through to Next Round</h3>
+                                                            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Teams Through to Next Round</h3>
                                                         </div>
                                                         <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">
                                                             <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">{latestStage} Winners</span>
@@ -283,15 +283,15 @@ export default async function CompetitionPage({ params }: Props) {
                                                     </div>
                                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                         {winners.map(w => (
-                                                            <div key={w.id} className="flex items-center gap-2 p-3 bg-white/5 border border-white/5 rounded-2xl">
+                                                            <div key={w.id} className="flex items-center gap-2 p-3 bg-muted border border-border/50 rounded-2xl">
                                                                 <div className="p-1.5 rounded-lg bg-green-500/10">
                                                                     <Trophy className="h-3 w-3 text-green-400" />
                                                                 </div>
-                                                                <span className="text-xs font-bold text-white uppercase truncate">{w.name}</span>
+                                                                <span className="text-xs font-bold text-foreground uppercase truncate">{w.name}</span>
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic pt-2">
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest italic pt-2">
                                                         Waiting for the admin to schedule the next round of fixtures...
                                                     </p>
                                                 </div>
@@ -302,12 +302,12 @@ export default async function CompetitionPage({ params }: Props) {
                                     {/* Upcoming Fixtures with Bet Buttons */}
                                     {upcomingMatches.length > 0 && (
                                         <div className="space-y-2">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Upcoming Fixtures</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Upcoming Fixtures</p>
                                             {upcomingMatches.map(m => {
                                                 const matchLabel = m.participants.map(p => p.name).join(' vs ')
                                                 return (
-                                                    <div key={m.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
-                                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
+                                                    <div key={m.id} className="bg-card/40 border border-border/50 rounded-2xl p-4 space-y-3">
+                                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                                                             <span>{m.group || m.stage}</span>
                                                             <span className={m.status === 'live' ? 'text-red-400 animate-pulse' : ''}>{m.status === 'live' ? '🔴 LIVE' : m.startTime || 'TBD'}</span>
                                                         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react"
 import { submitLineup } from "@/lib/fantasy-actions"
-import { Search, Trophy, Sparkles, X, Coins, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Clock } from "lucide-react"
+import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock } from "@heroicons/react/24/solid";
 
 type School = {
     id: string
@@ -158,7 +158,7 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 pb-32 md:pb-8">
             {/* Page Header */}
-            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-slate-900 border border-white/5 shadow-2xl">
+            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border/50 shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 via-transparent to-transparent z-0" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
@@ -166,33 +166,33 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                             <Trophy className="h-6 w-6 text-amber-400 animate-pulse" />
                             <span className="text-xs font-black tracking-widest text-purple-400 uppercase">NSMQ Fantasy League</span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-extrabold font-russo bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                        <h1 className="text-3xl md:text-4xl font-extrabold font-russo bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
                             Quiz Manager Dashboard
                         </h1>
-                        <p className="text-slate-400 text-sm mt-1">
-                            Build your ultimate 3-school squad for <strong className="text-white">{activeGameWeek}</strong>.
+                        <p className="text-muted-foreground text-sm mt-1">
+                            Build your ultimate 3-school squad for <strong className="text-foreground">{activeGameWeek}</strong>.
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                        <div className="flex items-center gap-4 bg-popover/80 border border-border px-5 py-3 rounded-2xl">
                             <Clock className={`h-6 w-6 ${isLocked ? "text-rose-500" : "text-amber-400 animate-pulse"}`} />
                             <div>
-                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Deadline</div>
-                                <div className={`text-xl font-black ${isLocked ? "text-rose-500" : "text-white"}`}>{timeLeft}</div>
+                                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Deadline</div>
+                                <div className={`text-xl font-black ${isLocked ? "text-rose-500" : "text-foreground"}`}>{timeLeft}</div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                        <div className="flex items-center gap-4 bg-popover/80 border border-border px-5 py-3 rounded-2xl">
                             <RefreshCw className="h-6 w-6 text-cyan-400" />
                             <div>
-                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Substitutions</div>
-                                <div className="text-xl font-black text-white">{totalSubstitutions} Made</div>
+                                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Substitutions</div>
+                                <div className="text-xl font-black text-foreground">{totalSubstitutions} Made</div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 bg-slate-950/80 border border-white/10 px-5 py-3 rounded-2xl">
+                        <div className="flex items-center gap-4 bg-popover/80 border border-border px-5 py-3 rounded-2xl">
                             <Coins className="h-6 w-6 text-yellow-400" />
                             <div>
-                                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Remaining Budget</div>
-                                <div className="text-xl font-black text-white">{remainingCredits} / 100 Credits</div>
+                                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Remaining Budget</div>
+                                <div className="text-xl font-black text-foreground">{remainingCredits} / 100 Credits</div>
                             </div>
                         </div>
                     </div>
@@ -212,43 +212,43 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                             <div 
                                 key={index} 
                                 className={`relative h-44 rounded-3xl border flex flex-col items-center justify-center p-4 transition-all duration-300 ${
-                                    school 
-                                        ? "bg-slate-900/90 border-purple-500/30 shadow-[0_10px_30px_rgba(168,85,247,0.1)]" 
-                                        : "bg-slate-950 border-white/5 border-dashed"
+                                    school
+                                        ? "bg-card/90 border-purple-500/30 shadow-[0_10px_30px_rgba(168,85,247,0.1)]"
+                                        : "bg-background border-border/50 border-dashed"
                                 }`}
                             >
                                 {school ? (
                                     <>
-                                        <button 
+                                        <button
                                             onClick={() => handleRemove(school.id)}
-                                            className="absolute top-3 right-3 text-slate-500 hover:text-red-400 p-1 hover:bg-white/5 rounded-full transition-colors"
+                                            className="absolute top-3 right-3 text-muted-foreground hover:text-red-400 p-1 hover:bg-accent rounded-full transition-colors"
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
-                                        
+
                                         <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center font-bold text-purple-400 mb-2">
                                             {index + 1}
                                         </div>
 
                                         <h3 className="font-extrabold text-center text-lg leading-tight px-4 max-w-full truncate">{school.name}</h3>
-                                        <p className="text-slate-400 text-xs mt-1">{school.region} Region</p>
-                                        
+                                        <p className="text-muted-foreground text-xs mt-1">{school.region} Region</p>
+
                                         <div className="mt-4 flex items-center gap-2">
                                             <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full bg-gradient-to-r shadow-md ${getTierDetails(Number(school.tier)).color}`}>
                                                 Tier {school.tier}
                                             </span>
-                                            <span className="text-xs bg-slate-950 px-2.5 py-1 rounded-full border border-white/5 font-extrabold text-slate-300">
+                                            <span className="text-xs bg-popover px-2.5 py-1 rounded-full border border-border/50 font-extrabold text-foreground/80">
                                                 {school.creditCost} Credits
                                             </span>
                                         </div>
                                     </>
                                 ) : (
                                     <div className="text-center">
-                                        <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 font-bold mb-2 mx-auto">
+                                        <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-muted-foreground font-bold mb-2 mx-auto">
                                             {index + 1}
                                         </div>
-                                        <p className="text-slate-500 text-xs font-semibold">Stage Position {index + 1}</p>
-                                        <span className="text-[10px] text-slate-600 mt-1 block">Select school below</span>
+                                        <p className="text-muted-foreground text-xs font-semibold">Stage Position {index + 1}</p>
+                                        <span className="text-[10px] text-muted-foreground/70 mt-1 block">Select school below</span>
                                     </div>
                                 )}
                             </div>
@@ -257,7 +257,7 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                 </div>
 
                 {/* Status Messages & Submit Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/60 backdrop-blur-md border border-white/5 p-4 rounded-2xl">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-card/60 backdrop-blur-md border border-border/50 p-4 rounded-2xl">
                     <div className="flex items-center gap-3">
                         {message ? (
                             message.type === 'success' ? (
@@ -269,25 +269,25 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                             <Coins className="h-5 w-5 text-purple-400 shrink-0" />
                         )}
                         <p className={`text-sm ${
-                            message ? (message.type === 'success' ? "text-emerald-400" : "text-rose-400") : "text-slate-400"
+                            message ? (message.type === 'success' ? "text-emerald-400" : "text-rose-400") : "text-muted-foreground"
                         }`}>
                             {message ? message.text : (
-                                pendingSubs > 0 
-                                    ? `Locking in will consume ${pendingSubs} substitution${pendingSubs > 1 ? 's' : ''}.` 
+                                pendingSubs > 0
+                                    ? `Locking in will consume ${pendingSubs} substitution${pendingSubs > 1 ? 's' : ''}.`
                                     : `Budget: ${creditsSpent} spent, ${remainingCredits} remaining. (Exact 3-school lineup required)`
                             )}
                         </p>
                     </div>
-                    
+
                     <button
                         onClick={handleLockIn}
                         disabled={isPending || selectedSchools.length !== 3 || isLocked}
                         className={`w-full md:w-auto px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 ${
-                            isLocked 
-                                ? "bg-slate-900 text-rose-500/50 cursor-not-allowed border border-rose-500/20"
+                            isLocked
+                                ? "bg-background text-rose-500/50 cursor-not-allowed border border-rose-500/20"
                                 : selectedSchools.length === 3
                                     ? "bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] cursor-pointer"
-                                    : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                                    : "bg-card text-muted-foreground cursor-not-allowed border border-border/50"
                         }`}
                     >
                         {isLocked ? "Draft Locked" : isPending ? "Locking in..." : (
@@ -302,18 +302,18 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
             {/* School Selection Pool */}
             <div>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-white">Available School Draft Pool</h2>
-                    
+                    <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-foreground">Available School Draft Pool</h2>
+
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                         {/* Search */}
                         <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="text"
                                 placeholder="Search schools..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-900 border border-white/5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-input text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-purple-500/50"
                             />
                         </div>
                     </div>
@@ -328,7 +328,7 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                                 selectedRegion === region
                                     ? "bg-purple-600 text-white"
-                                    : "bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-white/5 hover:bg-slate-900"
+                                    : "bg-card/60 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-card"
                             }`}
                         >
                             {region}
@@ -352,18 +352,18 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                                     className={`relative p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
                                         isSelected
                                             ? "bg-purple-950/20 border-purple-500/40 shadow-lg"
-                                            : "bg-slate-900/40 border-white/5 hover:border-white/10"
+                                            : "bg-card/40 border-border/50 hover:border-border"
                                     }`}
                                 >
                                     <div>
-                                        <h3 className="font-extrabold text-sm text-white leading-tight">{school.name}</h3>
-                                        <p className="text-slate-500 text-xs mt-0.5">{school.region} Region</p>
-                                        
+                                        <h3 className="font-extrabold text-sm text-foreground leading-tight">{school.name}</h3>
+                                        <p className="text-muted-foreground text-xs mt-0.5">{school.region} Region</p>
+
                                         <div className="flex items-center gap-2 mt-2">
                                             <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded bg-gradient-to-r ${tierInfo.color}`}>
                                                 Tier {school.tier}
                                             </span>
-                                            <span className="text-[10px] text-slate-400 font-extrabold">
+                                            <span className="text-[10px] text-muted-foreground font-extrabold">
                                                 {school.creditCost} Credits
                                             </span>
                                         </div>
@@ -376,8 +376,8 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                                             isSelected
                                                 ? "bg-purple-600 text-white"
                                                 : (disabled || isLocked)
-                                                    ? "bg-slate-900 text-slate-700 border border-white/5 cursor-not-allowed"
-                                                    : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                                                    ? "bg-background text-muted-foreground/50 border border-border/50 cursor-not-allowed"
+                                                    : "bg-card text-foreground/80 hover:bg-muted hover:text-foreground"
                                         }`}
                                     >
                                         {isSelected ? "Remove" : "Select"}
@@ -386,7 +386,7 @@ export function FantasyClient({ initialSchools, currentLineup, activeGameWeek, d
                             )
                         })
                     ) : (
-                        <div className="col-span-full py-12 text-center text-slate-500 text-sm border border-white/5 border-dashed rounded-3xl">
+                        <div className="col-span-full py-12 text-center text-muted-foreground text-sm border border-border/50 border-dashed rounded-3xl">
                             No schools match your search or filter.
                         </div>
                     )}

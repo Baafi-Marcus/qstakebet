@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Clock, User, TrendingUp, Download } from "lucide-react"
+import { XMarkIcon as X, ClockIcon as Clock, UserIcon as User, ArrowTrendingUpIcon as TrendingUp, ArrowDownTrayIcon as Download } from "@heroicons/react/24/solid";
 import { getMatchHistory } from "@/lib/match-helpers"
 
 interface MatchHistoryModalProps {

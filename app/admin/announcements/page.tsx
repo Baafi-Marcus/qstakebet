@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Plus, Trash2, Megaphone, Image as ImageIcon, Link as LinkIcon, Save, Eye, EyeOff } from "lucide-react"
+import { PlusIcon as Plus, TrashIcon as Trash2, MegaphoneIcon as Megaphone, PhotoIcon as ImageIcon, LinkIcon, DocumentCheckIcon as Save, EyeIcon as Eye, EyeSlashIcon as EyeOff } from "@heroicons/react/24/solid";
 import { Button } from "@/components/ui/button"
 import { getAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/announcement-actions"
 import { Announcement } from "@/lib/types"
@@ -93,8 +93,8 @@ export default function AdminAnnouncementsPage() {
         <div className="p-8 max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Advert Management</h1>
-                    <p className="text-slate-400">Create displays for new games, referrals, and promos</p>
+                    <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter">Advert Management</h1>
+                    <p className="text-muted-foreground">Create displays for new games, referrals, and promos</p>
                 </div>
                 <Button
                     onClick={() => setIsAdding(!isAdding)}
@@ -106,18 +106,18 @@ export default function AdminAnnouncementsPage() {
 
             {/* Create Form */}
             {isAdding && (
-                <div className="bg-[#0f1115] border border-white/10 rounded-[2.5rem] p-8 mb-8 animate-in slide-in-from-top-4 duration-300 shadow-2xl">
+                <div className="bg-card border border-border rounded-[2.5rem] p-8 mb-8 animate-in slide-in-from-top-4 duration-300 shadow-2xl">
                     <form onSubmit={handleCreate} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Advert Type</label>
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Advert Type</label>
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, type: "text" })}
                                         className={cn(
                                             "flex-1 py-3 rounded-xl border font-bold flex items-center justify-center gap-2 transition-all",
-                                            formData.type === "text" ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                                            formData.type === "text" ? "bg-primary border-primary text-black" : "bg-muted/50 border-border text-foreground hover:bg-muted"
                                         )}
                                     >
                                         <Megaphone className="h-4 w-4" /> Text Message
@@ -127,7 +127,7 @@ export default function AdminAnnouncementsPage() {
                                         onClick={() => setFormData({ ...formData, type: "image" })}
                                         className={cn(
                                             "flex-1 py-3 rounded-xl border font-bold flex items-center justify-center gap-2 transition-all",
-                                            formData.type === "image" ? "bg-primary border-primary text-black" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                                            formData.type === "image" ? "bg-primary border-primary text-black" : "bg-muted/50 border-border text-foreground hover:bg-muted"
                                         )}
                                     >
                                         <ImageIcon className="h-4 w-4" /> Image Banner
@@ -136,12 +136,12 @@ export default function AdminAnnouncementsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Priority (Higher shows first)</label>
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Priority (Higher shows first)</label>
                                 <input
                                     type="number"
                                     value={formData.priority}
                                     onChange={e => setFormData({ ...formData, priority: parseInt(e.target.value) })}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                                    className="w-full bg-muted/50 border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-all"
                                     placeholder="0"
                                 />
                             </div>
@@ -149,18 +149,18 @@ export default function AdminAnnouncementsPage() {
                             {formData.type === "text" ? (
                                 <>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Message Content</label>
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Message Content</label>
                                         <input
                                             type="text"
                                             value={formData.content || ""}
                                             onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all text-xl font-bold"
+                                            className="w-full bg-muted/50 border border-input rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-all text-xl font-bold"
                                             placeholder="e.g. New Virtual Games Added! Play Now."
                                             required
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Select Theme</label>
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Select Theme</label>
                                         <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                                             {THEMES.map(theme => (
                                                 <button
@@ -169,11 +169,11 @@ export default function AdminAnnouncementsPage() {
                                                     onClick={() => setFormData({ ...formData, style: theme.id })}
                                                     className={cn(
                                                         "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all",
-                                                        formData.style === theme.id ? "bg-white/10 border-primary" : "bg-white/5 border-white/5 hover:bg-white/10"
+                                                        formData.style === theme.id ? "bg-muted border-primary" : "bg-muted/50 border-border/50 hover:bg-muted"
                                                     )}
                                                 >
                                                     <div className={cn("h-4 w-4 rounded-full", theme.color)} />
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{theme.name}</span>
+                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">{theme.name}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -181,31 +181,31 @@ export default function AdminAnnouncementsPage() {
                                 </>
                             ) : (
                                 <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banner Image URL</label>
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Banner Image URL</label>
                                     <div className="relative">
-                                        <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                        <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                         <input
                                             type="url"
                                             value={formData.imageUrl || ""}
                                             onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                                            className="w-full bg-muted/50 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:outline-none focus:border-primary transition-all"
                                             placeholder="https://example.com/banner.jpg"
                                             required
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-500 italic mt-1 px-1">Note: Recommended size 1200x220px for best results.</p>
+                                    <p className="text-[10px] text-muted-foreground italic mt-1 px-1">Note: Recommended size 1200x220px for best results.</p>
                                 </div>
                             )}
 
                             <div className="md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Click Link (Optional)</label>
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Click Link (Optional)</label>
                                 <div className="relative">
-                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                     <input
                                         type="text"
                                         value={formData.link || ""}
                                         onChange={e => setFormData({ ...formData, link: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                                        className="w-full bg-muted/50 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:outline-none focus:border-primary transition-all"
                                         placeholder="/virtuals or https://google.com"
                                     />
                                 </div>
@@ -228,24 +228,24 @@ export default function AdminAnnouncementsPage() {
             <div className="grid grid-cols-1 gap-4">
                 {loading ? (
                     <div className="py-20 text-center animate-pulse">
-                        <Megaphone className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">Loading adverts...</p>
+                        <Megaphone className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                        <p className="text-muted-foreground font-bold uppercase tracking-widest">Loading adverts...</p>
                     </div>
                 ) : ads.length === 0 ? (
-                    <div className="py-20 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10">
-                        <Megaphone className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">No adverts found</p>
+                    <div className="py-20 text-center bg-muted/50 rounded-[2.5rem] border border-dashed border-border">
+                        <Megaphone className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                        <p className="text-muted-foreground font-bold uppercase tracking-widest">No adverts found</p>
                     </div>
                 ) : (
                     ads.map((ad) => (
                         <div
                             key={ad.id}
                             className={cn(
-                                "group bg-[#0f1115] border rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-6 transition-all hover:bg-white/[0.02]",
-                                ad.isActive ? "border-white/10" : "border-white/5 grayscale opacity-60"
+                                "group bg-card border rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-6 transition-all hover:bg-accent/5",
+                                ad.isActive ? "border-border" : "border-border/50 grayscale opacity-60"
                             )}
                         >
-                            <div className="p-4 bg-white/5 rounded-2xl">
+                            <div className="p-4 bg-muted rounded-2xl">
                                 {ad.type === "text" ? <Megaphone className="h-8 w-8 text-primary" /> : <ImageIcon className="h-8 w-8 text-blue-400" />}
                             </div>
 
@@ -257,15 +257,15 @@ export default function AdminAnnouncementsPage() {
                                     )}>
                                         {ad.type === "text" ? "Text Message" : "Image Banner"}
                                     </span>
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                                         Priority: {ad.priority}
                                     </span>
                                 </div>
-                                <h3 className="text-lg font-bold text-white truncate max-w-lg">
+                                <h3 className="text-lg font-bold text-foreground truncate max-w-lg">
                                     {ad.type === "text" ? ad.content : ad.imageUrl}
                                 </h3>
                                 {ad.link && (
-                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                                         <LinkIcon className="h-3 w-3" />
                                         <span className="truncate">{ad.link}</span>
                                     </div>
@@ -279,7 +279,7 @@ export default function AdminAnnouncementsPage() {
                                         "p-3 rounded-xl border transition-all",
                                         ad.isActive
                                             ? "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
-                                            : "bg-white/5 border-white/10 text-slate-500 hover:bg-white/10"
+                                            : "bg-muted border-border text-muted-foreground hover:bg-muted/70"
                                     )}
                                     title={ad.isActive ? "Deactivate" : "Activate"}
                                 >

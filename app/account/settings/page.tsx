@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Phone, Shield, CheckCircle2, AlertCircle, Loader2, Edit2, ArrowLeft } from "lucide-react"
+import { PhoneIcon as Phone, ShieldCheckIcon as Shield, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathIcon as Loader2, PencilSquareIcon as Edit2, ArrowLeftIcon as ArrowLeft } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { requestPhoneUpdate, confirmPhoneUpdate } from "@/lib/phone-update-actions"
 import { getProviderName, detectPaymentMethod } from "@/lib/phone-utils"
@@ -80,12 +80,12 @@ export default function SettingsPage() {
         <div className="space-y-10 pb-20">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href="/account/profile" className="p-2 hover:bg-white/5 rounded-full text-slate-400 transition-all">
+                <Link href="/account/profile" className="p-2 hover:bg-accent hover:text-foreground rounded-full text-muted-foreground transition-all">
                     <ArrowLeft className="h-6 w-6" />
                 </Link>
                 <div>
                     <h2 className="text-3xl font-black mb-1">Account Settings</h2>
-                    <p className="text-slate-400 font-medium">Manage your account details</p>
+                    <p className="text-muted-foreground font-medium">Manage your account details</p>
                 </div>
             </div>
 
@@ -105,36 +105,36 @@ export default function SettingsPage() {
             )}
 
             {/* Current Phone Number */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
+            <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-purple-500/10 rounded-xl">
                             <Phone className="h-6 w-6 text-purple-400" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-white">Phone Number</h3>
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Primary Contact</p>
+                            <h3 className="text-lg font-black text-foreground">Phone Number</h3>
+                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Primary Contact</p>
                         </div>
                     </div>
                     {!showPhoneUpdate && (
                         <button
                             onClick={() => setShowPhoneUpdate(true)}
-                            className="p-2 hover:bg-white/5 rounded-xl text-purple-400 transition-all"
+                            className="p-2 hover:bg-accent rounded-xl text-purple-400 transition-all"
                         >
                             <Edit2 className="h-5 w-5" />
                         </button>
                     )}
                 </div>
 
-                <div className="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+                <div className="bg-muted border border-border/50 rounded-2xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-white font-black text-lg">{session?.user?.phone || "N/A"}</span>
+                        <span className="text-foreground font-black text-lg">{session?.user?.phone || "N/A"}</span>
                         <div className="flex items-center gap-2 text-green-400 text-xs font-bold">
                             <Shield className="h-4 w-4" />
                             VERIFIED
                         </div>
                     </div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">
                         Provider: {currentProvider || "Unknown"}
                     </p>
                 </div>
@@ -144,7 +144,7 @@ export default function SettingsPage() {
             {showPhoneUpdate && (
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-3xl p-6 space-y-6 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-black text-white">Update Phone Number</h3>
+                        <h3 className="text-lg font-black text-foreground">Update Phone Number</h3>
                         <button
                             onClick={() => {
                                 setShowPhoneUpdate(false)
@@ -154,7 +154,7 @@ export default function SettingsPage() {
                                 setError("")
                                 setSuccess("")
                             }}
-                            className="text-slate-500 hover:text-white text-sm font-bold transition-colors"
+                            className="text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
                         >
                             Cancel
                         </button>
@@ -170,13 +170,13 @@ export default function SettingsPage() {
                                 onChange={(e) => setNewPhone(e.target.value)}
                                 placeholder="024XXXXXXX"
                                 disabled={otpSent}
-                                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+                                className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none disabled:opacity-50"
                             />
                             {!otpSent && (
                                 <button
                                     onClick={handleSendOtp}
                                     disabled={loading || !newPhone}
-                                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-xl transition-all whitespace-nowrap"
+                                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold rounded-xl transition-all whitespace-nowrap"
                                 >
                                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Code"}
                                 </button>
@@ -195,12 +195,12 @@ export default function SettingsPage() {
                                     onChange={(e) => setOtp(e.target.value)}
                                     placeholder="123456"
                                     maxLength={6}
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-lg tracking-widest placeholder-slate-500 focus:border-purple-500 focus:outline-none"
+                                    className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground text-lg tracking-widest placeholder-muted-foreground focus:border-purple-500 focus:outline-none"
                                 />
                                 <button
                                     onClick={handleConfirmUpdate}
                                     disabled={loading || !otp}
-                                    className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-2"
+                                    className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-2"
                                 >
                                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5" /> Confirm</>}
                                 </button>

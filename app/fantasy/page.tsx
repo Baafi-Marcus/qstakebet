@@ -21,7 +21,7 @@ export default async function FantasyPage() {
     const currentLineup = await getUserLineup(session.user.id, activeStage.gameWeek)
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className="min-h-screen bg-background text-foreground">
             <FantasyClient
                 initialSchools={allSchools}
                 currentLineup={currentLineup}

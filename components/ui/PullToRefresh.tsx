@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { ArrowPathIcon as Loader2 } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 
 interface PullToRefreshProps {
@@ -87,7 +87,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
                 style={{ height: isRefreshing ? 64 : pullDistance }}
             >
                 <div className={cn(
-                    "bg-slate-900 border border-white/10 rounded-full p-2 shadow-2xl flex items-center justify-center transition-transform",
+                    "bg-popover border border-border rounded-full p-2 shadow-2xl flex items-center justify-center transition-transform",
                     pullDistance > threshold ? "scale-110 bg-purple-600/20 border-purple-500/50" : "scale-100"
                 )}>
                     <Loader2

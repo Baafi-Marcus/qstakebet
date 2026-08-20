@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { Trophy, ChevronDown, ChevronUp, Share2, Edit2, Clock, Zap, Target, HelpCircle } from "lucide-react"
+import { TrophyIcon as Trophy, ChevronDownIcon as ChevronDown, ChevronUpIcon as ChevronUp, ArrowUpOnSquareIcon as Share2, PencilSquareIcon as Edit2, ClockIcon as Clock, BoltIcon as Zap, ViewfinderCircleIcon as Target, QuestionMarkCircleIcon as HelpCircle } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 import gsap from "gsap"
 
@@ -49,13 +49,13 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
             {/* Date Gutter (Only for History) */}
             {isHistory && (
                 <div className="flex flex-col items-center pt-2 w-8 md:w-12 shrink-0">
-                    <span className="text-lg md:text-xl font-black text-white leading-none">{day}</span>
-                    <span className="text-[10px] font-black text-slate-500 tracking-widest">{month}</span>
+                    <span className="text-lg md:text-xl font-black text-foreground leading-none">{day}</span>
+                    <span className="text-[10px] font-black text-muted-foreground tracking-widest">{month}</span>
                 </div>
             )}
 
             {/* Ticket Card */}
-            <div className="flex-1 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl transition-all hover:border-white/10">
+            <div className="flex-1 bg-card/40 backdrop-blur-xl border border-border/50 rounded-[2rem] overflow-hidden shadow-2xl transition-all hover:border-border">
                 {/* Status Header Strip */}
                 <div className={cn(
                     "px-6 py-2 flex items-center justify-between",
@@ -83,15 +83,15 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                             <div className="space-y-2">
                                 {selections.slice(0, 3).map((sel, idx) => (
                                     <div key={idx} className="flex items-center gap-3">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-700" />
-                                        <span className="text-sm font-bold text-slate-200 line-clamp-1">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-muted" />
+                                        <span className="text-sm font-bold text-foreground/90 line-clamp-1">
                                             {sel.matchLabel}
                                         </span>
                                     </div>
                                 ))}
                                 {selections.length > 3 && (
                                     <div className="flex items-center justify-between pl-4">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
                                             and {selections.length - 3} other matches
                                         </span>
                                         <button
@@ -120,15 +120,15 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                     <div ref={detailsRef} className="overflow-hidden h-0 opacity-0">
                         <div className="space-y-6 pt-2 pb-4">
                             {selections.map((sel, idx) => (
-                                <div key={idx} className="relative pl-8 border-l border-white/5 space-y-2">
-                                    <div className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-slate-800 border-2 border-slate-900" />
+                                <div key={idx} className="relative pl-8 border-l border-border/50 space-y-2">
+                                    <div className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-muted border-2 border-background" />
 
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
                                                 {sel.marketName}
                                             </p>
-                                            <p className="text-base font-black text-white leading-tight">
+                                            <p className="text-base font-black text-foreground leading-tight">
                                                 {sel.matchLabel}
                                             </p>
                                         </div>
@@ -140,10 +140,10 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                                        <div className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-xl border border-border/50">
                                             <span className="text-xs font-black text-primary">{sel.label}</span>
-                                            <span className="text-[10px] font-bold text-slate-500">@</span>
-                                            <span className="text-xs font-black text-white">{sel.odds.toFixed(2)}</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground">@</span>
+                                            <span className="text-xs font-black text-foreground">{sel.odds.toFixed(2)}</span>
                                         </div>
 
                                         {/* Dynamic Badges based on market or logic */}
@@ -159,7 +159,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-600">
+                                    <div className="flex items-center gap-4 text-[10px] font-bold text-muted-foreground/70">
                                         <div className="flex items-center gap-1">
                                             <Clock className="h-3 w-3" />
                                             <span>{sel.currentMatch?.startTime || "TBD"}</span>
@@ -175,7 +175,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                             ))}
                             <button
                                 onClick={() => setIsExpanded(false)}
-                                className="w-full py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                                className="w-full py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors"
                             >
                                 Hide Match Details ↑
                             </button>
@@ -183,24 +183,24 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
                     </div>
 
                     {/* Footer Metrics */}
-                    <div className="pt-4 border-t border-white/5 flex items-end justify-between">
+                    <div className="pt-4 border-t border-border/50 flex items-end justify-between">
                         <div className="flex gap-6">
                             <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Stake</p>
-                                <p className="text-lg font-black text-white leading-none">
-                                    <span className="text-xs text-slate-500 mr-1">GHS</span>
+                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Stake</p>
+                                <p className="text-lg font-black text-foreground leading-none">
+                                    <span className="text-xs text-muted-foreground mr-1">GHS</span>
                                     {bet.stake.toLocaleString()}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">
                                     {bet.status === 'won' ? "Return" : "Potential Win"}
                                 </p>
                                 <p className={cn(
                                     "text-lg font-black leading-none",
-                                    bet.status === 'won' ? "text-emerald-400" : "text-white"
+                                    bet.status === 'won' ? "text-emerald-400" : "text-foreground"
                                 )}>
-                                    <span className="text-xs text-slate-500 mr-1">GHS</span>
+                                    <span className="text-xs text-muted-foreground mr-1">GHS</span>
                                     {bet.potentialPayout.toLocaleString()}
                                 </p>
                             </div>
@@ -211,7 +211,7 @@ export function BetTicket({ bet, isHistory = false }: BetTicketProps) {
 
                     {/* Ticket Metadata */}
                     <div className="pt-2 flex items-center justify-between opacity-30 group-hover:opacity-100 transition-opacity">
-                        <span className="text-[8px] font-bold text-slate-500 uppercase">QuickStake • {bet.id.toUpperCase()}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase">QuickStake • {bet.id.toUpperCase()}</span>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Send, X, AlertCircle, Loader2 } from "lucide-react"
+import { PaperAirplaneIcon as Send, XMarkIcon as X, ExclamationCircleIcon as AlertCircle, ArrowPathIcon as Loader2 } from "@heroicons/react/24/solid";
 import { Button } from "@/components/ui/button"
 import { broadcastSMS } from "@/lib/admin-user-actions"
 

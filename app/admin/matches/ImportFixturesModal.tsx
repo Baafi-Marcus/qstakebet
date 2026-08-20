@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { parseFixturesWithAI, saveImportedMatches } from "./import-actions"
-import { X, Upload, FileText, ImageIcon, Loader2, Save, Trash2, CheckCircle2 } from "lucide-react"
+import { XMarkIcon as X, ArrowUpTrayIcon as Upload, DocumentTextIcon as FileText, PhotoIcon as ImageIcon, ArrowPathIcon as Loader2, DocumentCheckIcon as Save, TrashIcon as Trash2, CheckCircleIcon as CheckCircle2 } from "@heroicons/react/24/solid";
 
 type ImportFixturesModalProps = {
     isOpen: boolean

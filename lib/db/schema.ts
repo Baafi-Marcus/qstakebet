@@ -239,12 +239,9 @@ export const platformSettings = pgTable("platform_settings", {
 export const chatRooms = pgTable("chat_rooms", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
-    matchId: text("match_id").references(() => matches.id),
     creatorId: text("creator_id").references(() => users.id),
     isPublic: boolean("is_public").default(true).notNull(),
     inviteCode: text("invite_code").unique(),
-    type: text("type").default("public").notNull(),
-    status: text("status").default("active").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -253,10 +250,7 @@ export const chatMessages = pgTable("chat_messages", {
     channel: text("channel").default("global").notNull(),
     roomId: text("room_id").references(() => chatRooms.id),
     userId: text("user_id").notNull().references(() => users.id),
-    content: text("content").notNull(),
-    type: text("type").default("text").notNull(),
-    status: text("status").default("active").notNull(),
-    metadata: jsonb("metadata"),
+    content: text("message").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -264,8 +258,6 @@ export const chatRoomMembers = pgTable("chat_room_members", {
     id: text("id").primaryKey(),
     roomId: text("room_id").notNull().references(() => chatRooms.id),
     userId: text("user_id").notNull().references(() => users.id),
-    role: text("role").default("member").notNull(),
-    status: text("status").default("active").notNull(),
     joinedAt: timestamp("joined_at").defaultNow(),
 });
 

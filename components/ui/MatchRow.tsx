@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Zap, ChevronDown, Lock, ChevronRight, Calendar } from "lucide-react"
+import { BoltIcon as Zap, ChevronDownIcon as ChevronDown, LockClosedIcon as Lock, ChevronRightIcon as ChevronRight, CalendarIcon as Calendar } from "@heroicons/react/24/solid";
 import { OddsButton } from "./OddsButton"
 import { MatchTimer } from "./MatchTimer"
 import { normalizeMarketName, cn } from "@/lib/utils"
@@ -133,7 +133,7 @@ export function MatchRow({
                         sportType={match.sportType}
                         tournamentName={match.tournamentName || undefined}
                         stage={match.stage}
-                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                        className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                     />
                 </div>
             ))}
@@ -143,7 +143,7 @@ export function MatchRow({
     return (
         <div
             onClick={() => onMoreClick?.(match)}
-            className="flex items-center border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group cursor-pointer"
+            className="flex items-center border-b border-border/50 hover:bg-accent transition-colors group cursor-pointer"
         >
             {/* Left side: Teams & Info */}
             <div className="flex-1 py-1.5 px-3 min-w-0">
@@ -158,7 +158,7 @@ export function MatchRow({
                             className="text-[9px] font-bold"
                         />
                     ) : (
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
                             {match.isVirtual
                                 ? `VIRTUAL • ${match.stage}`
                                 : match.tournamentName
@@ -175,10 +175,10 @@ export function MatchRow({
                     {participants.map((p, idx) => (
                         <div key={p.schoolId} className="flex items-center justify-between group-hover:translate-x-0.5 transition-transform" style={{ transitionDelay: `${idx * 50}ms` }}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <span className="text-[9px] sm:text-[10px] font-bold text-white truncate uppercase tracking-tighter">{p.name}</span>
+                                <span className="text-[9px] sm:text-[10px] font-bold text-foreground truncate uppercase tracking-tighter">{p.name}</span>
                                 {(!internalIsFinished && winProbabilities[idx] !== undefined) && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <div className="w-8 h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="w-8 h-1 bg-muted rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-all duration-1000"
                                                 style={{ width: `${winProbabilities[idx]}%` }}
@@ -210,8 +210,8 @@ export function MatchRow({
                 {/* Start Time / TBD Info */}
                 {!internalIsLive && !internalIsFinished && (
                     <div className="mt-1 flex items-center gap-2">
-                        <Calendar className="h-2 w-2 text-slate-500" />
-                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                        <Calendar className="h-2 w-2 text-muted-foreground" />
+                        <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">
                             {match.startTime || "TBD"}
                         </span>
                     </div>
@@ -219,15 +219,15 @@ export function MatchRow({
             </div>
 
             {/* Right side: Odds Columns OR Live Scores OR Finished Results OR Pending */}
-            <div className="relative flex items-stretch divide-x divide-white/5 bg-slate-950/10 min-h-[48px]">
+            <div className="relative flex items-stretch divide-x divide-border bg-background/10 min-h-[48px]">
                 {(internalIsLive || internalIsFinished || internalIsPending) ? (
                     <div className={cn(
                         "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-slate-900/50"
+                        internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-card/50"
                     )}>
                         {internalIsPending ? (
                             <div className="flex flex-col items-center justify-center py-2">
-                                <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                <div className="text-[7px] font-black text-muted-foreground uppercase tracking-widest mb-1">
                                     Full Time
                                 </div>
                                 <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
@@ -238,19 +238,19 @@ export function MatchRow({
                             <>
                                 {participants.map((p, idx) => (
                                     <div key={p.schoolId} className="flex flex-col items-center justify-center min-w-[32px]">
-                                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5">
+                                        <span className="text-[7px] font-black text-muted-foreground uppercase tracking-tighter mb-0.5">
                                             {(idx + 1)}
                                         </span>
                                         <span className={cn(
                                             "text-sm font-black font-mono tabular-nums leading-none",
-                                            internalIsLive ? "text-purple-500" : "text-slate-300"
+                                            internalIsLive ? "text-purple-500" : "text-foreground/80"
                                         )}>
                                             {internalScores ? internalScores[idx] : 0}
                                         </span>
                                     </div>
                                 ))}
                                 {internalIsFinished && (
-                                    <div className="ml-2 pl-4 border-l border-white/5 flex flex-col items-center justify-center">
+                                    <div className="ml-2 pl-4 border-l border-border/50 flex flex-col items-center justify-center">
                                         <div className="text-[7px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                                             SETTLED
                                         </div>
@@ -263,10 +263,10 @@ export function MatchRow({
                     <>
                         {/* Lock Overlay */}
                         {isLocked && (
-                            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
                                 <div className="flex flex-col items-center gap-0.5">
-                                    <Lock className="h-3 w-3 text-slate-500" />
-                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{lockStatus.reason}</span>
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{lockStatus.reason}</span>
                                 </div>
                             </div>
                         )}
@@ -287,7 +287,7 @@ export function MatchRow({
                                             sportType={match.sportType}
                                             tournamentName={match.tournamentName || undefined}
                                             stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                         />
                                     </div>
                                 ))}
@@ -306,7 +306,7 @@ export function MatchRow({
                                             sportType={match.sportType}
                                             tournamentName={match.tournamentName || undefined}
                                             stage={match.stage}
-                                            className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                            className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                         />
                                     </div>
                                 )}
@@ -316,14 +316,14 @@ export function MatchRow({
                         {activeMarket === 'total_points' && (
                             <div className="flex items-center">
                                 {/* Selector */}
-                                <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
+                                <div className="relative w-16 sm:w-20 border-r border-border/50 h-full">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             haptics.light();
                                             setIsDropdownOpen(!isDropdownOpen);
                                         }}
-                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                     >
                                         <span className="text-[7px] uppercase opacity-50">LINE</span>
                                         <div className="flex items-center gap-0.5" >
@@ -333,7 +333,7 @@ export function MatchRow({
                                     </button>
                                     {isDropdownOpen && (
                                         <div
-                                            className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl max-h-48 overflow-y-auto rounded-b-md"
+                                            className="absolute top-full left-0 w-full z-50 bg-popover border border-border shadow-2xl max-h-48 overflow-y-auto rounded-b-md"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {
@@ -350,7 +350,7 @@ export function MatchRow({
                                                                 setSelectedTotalLine(line);
                                                                 setIsDropdownOpen(false);
                                                             }}
-                                                            className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
+                                                            className="w-full text-left px-2 py-2 text-[10px] text-foreground/80 hover:bg-accent hover:text-foreground block border-b border-border/50 last:border-0"
                                                         >
                                                             {line}
                                                         </button>
@@ -377,10 +377,10 @@ export function MatchRow({
                                                 sportType={match.sportType}
                                                 tournamentName={match.tournamentName || undefined}
                                                 stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                             />
                                         </div>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5">
+                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-border/50">
                                             <OddsButton
                                                 label={`U`}
                                                 odds={match.extendedOdds?.totalPoints?.[`Under ${selectedTotalLine}`] ?? null}
@@ -394,7 +394,7 @@ export function MatchRow({
                                                 sportType={match.sportType}
                                                 tournamentName={match.tournamentName || undefined}
                                                 stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                             />
                                         </div>
                                     </>
@@ -403,7 +403,7 @@ export function MatchRow({
                                         <div className="w-12 sm:w-14 flex items-center justify-center">
                                             <OddsButton label="O" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
                                         </div>
-                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-white/5" >
+                                        <div className="w-12 sm:w-14 flex items-center justify-center border-r border-border/50" >
                                             <OddsButton label="U" odds={null} matchId={match.id} marketName="Total Points" matchLabel={matchLabel} className="h-full w-full border-0" />
                                         </div>
                                     </>
@@ -417,7 +417,7 @@ export function MatchRow({
                                     const spreadLine = match.extendedOdds?.handicap?.[`${p.name}`] || 0;
                                     const spreadLabel = spreadLine >= 0 ? `+${spreadLine}` : spreadLine.toString();
                                     return (
-                                        <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center border-r border-white/5 last:border-0 h-full">
+                                        <div key={p.schoolId} className="w-16 sm:w-20 md:w-24 flex items-center justify-center border-r border-border/50 last:border-0 h-full">
                                             <OddsButton
                                                 label={spreadLabel}
                                                 odds={match.extendedOdds?.handicap?.[p.name] ?? null}
@@ -435,7 +435,7 @@ export function MatchRow({
                                                 sportType={match.sportType}
                                                 tournamentName={match.tournamentName || undefined}
                                                 stage={match.stage}
-                                                className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                             />
                                         </div>
                                     )
@@ -446,14 +446,14 @@ export function MatchRow({
                         {activeMarket === 'round_winner' && match.sportType === 'quiz' && match.extendedOdds && Object.keys(match.extendedOdds).some(k => k.startsWith('round')) && (
                             <div className="flex items-center">
                                 {/* Round Selector */}
-                                <div className="relative w-16 sm:w-20 border-r border-white/5 h-full">
+                                <div className="relative w-16 sm:w-20 border-r border-border/50 h-full">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             haptics.light();
                                             setIsDropdownOpen(!isDropdownOpen);
                                         }}
-                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                        className="w-full h-full flex flex-col items-center justify-center px-1 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                     >
                                         <span className="text-[7px] uppercase opacity-50">ROUND</span>
                                         <div className="flex items-center gap-0.5">
@@ -463,7 +463,7 @@ export function MatchRow({
                                     </button>
                                     {isDropdownOpen && (
                                         <div
-                                            className="absolute top-full left-0 w-full z-50 bg-slate-900 border border-white/10 shadow-2xl rounded-b-md"
+                                            className="absolute top-full left-0 w-full z-50 bg-popover border border-border shadow-2xl rounded-b-md"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"].map(r => (
@@ -475,7 +475,7 @@ export function MatchRow({
                                                         setSelectedRound(r);
                                                         setIsDropdownOpen(false);
                                                     }}
-                                                    className="w-full text-left px-2 py-2 text-[10px] text-slate-300 hover:bg-white/10 hover:text-white block border-b border-white/5 last:border-0"
+                                                    className="w-full text-left px-2 py-2 text-[10px] text-foreground/80 hover:bg-accent hover:text-foreground block border-b border-border/50 last:border-0"
                                                 >
                                                     {r}
                                                 </button>
@@ -502,7 +502,7 @@ export function MatchRow({
                                         isSelected={checkSelected(`${match.id}-Winning Margin-1-10`)}
                                         isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
                                         sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                     />
                                 </div>
                                 <div className="w-12 sm:w-14 flex items-center justify-center">
@@ -516,7 +516,7 @@ export function MatchRow({
                                         isSelected={checkSelected(`${match.id}-Winning Margin-11-25`)}
                                         isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
                                         sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                     />
                                 </div>
                                 <div className="w-12 sm:w-14 flex items-center justify-center">
@@ -530,7 +530,7 @@ export function MatchRow({
                                         isSelected={checkSelected(`${match.id}-Winning Margin-26+`)}
                                         isCorrelated={checkIsCorrelated?.(match.id, "Winning Margin")}
                                         sportType={match.sportType}
-                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                        className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                     />
                                 </div>
                             </>
@@ -571,7 +571,7 @@ export function MatchRow({
                                                         sportType={match.sportType}
                                                         tournamentName={match.tournamentName || undefined}
                                                         stage={match.stage}
-                                                        className="h-full w-full rounded-none bg-transparent hover:bg-white/5 border-0"
+                                                        className="h-full w-full rounded-none bg-transparent hover:bg-accent border-0"
                                                     />
                                                 </div>
                                             ))
@@ -594,10 +594,10 @@ export function MatchRow({
                         haptics.light();
                         onMoreClick?.(match);
                     }}
-                    className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-white/5 hover:bg-white/5 transition-colors cursor-pointer self-stretch group/more"
+                    className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-border/50 hover:bg-accent transition-colors cursor-pointer self-stretch group/more"
                 >
-                    <ChevronRight className="h-4 w-4 text-slate-500 group-hover/more:text-purple-400 group-hover/more:translate-x-0.5 transition-all" />
-                    <span className="text-[7px] text-slate-500 font-black group-hover/more:text-white transition-colors mt-0.5">MORE</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover/more:text-purple-400 group-hover/more:translate-x-0.5 transition-all" />
+                    <span className="text-[7px] text-muted-foreground font-black group-hover/more:text-foreground transition-colors mt-0.5">MORE</span>
                 </button>
             </div>
         </div>

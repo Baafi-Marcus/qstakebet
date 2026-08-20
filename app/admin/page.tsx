@@ -1,4 +1,4 @@
-import { Trophy, Users, Activity, MessageSquare } from "lucide-react"
+import { TrophyIcon as Trophy, UsersIcon as Users, SignalIcon as Activity, ChatBubbleLeftRightIcon as MessageSquare } from "@heroicons/react/24/solid";
 import { getAdminAnalytics } from "@/lib/admin-analytics-actions"
 import Link from "next/link"
 
@@ -13,10 +13,10 @@ export default async function AdminDashboardPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-6">
+            <div className="flex items-center justify-between border-b border-border pb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white uppercase tracking-tight">System Status</h1>
-                    <p className="text-slate-500 text-xs mt-1 uppercase tracking-wider font-medium">Real-time Platform Metrics</p>
+                    <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">System Status</h1>
+                    <p className="text-muted-foreground text-xs mt-1 uppercase tracking-wider font-medium">Real-time Platform Metrics</p>
                 </div>
                 <div className="flex gap-2">
                     <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-sm flex items-center gap-2">
@@ -41,11 +41,11 @@ export default async function AdminDashboardPage() {
                     <Link
                         key={i}
                         href={stat.href}
-                        className="bg-slate-900 border border-white/10 p-4 rounded-lg flex items-start justify-between hover:bg-white/5 transition-colors group cursor-pointer relative overflow-hidden"
+                        className="bg-card border border-border p-4 rounded-lg flex items-start justify-between hover:bg-accent transition-colors group cursor-pointer relative overflow-hidden"
                     >
                         <div>
-                            <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
-                            <div className="text-2xl font-mono font-bold text-white tracking-tight">{stat.value}</div>
+                            <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
+                            <div className="text-2xl font-mono font-bold text-foreground tracking-tight">{stat.value}</div>
                         </div>
                         <stat.icon className={`h-5 w-5 ${stat.color} opacity-70 group-hover:opacity-100 transition-opacity`} />
                     </Link>
@@ -54,9 +54,9 @@ export default async function AdminDashboardPage() {
 
             {/* Health and Match Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-slate-900 border border-white/10 rounded-lg">
-                    <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-                        <h2 className="text-xs font-black text-white uppercase tracking-widest">Service Status</h2>
+                <div className="bg-card border border-border rounded-lg">
+                    <div className="px-4 py-3 border-b border-border bg-muted/30">
+                        <h2 className="text-xs font-black text-foreground uppercase tracking-widest">Service Status</h2>
                     </div>
                     <div>
                         {[
@@ -66,8 +66,8 @@ export default async function AdminDashboardPage() {
                             { name: "Banter Rooms Chat Sync", status: "Connected", color: "text-emerald-500" },
                             { name: "Alumni Leaderboards Generator", status: "Operational", color: "text-green-500" },
                         ].map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
-                                <span className="text-xs font-bold text-slate-400 font-mono">{item.name}</span>
+                            <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-border/50 last:border-0 hover:bg-accent">
+                                <span className="text-xs font-bold text-muted-foreground font-mono">{item.name}</span>
                                 <span className={`text-[10px] font-black uppercase tracking-wider ${item.color}`}>
                                     {item.status}
                                 </span>
@@ -76,17 +76,17 @@ export default async function AdminDashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-white/10 rounded-lg">
-                    <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-                        <h2 className="text-xs font-black text-white uppercase tracking-widest">Match Breakdown</h2>
+                <div className="bg-card border border-border rounded-lg">
+                    <div className="px-4 py-3 border-b border-border bg-muted/30">
+                        <h2 className="text-xs font-black text-foreground uppercase tracking-widest">Match Breakdown</h2>
                     </div>
                     <div className="p-0">
                         {matchBreakdown.length === 0 ? (
-                            <div className="px-4 py-12 text-center text-slate-600 font-bold uppercase text-[10px] tracking-widest">No match data available</div>
+                            <div className="px-4 py-12 text-center text-muted-foreground/70 font-bold uppercase text-[10px] tracking-widest">No match data available</div>
                         ) : matchBreakdown.map((item: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{item.status} Matches</span>
-                                <span className="text-sm font-black text-white font-mono">{item.count}</span>
+                            <div key={idx} className="flex items-center justify-between px-4 py-3 border-b border-border/50 last:border-0 hover:bg-accent">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">{item.status} Matches</span>
+                                <span className="text-sm font-black text-foreground font-mono">{item.count}</span>
                             </div>
                         ))}
                     </div>

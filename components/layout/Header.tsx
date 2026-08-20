@@ -2,11 +2,24 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Wallet, Menu, User, X, Zap, Timer, Trophy, LogOut, ChevronDown, Star, MessageSquare, HelpCircle, BookOpen, ArrowUpRight, ArrowDownLeft, ShieldAlert } from "lucide-react"
+import {
+    Bars3Icon,
+    UserIcon,
+    XMarkIcon,
+    BoltIcon,
+    TrophyIcon,
+    ArrowRightStartOnRectangleIcon,
+    StarIcon,
+    ChatBubbleLeftRightIcon,
+    QuestionMarkCircleIcon,
+    BookOpenIcon,
+    ShieldExclamationIcon,
+} from "@heroicons/react/24/solid"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
 import { getUserFantasyStats } from "@/lib/fantasy-actions"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 export function Header() {
     const { data: session, status } = useSession()
@@ -38,10 +51,10 @@ export function Header() {
     }
 
     const navLinks = [
-        { href: "/", label: "Home", icon: Star },
-        { href: "/fantasy", label: "Fantasy Draft", icon: Zap, status: "HOT" },
-        { href: "/chat", label: "Banter Rooms", icon: MessageSquare },
-        { href: "/leaderboard", label: "Rankings", icon: Trophy },
+        { href: "/", label: "Home", icon: StarIcon },
+        { href: "/fantasy", label: "Fantasy Draft", icon: BoltIcon, status: "HOT" },
+        { href: "/chat", label: "Banter Rooms", icon: ChatBubbleLeftRightIcon },
+        { href: "/leaderboard", label: "Rankings", icon: TrophyIcon },
     ]
 
     const isLoggedIn = status === "authenticated"
@@ -55,7 +68,7 @@ export function Header() {
                             onClick={() => setIsMenuOpen(true)}
                             className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 py-2 w-9 px-0 md:hidden"
                         >
-                            <Menu className="h-5 w-5" />
+                            <Bars3Icon className="h-5 w-5" />
                             <span className="sr-only">Toggle Menu</span>
                         </button>
 
@@ -88,13 +101,14 @@ export function Header() {
                     </div>
 
                     <div className="flex items-center space-x-2 md:space-x-4">
+                        <ThemeToggle />
                         {isLoggedIn ? (
                             <>
                                 <Link
                                     href="/fantasy"
                                     className="bg-primary hover:bg-primary/90 text-white font-black px-3 py-2 md:px-4 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
                                 >
-                                    <Zap className="h-3 w-3" />
+                                    <BoltIcon className="h-3 w-3" />
                                     <span className="hidden sm:inline">MY SQUAD</span>
                                 </Link>
 
@@ -102,11 +116,11 @@ export function Header() {
                                     <button
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                                         className={cn(
-                                            "h-9 w-9 rounded-full bg-slate-800 border flex items-center justify-center transition-all",
-                                            isProfileOpen ? "border-primary ring-2 ring-primary/20" : "border-white/10 hover:border-white/30"
+                                            "h-9 w-9 rounded-full bg-muted border flex items-center justify-center transition-all",
+                                            isProfileOpen ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/30"
                                         )}
                                     >
-                                        <User className="h-4 w-4 text-slate-300" />
+                                        <UserIcon className="h-4 w-4 text-muted-foreground" />
                                     </button>
 
                                     {isProfileOpen && (
@@ -115,18 +129,18 @@ export function Header() {
                                                 className="fixed inset-0 z-40"
                                                 onClick={() => setIsProfileOpen(false)}
                                             />
-                                            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
-                                                <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Account User</p>
-                                                    <p className="text-xs font-black text-white truncate">{session?.user?.email || session?.user?.name || "Member"}</p>
+                                            <div className="absolute right-0 mt-2 w-72 bg-popover border border-border rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="px-4 py-3 border-b border-border bg-muted/30">
+                                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Account User</p>
+                                                    <p className="text-xs font-black text-foreground truncate">{session?.user?.email || session?.user?.name || "Member"}</p>
                                                 </div>
 
                                                 {/* Balance Display */}
-                                                <div className="px-4 py-4 border-b border-white/5 bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
+                                                <div className="px-4 py-4 border-b border-border bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
                                                     <div className="space-y-3">
                                                         <div>
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Lifetime Points</p>
-                                                            <p className="text-2xl font-black text-white tracking-tighter">{points !== null ? points : "0"} pts</p>
+                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Lifetime Points</p>
+                                                            <p className="text-2xl font-black text-foreground tracking-tighter">{points !== null ? points : "0"} pts</p>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Link
@@ -134,7 +148,7 @@ export function Header() {
                                                                 onClick={() => setIsProfileOpen(false)}
                                                                 className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-1.5 active:scale-95"
                                                             >
-                                                                <Zap className="h-3 w-3" />
+                                                                <BoltIcon className="h-3 w-3" />
                                                                 Draft Lineup
                                                             </Link>
                                                         </div>
@@ -148,46 +162,46 @@ export function Header() {
                                                             onClick={() => setIsProfileOpen(false)}
                                                             className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all border border-purple-500/20 shadow-sm"
                                                         >
-                                                            <ShieldAlert className="h-4 w-4 text-purple-400" /> Admin Dashboard
+                                                            <ShieldExclamationIcon className="h-4 w-4 text-purple-400" /> Admin Dashboard
                                                         </Link>
                                                     )}
                                                     <Link
                                                         href="/account/profile"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                                     >
-                                                        <User className="h-4 w-4" /> My Profile
+                                                        <UserIcon className="h-4 w-4" /> My Profile
                                                     </Link>
                                                     <Link
                                                         href="/fantasy"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                                     >
-                                                        <Trophy className="h-4 w-4" /> My Lineup
+                                                        <TrophyIcon className="h-4 w-4" /> My Lineup
                                                     </Link>
                                                     <Link
                                                         href="/account/settings"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                                     >
-                                                        <User className="h-4 w-4" /> Settings
+                                                        <UserIcon className="h-4 w-4" /> Settings
                                                     </Link>
 
-                                                    <div className="h-px bg-white/5 my-2 mx-2" />
+                                                    <div className="h-px bg-border my-2 mx-2" />
 
                                                     <Link
                                                         href="/help"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                                     >
-                                                        <HelpCircle className="h-4 w-4" /> Help Center
+                                                        <QuestionMarkCircleIcon className="h-4 w-4" /> Help Center
                                                     </Link>
                                                     <Link
                                                         href="/how-to-play"
                                                         onClick={() => setIsProfileOpen(false)}
-                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+                                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                                     >
-                                                        <BookOpen className="h-4 w-4" /> How to Play
+                                                        <BookOpenIcon className="h-4 w-4" /> How to Play
                                                     </Link>
                                                     <a
                                                         href="https://wa.me/233276019798"
@@ -196,16 +210,16 @@ export function Header() {
                                                         onClick={() => setIsProfileOpen(false)}
                                                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 hover:bg-emerald-500/10 transition-all font-black"
                                                     >
-                                                        <MessageSquare className="h-4 w-4" /> Support (WhatsApp)
+                                                        <ChatBubbleLeftRightIcon className="h-4 w-4" /> Support (WhatsApp)
                                                     </a>
 
-                                                    <div className="h-px bg-white/5 my-2 mx-2" />
+                                                    <div className="h-px bg-border my-2 mx-2" />
 
                                                     <button
                                                         onClick={handleLogout}
                                                         className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black text-red-400 hover:bg-red-500/10 transition-all"
                                                     >
-                                                        <LogOut className="h-4 w-4" /> SECURE LOGOUT
+                                                        <ArrowRightStartOnRectangleIcon className="h-4 w-4" /> SECURE LOGOUT
                                                     </button>
                                                 </div>
                                             </div>
@@ -217,7 +231,7 @@ export function Header() {
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="/auth/login"
-                                    className="text-xs md:text-sm font-black text-slate-300 hover:text-white px-3 py-2 transition-colors"
+                                    className="text-xs md:text-sm font-black text-muted-foreground hover:text-foreground px-3 py-2 transition-colors"
                                 >
                                     LOGIN
                                 </Link>
@@ -240,16 +254,16 @@ export function Header() {
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={() => setIsMenuOpen(false)}
                     />
-                    <div className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 border-r border-white/10 shadow-2xl animate-in slide-in-from-left duration-300">
-                        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                    <div className="absolute left-0 top-0 bottom-0 w-64 bg-popover border-r border-border shadow-2xl animate-in slide-in-from-left duration-300">
+                        <div className="p-4 border-b border-border flex items-center justify-between">
                             <span className="font-display font-black text-lg text-primary tracking-tight">
-                                QSTAKE<span className="text-white">bet</span>
+                                QSTAKE<span className="text-foreground">bet</span>
                             </span>
                             <button
                                 onClick={() => setIsMenuOpen(false)}
-                                className="p-1 hover:bg-white/5 rounded-full"
+                                className="p-1 hover:bg-accent rounded-full"
                             >
-                                <X className="h-5 w-5 text-slate-400" />
+                                <XMarkIcon className="h-5 w-5 text-muted-foreground" />
                             </button>
                         </div>
                         <nav className="py-6 px-4 space-y-2">
@@ -264,7 +278,7 @@ export function Header() {
                                             "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black transition-all",
                                             pathname === link.href
                                                 ? "bg-primary/10 text-primary border border-primary/20"
-                                                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                         )}
                                     >
                                         <Icon className="h-4 w-4" />
@@ -279,27 +293,27 @@ export function Header() {
                             })}
 
                             {isLoggedIn && (
-                                <div className="pt-4 border-t border-white/5 mt-4 space-y-2">
+                                <div className="pt-4 border-t border-border mt-4 space-y-2">
                                     <Link
                                         href="/account/profile"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                     >
-                                        <User className="h-4 w-4" /> My Profile
+                                        <UserIcon className="h-4 w-4" /> My Profile
                                     </Link>
                                     <Link
                                         href="/fantasy"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                     >
-                                        <Trophy className="h-4 w-4" /> My Lineup
+                                        <TrophyIcon className="h-4 w-4" /> My Lineup
                                     </Link>
                                     <Link
                                         href="/how-to-play"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                                     >
-                                        <BookOpen className="h-4 w-4" /> How to Play
+                                        <BookOpenIcon className="h-4 w-4" /> How to Play
                                     </Link>
                                     <a
                                         href="https://wa.me/233276019798"
@@ -307,13 +321,13 @@ export function Header() {
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black text-emerald-400 hover:bg-emerald-500/10 transition-all"
                                     >
-                                        <MessageSquare className="h-4 w-4" /> Support (WhatsApp)
+                                        <ChatBubbleLeftRightIcon className="h-4 w-4" /> Support (WhatsApp)
                                     </a>
                                     <button
                                         onClick={handleLogout}
                                         className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black text-red-500 hover:bg-red-500/10 transition-all"
                                     >
-                                        <LogOut className="h-4 w-4" /> LOGOUT
+                                        <ArrowRightStartOnRectangleIcon className="h-4 w-4" /> LOGOUT
                                     </button>
                                 </div>
                             )}
@@ -323,7 +337,7 @@ export function Header() {
                                     <Link
                                         href="/auth/login"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="w-full flex items-center justify-center font-black py-4 rounded-2xl border border-white/10 text-white hover:bg-white/5 transition-all text-sm"
+                                        className="w-full flex items-center justify-center font-black py-4 rounded-2xl border border-border text-foreground hover:bg-accent transition-all text-sm"
                                     >
                                         LOGIN
                                     </Link>
@@ -347,14 +361,14 @@ export function Header() {
                         className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
                         onClick={() => setIsLogoutConfirmOpen(false)}
                     />
-                    <div className="relative bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
+                    <div className="relative bg-popover border border-border rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
                         <div className="flex flex-col items-center text-center gap-6">
                             <div className="p-4 bg-red-500/10 rounded-2xl">
-                                <LogOut className="h-8 w-8 text-red-500" />
+                                <ArrowRightStartOnRectangleIcon className="h-8 w-8 text-red-500" />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Confirm Logout</h3>
-                                <p className="text-slate-400 font-medium">Are you sure you want to end your session?</p>
+                                <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Confirm Logout</h3>
+                                <p className="text-muted-foreground font-medium">Are you sure you want to end your session?</p>
                             </div>
                             <div className="w-full flex flex-col gap-3">
                                 <button
@@ -365,7 +379,7 @@ export function Header() {
                                 </button>
                                 <button
                                     onClick={() => setIsLogoutConfirmOpen(false)}
-                                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/5"
+                                    className="w-full py-4 bg-muted hover:bg-muted/70 text-foreground font-bold rounded-2xl transition-all border border-border"
                                 >
                                     CANCEL
                                 </button>
