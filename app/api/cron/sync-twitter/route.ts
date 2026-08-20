@@ -37,7 +37,9 @@ export async function GET(req: Request) {
             tweetLanguage: "en",
         };
 
-        const appUrl = process.env.AUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const host = req.headers.get("host") || "localhost:3000";
+        const protocol = host.includes("localhost") ? "http" : "https";
+        const appUrl = `${protocol}://${host}`;
         const callbackUrl = `${appUrl}/api/webhooks/apify-sync`;
 
         console.log(`Starting Apify Twitter Scraper asynchronously (Webhook callback: ${callbackUrl})...`);
