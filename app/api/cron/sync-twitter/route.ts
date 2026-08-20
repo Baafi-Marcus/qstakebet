@@ -10,14 +10,24 @@ export const maxDuration = 60; // Allow up to 60 seconds for scraping and AI pro
 
 export async function GET(req: Request) {
     try {
-        if (!process.env.APIFY_API_TOKEN) {
-            return NextResponse.json({ error: "APIFY_API_TOKEN is not configured" }, { status: 500 });
-        }
-
         const { searchParams } = new URL(req.url);
         const depthParam = searchParams.get("depth");
         const depth = depthParam ? parseInt(depthParam) : 5;
         const maxItems = Math.min(Math.max(depth, 1), 100); // Clamp between 1 and 100
+
+        let apifyToken = process.env.APIFY_API_TOKEN;
+
+        if (!apifyToken) {
+            const dbKeys = await db.select().from(apiKeys).where(and(eq(apiKeys.provider, "apify"), eq(apiKeys.isActive, true))).limit(1);
+            if (dbKeys.length > 0) {
+                apifyToken = dbKeys[0].key;
+                await db.update(apiKeys).set({ usageCount: dbKeys[0].usageCount + 1, lastUsedAt: new Date() }).where(eq(apiKeys.id, dbKeys[0].id));
+            }
+        }
+
+        if (!apifyToken) {
+            return NextResponse.json({ error: "APIFY_API_TOKEN is not configured in ENV or Database" }, { status: 500 });
+        }
 
         let geminiKey = process.env.GEMINI_API_KEY;
 
@@ -36,7 +46,7 @@ export async function GET(req: Request) {
         const genAI = new GoogleGenerativeAI(geminiKey);
 
         const client = new ApifyClient({
-            token: process.env.APIFY_API_TOKEN,
+            token: apifyToken,
         });
 
         // Use a reliable Twitter Scraper (apidojo/tweet-scraper)

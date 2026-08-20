@@ -47,9 +47,8 @@ export async function submitLineup(gameWeek: string, schoolIds: string[]) {
 
         // Calculate credit cost
         const getCreditCost = (category: string | null) => {
-            if (category === 'A') return 45;
-            if (category === 'B') return 35;
-            if (category === 'C') return 25;
+            if (category === 'A') return 50;
+            if (category === 'B') return 30;
             return 20;
         }
 
@@ -376,7 +375,7 @@ export async function getParticipatingSchoolsForStage(gameWeek: string) {
             name: school.name,
             region: school.region,
             tier: school.category || 'C',
-            creditCost: school.category === 'A' ? 30 : school.category === 'B' ? 20 : 15
+            creditCost: school.category === 'A' ? 50 : school.category === 'B' ? 30 : 20
         }));
     } catch (error) {
         console.error("Error getting participating schools:", error);
