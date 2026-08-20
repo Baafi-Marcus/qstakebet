@@ -14,6 +14,11 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "APIFY_API_TOKEN is not configured" }, { status: 500 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const depthParam = searchParams.get("depth");
+        const depth = depthParam ? parseInt(depthParam) : 5;
+        const maxItems = Math.min(Math.max(depth, 1), 100); // Clamp between 1 and 100
+
         let geminiKey = process.env.GEMINI_API_KEY;
 
         if (!geminiKey) {
@@ -37,7 +42,7 @@ export async function GET(req: Request) {
         // Use a reliable Twitter Scraper (apidojo/tweet-scraper)
         const input = {
             searchTerms: ["from:NSMQGhana"],
-            maxItems: 5,
+            maxItems: maxItems,
             sort: "Latest",
             tweetLanguage: "en",
         };
