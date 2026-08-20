@@ -6,6 +6,7 @@ import { eq, and, sql, inArray } from "drizzle-orm"
 import { type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
+import { settleFantasyLineups } from "./settlement"
 import { auth } from "./auth"
 import { revalidateTag } from "next/cache"
 
@@ -1194,13 +1195,40 @@ export async function approvePendingResult(id: string, matchId: string) {
         const match = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
         if (match.length === 0) return { success: false, error: "Match not found" };
 
-        // Match the schools in parsed data to the participants in the match by name similarity
-        // A simple approach: we expect the admin has verified it.
-        // Convert the parsed array [{ schoolName, score }] to an object { [schoolId]: score }
-        // For production we'd do fuzzy matching, but here we can just do basic mapping or let the admin UI pass the mapped scores.
-        // Since we are writing the action, let's assume the UI will send the correct scores object if we pass it directly.
-        // Actually, let's just mark it approved for now and the admin UI can call updateMatchResult directly.
+        // 1. Extract scores from parsed data and map to actual school IDs
+        const customScores: Record<string, number> = {};
+        const participants = (match[0].participants as any[]) || [];
         
+        if (parsed.scores && Array.isArray(parsed.scores)) {
+            for (const parsedScore of parsed.scores) {
+                // Find matching participant (case-insensitive substring match)
+                const participant = participants.find(p => 
+                    p.name.toLowerCase().includes(parsedScore.schoolName.toLowerCase()) || 
+                    parsedScore.schoolName.toLowerCase().includes(p.name.toLowerCase())
+                );
+                
+                if (participant) {
+                    customScores[participant.schoolId] = parsedScore.score;
+                }
+            }
+        }
+
+        if (Object.keys(customScores).length === 0) {
+            return { success: false, error: "Could not auto-map any schools from the parsed data to the match participants." };
+        }
+
+        // 2. Save the mapped scores directly to the match
+        const existingResult = (match[0].result as any) || {};
+        await db.update(matches)
+            .set({ 
+                result: { ...existingResult, scores: customScores } 
+            })
+            .where(eq(matches.id, matchId));
+
+        // 3. Settle fantasy points for all users automatically
+        await settleFantasyLineups(matchId, { customScores });
+        
+        // 4. Mark the queue item as approved
         await db.update(pendingResults)
             .set({ status: 'approved' })
             .where(eq(pendingResults.id, id));
