@@ -88,6 +88,8 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const lastMessageIdRef = useRef<string | null>(null)
+    const activeIdRef = useRef<string | null>(null)
 
     // Create & Join custom rooms state
     const [newRoomName, setNewRoomName] = useState("")
@@ -111,8 +113,39 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     }
 
     useEffect(() => {
-        scrollToBottom()
-    }, [messages])
+        if (!messages.length) return
+
+        const lastMsg = messages[messages.length - 1]
+        const lastId = lastMsg.id
+        const isNewRoom = activeId !== activeIdRef.current
+        const isNewMessage = lastId !== lastMessageIdRef.current
+
+        // Update refs
+        activeIdRef.current = activeId
+        lastMessageIdRef.current = lastId
+
+        // Scroll cases:
+        // 1. Just opened/switched to a room
+        // 2. The user sent the message
+        // 3. Already scrolled near the bottom (within 150px)
+        if (isNewRoom) {
+            scrollToBottom()
+        } else if (isNewMessage) {
+            const isMe = lastMsg.userId === currentUser.id
+            if (isMe) {
+                scrollToBottom()
+            } else {
+                const container = messagesEndRef.current?.parentElement
+                if (container) {
+                    const threshold = 150
+                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold
+                    if (isNearBottom) {
+                        scrollToBottom()
+                    }
+                }
+            }
+        }
+    }, [messages, activeId, currentUser.id])
 
     // Load custom rooms on mount
     useEffect(() => {
