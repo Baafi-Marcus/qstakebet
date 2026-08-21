@@ -148,7 +148,13 @@ export async function getUserLineup(userId: string, gameWeek: string) {
                 lineupData[0].school1,
                 school2Data[0] || null,
                 school3Data[0] || null
-            ].filter(Boolean)
+            ].filter(Boolean).map(school => ({
+                id: school.id,
+                name: school.name,
+                region: school.region,
+                tier: school.category || 'C',
+                creditCost: school.category === 'A' ? 50 : school.category === 'B' ? 30 : 20
+            }))
         }
     } catch (error) {
         console.error("Error in getUserLineup:", error)
@@ -317,10 +323,10 @@ export async function settleFantasyPoints(matchId: string, resultData: any) {
 
 export async function getFantasyStages() {
     try {
-        // Fetch all matches that are not completely finished
+        // Fetch all matches that are not completely finished or settled
         const rawMatches = await db.select({ scheduledAt: matches.scheduledAt, status: matches.status })
             .from(matches)
-            .where(sql`${matches.status} != 'finished'`)
+            .where(sql`${matches.status} NOT IN ('finished', 'settled')`)
             .orderBy(asc(matches.scheduledAt));
 
         const matchdays = new Map<string, { dateStr: string, deadline: Date, hasOngoing: boolean }>();
