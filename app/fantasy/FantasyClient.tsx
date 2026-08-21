@@ -84,8 +84,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
     const [isPending, startTransition] = useTransition()
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-    // Calculate spent budget
-    const creditsSpent = selectedSchools.reduce((sum, s) => sum + s.creditCost, 0)
+    // Calculate spent budget with robust fallback for cached payloads missing properties
+    const creditsSpent = selectedSchools.reduce((sum, s) => sum + (s?.creditCost ? Number(s.creditCost) : 0), 0)
     const remainingCredits = 100 - creditsSpent
 
     // Calculate pending substitutions
@@ -332,7 +332,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                         Tier {school.tier}
                                     </span>
                                     <span className="text-xs bg-background px-3 py-1.5 rounded-full border border-border font-extrabold">
-                                        {school.creditCost} Credits
+                                        {school.creditCost || 0} Credits
                                     </span>
                                 </div>
                             </div>
@@ -394,7 +394,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                                         Tier {school.tier}
                                                     </span>
                                                     <span className="text-xs bg-popover px-2.5 py-1 rounded-full border border-border/50 font-extrabold text-foreground/80">
-                                                        {school.creditCost} Credits
+                                                        {school.creditCost || 0} Credits
                                                     </span>
                                                 </div>
                                             </>

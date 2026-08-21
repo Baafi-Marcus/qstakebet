@@ -149,11 +149,11 @@ export async function getUserLineup(userId: string, gameWeek: string) {
                 school2Data[0] || null,
                 school3Data[0] || null
             ].filter(Boolean).map(school => ({
-                id: school.id,
-                name: school.name,
-                region: school.region,
-                tier: school.category || 'C',
-                creditCost: school.category === 'A' ? 50 : school.category === 'B' ? 30 : 20
+                id: school!.id,
+                name: school!.name,
+                region: school!.region,
+                tier: school!.category || 'C',
+                creditCost: school!.category === 'A' ? 50 : school!.category === 'B' ? 30 : 20
             }))
         }
     } catch (error) {
