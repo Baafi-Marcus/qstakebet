@@ -18,9 +18,13 @@ export async function submitLineup(gameWeek: string, schoolIds: string[]) {
 
         // Deadline check
         if (gameWeek !== "Off-Season" && gameWeek.startsWith("Matchday ")) {
-            const activeStage = await getActiveFantasyStage();
-            if (activeStage.gameWeek === gameWeek) {
-                 if (activeStage.deadline && new Date() > activeStage.deadline) {
+            const stages = await getFantasyStages();
+            let matchedStage = null;
+            if (stages.currentStage?.gameWeek === gameWeek) matchedStage = stages.currentStage;
+            if (stages.nextStage?.gameWeek === gameWeek) matchedStage = stages.nextStage;
+            
+            if (matchedStage) {
+                 if (matchedStage.deadline && new Date() > matchedStage.deadline) {
                      return { success: false, error: "The deadline for this Matchday has already passed!" };
                  }
             } else {
@@ -311,32 +315,69 @@ export async function settleFantasyPoints(matchId: string, resultData: any) {
     }
 }
 
-export async function getActiveFantasyStage() {
+export async function getFantasyStages() {
     try {
-        const upcomingMatches = await db.select({ scheduledAt: matches.scheduledAt })
+        // Fetch all matches that are not completely finished
+        const rawMatches = await db.select({ scheduledAt: matches.scheduledAt, status: matches.status })
             .from(matches)
-            .where(
-                and(
-                    eq(matches.status, "upcoming"),
-                    sql`${matches.scheduledAt} > NOW()`
-                )
-            )
-            .orderBy(asc(matches.scheduledAt))
-            .limit(1);
-            
-        if (upcomingMatches.length > 0 && upcomingMatches[0].scheduledAt) {
-            const matchDate = upcomingMatches[0].scheduledAt;
-            const dateStr = matchDate.toISOString().split('T')[0];
-            return {
-                gameWeek: `Matchday ${dateStr}`,
-                deadline: matchDate,
-                isOffSeason: false
-            };
+            .where(sql`${matches.status} != 'finished'`)
+            .orderBy(asc(matches.scheduledAt));
+
+        const matchdays = new Map<string, { dateStr: string, deadline: Date, hasOngoing: boolean }>();
+        
+        for (const m of rawMatches) {
+            if (!m.scheduledAt) continue;
+            const dateStr = m.scheduledAt.toISOString().split('T')[0];
+            if (!matchdays.has(dateStr)) {
+                matchdays.set(dateStr, {
+                    dateStr,
+                    deadline: m.scheduledAt, 
+                    hasOngoing: m.status === 'in_progress'
+                });
+            } else {
+                if (m.status === 'in_progress') {
+                    const existing = matchdays.get(dateStr)!;
+                    existing.hasOngoing = true;
+                }
+            }
         }
-        return { gameWeek: "Off-Season", deadline: null, isOffSeason: true };
+
+        const sortedDates = Array.from(matchdays.values()).sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
+
+        let currentStage = null;
+        let nextStage = null;
+        const now = new Date();
+
+        for (const md of sortedDates) {
+            const gw = `Matchday ${md.dateStr}`;
+            if (md.deadline <= now || md.hasOngoing) {
+                // Locked/Ongoing
+                currentStage = {
+                    gameWeek: gw,
+                    deadline: md.deadline,
+                    isLocked: true
+                };
+            } else {
+                // Open for drafting
+                if (!nextStage) {
+                    nextStage = {
+                        gameWeek: gw,
+                        deadline: md.deadline,
+                        isLocked: false
+                    };
+                    if (currentStage) break;
+                }
+            }
+        }
+
+        return {
+            currentStage: currentStage || null,
+            nextStage: nextStage || null,
+            isOffSeason: !currentStage && !nextStage
+        };
     } catch (error) {
-        console.error("Error getting active fantasy stage:", error);
-        return { gameWeek: "Off-Season", deadline: null, isOffSeason: true };
+        console.error("Error getting fantasy stages:", error);
+        return { currentStage: null, nextStage: null, isOffSeason: true };
     }
 }
 
@@ -382,3 +423,11 @@ export async function getParticipatingSchoolsForStage(gameWeek: string) {
         return [];
     }
 }
+
+export async function getActiveFantasyStage() {
+    const stages = await getFantasyStages();
+    if (stages.currentStage) return stages.currentStage;
+    if (stages.nextStage) return stages.nextStage;
+    return { gameWeek: "Off-Season", deadline: null, isOffSeason: true };
+}
+
