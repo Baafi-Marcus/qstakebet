@@ -97,11 +97,14 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
     const [selectedHistoryGw, setSelectedHistoryGw] = useState<string | null>(null)
 
     const displayedLineup: SquadHistoryEntry | null = useMemo(() => {
-        if (!isEditing && selectedHistoryGw) {
-            const entry = lineupHistory.find(h => h.gameWeek === selectedHistoryGw)
-            if (entry) return entry
+        if (!isEditing) {
+            if (selectedHistoryGw) {
+                const entry = lineupHistory.find(h => h.gameWeek === selectedHistoryGw)
+                if (entry) return entry
+            }
+            return (activeSavedLineup as SquadHistoryEntry | null) || null
         }
-        return (activeSavedLineup as SquadHistoryEntry | null) || lineupHistory[lineupHistory.length - 1] || null
+        return null
     }, [isEditing, selectedHistoryGw, lineupHistory, activeSavedLineup])
 
     // Archive mode = the displayed squad belongs to a different matchday than this tab's stage
