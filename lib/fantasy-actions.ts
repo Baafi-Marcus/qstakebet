@@ -141,6 +141,7 @@ export async function getUserLineup(userId: string, gameWeek: string) {
             gameWeek: lineup.gameWeek,
             creditsSpent: lineup.creditsSpent,
             pointsEarned: lineup.pointsEarned,
+            pointsBreakdown: lineup.pointsBreakdown,
             substitutionsMade: lineup.substitutionsMade,
             status: lineup.status,
             createdAt: lineup.createdAt,
@@ -162,8 +163,54 @@ export async function getUserLineup(userId: string, gameWeek: string) {
     }
 }
 
-export async function getLeaderboard(gameWeek?: string) {
+/**
+ * Fetches every lineup a user has ever saved, one per matchday,
+ * with resolved school details - for the My Squad history switcher.
+ */
+export async function getUserLineupHistory(userId: string) {
     try {
+        const lineups = await db.select()
+            .from(fantasyLineups)
+            .where(eq(fantasyLineups.userId, userId))
+            .orderBy(asc(fantasyLineups.createdAt))
+
+        if (!lineups.length) return []
+
+        const schoolIds = Array.from(new Set(
+            lineups.flatMap(l => [l.school1Id, l.school2Id, l.school3Id]).filter(Boolean)
+        ))
+
+        const dbSchools = await db.select().from(schools).where(inArray(schools.id, schoolIds))
+        type HistorySchool = { id: string; name: string; region: string; tier: string; creditCost: number }
+        const schoolMap = new Map<string, HistorySchool>(dbSchools.map(s => [s.id, {
+            id: s.id,
+            name: s.name,
+            region: s.region,
+            tier: s.category || 'C',
+            creditCost: s.category === 'A' ? 50 : s.category === 'B' ? 30 : 20
+        }]))
+
+        return lineups.map(l => ({
+            id: l.id,
+            gameWeek: l.gameWeek,
+            pointsEarned: l.pointsEarned,
+            rank: l.rank,
+            substitutionsMade: l.substitutionsMade,
+            creditsSpent: l.creditsSpent,
+            status: l.status,
+            pointsBreakdown: l.pointsBreakdown as any,
+            createdAt: l.createdAt,
+            schools: [l.school1Id, l.school2Id, l.school3Id]
+                .map(id => schoolMap.get(id))
+                .filter((s): s is HistorySchool => !!s)
+        }))
+    } catch (error) {
+        console.error("Error in getUserLineupHistory:", error)
+        return []
+    }
+}
+
+export async function getLeaderboard(gameWeek?: string) {    try {
         if (gameWeek) {
             // Retrieve points for specific game week
             const results = await db.select({

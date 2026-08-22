@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useTransition, useEffect } from "react"
+import { useState, useTransition, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { submitLineup } from "@/lib/fantasy-actions"
-import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive } from "@heroicons/react/24/solid";
 
 type School = {
     id: string
@@ -19,6 +19,19 @@ type StageData = {
     isLocked: boolean;
 }
 
+type SquadHistoryEntry = {
+    id: string
+    gameWeek: string
+    pointsEarned: number
+    rank: number | null
+    substitutionsMade: number
+    creditsSpent: number | null
+    status: string
+    pointsBreakdown?: any
+    createdAt?: Date | string | null
+    schools: School[]
+}
+
 type FantasyClientProps = {
     stages: {
         currentStage: StageData | null;
@@ -29,6 +42,7 @@ type FantasyClientProps = {
     currentLineup: any | null;
     nextSchools: School[];
     nextLineup: any | null;
+    lineupHistory: SquadHistoryEntry[];
 }
 
 const REGIONS = [
@@ -36,19 +50,40 @@ const REGIONS = [
     "Eastern", "Western", "Northern", "Bono", "Bono East", "Ahafo"
 ]
 
-export function FantasyClient({ stages, currentSchools, currentLineup, nextSchools, nextLineup }: FantasyClientProps) {
+// Points for a single school, tolerant of both breakdown shapes:
+// { schoolId: number } or { matchId: { schoolId: { base, bonus, total } } }
+function getSchoolBreakdownTotal(breakdown: any, schoolId: string): number {
+    if (!breakdown || typeof breakdown !== 'object') return 0
+    const direct = breakdown[schoolId]
+    if (typeof direct === 'number') return direct
+    let total = 0
+    for (const value of Object.values(breakdown)) {
+        if (value && typeof value === 'object') {
+            const entry = (value as any)[schoolId]
+            if (typeof entry === 'number') total += entry
+            else if (entry && typeof entry === 'object' && typeof (entry as any).total === 'number') total += (entry as any).total
+        }
+    }
+    return total
+}
+
+function formatStageLabel(gw: string): string {
+    if (gw.startsWith("Matchday ")) {
+        const d = new Date(gw.replace("Matchday ", ""))
+        if (!isNaN(d.getTime())) return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    }
+    return gw
+}
+
+export function FantasyClient({ stages, currentSchools, currentLineup, nextSchools, nextLineup, lineupHistory }: FantasyClientProps) {
     const router = useRouter()
     
     // Determine which stage we are viewing
     const [viewMode, setViewMode] = useState<'current' | 'next'>(stages.currentStage ? 'current' : 'next')
-    
-    // Determine if we are in "Drafting" or "Viewing Squad" mode
-    // We auto-view squad if a lineup exists and we haven't explicitly clicked Edit
-    const hasCurrentLineup = !!currentLineup?.schools?.length
-    const hasNextLineup = !!nextLineup?.schools?.length
-    
-    const [isEditingCurrent, setIsEditingCurrent] = useState(!hasCurrentLineup)
-    const [isEditingNext, setIsEditingNext] = useState(!hasNextLineup)
+
+    // My Squad is always the face of the dashboard - drafting is only entered via explicit action
+    const [isEditingCurrent, setIsEditingCurrent] = useState(false)
+    const [isEditingNext, setIsEditingNext] = useState(false)
 
     // Context-dependent variables
     const isCurrentView = viewMode === 'current'
@@ -57,6 +92,20 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
     const activeSavedLineup = isCurrentView ? currentLineup : nextLineup
     const isEditing = isCurrentView ? isEditingCurrent : isEditingNext
     const setIsEditing = isCurrentView ? setIsEditingCurrent : setIsEditingNext
+
+    // Matchday archive switcher (null = the active tab's stage)
+    const [selectedHistoryGw, setSelectedHistoryGw] = useState<string | null>(null)
+
+    const displayedLineup: SquadHistoryEntry | null = useMemo(() => {
+        if (!isEditing && selectedHistoryGw) {
+            const entry = lineupHistory.find(h => h.gameWeek === selectedHistoryGw)
+            if (entry) return entry
+        }
+        return (activeSavedLineup as SquadHistoryEntry | null) || lineupHistory[lineupHistory.length - 1] || null
+    }, [isEditing, selectedHistoryGw, lineupHistory, activeSavedLineup])
+
+    // Archive mode = the displayed squad belongs to a different matchday than this tab's stage
+    const isViewingArchive = !isEditing && !!displayedLineup && !!activeStage && displayedLineup.gameWeek !== activeStage.gameWeek
 
     const [selectedSchools, setSelectedSchools] = useState<School[]>(() => {
         const initialSaved = stages.currentStage ? currentLineup : nextLineup;
@@ -70,6 +119,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
     // when switching view modes.
     const changeViewMode = (mode: 'current' | 'next') => {
         setViewMode(mode);
+        setSelectedHistoryGw(null);
         const lineup = mode === 'current' ? currentLineup : nextLineup;
         if (lineup?.schools) {
             setSelectedSchools(lineup.schools as School[]);
@@ -186,6 +236,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
             if (result.success) {
                 setMessage({ type: "success", text: "Lineup locked in successfully! Ready for the matches." })
+                setSelectedHistoryGw(null)
                 setIsEditing(false)
                 router.refresh()
             } else {
@@ -286,16 +337,16 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                 </div>
             </div>
 
-            {/* Squad View vs Drafting View */}
-            {!isEditing && activeSavedLineup ? (
-                // --- MY SQUAD VIEW (READ ONLY) ---
+            {/* Squad View vs Drafting vs Empty State */}
+            {!isEditing && displayedLineup ? (
+                // --- MY SQUAD VIEW (READ ONLY, WITH MATCHDAY SWITCHER) ---
                 <div className="mb-10">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2">
                             <Sparkles className="h-6 w-6" /> My Squad
                         </h2>
-                        {!isLockedLocal && (
-                            <button 
+                        {!isViewingArchive && !isLockedLocal && (
+                            <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-card border border-border hover:bg-accent hover:text-accent-foreground text-sm font-bold rounded-xl transition-colors"
                             >
@@ -303,14 +354,58 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                             </button>
                         )}
                     </div>
-                    
-                    {activeSavedLineup.pointsEarned !== undefined && (
+
+                    {/* Matchday History Switcher (FPL-style gameweek selector) */}
+                    {lineupHistory.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
+                            {lineupHistory.map(entry => {
+                                const isSelected = (selectedHistoryGw ?? displayedLineup.gameWeek) === entry.gameWeek
+                                const isLiveStage = entry.gameWeek === activeStage?.gameWeek
+                                return (
+                                    <button
+                                        key={entry.id}
+                                        onClick={() => setSelectedHistoryGw(entry.gameWeek)}
+                                        className={`shrink-0 flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-2xl border text-left transition-all ${
+                                            isSelected
+                                                ? "bg-purple-600 border-purple-500 text-white shadow-[0_4px_20px_rgba(168,85,247,0.3)]"
+                                                : "bg-card/60 border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
+                                        }`}
+                                    >
+                                        <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                            {formatStageLabel(entry.gameWeek)}
+                                            {!isLiveStage && <Archive className={`h-3 w-3 ${isSelected ? "text-purple-200" : "text-muted-foreground/50"}`} />}
+                                        </span>
+                                        <span className={`text-sm font-extrabold ${isSelected ? "text-white" : "text-foreground/70"}`}>
+                                            {entry.pointsEarned} pts
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    {isViewingArchive && (
+                        <div className="mb-5 inline-flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            <Archive className="h-3.5 w-3.5" /> Archive - viewing a past matchday squad
+                        </div>
+                    )}
+
+                    {displayedLineup.pointsEarned !== undefined && (
                         <div className="bg-gradient-to-br from-purple-900/20 to-card border border-purple-500/20 rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between">
                             <div>
-                                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Total Points Earned</h3>
-                                <div className="text-4xl font-black text-foreground mt-1">{activeSavedLineup.pointsEarned} <span className="text-lg text-purple-400">PTS</span></div>
+                                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                                    Points Earned - {formatStageLabel(displayedLineup.gameWeek)}
+                                </h3>
+                                <div className="text-4xl font-black text-foreground mt-1">{displayedLineup.pointsEarned} <span className="text-lg text-purple-400">PTS</span></div>
                             </div>
-                            {isLockedLocal && (
+                            {isViewingArchive ? (
+                                <button
+                                    onClick={() => setSelectedHistoryGw(null)}
+                                    className="mt-4 md:mt-0 px-4 py-2 bg-card border border-border hover:bg-accent hover:text-accent-foreground rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    Back to Current Stage
+                                </button>
+                            ) : isLockedLocal && (
                                 <div className="mt-4 md:mt-0 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold">
                                     Stage Locked - Live Scoring Active
                                 </div>
@@ -319,27 +414,33 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {activeSavedLineup.schools.map((school: School, index: number) => (
-                            <div key={index} className="relative bg-card/90 border border-purple-500/30 rounded-3xl p-6 flex flex-col items-center justify-center shadow-lg hover:shadow-[0_10px_30px_rgba(168,85,247,0.15)] transition-all">
-                                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center font-black text-xl text-purple-400 mb-4">
-                                    {index + 1}
+                        {(displayedLineup.schools as School[]).map((school: School, index: number) => {
+                            const schoolPts = getSchoolBreakdownTotal(displayedLineup.pointsBreakdown, school?.id)
+                            return (
+                                <div key={index} className="relative bg-card/90 border border-purple-500/30 rounded-3xl p-6 flex flex-col items-center justify-center shadow-lg hover:shadow-[0_10px_30px_rgba(168,85,247,0.15)] transition-all">
+                                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center font-black text-xl text-purple-400 mb-4">
+                                        {index + 1}
+                                    </div>
+                                    <h3 className="font-extrabold text-center text-xl leading-tight mb-2">{school.name}</h3>
+                                    <p className="text-muted-foreground text-sm mb-2">{school.region} Region</p>
+                                    {schoolPts > 0 && (
+                                        <p className="text-emerald-400 text-sm font-black mb-2">+{schoolPts} pts</p>
+                                    )}
+
+                                    <div className="flex gap-2 w-full justify-center mt-auto pt-3">
+                                        <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full bg-gradient-to-r ${getTierDetails(Number(school.tier)).color}`}>
+                                            Tier {school.tier}
+                                        </span>
+                                        <span className="text-xs bg-background px-3 py-1.5 rounded-full border border-border font-extrabold">
+                                            {school.creditCost || 0} Credits
+                                        </span>
+                                    </div>
                                 </div>
-                                <h3 className="font-extrabold text-center text-xl leading-tight mb-2">{school.name}</h3>
-                                <p className="text-muted-foreground text-sm mb-4">{school.region} Region</p>
-                                
-                                <div className="flex gap-2 w-full justify-center">
-                                    <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full bg-gradient-to-r ${getTierDetails(Number(school.tier)).color}`}>
-                                        Tier {school.tier}
-                                    </span>
-                                    <span className="text-xs bg-background px-3 py-1.5 rounded-full border border-border font-extrabold">
-                                        {school.creditCost || 0} Credits
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
-            ) : (
+            ) : isEditing ? (
                 // --- DRAFTING VIEW (EDITING) ---
                 <>
                     <div className="mb-10">
@@ -347,18 +448,16 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                             <h2 className="text-lg font-bold font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2">
                                 <Sparkles className="h-5 w-5" /> Draft Your Lineup
                             </h2>
-                            {activeSavedLineup && (
-                                <button 
-                                    onClick={() => {
-                                        setIsEditing(false);
-                                        setSelectedSchools(activeSavedLineup.schools);
-                                        setMessage(null);
-                                    }}
-                                    className="text-sm font-bold text-muted-foreground hover:text-foreground underline underline-offset-4"
-                                >
-                                    Cancel Edit
-                                </button>
-                            )}
+                            <button 
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setSelectedSchools((activeSavedLineup?.schools as School[]) || []);
+                                    setMessage(null);
+                                }}
+                                className="text-sm font-bold text-muted-foreground hover:text-foreground underline underline-offset-4"
+                            >
+                                {activeSavedLineup ? "Cancel Edit" : "Back"}
+                            </button>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -548,6 +647,38 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                     </div>
                 </>
+            ) : (
+                // --- EMPTY STATE (NO SQUAD FOR THIS STAGE YET) ---
+                <div className="relative overflow-hidden bg-card/80 border border-border/50 rounded-3xl p-10 md:p-14 text-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent" />
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5">
+                            <Sparkles className="h-8 w-8 text-purple-400" />
+                        </div>
+                        <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">
+                            No Squad Locked In
+                        </h2>
+                        <p className="text-muted-foreground text-sm mt-2 max-w-md">
+                            {activeStage
+                                ? `You haven't selected your 3-school squad for ${activeStage.gameWeek} yet. Your saved squads for other matchdays are safe - pick your team when you're ready.`
+                                : "You haven't selected your squad yet."}
+                        </p>
+
+                        {isLockedLocal ? (
+                            <div className="mt-6 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
+                                <Clock className="h-4 w-4" /> Selection closed for this stage
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                disabled={!activeStage || stages.isOffSeason}
+                                className="mt-6 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Select Your Team <ArrowRight className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     )

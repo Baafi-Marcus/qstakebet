@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { schools } from "@/lib/db/schema"
-import { getUserLineup, getFantasyStages, getParticipatingSchoolsForStage } from "@/lib/fantasy-actions"
+import { getUserLineup, getUserLineupHistory, getFantasyStages, getParticipatingSchoolsForStage } from "@/lib/fantasy-actions"
 import { FantasyClient } from "./FantasyClient"
 
 export const dynamic = 'force-dynamic'
@@ -14,6 +14,7 @@ export default async function FantasyPage() {
     }
 
     const stages = await getFantasyStages()
+    const lineupHistory = await getUserLineupHistory(session.user.id)
     
     // Data for Current Stage
     let currentSchools: any[] = []
@@ -39,6 +40,7 @@ export default async function FantasyPage() {
                 currentLineup={currentLineup}
                 nextSchools={nextSchools}
                 nextLineup={nextLineup}
+                lineupHistory={lineupHistory}
             />
         </div>
     )
