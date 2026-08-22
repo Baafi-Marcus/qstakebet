@@ -247,37 +247,33 @@ export async function getLineupPointsExplanation(lineupId: string, schoolId: str
             .from(matches)
             .where(inArray(matches.id, matchIds))
 
-        const explanations = matchRows.map(match => {
-            const entry = (breakdown[match.id] || {})[schoolId]
-            const result = (match.result as any) || {}
-            const scores: Record<string, number> = result.scores || {}
-            const participants = (match.participants as any[]) || []
+        // Only contests this school actually took part in - never other schools' contests
+        const explanations = matchRows
+            .filter(match => ((match.participants as any[]) || []).some((p: any) => p.schoolId === schoolId))
+            .map(match => {
+                const entry = (breakdown[match.id] || {})[schoolId]
+                const result = (match.result as any) || {}
+                const scores: Record<string, number> = result.scores || {}
 
-            const readScore = (id: string) => Number(scores[id] ?? 0)
+                const base = typeof entry?.base === 'number' ? entry.base : Number(scores[schoolId] ?? 0)
+                const isWinner = result.winner === schoolId
+                const others = Object.keys(scores).filter(id => id !== schoolId)
+                const margin = isWinner ? base - Math.max(...(others.length ? others.map(id => Number(scores[id] ?? 0)) : [0])) : 0
 
-            const base = typeof entry?.base === 'number' ? entry.base : readScore(schoolId)
-            const isWinner = result.winner === schoolId
-            const otherScores = participants.filter(p => p.schoolId !== schoolId).map(p => readScore(p.schoolId))
-            const margin = isWinner ? base - Math.max(...(otherScores.length ? otherScores : [0])) : 0
-
-            return {
-                matchId: match.id,
-                stage: match.stage as string,
-                dateLabel: match.scheduledAt
-                    ? new Date(match.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-                    : "",
-                sortTs: match.scheduledAt ? new Date(match.scheduledAt).getTime() : 0,
-                scoreline: participants.map(p => ({
-                    name: p.name as string,
-                    score: readScore(p.schoolId),
-                    isUserSchool: p.schoolId === schoolId
-                })),
-                base,
-                winBonus: isWinner ? 15 : 0,
-                marginBonus: isWinner && margin >= 10 ? 10 : 0,
-                total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 15 : 0) + (isWinner && margin >= 10 ? 10 : 0)
-            }
-        }).sort((a, b) => a.sortTs - b.sortTs)
+                return {
+                    matchId: match.id,
+                    stage: match.stage as string,
+                    dateLabel: match.scheduledAt
+                        ? new Date(match.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                        : "",
+                    sortTs: match.scheduledAt ? new Date(match.scheduledAt).getTime() : 0,
+                    yourScore: base,
+                    winBonus: isWinner ? 15 : 0,
+                    marginBonus: isWinner && margin >= 10 ? 10 : 0,
+                    total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 15 : 0) + (isWinner && margin >= 10 ? 10 : 0)
+                }
+            })
+            .sort((a, b) => a.sortTs - b.sortTs)
 
         return { success: true, explanations }
     } catch (error) {

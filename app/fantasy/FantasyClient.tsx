@@ -744,18 +744,10 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                         <span className="text-sm font-black text-emerald-400">+{ex.total} pts</span>
                                     </div>
 
-                                    {/* Final Scoreline */}
-                                    <div className="flex flex-col gap-1 mb-3 bg-background/60 rounded-xl p-3 border border-border/40">
-                                        {ex.scoreline.map((row: any) => (
-                                            <div key={row.name} className="flex justify-between text-xs">
-                                                <span className={row.isUserSchool ? "font-black text-purple-300" : "text-muted-foreground"}>
-                                                    {row.name}{row.isUserSchool ? " ★" : ""}
-                                                </span>
-                                                <span className={row.isUserSchool ? "font-black text-purple-300" : "text-muted-foreground"}>
-                                                    {row.score} pts
-                                                </span>
-                                            </div>
-                                        ))}
+                                    {/* Your Final Score */}
+                                    <div className="flex justify-between items-center mb-3 bg-background/60 rounded-xl p-3 border border-border/40">
+                                        <span className="text-xs font-black text-purple-300">{breakdownSchool?.name} ★</span>
+                                        <span className="text-xs text-muted-foreground">{ex.base} pts</span>
                                     </div>
 
                                     {/* Point Math */}
