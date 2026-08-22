@@ -210,6 +210,82 @@ export async function getUserLineupHistory(userId: string) {
     }
 }
 
+/**
+ * Explains how a school in a lineup earned its fantasy points,
+ * match by match: base score + win bonus (+15) + margin bonus (+10).
+ */
+export async function getLineupPointsExplanation(lineupId: string, schoolId: string) {
+    try {
+        const session = await auth()
+        if (!session?.user?.id) return { success: false, error: "Not logged in" }
+
+        const rows = await db.select()
+            .from(fantasyLineups)
+            .where(
+                and(
+                    eq(fantasyLineups.id, lineupId),
+                    eq(fantasyLineups.userId, session.user.id)
+                )
+            )
+            .limit(1)
+
+        if (!rows.length) return { success: false, error: "Lineup not found" }
+
+        const breakdown = (rows[0].pointsBreakdown as Record<string, any>) || {}
+
+        // Canonical shape: { matchId: { schoolId: { base, bonus, total } } }
+        const matchIds = Object.keys(breakdown).filter(key => {
+            const val = breakdown[key]
+            return val && typeof val === 'object'
+        })
+
+        if (matchIds.length === 0 || !schoolId) {
+            return { success: true, explanations: [] as any[] }
+        }
+
+        const matchRows = await db.select()
+            .from(matches)
+            .where(inArray(matches.id, matchIds))
+
+        const explanations = matchRows.map(match => {
+            const entry = (breakdown[match.id] || {})[schoolId]
+            const result = (match.result as any) || {}
+            const scores: Record<string, number> = result.scores || {}
+            const participants = (match.participants as any[]) || []
+
+            const readScore = (id: string) => Number(scores[id] ?? 0)
+
+            const base = typeof entry?.base === 'number' ? entry.base : readScore(schoolId)
+            const isWinner = result.winner === schoolId
+            const otherScores = participants.filter(p => p.schoolId !== schoolId).map(p => readScore(p.schoolId))
+            const margin = isWinner ? base - Math.max(...(otherScores.length ? otherScores : [0])) : 0
+
+            return {
+                matchId: match.id,
+                stage: match.stage as string,
+                dateLabel: match.scheduledAt
+                    ? new Date(match.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                    : "",
+                sortTs: match.scheduledAt ? new Date(match.scheduledAt).getTime() : 0,
+                scoreline: participants.map(p => ({
+                    name: p.name as string,
+                    score: readScore(p.schoolId),
+                    isUserSchool: p.schoolId === schoolId
+                })),
+                base,
+                winBonus: isWinner ? 15 : 0,
+                marginBonus: isWinner && margin >= 10 ? 10 : 0,
+                total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 15 : 0) + (isWinner && margin >= 10 ? 10 : 0)
+            }
+        }).sort((a, b) => a.sortTs - b.sortTs)
+
+        return { success: true, explanations }
+    } catch (error) {
+        console.error("Error in getLineupPointsExplanation:", error)
+        return { success: false, error: "Failed to load points explanation" }
+    }
+}
+
 export async function getLeaderboard(gameWeek?: string) {    try {
         if (gameWeek) {
             // Retrieve points for specific game week

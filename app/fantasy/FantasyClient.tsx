@@ -2,8 +2,9 @@
 
 import { useState, useTransition, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { submitLineup } from "@/lib/fantasy-actions"
-import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive } from "@heroicons/react/24/solid";
+import { submitLineup, getLineupPointsExplanation } from "@/lib/fantasy-actions"
+import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive, ChartBarIcon as Chart, ArrowPathIcon as Loader2 } from "@heroicons/react/24/solid";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type School = {
     id: string
@@ -109,6 +110,22 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
     // Archive mode = the displayed squad belongs to a different matchday than this tab's stage
     const isViewingArchive = !isEditing && !!displayedLineup && !!activeStage && displayedLineup.gameWeek !== activeStage.gameWeek
+
+    // Points breakdown modal
+    const [breakdownSchool, setBreakdownSchool] = useState<School | null>(null)
+    const [explanations, setExplanations] = useState<any[] | null>(null)
+    const [loadingExplanation, setLoadingExplanation] = useState(false)
+
+    const openBreakdown = (school: School) => {
+        if (!displayedLineup) return
+        setBreakdownSchool(school)
+        setExplanations(null)
+        setLoadingExplanation(true)
+        getLineupPointsExplanation(displayedLineup.id, school.id)
+            .then((res: any) => setExplanations(res.success ? res.explanations : []))
+            .catch(() => setExplanations([]))
+            .finally(() => setLoadingExplanation(false))
+    }
 
     const [selectedSchools, setSelectedSchools] = useState<School[]>(() => {
         const initialSaved = stages.currentStage ? currentLineup : nextLineup;
@@ -422,7 +439,14 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         {(displayedLineup.schools as School[]).map((school: School, index: number) => {
                             const schoolPts = getSchoolBreakdownTotal(displayedLineup.pointsBreakdown, school?.id)
                             return (
-                                <div key={index} className="relative bg-card/90 border border-purple-500/30 rounded-3xl p-6 flex flex-col items-center justify-center shadow-lg hover:shadow-[0_10px_30px_rgba(168,85,247,0.15)] transition-all">
+                                <button
+                                    key={index}
+                                    onClick={() => openBreakdown(school)}
+                                    className="group/card relative bg-card/90 border border-purple-500/30 rounded-3xl p-6 pt-8 flex flex-col items-center justify-center shadow-lg hover:shadow-[0_10px_30px_rgba(168,85,247,0.25)] hover:border-purple-500/60 transition-all cursor-pointer text-left"
+                                >
+                                    <span className="absolute top-3 right-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 group-hover/card:text-purple-400 transition-colors">
+                                        <Chart className="h-3 w-3" /> Breakdown
+                                    </span>
                                     <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center font-black text-xl text-purple-400 mb-4">
                                         {index + 1}
                                     </div>
@@ -440,7 +464,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                             {school.creditCost || 0} Credits
                                         </span>
                                     </div>
-                                </div>
+                                </button>
                             )
                         })}
                             </div>
@@ -686,6 +710,72 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                     </div>
                 </>
             )}
+
+            {/* Points Breakdown Modal */}
+            <Dialog open={!!breakdownSchool} onOpenChange={(open) => { if (!open) setBreakdownSchool(null) }}>
+                <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-border/60">
+                    <DialogHeader>
+                        <DialogTitle className="font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2 text-lg">
+                            <Chart className="h-5 w-5" /> {breakdownSchool?.name}
+                        </DialogTitle>
+                        <DialogDescription className="text-xs uppercase tracking-widest font-bold">
+                            How your points were earned
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {loadingExplanation ? (
+                        <div className="py-10 flex flex-col items-center gap-3">
+                            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+                            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Crunching scores...</p>
+                        </div>
+                    ) : !explanations || explanations.length === 0 ? (
+                        <div className="py-10 text-center">
+                            <Chart className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                            <p className="text-muted-foreground text-sm">No scored matches yet. Points appear here as soon as results are settled.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 mt-2 pb-2">
+                            {explanations.map(ex => (
+                                <div key={ex.matchId} className="bg-card/70 border border-border/60 rounded-2xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                            {ex.stage}{ex.dateLabel ? ` · ${ex.dateLabel}` : ""}
+                                        </span>
+                                        <span className="text-sm font-black text-emerald-400">+{ex.total} pts</span>
+                                    </div>
+
+                                    {/* Final Scoreline */}
+                                    <div className="flex flex-col gap-1 mb-3 bg-background/60 rounded-xl p-3 border border-border/40">
+                                        {ex.scoreline.map((row: any) => (
+                                            <div key={row.name} className="flex justify-between text-xs">
+                                                <span className={row.isUserSchool ? "font-black text-purple-300" : "text-muted-foreground"}>
+                                                    {row.name}{row.isUserSchool ? " ★" : ""}
+                                                </span>
+                                                <span className={row.isUserSchool ? "font-black text-purple-300" : "text-muted-foreground"}>
+                                                    {row.score} pts
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Point Math */}
+                                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                                        <span className="px-2 py-1 rounded-lg bg-background border border-border">Base {ex.base}</span>
+                                        {ex.winBonus > 0 && (
+                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Win Bonus +15</span>
+                                        )}
+                                        {ex.marginBonus > 0 && (
+                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Won by 10+ +10</span>
+                                        )}
+                                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-purple-300 font-black">= {ex.total} pts</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
