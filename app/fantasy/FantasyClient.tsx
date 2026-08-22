@@ -340,15 +340,15 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                 </div>
             </div>
 
-            {/* Squad View vs Drafting vs Empty State */}
-            {!isEditing && displayedLineup ? (
-                // --- MY SQUAD VIEW (READ ONLY, WITH MATCHDAY SWITCHER) ---
+            {/* Squad Section vs Drafting */}
+            {!isEditing ? (
+                // --- MY SQUAD SECTION (SWITCHER + SQUAD / ARCHIVE / PICK PROMPT) ---
                 <div className="mb-10">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2">
                             <Sparkles className="h-6 w-6" /> My Squad
                         </h2>
-                        {!isViewingArchive && !isLockedLocal && (
+                        {!isViewingArchive && !isLockedLocal && !!activeSavedLineup && (
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-card border border-border hover:bg-accent hover:text-accent-foreground text-sm font-bold rounded-xl transition-colors"
@@ -359,10 +359,10 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                     </div>
 
                     {/* Matchday History Switcher (FPL-style gameweek selector) */}
-                    {lineupHistory.length > 1 && (
+                    {lineupHistory.length > 0 && (
                         <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
                             {lineupHistory.map(entry => {
-                                const isSelected = (selectedHistoryGw ?? displayedLineup.gameWeek) === entry.gameWeek
+                                const isSelected = (selectedHistoryGw ?? displayedLineup?.gameWeek) === entry.gameWeek
                                 const isLiveStage = entry.gameWeek === activeStage?.gameWeek
                                 return (
                                     <button
@@ -387,11 +387,13 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                     )}
 
-                    {isViewingArchive && (
-                        <div className="mb-5 inline-flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                            <Archive className="h-3.5 w-3.5" /> Archive - viewing a past matchday squad
-                        </div>
-                    )}
+                    {displayedLineup ? (
+                        <>
+                            {isViewingArchive && (
+                                <div className="mb-5 inline-flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    <Archive className="h-3.5 w-3.5" /> Archive - viewing a past matchday squad
+                                </div>
+                            )}
 
                     {displayedLineup.pointsEarned !== undefined && (
                         <div className="bg-gradient-to-br from-purple-900/20 to-card border border-purple-500/20 rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between">
@@ -441,9 +443,42 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                 </div>
                             )
                         })}
-                    </div>
+                            </div>
+                        </>
+                    ) : (
+                        // --- PICK PROMPT (NO SQUAD FOR THIS STAGE YET) ---
+                        <div className="relative overflow-hidden bg-card/80 border border-border/50 rounded-3xl p-10 md:p-14 text-center">
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent" />
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className="w-16 h-16 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5">
+                                    <Sparkles className="h-8 w-8 text-purple-400" />
+                                </div>
+                                <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">No Squad Locked In</h2>
+                                <p className="text-muted-foreground text-sm mt-2 max-w-md">
+                                    {activeStage
+                                        ? `You haven't selected your 3-school squad for ${formatStageLabel(activeStage.gameWeek)} yet. Browse a past matchday above, or pick your team now.`
+                                        : "You haven't selected your squad yet."}
+                                </p>
+                                {!activeStage || isLockedLocal || stages.isOffSeason ? (
+                                    <div className="mt-6 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
+                                        <Clock className="h-4 w-4" /> Selection closed for this stage
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setSelectedSchools((activeSavedLineup?.schools as School[]) || [])
+                                            setIsEditing(true)
+                                        }}
+                                        className="mt-6 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                                    >
+                                        Select Your Team <ArrowRight className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            ) : isEditing ? (
+            ) : (
                 // --- DRAFTING VIEW (EDITING) ---
                 <>
                     <div className="mb-10">
@@ -650,38 +685,6 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                     </div>
                 </>
-            ) : (
-                // --- EMPTY STATE (NO SQUAD FOR THIS STAGE YET) ---
-                <div className="relative overflow-hidden bg-card/80 border border-border/50 rounded-3xl p-10 md:p-14 text-center">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent" />
-                    <div className="relative z-10 flex flex-col items-center">
-                        <div className="w-16 h-16 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5">
-                            <Sparkles className="h-8 w-8 text-purple-400" />
-                        </div>
-                        <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">
-                            No Squad Locked In
-                        </h2>
-                        <p className="text-muted-foreground text-sm mt-2 max-w-md">
-                            {activeStage
-                                ? `You haven't selected your 3-school squad for ${activeStage.gameWeek} yet. Your saved squads for other matchdays are safe - pick your team when you're ready.`
-                                : "You haven't selected your squad yet."}
-                        </p>
-
-                        {isLockedLocal ? (
-                            <div className="mt-6 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
-                                <Clock className="h-4 w-4" /> Selection closed for this stage
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                disabled={!activeStage || stages.isOffSeason}
-                                className="mt-6 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Select Your Team <ArrowRight className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
-                </div>
             )}
         </div>
     )
