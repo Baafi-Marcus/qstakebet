@@ -247,11 +247,25 @@ export function MatchResultModal({ match, onClose, onSuccess }: MatchResultModal
                 metadata.lastUpdated = new Date().toISOString()
             }
 
+            // Capture round-by-round progression for quiz contests
+            let rounds: { label: string, scores: Record<string, number> }[] | undefined
+            if (isQuiz) {
+                const defs: [string, string][] = [["r1", "Round 1"], ["r2", "Round 2"], ["r3", "Round 3"], ["r4", "Round 4"], ["r5", "Round 5"]]
+                rounds = defs
+                    .map(([key, label]) => ({
+                        label,
+                        scores: Object.fromEntries(match.participants.map((p: any) => [p.schoolId, Number(quizData[p.schoolId]?.[key as keyof typeof quizData[string]]) || 0])) as Record<string, number>
+                    }))
+                    .filter(rd => Object.values(rd.scores).some(v => v > 0))
+                if (rounds.length === 0) rounds = undefined
+            }
+
             const result = await updateMatchResult(match.id, {
                 scores: finalScores,
                 winner: isLiveUpdate ? "" : winner,
                 status: isLiveUpdate ? "live" : "finished",
                 autoEndAt: autoEndAt || null,
+                rounds,
                 metadata: {
                     ...metadata,
                     outcomes: manualOutcomes

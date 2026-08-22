@@ -260,6 +260,30 @@ export async function getLineupPointsExplanation(lineupId: string, schoolId: str
                 const others = Object.keys(scores).filter(id => id !== schoolId)
                 const margin = isWinner ? base - Math.max(...(others.length ? others.map(id => Number(scores[id] ?? 0)) : [0])) : 0
 
+                // Round-by-round progression for THIS school (cumulative), when available
+                const rounds: { label: string, score: number }[] = []
+                const pushRound = (label: string, v: any) => {
+                    if (typeof v === 'number' && Number.isFinite(v)) rounds.push({ label, score: v })
+                }
+                const genericRounds = Array.isArray(result.rounds) ? result.rounds : []
+                for (const rd of genericRounds) {
+                    if (rd?.scores && schoolId in rd.scores) pushRound(String(rd.label || "Round"), rd.scores[schoolId])
+                }
+                if (rounds.length === 0) {
+                    // Fallback: quiz per-round entry data (r1..r5)
+                    const qd = result.metadata?.quizDetails?.[schoolId]
+                    if (qd) {
+                        const defs: [string, string][] = [["r1", "Round 1"], ["r2", "Round 2"], ["r3", "Round 3"], ["r4", "Round 4"], ["r5", "Round 5"]]
+                        let cum = 0
+                        for (const [key, label] of defs) {
+                            const v = Number(qd[key])
+                            if (!Number.isFinite(v)) continue
+                            cum += v
+                            rounds.push({ label, score: cum })
+                        }
+                    }
+                }
+
                 return {
                     matchId: match.id,
                     stage: match.stage as string,
@@ -268,6 +292,7 @@ export async function getLineupPointsExplanation(lineupId: string, schoolId: str
                         : "",
                     sortTs: match.scheduledAt ? new Date(match.scheduledAt).getTime() : 0,
                     yourScore: base,
+                    rounds,
                     winBonus: isWinner ? 15 : 0,
                     marginBonus: isWinner && margin >= 10 ? 10 : 0,
                     total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 15 : 0) + (isWinner && margin >= 10 ? 10 : 0)

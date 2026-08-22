@@ -672,6 +672,7 @@ export async function updateMatchResult(matchId: string, resultData: {
     status: string
     autoEndAt?: string | null
     metadata?: any
+    rounds?: { label: string, scores: { [schoolId: string]: number } }[]
 }) {
     try {
         const { recordMatchUpdate } = await import("./match-helpers")
@@ -704,6 +705,7 @@ export async function updateMatchResult(matchId: string, resultData: {
                 result: {
                     scores: resultData.scores,
                     winner: resultData.winner,
+                    rounds: resultData.rounds || [],
                     metadata: resultData.metadata
                 },
                 status: resultData.status,

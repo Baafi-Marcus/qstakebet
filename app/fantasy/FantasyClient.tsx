@@ -750,6 +750,19 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                         <span className="text-xs text-muted-foreground">{ex.base} pts</span>
                                     </div>
 
+                                    {/* Round-by-round progression (only when data exists) */}
+                                    {ex.rounds?.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold mb-3">
+                                            {ex.rounds.map((r: any, i: number) => (
+                                                <span key={i} className="px-2 py-1 rounded-lg bg-background border border-border text-foreground/80">
+                                                    R{i + 1} {r.score}
+                                                </span>
+                                            ))}
+                                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                            <span className="text-purple-300 font-black">Final {ex.base}</span>
+                                        </div>
+                                    )}
+
                                     {/* Point Math */}
                                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
                                         <span className="px-2 py-1 rounded-lg bg-background border border-border">Base {ex.base}</span>
