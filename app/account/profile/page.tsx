@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { EyeIcon as Eye, EyeSlashIcon as EyeOff, Cog6ToothIcon as Settings, ChevronRightIcon as ChevronRight, ArchiveBoxIcon as History, GiftIcon as Gift, ArrowPathIcon as Loader2, ArrowRightStartOnRectangleIcon as LogOut, QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen, ChatBubbleLeftRightIcon as MessageSquare, TrophyIcon as Trophy, BoltIcon as Zap } from "@heroicons/react/24/solid";
+import { EyeIcon as Eye, EyeSlashIcon as EyeOff, Cog6ToothIcon as Settings, ChevronRightIcon as ChevronRight, GiftIcon as Gift, ArrowPathIcon as Loader2, ArrowRightStartOnRectangleIcon as LogOut, QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen, ChatBubbleLeftRightIcon as MessageSquare, TrophyIcon as Trophy, BoltIcon as Zap } from "@heroicons/react/24/solid";
 import { WalletIcon as Wallet, ArrowsRightLeftIcon as ArrowRightLeft, ArrowUpCircleIcon as ArrowUpFromLine } from "@heroicons/react/24/solid";
 import { getUserProfileSummary } from "@/lib/user-actions"
 import Link from "next/link"
@@ -84,11 +84,6 @@ export default function ProfilePage() {
             {/* Navigation Grid */}
             <div className="bg-background rounded-t-[2.5rem] border-t border-border/50 pb-10">
                 <div className="grid grid-cols-3 gap-y-8 py-8 px-2">
-                    <NavButton
-                        href="/account/predictions"
-                        icon={History}
-                        label="Predictions"
-                    />
                     <NavButton
                         href="/leaderboard"
                         icon={Trophy}

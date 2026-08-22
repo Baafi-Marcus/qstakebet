@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { UserIcon as User, ArchiveBoxIcon as History, Cog6ToothIcon as Settings, ArrowRightStartOnRectangleIcon as LogOut, ChevronRightIcon as ChevronRight, QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen } from "@heroicons/react/24/solid";
+import { UserIcon as User, Cog6ToothIcon as Settings, ArrowRightStartOnRectangleIcon as LogOut, ChevronRightIcon as ChevronRight, QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils"
 import { getUserProfileSummary } from "@/lib/user-actions"
 import { useEffect, useState } from "react"
@@ -21,7 +21,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
     const menuItems = [
         { href: "/account/profile", label: "My Profile", icon: User },
-        { href: "/account/predictions", label: "My Predictions", icon: History },
         { href: "/help", label: "Help Center", icon: HelpCircle },
         { href: "/how-to-play", label: "How to Play", icon: BookOpen },
         { href: "/account/settings", label: "Settings", icon: Settings },
