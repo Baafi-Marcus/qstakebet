@@ -9,7 +9,7 @@ import { verifyOTP } from "@/lib/verification-actions"
 import { rateLimit } from "@/lib/rate-limit"
 import { RegisterUserSchema, RegisterAdminSchema } from "@/lib/validators"
 
-const WELCOME_SMS = "Welcome to QSTAKEbet! Your NSMQ Fantasy account is ready. Draft your school squad and climb the leaderboard!"
+const WELCOME_SMS = "Welcome to QSTAKEfantasy! Your NSMQ Fantasy account is ready. Draft your school squad and climb the leaderboard!"
 
 export async function registerUser(data: {
     email: string

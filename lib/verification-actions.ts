@@ -29,7 +29,8 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
             return { success: false, error: "Phone number is already associated with an account" }
         }
 
-        // 2. Check for existing non-expired OTP (Rate Limiting / Cooldown)
+        // 2. Resend cooldown: allow a new code every 2 minutes (code itself stays valid for 24h)
+        const RESEND_COOLDOWN_MS = 2 * 60 * 1000
         const existingOTP = await db.query.verificationCodes.findFirst({
             where: and(
                 eq(verificationCodes.phone, phone),
@@ -38,20 +39,22 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
         })
 
         if (existingOTP) {
-            const remainingMs = existingOTP.expiresAt.getTime() - Date.now()
-            const remainingMins = Math.ceil(remainingMs / 60000)
-            return {
-                success: false,
-                error: `Please wait ${remainingMins} minute${remainingMins > 1 ? "s" : ""} before requesting a new code.`
+            const ageMs = Date.now() - (existingOTP.createdAt?.getTime() ?? 0)
+            if (ageMs < RESEND_COOLDOWN_MS) {
+                const remainingSecs = Math.ceil((RESEND_COOLDOWN_MS - ageMs) / 1000)
+                return {
+                    success: false,
+                    error: `Please wait ${remainingSecs} second${remainingSecs > 1 ? "s" : ""} before requesting a new code.`
+                }
             }
         }
 
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString()
         const id = `vc-${Date.now()}-${randomBytes(4).toString("hex")}`
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes expiry
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours expiry
 
-        // Clear any old (expired) codes for this phone
+        // Clear any old codes for this phone
         await db.delete(verificationCodes).where(eq(verificationCodes.phone, phone))
 
         await db.insert(verificationCodes).values({
@@ -64,7 +67,7 @@ export async function generateAndSendOTP(phone: string, isExistingUser = false) 
         // Send SMS via Vynfy
         const { formatToInternational } = await import("@/lib/phone-utils")
         const formattedPhone = formatToInternational(phone)
-        const message = `Your QSTAKEbet verification code is: ${otp}. Valid for 10 minutes.`
+        const message = `Your QSTAKEfantasy verification code is: ${otp}. Valid for 24 hours.`
         const smsResult = await vynfy.sendSMS([formattedPhone], message)
 
         if (!smsResult.success) {

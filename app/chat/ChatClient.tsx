@@ -11,6 +11,7 @@ import {
     postRoomMessage, 
     getRoomLeaderboard 
 } from "@/lib/chat-actions"
+import { getSchoolsForPicker, updateAlmaMater } from "@/lib/user-actions"
 import { Send, Shield, Hash, MessageSquare, RefreshCw, Sparkles, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -104,8 +105,49 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     const [rankingsTab, setRankingsTab] = useState<"weekly" | "overall">("weekly")
     const [copied, setCopied] = useState(false)
 
+    // School badge state
+    const [almaMater, setAlmaMater] = useState<string | null>(currentUser.almaMater ?? null)
+    const [isBadgeModal, setIsBadgeModal] = useState(false)
+    const [schoolsList, setSchoolsList] = useState<{ id: string; name: string; region: string }[] | null>(null)
+    const [schoolSearch, setSchoolSearch] = useState("")
+    const [savingSchool, setSavingSchool] = useState(false)
+    const [badgeError, setBadgeError] = useState<string | null>(null)
+
     const isCustomRoomActive = customRooms.some(r => r.id === activeId)
     const activeRoomDetails = customRooms.find(r => r.id === activeId)
+
+    // School badge handlers
+    const openBadgeModal = async () => {
+        setBadgeError(null)
+        setSchoolSearch("")
+        setIsBadgeModal(true)
+        if (!schoolsList) {
+            const res = await getSchoolsForPicker()
+            if (res.success && res.schools) setSchoolsList(res.schools)
+            else setBadgeError(res.error || "Could not load schools")
+        }
+    }
+
+    const handleSelectSchool = async (schoolId: string, name: string) => {
+        setSavingSchool(true)
+        setBadgeError(null)
+        try {
+            const res = await updateAlmaMater(schoolId)
+            if (res.success) {
+                setAlmaMater(res.almaMater ?? name)
+                setIsBadgeModal(false)
+            } else {
+                setBadgeError(res.error || "Could not save your school")
+            }
+        } finally {
+            setSavingSchool(false)
+        }
+    }
+
+    const filteredSchools = (schoolsList ?? []).filter(s =>
+        s.name.toLowerCase().includes(schoolSearch.trim().toLowerCase()) ||
+        (s.region || "").toLowerCase().includes(schoolSearch.trim().toLowerCase())
+    )
 
     // Scroll to bottom
     const scrollToBottom = () => {
@@ -387,12 +429,19 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                     <div>
                         <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">School Badge</div>
                         <div className="text-sm font-black text-white mt-0.5">
-                            {currentUser.almaMater ? currentUser.almaMater : "Coming soon"}
+                            {almaMater ? almaMater : (
+                                <button
+                                    onClick={openBadgeModal}
+                                    className="text-purple-400 hover:text-purple-300 underline underline-offset-2 decoration-dotted cursor-pointer transition-colors"
+                                >
+                                    Set your school
+                                </button>
+                            )}
                         </div>
                     </div>
-                    {currentUser.almaMater && (
+                    {almaMater && (
                         <span className="text-[10px] font-black uppercase bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20 shadow-sm">
-                            {getSchoolAcronym(currentUser.almaMater)}
+                            {getSchoolAcronym(almaMater)}
                         </span>
                     )}
                 </div>
@@ -721,6 +770,67 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* School Badge Modal */}
+            {isBadgeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsBadgeModal(false)} />
+                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="font-russo uppercase tracking-wider text-white text-md">Choose Your School</h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-semibold leading-normal">
+                                    Pick your alma mater to earn your school badge across chat and the leaderboard.
+                                </p>
+                            </div>
+
+                            <input
+                                type="text"
+                                value={schoolSearch}
+                                onChange={(e) => setSchoolSearch(e.target.value)}
+                                placeholder="Search school or region..."
+                                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+                            />
+
+                            {badgeError && (
+                                <p className="text-[11px] font-bold text-red-400">{badgeError}</p>
+                            )}
+
+                            <div className="max-h-64 overflow-y-auto divide-y divide-white/5 border border-white/5 rounded-xl bg-slate-950/50">
+                                {!schoolsList ? (
+                                    <div className="px-4 py-8 text-center text-xs text-slate-500 font-semibold">Loading schools...</div>
+                                ) : filteredSchools.length === 0 ? (
+                                    <div className="px-4 py-8 text-center text-xs text-slate-500 font-semibold">No schools match your search.</div>
+                                ) : (
+                                    filteredSchools.map((s) => (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => handleSelectSchool(s.id, s.name)}
+                                            disabled={savingSchool}
+                                            className={`w-full px-4 py-3 flex items-center justify-between gap-2 text-left transition-colors cursor-pointer ${
+                                                almaMater === s.name
+                                                    ? "bg-purple-600/20"
+                                                    : "hover:bg-white/5"
+                                            } disabled:opacity-50`}
+                                        >
+                                            <span className="text-sm font-bold text-white truncate">{s.name}</span>
+                                            <span className="text-[9px] uppercase font-black text-slate-500 tracking-wider shrink-0">{s.region}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsBadgeModal(false)}
+                                className="w-full py-3 border border-white/5 hover:bg-white/5 hover:text-white transition-all text-xs font-bold text-slate-500 rounded-xl cursor-pointer"
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>
