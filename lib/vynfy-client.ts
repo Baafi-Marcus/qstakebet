@@ -14,8 +14,8 @@ export class VynfyClient {
      */
     async sendSMS(recipients: string[], message: string) {
         if (!this.apiKey) {
-            console.error("Vynfy API Key missing");
-            return { success: false, error: "Configuration Error" };
+            console.error("Vynfy SMS failed: VYNFY_API_KEY env var is not configured on this deployment")
+            return { success: false, error: "SMS service is not configured" };
         }
 
         try {
@@ -32,32 +32,37 @@ export class VynfyClient {
                 }),
             });
 
-            const data = await res.json();
+            const raw = await res.text();
+            let data: any;
+            try { data = JSON.parse(raw); } catch { data = { raw }; }
 
-            // Log to database for tracking
-            if (res.ok) {
-                try {
-                    const { db } = await import("@/lib/db");
-                    const { smsLogs } = await import("@/lib/db/schema");
-
-                    // Use message_id from Vynfy if present
-                    const messageId = data.message_id || data.id || `msg-${Date.now()}`;
-
-                    await db.insert(smsLogs).values({
-                        id: `sl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                        messageId: messageId,
-                        phone: recipients.join(","),
-                        message: message,
-                        status: "pending",
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                    });
-                } catch (dbError) {
-                    console.error("Failed to log SMS to database:", dbError);
-                }
+            if (!res.ok) {
+                console.error(`Vynfy SMS failed with status ${res.status}:`, raw.slice(0, 500));
+                return { success: false, error: `SMS provider error (${res.status})`, data };
             }
 
-            return { success: res.ok, data };
+            // Log to database for tracking
+            try {
+                const { db } = await import("@/lib/db");
+                const { smsLogs } = await import("@/lib/db/schema");
+
+                // Use message_id from Vynfy if present
+                const messageId = data.message_id || data.id || `msg-${Date.now()}`;
+
+                await db.insert(smsLogs).values({
+                    id: `sl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                    messageId: messageId,
+                    phone: recipients.join(","),
+                    message: message,
+                    status: data.status || "pending",
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                });
+            } catch (dbError) {
+                console.error("Failed to log SMS to database:", dbError);
+            }
+
+            return { success: true, data };
         } catch (error) {
             console.error("Vynfy Send SMS Error:", error);
             return { success: false, error: "Network Error" };

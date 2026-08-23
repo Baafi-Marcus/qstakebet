@@ -163,12 +163,12 @@ function RegisterForm() {
                         <h2 className="text-2xl font-bold text-foreground">Create Account</h2>
                     </div>
 
-                    {/* Welcome Bonus Banner */}
+                    {/* Fantasy Banner */}
                     <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl flex items-start gap-3">
                         <Gift className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-semibold text-purple-300">Welcome Bonus!</p>
-                            <p className="text-xs text-muted-foreground mt-1">Get 10 GHS free bet when you sign up</p>
+                            <p className="text-sm font-semibold text-purple-300">Play NSMQ Fantasy!</p>
+                            <p className="text-xs text-muted-foreground mt-1">Draft your school squad, earn points every matchday and climb the leaderboard.</p>
                         </div>
                     </div>
 
