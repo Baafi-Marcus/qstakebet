@@ -10,7 +10,7 @@ export default function HowToPlayPage() {
                         <BookOpen className="h-8 w-8 text-primary" />
                     </div>
                     <h1 className="text-4xl font-black text-foreground uppercase tracking-tight mb-3">How to Play</h1>
-                    <p className="text-muted-foreground text-lg font-medium">Your complete guide to QSTAKEbet Fantasy and Predictions</p>
+                    <p className="text-muted-foreground text-lg font-medium">Your complete guide to QSTAKEfantasy — NSMQ Fantasy</p>
                 </div>
 
                 {/* Steps */}
@@ -56,18 +56,22 @@ export default function HowToPlayPage() {
                                 <span className="text-primary font-black text-lg">3</span>
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-xl font-black text-foreground uppercase mb-2">Predict Match Outcomes</h3>
-                                <p className="text-muted-foreground mb-3">Explore upcoming matches in the tournaments. Make predictions on who will win or what the score margins will be.</p>
+                                <h3 className="text-xl font-black text-foreground uppercase mb-2">Score Points Every Matchday</h3>
+                                <p className="text-muted-foreground mb-3">Your squad earns points based on how your schools actually perform in the NSMQ. Win a match for bonus points, win big for even more, and captain the school you trust most.</p>
                                 <div className="bg-background/50 border border-border/50 rounded-xl p-4 mt-3">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Prediction Tips:</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Scoring:</p>
                                     <ul className="space-y-2 text-sm text-foreground/80">
                                         <li className="flex items-start gap-2">
                                             <Target className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span><strong className="text-foreground">Research:</strong> Look at historical matchups and recent performance.</span>
+                                            <span><strong className="text-foreground">Base points:</strong> Your schools earn points for every round they win on stage.</span>
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <Target className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span><strong className="text-foreground">Climb the Ranks:</strong> The more accurate your predictions, the more lifetime points you earn!</span>
+                                            <span><strong className="text-foreground">Win bonus (+2):</strong> Any school in your squad that wins its match adds extra points.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <Target className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                            <span><strong className="text-foreground">Margin bonus (+5):</strong> If a school wins by 10+ points over the runner-up, you bank a big bonus.</span>
                                         </li>
                                     </ul>
                                 </div>

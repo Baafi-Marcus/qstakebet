@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { TrophyIcon as Trophy, SparklesIcon as Crown, FireIcon as Medal, CheckBadgeIcon as Award, StarIcon as Star, HashtagIcon as Hash } from "@heroicons/react/24/solid";
+import Link from "next/link"
+import { TrophyIcon as Trophy, SparklesIcon as Crown, FireIcon as Medal, CheckBadgeIcon as Award, StarIcon as Star, HashtagIcon as Hash, ShieldExclamationIcon as BadgeAlert } from "@heroicons/react/24/solid";
 
 type LeaderboardRow = {
     username: string | null
@@ -13,6 +14,7 @@ type LeaderboardClientProps = {
     initialWeekly: LeaderboardRow[]
     initialLifetime: LeaderboardRow[]
     gameWeek: string
+    viewerAlmaMater?: string | null
 }
 
 function getSchoolAcronym(name: string | null) {
@@ -33,7 +35,7 @@ function getSchoolAcronym(name: string | null) {
     return parts.map(p => p[0]).join("").toUpperCase().substring(0, 6)
 }
 
-export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: LeaderboardClientProps) {
+export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, viewerAlmaMater }: LeaderboardClientProps) {
     const [activeTab, setActiveTab] = useState<"weekly" | "lifetime">("weekly")
 
     const data = activeTab === "weekly" ? initialWeekly : initialLifetime
@@ -71,6 +73,20 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek }: 
                     </div>
                 </div>
             </div>
+
+            {/* Alma mater nudge */}
+            {viewerAlmaMater === null && (
+                <Link
+                    href="/chat"
+                    className="mb-6 flex items-center gap-3 rounded-2xl border border-purple-500/25 bg-purple-600/10 px-5 py-4 transition-colors hover:bg-purple-600/20"
+                >
+                    <BadgeAlert className="h-5 w-5 shrink-0 text-purple-400" />
+                    <div>
+                        <p className="text-sm font-bold text-foreground">You have no school badge yet</p>
+                        <p className="text-xs text-muted-foreground">Claim your alma mater in the Chat tab so it shows next to your name on the leaderboard.</p>
+                    </div>
+                </Link>
+            )}
 
             {/* Tab toggles */}
             <div className="flex bg-card border border-border/50 p-1.5 rounded-2xl mb-6">

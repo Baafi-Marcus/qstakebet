@@ -7,23 +7,27 @@ export default function HelpCenterPage() {
     const faqs = [
         {
             question: "How do I start playing?",
-            answer: "Since we've transitioned to a pure Fantasy and Prediction platform, there are no real-money deposits required. Just create an account and start playing!"
+            answer: "QSTAKEfantasy is completely free to play — no deposits, no stakes. Create an account with your phone number and you're in!"
         },
         {
-            question: "How do I predict matches?",
-            answer: "Go to the 'Predictions' tab, select the match you want to predict, and enter your predicted outcome."
+            question: "How do I draft my squad?",
+            answer: "Go to the Fantasy page and pick your schools for the active matchday. Choose a captain for double points, then sit back and watch them score."
         },
         {
             question: "How are Fantasy points calculated?",
-            answer: "Points are awarded based on real-life NSMQ performance. Correct answers, speed, and overall performance in the tournament all contribute to your squad's total score."
+            answer: "Points are awarded based on real-life NSMQ performance. Schools earn base points for rounds won on stage, a +2 win bonus for winning their match, and a +5 margin bonus for winning by 10+ points. Your captain scores double."
         },
         {
-            question: "Is there a limit on how many predictions I can make?",
-            answer: "You can make one prediction per match."
+            question: "Can I change my squad after drafting?",
+            answer: "Yes! You can edit your lineup any time before the matchday's matches begin. Once results start coming in, your lineup is locked for that stage."
         },
         {
-            question: "How do I verify my phone number?",
-            answer: "During registration, you'll receive an OTP code via SMS. Enter this code to verify your phone number. You can update your phone number in Settings."
+            question: "How do I claim my school badge?",
+            answer: "Open the Chat tab and tap your school badge at the top. Search for your alma mater and select it — your badge shows up next to your name in chat and on the leaderboard."
+        },
+        {
+            question: "Do I need to verify my phone number?",
+            answer: "No OTP is needed at registration — your account is ready immediately. We only send SMS codes when you reset a forgotten password or change your phone number."
         }
     ]
 

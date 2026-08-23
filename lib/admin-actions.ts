@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "./db"
-import { schools, tournaments, schoolStrengths, matches, virtualSchoolStats, realSchoolStats, users, predictions, pendingResults } from "./db/schema"
+import { schools, tournaments, matches, realSchoolStats, users, pendingResults } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { parseResultsWithAI, type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
@@ -150,17 +150,6 @@ export async function createSchoolAction(data: {
             type: data.type || 'school'
         }).returning();
 
-        // Initialize Virtual Stats
-        const vssId = `vss-${Math.random().toString(36).substr(2, 9)}`;
-        await db.insert(virtualSchoolStats).values({
-            id: vssId,
-            schoolId: id,
-            currentForm: 1.0,
-            volatilityIndex: 0.1,
-            matchesPlayed: 0,
-            wins: 0
-        });
-
         return { success: true, school: newSchool };
     } catch (error) {
         console.error("Create school error:", error);
@@ -175,9 +164,7 @@ export async function updateSchoolAction(id: string, data: {
     category?: string,
     level?: string,
     type?: string,
-    parentId?: string | null,
-    currentForm?: number,
-    volatilityIndex?: number
+    parentId?: string | null
 }) {
     try {
         return await db.transaction(async (tx) => {
@@ -194,26 +181,6 @@ export async function updateSchoolAction(id: string, data: {
                 }).where(eq(schools.id, id));
             }
 
-            // Update AI Stats
-            if (data.currentForm !== undefined || data.volatilityIndex !== undefined) {
-                const existing = await tx.select().from(virtualSchoolStats).where(eq(virtualSchoolStats.schoolId, id)).limit(1);
-                if (existing.length > 0) {
-                    await tx.update(virtualSchoolStats).set({
-                        currentForm: data.currentForm,
-                        volatilityIndex: data.volatilityIndex,
-                        lastUpdated: new Date()
-                    }).where(eq(virtualSchoolStats.schoolId, id));
-                } else {
-                    const vssId = `vss-${Math.random().toString(36).substr(2, 9)}`;
-                    await tx.insert(virtualSchoolStats).values({
-                        id: vssId,
-                        schoolId: id,
-                        currentForm: data.currentForm || 1.0,
-                        volatilityIndex: data.volatilityIndex || 0.1
-                    });
-                }
-            }
-
             return { success: true };
         });
     } catch (error) {
@@ -225,9 +192,7 @@ export async function updateSchoolAction(id: string, data: {
 export async function deleteSchoolAction(id: string) {
     try {
         return await db.transaction(async (tx) => {
-            await tx.delete(virtualSchoolStats).where(eq(virtualSchoolStats.schoolId, id));
             await tx.delete(realSchoolStats).where(eq(realSchoolStats.schoolId, id));
-            await tx.delete(schoolStrengths).where(eq(schoolStrengths.schoolId, id));
             await tx.delete(schools).where(eq(schools.id, id));
             return { success: true };
         });
@@ -538,22 +503,6 @@ export async function updateMatch(id: string, data: {
 }
 
 export async function deleteMatch(id: string) {
-    // Safety check: Don't delete if predictions exist
-    const linkedBets = await db.select().from(predictions).limit(1);
-    // Note: Since 'predictions' table uses JSONB for selections, we filter in JS for now or use SQL JSON search
-    // For large scale, we'd use: where(sql`exists (select 1 from jsonb_array_elements(${predictions.selections}) as s where s->>'matchId' = ${id})`)
-
-    // Quick JS filter for safety in intermediate scale
-    const allPendingBets = await db.select().from(predictions).where(eq(predictions.status, "pending"));
-    const hasBets = allPendingBets.some(b => {
-        const selections = b.selections as any[];
-        return selections.some(s => s.matchId === id);
-    });
-
-    if (hasBets) {
-        return { success: false, error: "Cannot delete match with active predictions. Void the predictions first." };
-    }
-
     try {
         await db.delete(matches).where(eq(matches.id, id));
         return { success: true };
@@ -580,12 +529,8 @@ export async function calculateInitialOdds(schoolIds: string[], sportType: strin
     const effectiveMargin = isUniversity ? 0.15 : margin;
     const minOdd = isUniversity ? 1.08 : 1.01;
     const maxOdd = isUniversity ? 3.50 : 100.0;
-    // 1. Fetch school ratings (Base Seed)
-    const baseStrengths = await db.select().from(schoolStrengths)
-        .where(and(
-            eq(schoolStrengths.sportType, sportType),
-            eq(schoolStrengths.gender, gender)
-        ));
+    // 1. Base rating defaults to 50 for all schools (legacy strengths table removed)
+    const baseStrengths: { schoolId: string; rating?: unknown }[] = [];
 
     // 1b. Fetch Live Form (Tournament Specific if available, else Global)
     let liveStats: any[] = [];

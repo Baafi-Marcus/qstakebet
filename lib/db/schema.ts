@@ -66,15 +66,6 @@ export const matches = pgTable("matches", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const schoolStrengths = pgTable("school_strengths", {
-    id: text("id").primaryKey(),
-    schoolId: text("school_id").notNull().references(() => schools.id),
-    sportType: text("sport_type").notNull(),
-    gender: text("gender").notNull(),
-    rating: jsonb("rating").notNull(), // 0-100 score
-    updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // ============================================
 // USER AUTHENTICATION & WALLET SYSTEM
 // ============================================
@@ -131,35 +122,9 @@ export const sessions = pgTable("sessions", {
 
 // Removed wallets table
 
-export const predictions = pgTable("predictions", {
-    id: text("id").primaryKey(), // Format: prd-xxxxx
-    userId: text("user_id").notNull().references(() => users.id),
-    selections: jsonb("selections").notNull(), // Array of Selection objects
-    status: text("status").default("pending").notNull(), // "pending", "won", "lost", "void"
-    mode: text("mode").default("multi").notNull(), // "single", "multi"
-    settledAt: timestamp("settled_at"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // Removed transactions table
 
 // Removed bonuses, withdrawal_requests, and referrals tables
-
-export const virtualSchoolStats = pgTable("virtual_school_stats", {
-    id: text("id").primaryKey(), // vss-xxxxx
-    schoolId: text("school_id").notNull().references(() => schools.id),
-
-    // AI Learning Parameters
-    learningIndex: real("learning_index").default(0.0), // 0.0 - 1.0 (AI Confidence)
-    volatilityIndex: real("volatility_index").default(0.1), // Stability of performance
-
-    // Performance Tracking
-    matchesPlayed: integer("matches_played").default(0),
-    wins: integer("wins").default(0),
-    currentForm: real("current_form").default(1.0), // 1.0 = Base strength
-    lastUpdated: timestamp("last_updated").defaultNow(),
-});
 
 export const realSchoolStats = pgTable("real_school_stats", {
     id: text("id").primaryKey(), // rss-xxxxx
@@ -293,10 +258,8 @@ export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;
 export type Match = typeof matches.$inferSelect;
-export type SchoolStrength = typeof schoolStrengths.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
-export type Prediction = typeof predictions.$inferSelect;
 export type MatchHistory = typeof matchHistory.$inferSelect;
 export type NewMatchHistory = typeof matchHistory.$inferInsert;
 export type FantasyLineup = typeof fantasyLineups.$inferSelect;

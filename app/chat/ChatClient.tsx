@@ -53,7 +53,7 @@ type ChatClientProps = {
 }
 
 const GLOBAL_CHANNELS = [
-    { id: "fantasy-tavern", name: "The Fantasy Tavern", desc: "General NSMQ chat, draft tips, and token talk" },
+    { id: "fantasy-tavern", name: "The Fantasy Tavern", desc: "General NSMQ chat, draft tips, and fantasy banter" },
     { id: "kumasi-derby", name: "The Kumasi Derby", desc: "Ashanti region schools banter & matchups" },
     { id: "central-wave", name: "The Central Wave", desc: "Central region schools trash talk & standings" }
 ]

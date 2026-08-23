@@ -4,7 +4,6 @@ import { db } from "@/lib/db"
 import { matches, schools, tournaments } from "@/lib/db/schema"
 import { Match } from "@/lib/types"
 import { eq, like, desc, and, or, ne, gt, sql } from "drizzle-orm"
-import { getVirtualMatchById } from "./virtuals"
 import { unstable_cache } from "next/cache"
 
 // Helper to cast DB result to Match type
@@ -102,25 +101,6 @@ export async function getAllMatchesWithTournaments() {
     }))
 }
 
-export async function getVirtualMatches(): Promise<Match[]> {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-
-    const results = await db.select().from(matches).where(
-        and(
-            eq(matches.isVirtual, true),
-            or(
-                ne(matches.status, "finished"),
-                ne(matches.status, "settled"),
-                and(
-                    or(eq(matches.status, "finished"), eq(matches.status, "settled")),
-                    gt(matches.createdAt, twentyFourHoursAgo)
-                )
-            )
-        )
-    )
-    return results.map(mapDbMatchToMatch)
-}
-
 export const getFeaturedMatches = unstable_cache(
     async (): Promise<Match[]> => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -148,33 +128,6 @@ export const getFeaturedMatches = unstable_cache(
 )
 
 export async function getMatchById(id: string): Promise<Match | undefined> {
-    if (id.startsWith("vmt-")) {
-        const schoolsData = await getAllSchools();
-        const schools = schoolsData.map(s => ({ name: s.name, region: s.region }));
-        const vMatch = getVirtualMatchById(id, schools);
-        if (!vMatch) return undefined;
-
-        // Map virtual match to the new generalized Match interface
-        return {
-            id: vMatch.id,
-            tournamentId: null,
-            participants: (vMatch.participants as Record<string, unknown>[]) || vMatch.odds ? Object.entries(vMatch.odds as Record<string, number>).map(([name, odd]) => ({
-                schoolId: name,
-                name: name,
-                odd: odd as number
-            })) : [],
-            startTime: "Virtual",
-            isLive: true,
-            isVirtual: true,
-            stage: vMatch.stage,
-            odds: vMatch.odds as Match['odds'],
-            extendedOdds: vMatch.extendedOdds,
-            sportType: "quiz",
-            gender: "male",
-            margin: 0.1
-        };
-    }
-
     const results = await db.select().from(matches).where(eq(matches.id, id))
     if (results.length === 0) return undefined
     return mapDbMatchToMatch(results[0])

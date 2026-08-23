@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ChevronLeftIcon as ChevronLeft, TrophyIcon as Trophy, ShieldCheckIcon as Shield, DevicePhoneMobileIcon as Smartphone, EnvelopeIcon as Mail, CalendarIcon as Calendar, NoSymbolIcon as Ban, CheckCircleIcon as CheckCircle } from "@heroicons/react/24/solid";
+import { ChevronLeftIcon as ChevronLeft, ShieldCheckIcon as Shield, DevicePhoneMobileIcon as Smartphone, EnvelopeIcon as Mail, CalendarIcon as Calendar, NoSymbolIcon as Ban, CheckCircleIcon as CheckCircle } from "@heroicons/react/24/solid";
 import { getUserDetails, updateUserStatus } from "@/lib/admin-user-actions"
 import { cn } from "@/lib/utils"
 
@@ -16,11 +16,6 @@ interface UserDetailData {
         createdAt: Date
         lifetimePoints: number
     }
-    predictions: {
-        id: string
-        status: string
-        createdAt: Date
-    }[]
 }
 
 export default function UserDetailPage() {
@@ -62,7 +57,7 @@ export default function UserDetailPage() {
     if (loading) return <div className="p-12 text-center text-slate-500 font-black uppercase tracking-widest animate-pulse">Loading Intelligence...</div>
     if (!data?.user) return <div className="p-12 text-center text-red-500 font-black uppercase tracking-widest">User Not Found</div>
 
-    const { user, predictions } = data
+    const { user } = data
 
     return (
         <div className="space-y-8 pb-20">
@@ -128,7 +123,7 @@ export default function UserDetailPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                 <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem]">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="p-3 bg-accent/10 rounded-2xl">
@@ -137,59 +132,6 @@ export default function UserDetailPage() {
                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest font-mono">Lifetime Points</span>
                     </div>
                     <div className="text-3xl font-black text-white font-mono tracking-tighter">{user.lifetimePoints || 0} pts</div>
-                </div>
-                <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem]">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-green-500/10 rounded-2xl">
-                            <Trophy className="h-6 w-6 text-green-500" />
-                        </div>
-                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest font-mono">Prediction Engagement</span>
-                    </div>
-                    <div className="text-3xl font-black text-white font-mono tracking-tighter">{predictions.length} <span className="text-sm text-slate-500 font-bold ml-1 uppercase">Tickets</span></div>
-                </div>
-            </div>
-
-            {/* Dynamic Content */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-6 border-b border-white/5 px-2">
-                    <button
-                        className="pb-4 text-xs font-black uppercase tracking-[0.2em] transition-all relative text-white"
-                    >
-                        Recent Predictions
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />
-                    </button>
-                </div>
-
-                <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden">
-                    <div className="divide-y divide-white/5">
-                        {predictions.length === 0 ? (
-                            <div className="p-20 text-center text-slate-600 font-black uppercase tracking-widest text-xs">No Prediction History</div>
-                        ) : predictions.map((pred: { id: string, status: string, createdAt: Date }) => (
-                            <div key={pred.id} className="p-8 hover:bg-white/[0.02] transition-all flex items-center justify-between group">
-                                <div className="flex items-center gap-6">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center",
-                                        pred.status === 'won' ? "bg-green-500/10" : pred.status === 'lost' ? "bg-red-500/10" : "bg-primary/10"
-                                    )}>
-                                        <Trophy className={cn("h-5 w-5", pred.status === 'won' ? "text-green-500" : pred.status === 'lost' ? "text-red-500" : "text-primary")} />
-                                    </div>
-                                    <div>
-                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{new Date(pred.createdAt).toLocaleString()}</div>
-                                        <div className="text-sm font-black text-white uppercase tracking-tighter">Ticket #{pred.id.split('-')[1]?.toUpperCase()}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-16">
-                                    <div className={cn(
-                                        "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                                        pred.status === 'won' ? "bg-green-500/10 text-green-400 border-green-500/20" :
-                                            pred.status === 'lost' ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20"
-                                    )}>
-                                        {pred.status}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 </div>
             </div>
         </div>

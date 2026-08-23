@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, predictions } from "@/lib/db/schema"
+import { users } from "@/lib/db/schema"
 import { eq, desc, ilike, or, sql, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -46,15 +46,9 @@ export async function getUserDetails(userId: string) {
 
         if (!user) return { success: false, error: "User not found" }
 
-        const userPredictions = await db.select().from(predictions)
-            .where(eq(predictions.userId, userId))
-            .orderBy(desc(predictions.createdAt))
-            .limit(20)
-
         return {
             success: true,
             user,
-            predictions: userPredictions,
             transactions: []
         }
     } catch (error) {

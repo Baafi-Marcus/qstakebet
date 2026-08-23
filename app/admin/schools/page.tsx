@@ -1,13 +1,12 @@
 import { db } from "@/lib/db"
-import { schools, virtualSchoolStats } from "@/lib/db/schema"
+import { schools } from "@/lib/db/schema"
 import { SchoolsClient } from "./SchoolsClient"
-import { asc, eq } from "drizzle-orm"
+import { asc } from "drizzle-orm"
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminSchoolsPage() {
-    // Fetch all schools with their AI stats
-    const allSchoolsWithStats = await db.select({
+    const allSchools = await db.select({
         id: schools.id,
         name: schools.name,
         region: schools.region,
@@ -15,15 +14,10 @@ export default async function AdminSchoolsPage() {
         category: schools.category,
         level: schools.level,
         type: schools.type,
-        parentId: schools.parentId,
-        currentForm: virtualSchoolStats.currentForm,
-        volatilityIndex: virtualSchoolStats.volatilityIndex,
-        matchesPlayed: virtualSchoolStats.matchesPlayed,
-        wins: virtualSchoolStats.wins
+        parentId: schools.parentId
     })
         .from(schools)
-        .leftJoin(virtualSchoolStats, eq(schools.id, virtualSchoolStats.schoolId))
         .orderBy(asc(schools.name))
 
-    return <SchoolsClient initialSchools={allSchoolsWithStats as any} />
+    return <SchoolsClient initialSchools={allSchools as any} />
 }

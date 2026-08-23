@@ -3,10 +3,9 @@
 import { usePathname } from "next/navigation"
 import { BottomNav } from "./BottomNav"
 import { Header } from "./Header"
-import { SubNavBar } from "./SubNavBar"
 import { Footer } from "./Footer"
 import { SessionProvider } from "next-auth/react"
-import React, { useEffect, useState, useContext } from "react"
+import React, { useEffect, useState } from "react"
 import { Announcement } from "@/lib/types"
 import { AdBannerCarousel } from "@/components/home/AdBannerCarousel"
 import { getActiveAnnouncements } from "@/lib/announcement-actions"
@@ -17,7 +16,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const isAuthPage = pathname?.startsWith("/auth")
     const isAdmin = pathname?.startsWith("/admin")
-    const isVirtuals = pathname?.startsWith("/virtuals")
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
@@ -45,14 +43,12 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             <SplashScreen>
                 <div className="min-h-screen flex flex-col bg-background">
                     {/* Sticky Main Header */}
-                    {!isVirtuals && <Header />}
+                    <Header />
 
                     {/* Ad/Announcement Bar between Main Nav and SubNav - Visible on all client pages */}
                     {announcements.length > 0 && (
                         <AdBannerCarousel announcements={announcements} />
                     )}
-
-                    {/* Sticky Secondary Navigation (Sports/Regions) removed for pure NSMQ focus */}
 
                     <div className="flex-1 flex flex-col">
                         <PullToRefresh disabled={isAuthPage || isAdmin}>
@@ -63,10 +59,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     {/* Standard Footer */}
-                    {!isVirtuals && !isAuthPage && <Footer />}
+                    {!isAuthPage && <Footer />}
 
                     {/* Overlay components */}
-                    {!isAuthPage && !isAdmin && !isVirtuals && <BottomNav />}
+                    {!isAuthPage && <BottomNav />}
                 </div>
             </SplashScreen>
         </SessionProvider>
