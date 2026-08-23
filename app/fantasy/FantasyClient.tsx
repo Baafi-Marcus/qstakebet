@@ -767,10 +767,10 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
                                         <span className="px-2 py-1 rounded-lg bg-background border border-border">Base {ex.base}</span>
                                         {ex.winBonus > 0 && (
-                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Win Bonus +15</span>
+                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Win Bonus +2</span>
                                         )}
                                         {ex.marginBonus > 0 && (
-                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Won by 10+ +10</span>
+                                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Won by 10+ +5</span>
                                         )}
                                         <ArrowRight className="h-3 w-3 text-muted-foreground" />
                                         <span className="text-purple-300 font-black">= {ex.total} pts</span>

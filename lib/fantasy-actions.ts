@@ -212,7 +212,7 @@ export async function getUserLineupHistory(userId: string) {
 
 /**
  * Explains how a school in a lineup earned its fantasy points,
- * match by match: base score + win bonus (+15) + margin bonus (+10).
+ * match by match: base score + win bonus (+2) + margin bonus (+5).
  */
 export async function getLineupPointsExplanation(lineupId: string, schoolId: string) {
     try {
@@ -293,9 +293,9 @@ export async function getLineupPointsExplanation(lineupId: string, schoolId: str
                     sortTs: match.scheduledAt ? new Date(match.scheduledAt).getTime() : 0,
                     yourScore: base,
                     rounds,
-                    winBonus: isWinner ? 15 : 0,
-                    marginBonus: isWinner && margin >= 10 ? 10 : 0,
-                    total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 15 : 0) + (isWinner && margin >= 10 ? 10 : 0)
+                    winBonus: isWinner ? 2 : 0,
+                    marginBonus: isWinner && margin >= 10 ? 5 : 0,
+                    total: typeof entry?.total === 'number' ? entry.total : base + (isWinner ? 2 : 0) + (isWinner && margin >= 10 ? 5 : 0)
                 }
             })
             .sort((a, b) => a.sortTs - b.sortTs)
@@ -420,8 +420,8 @@ export async function settleFantasyPoints(matchId: string, resultData: any) {
 
                 // Win Bonus
                 if (schoolId === winner) {
-                    points += 15;
-                    matchBreakdown[schoolId].bonus += 15;
+                    points += 2;
+                    matchBreakdown[schoolId].bonus += 2;
                     
                     // Margin Bonus
                     // Find the second highest score to calculate margin
@@ -433,8 +433,8 @@ export async function settleFantasyPoints(matchId: string, resultData: any) {
                     const margin = schoolScore - maxOtherScore;
                     
                     if (margin >= 10) {
-                        points += 10;
-                        matchBreakdown[schoolId].bonus += 10;
+                        points += 5;
+                        matchBreakdown[schoolId].bonus += 5;
                     }
                 }
                 
