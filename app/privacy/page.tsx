@@ -17,14 +17,14 @@ export default function PrivacyPolicy() {
                         Privacy <span className="text-emerald-500">Policy</span>
                     </h1>
                     <p className="text-muted-foreground text-sm font-bold uppercase tracking-[0.2em]">
-                        Last Updated: February 22, 2026
+                        Last Updated: August 23, 2026
                     </p>
                 </div>
 
                 {/* Main Content Card */}
                 <div className="bg-card/40 border border-border/50 rounded-[2rem] p-8 md:p-12 shadow-2xl backdrop-blur-xl">
                     <p className="text-lg text-muted-foreground mb-10 leading-relaxed italic">
-                        This Privacy Policy explains how QSTAKEbet collects, uses, and protects personal data in compliance with the <strong className="text-emerald-500 italic">Data Protection Act, 2012 (Act 843) of Ghana</strong>.
+                        This Privacy Policy explains how QSTAKEbet collects, uses, and protects personal data in compliance with the <strong className="text-emerald-500 italic">Data Protection Act, 2012 (Act 843) of Ghana</strong>. QSTAKEbet is a free-to-play NSMQ fantasy platform. We do not collect payment information, and we never sell your data.
                     </p>
 
                     <div className="space-y-12">
@@ -37,12 +37,13 @@ export default function PrivacyPolicy() {
                                 <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">1. Information Collected</h2>
                             </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>We may collect and process following types of data:</p>
+                                <p>We collect and process the following types of data:</p>
                                 <ul className="list-disc pl-6 space-y-2">
-                                    <li><strong className="text-foreground">Personal identification data</strong>: Name, phone number, and email address provided during registration.</li>
-                                    <li><strong className="text-foreground">Transaction data</strong>: Records of your deposits, withdrawals, bets, and payment methods (via secure providers).</li>
-                                    <li><strong className="text-foreground">Technical data</strong>: Your IP address, device type, browser settings, and platform usage patterns.</li>
+                                    <li><strong className="text-foreground">Account data</strong>: Your name, email address, phone number, and (optionally) your alma mater, provided during registration.</li>
+                                    <li><strong className="text-foreground">Gameplay data</strong>: Your fantasy squads, lineups, points, leaderboard standings, and referral activity.</li>
+                                    <li><strong className="text-foreground">Technical data</strong>: IP address, device type, and browser settings, used for security and rate limiting.</li>
                                 </ul>
+                                <p>We do <strong className="text-foreground">not</strong> collect any payment card or mobile money details.</p>
                             </div>
                         </section>
 
@@ -57,10 +58,11 @@ export default function PrivacyPolicy() {
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
                                 <p>Your data is used strictly to:</p>
                                 <ul className="list-disc pl-6 space-y-2">
-                                    <li>Operate and manage your user account.</li>
-                                    <li>Process payments, bets, and payouts efficiently.</li>
-                                    <li>Prevent fraud, money laundering, and unauthorized access.</li>
-                                    <li>Meet legal and regulatory obligations as required by Ghanaian law.</li>
+                                    <li>Create and manage your account and authenticate you.</li>
+                                    <li>Operate the fantasy game: record squads, calculate points, and maintain leaderboards.</li>
+                                    <li>Send essential service messages — for example, a one-time SMS welcoming you after sign-up.</li>
+                                    <li>Prevent fraud, abuse, and unauthorized access.</li>
+                                    <li>Meet legal obligations required by Ghanaian law.</li>
                                 </ul>
                             </div>
                         </section>
@@ -74,7 +76,7 @@ export default function PrivacyPolicy() {
                                 <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">3. Data Security</h2>
                             </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>3.1 We implement robust technical and organizational measures (including encryption) to protect your personal data against unauthorized access, alteration, or disclosure.</p>
+                                <p>3.1 Passwords are stored only as cryptographic hashes. We implement robust technical and organizational measures (including encryption in transit) to protect your personal data against unauthorized access, alteration, or disclosure.</p>
                                 <p>3.2 Access to user data is restricted to authorized personnel only, strictly on a need-to-know basis.</p>
                             </div>
                         </section>
@@ -84,7 +86,8 @@ export default function PrivacyPolicy() {
                             <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">4. Data Sharing</h2>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
                                 <p>4.1 QSTAKEbet <strong className="text-foreground">does not sell or rent</strong> your personal data to third parties.</p>
-                                <p>4.2 Data may be shared with licensed payment providers (Moolre, Paystack) to facilitate transactions or with regulatory authorities where required by law.</p>
+                                <p>4.2 We share limited data with service providers who help us operate the Platform: our SMS gateway (to deliver your welcome message), our hosting provider, and our database provider. These providers process data only on our instructions.</p>
+                                <p>4.3 Data may also be shared with authorities where expressly required by Ghanaian law.</p>
                             </div>
                         </section>
 
@@ -97,7 +100,7 @@ export default function PrivacyPolicy() {
                                 <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">5. Cookies</h2>
                             </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>5.1 We use cookies to maintain your login session and enhance your user experience (e.g., remembering your preferences).</p>
+                                <p>5.1 We use cookies solely to maintain your login session and keep you signed in.</p>
                                 <p>5.2 Disabling cookies in your browser may significantly affect the platform&apos;s functionality.</p>
                             </div>
                         </section>
@@ -115,7 +118,7 @@ export default function PrivacyPolicy() {
                                 <ul className="list-disc pl-6 space-y-2">
                                     <li>Access the personal data we hold about you.</li>
                                     <li>Request correction of any inaccuracies in your record.</li>
-                                    <li>Request deletion of your data, subject to our legal and regulatory retention obligations.</li>
+                                    <li>Request deletion of your data, subject to minimal retention for security and audit purposes.</li>
                                 </ul>
                             </div>
                         </section>
@@ -124,7 +127,7 @@ export default function PrivacyPolicy() {
                         <section>
                             <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">7. Data Retention</h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                Data is retained only as long as necessary for legal compliance, fraud prevention, and operational excellence. If you close your account, we may still retain certain data as required by the Gaming Commission of Ghana or for audit purposes.
+                                Account and gameplay data are retained for as long as your account is active. If you request deletion, we remove your data except for the minimum records necessary for security, fraud prevention, or legal compliance.
                             </p>
                         </section>
                     </div>

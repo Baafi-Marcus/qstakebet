@@ -23,8 +23,8 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const russo = Russo_One({ weight: "400", subsets: ["latin"], variable: "--font-russo" });
 
 export const metadata: Metadata = {
-  title: "QSTAKEbet - NSMQ Prediction Platform",
-  description: "Advanced betting platform for the National Science & Maths Quiz",
+  title: "QSTAKEbet - NSMQ Fantasy Platform",
+  description: "Free NSMQ fantasy game - draft your school squad, earn points every matchday and climb the leaderboard",
   manifest: "/manifest.json",
   themeColor: "#0f1115",
   viewport: {

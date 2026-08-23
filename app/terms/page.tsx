@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { ClipboardDocumentCheckIcon as Gavel, ScaleIcon as Scale, ShieldExclamationIcon as AlertOctagon, HeartIcon as Heart, QuestionMarkCircleIcon as HelpCircle, ShieldCheckIcon as ShieldCheck } from "@heroicons/react/24/solid";
+import { AcademicCapIcon as Cap, ScaleIcon as Scale, ShieldCheckIcon as ShieldCheck, HeartIcon as Heart, QuestionMarkCircleIcon as HelpCircle, ExclamationTriangleIcon as AlertTriangle } from "@heroicons/react/24/solid";
 import Link from "next/link"
 
 export default function TermsOfService() {
@@ -11,127 +11,123 @@ export default function TermsOfService() {
                 {/* Header Section */}
                 <div className="text-center mb-16">
                     <div className="inline-flex items-center justify-center p-3 bg-purple-500/10 rounded-2xl mb-6">
-                        <Gavel className="h-10 w-10 text-purple-400" />
+                        <Cap className="h-10 w-10 text-purple-400" />
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black text-foreground uppercase tracking-tighter mb-4">
                         Terms & <span className="text-purple-500">Conditions</span>
                     </h1>
                     <p className="text-muted-foreground text-sm font-bold uppercase tracking-[0.2em]">
-                        Last Updated: February 22, 2026
+                        Last Updated: August 23, 2026
                     </p>
                 </div>
 
                 {/* Main Content Card */}
                 <div className="bg-card/40 border border-border/50 rounded-[2rem] p-8 md:p-12 shadow-2xl backdrop-blur-xl">
                     <p className="text-lg text-muted-foreground mb-10 leading-relaxed italic">
-                        These Terms and Conditions (“Terms”) govern the use of the QSTAKEbet platform (“Platform”, “Service”, “we”, “us”, “our”). By accessing or using QSTAKEbet, you agree to be legally bound by these Terms.
+                        These Terms and Conditions (&ldquo;Terms&rdquo;) govern the use of the QSTAKEbet platform (&ldquo;Platform&rdquo;, &ldquo;Service&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By accessing or using QSTAKEbet, you agree to be legally bound by these Terms. QSTAKEbet is a <strong className="text-foreground">free-to-play fantasy game</strong> built around the National Science &amp; Maths Quiz (NSMQ). It is <strong className="text-foreground">not a betting or gambling service</strong>: no real-money wagers, deposits, or cash payouts exist on this Platform.
                     </p>
 
                     <div className="space-y-12">
-                        {/* 1. ELIGIBILITY */}
+                        {/* 1. ABOUT THE PLATFORM */}
                         <section>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-purple-500/10 rounded-lg">
-                                    <Scale className="h-5 w-5 text-purple-400" />
+                                    <Cap className="h-5 w-5 text-purple-400" />
                                 </div>
-                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">1. Eligibility</h2>
+                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">1. About the Platform</h2>
                             </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>1.1 You must be <strong className="text-foreground">eighteen (18) years or older</strong> to register and participate in betting activities on QSTAKEbet.</p>
-                                <p>1.2 By using this Platform, you confirm that:</p>
-                                <ul className="list-disc pl-6 space-y-2">
-                                    <li>You are legally permitted to participate in betting activities under the laws of the <strong className="text-foreground">Republic of Ghana</strong>.</li>
-                                    <li>You are acting on your own behalf and not on behalf of another person or entity.</li>
-                                </ul>
-                                <p>1.3 QSTAKEbet reserves the right to verify your age and identity at any time.</p>
+                                <p>1.1 QSTAKEbet lets users build fantasy squads of NSMQ-participating schools, follow contest results, and earn fantasy points based on real NSMQ performance.</p>
+                                <p>1.2 All points, rankings, and leaderboard positions are <strong className="text-foreground">for entertainment and bragging rights only</strong>. They have no monetary value and cannot be bought, sold, transferred, or exchanged for cash or prizes.</p>
+                                <p>1.3 The Platform is not affiliated with, endorsed by, or officially connected to the National Science &amp; Maths Quiz, Primetime Limited, or any participating school.</p>
                             </div>
                         </section>
 
-                        {/* 2. ACCOUNT REGISTRATION */}
+                        {/* 2. ELIGIBILITY */}
                         <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">2. Account Registration and Use</h2>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <Scale className="h-5 w-5 text-blue-400" />
+                                </div>
+                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">2. Eligibility</h2>
+                            </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>2.1 Only <strong className="text-foreground">one account per individual</strong> is permitted.</p>
-                                <p>2.2 You are responsible for maintaining the confidentiality of your login credentials.</p>
-                                <p>2.3 QSTAKEbet may suspend or permanently close accounts that provide false information, engage in fraudulent behavior, or violate these Terms.</p>
-                                <p>2.4 Account balances are <strong className="text-foreground">non-transferable</strong>.</p>
+                                <p>2.1 The Platform is open to anyone with a valid Ghanaian phone number and email address.</p>
+                                <p>2.2 If you are under 18 years old, you should use the Platform only with the knowledge and consent of a parent or guardian.</p>
+                                <p>2.3 You must comply with all applicable laws of the Republic of Ghana when using the Platform.</p>
                             </div>
                         </section>
 
-                        {/* 3. DEPOSITS */}
+                        {/* 3. ACCOUNT REGISTRATION */}
                         <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">3. Deposits</h2>
+                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">3. Account Registration and Use</h2>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>3.1 Deposits are credited to your account only after confirmation from our approved payment providers (e.g., Moolre, Paystack).</p>
-                                <p>3.2 Minimum and maximum deposit limits apply and may vary by payment method.</p>
-                                <p>3.3 Deposited funds may be subject to <strong className="text-foreground">minimum wagering requirements</strong> before withdrawal to prevent money laundering.</p>
+                                <p>3.1 Only <strong className="text-foreground">one account per individual</strong> is permitted.</p>
+                                <p>3.2 You agree to provide accurate registration information (name, email, phone number) and to keep your login credentials confidential.</p>
+                                <p>3.3 By registering, you consent to receive service messages from us — for example, a one-time SMS welcome message confirming account creation. We do not send marketing SMS without your separate consent.</p>
+                                <p>3.4 QSTAKEbet may suspend or permanently close accounts that provide false information, engage in fraudulent behavior, or violate these Terms.</p>
                             </div>
                         </section>
 
-                        {/* 4. BETTING RULES */}
+                        {/* 4. FANTASY GAMEPLAY */}
                         <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">4. Betting Rules</h2>
+                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">4. Fantasy Gameplay and Scoring</h2>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>4.1 All bets are <strong className="text-foreground">final and irreversible</strong> once confirmed.</p>
-                                <p>4.2 Odds displayed are subject to change prior to bet confirmation.</p>
-                                <p>4.3 QSTAKEbet reserves the right to suspend markets, void bets placed in error, or adjust odds to correct obvious mistakes.</p>
-                                <p>4.4 Virtual games and real sporting events are governed by separate settlement rules.</p>
+                                <p>4.1 Users draft squads of schools for specific matchdays within published lockout windows. Squads are locked once a matchday begins.</p>
+                                <p>4.2 Fantasy points are awarded based on official NSMQ contest results as recorded by the Platform, using the scoring rules displayed in the app.</p>
+                                <p>4.3 Scoring rules may be adjusted between matchdays. Any change will be applied prospectively and will not retroactively alter settled matchdays except to correct a demonstrable error.</p>
+                                <p>4.4 Where an official result is later corrected or revised, the Platform reserves the right to recompute affected scores.</p>
                             </div>
                         </section>
 
-                        {/* 5. BONUSES */}
+                        {/* 5. FAIR PLAY */}
                         <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">5. Bonuses and Promotions</h2>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-pink-500/10 rounded-lg">
+                                    <Heart className="h-5 w-5 text-pink-400" />
+                                </div>
+                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">5. Fair Play</h2>
+                            </div>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>5.1 Bonuses are subject to specific terms, including wagering (turnover) requirements.</p>
-                                <p>5.2 Bonus funds and winnings derived from bonuses <strong className="text-foreground">cannot be withdrawn</strong> until requirements are met.</p>
-                                <p>5.3 QSTAKEbet reserves the right to modify, withdraw, or cancel bonuses in cases of suspected abuse.</p>
+                                <p>5.1 You must not create multiple accounts, use automation, bots, scripts, or scraping tools, or otherwise attempt to manipulate leaderboards, referrals, or scoring.</p>
+                                <p>5.2 Referral rewards are intended for genuinely new users. Coordinated or fraudulent referral activity may result in removal of referral bonuses and account suspension.</p>
                             </div>
                         </section>
 
-                        {/* 6. WITHDRAWALS */}
+                        {/* 6. NO GAMBLING */}
                         <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">6. Withdrawals</h2>
-                            <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>6.1 Withdrawal requests are subject to identity verification, completion of wagering requirements, and anti-fraud checks.</p>
-                                <p>6.2 Daily and per-transaction withdrawal limits apply.</p>
-                                <p>6.3 QSTAKEbet may delay withdrawals for security, regulatory, or operational reasons.</p>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-yellow-500/10 rounded-lg">
+                                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                                </div>
+                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">6. No Gambling, No Wagering</h2>
                             </div>
-                        </section>
-
-                        {/* 7. RISK MANAGEMENT */}
-                        <section>
-                            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">7. Risk Management</h2>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
-                                <p>7.1 QSTAKEbet reserves the right to limit stakes, cap maximum winnings, or lock markets to manage financial risk.</p>
-                                <p>7.2 Maximum payout limits apply to all bets, regardless of the odds or stake.</p>
+                                <p>6.1 The Platform does not accept stakes, bets, deposits, or wagers of any kind. Nothing on the Platform may be construed as gambling, betting, or lottery activity under Ghanaian law.</p>
+                                <p>6.2 Any legacy references to staking or betting in older materials are superseded by these Terms.</p>
                             </div>
                         </section>
 
                         <div className="border-t border-border/50 pt-12 space-y-12">
-                            {/* RESPONSIBLE GAMING */}
+                            {/* AVAILABILITY */}
                             <section>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-pink-500/10 rounded-lg">
-                                        <Heart className="h-5 w-5 text-pink-400" />
-                                    </div>
-                                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Responsible Gaming</h2>
+                                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-4">7. Availability and Changes</h2>
+                                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                                    <p>7.1 The Platform is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. We do not guarantee uninterrupted access and may modify or discontinue features at any time.</p>
+                                    <p>7.2 We may update these Terms from time to time. Continued use of the Platform after changes are posted constitutes acceptance of the updated Terms.</p>
                                 </div>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    QSTAKEbet promotes responsible betting. Users may request deposit limits, betting limits, or account self-exclusion at any time. Betting should be for entertainment; if it becomes a problem, please seek professional help.
-                                </p>
                             </section>
 
-                            {/* AML / KYC */}
+                            {/* LIMITATION OF LIABILITY */}
                             <section>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                                        <ShieldCheck className="h-5 w-5 text-blue-400" />
+                                    <div className="p-2 bg-red-500/10 rounded-lg">
+                                        <ShieldCheck className="h-5 w-5 text-red-400" />
                                     </div>
-                                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">AML / KYC Policy</h2>
+                                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">8. Limitation of Liability</h2>
                                 </div>
                                 <p className="text-muted-foreground leading-relaxed">
-                                    In compliance with international Anti-Money Laundering (AML) standards, we require identity verification (Know Your Customer) for high-value transactions and withdrawals. We reserve the right to report suspicious activity to the relevant Ghanaian authorities.
+                                    To the maximum extent permitted by law, QSTAKEbet shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform, including data errors, downtime, or loss of fantasy points.
                                 </p>
                             </section>
 
@@ -141,10 +137,10 @@ export default function TermsOfService() {
                                     <div className="p-2 bg-yellow-500/10 rounded-lg">
                                         <HelpCircle className="h-5 w-5 text-yellow-500" />
                                     </div>
-                                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Disputes</h2>
+                                    <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">9. Disputes and Governing Law</h2>
                                 </div>
                                 <p className="text-muted-foreground leading-relaxed">
-                                    Any complaints or disputes regarding bets or payouts must be raised within 7 days of the event. All disputes are governed by and construed in accordance with the laws of the <strong className="text-foreground">Republic of Ghana</strong>.
+                                    Any complaints or disputes regarding accounts, scores, or leaderboards should be raised through our support channels. These Terms are governed by and construed in accordance with the laws of the <strong className="text-foreground">Republic of Ghana</strong>.
                                 </p>
                             </section>
                         </div>

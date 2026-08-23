@@ -9,6 +9,8 @@ import { verifyOTP } from "@/lib/verification-actions"
 import { rateLimit } from "@/lib/rate-limit"
 import { RegisterUserSchema, RegisterAdminSchema } from "@/lib/validators"
 
+const WELCOME_SMS = "Welcome to QSTAKEbet! Your NSMQ Fantasy account is ready. Draft your school squad and climb the leaderboard!"
+
 export async function registerUser(data: {
     email: string
     password: string
@@ -16,7 +18,6 @@ export async function registerUser(data: {
     phone: string
     referredBy?: string
     almaMater?: string
-    otp?: string
 }) {
     // Rate limit: 3 registrations per hour per IP
     const limiter = await rateLimit("register-user", 3, 3600000);
@@ -33,12 +34,6 @@ export async function registerUser(data: {
     const validatedData = validation.data;
 
     try {
-        // Verify OTP first
-        const verification = await verifyOTP(validatedData.phone, validatedData.otp)
-        if (!verification.success) {
-            return { success: false, error: verification.error || "Invalid OTP" }
-        }
-
         // Check if user already exists (email or phone)
         const existingUser = await db.select().from(users)
             .where(or(eq(users.email, data.email), eq(users.phone, data.phone)))
@@ -80,6 +75,16 @@ export async function registerUser(data: {
             password: data.password,
             redirect: false
         })
+
+        // Fire-and-forget welcome SMS (must never block or fail registration)
+        try {
+            const { vynfy } = await import("@/lib/vynfy-client")
+            const { formatToInternational } = await import("@/lib/phone-utils")
+            vynfy.sendSMS([formatToInternational(validatedData.phone)], WELCOME_SMS)
+                .catch((e) => console.error("Welcome SMS failed:", e))
+        } catch (e) {
+            console.error("Welcome SMS init failed:", e)
+        }
 
         return { success: true, user: newUser[0] }
     } catch (error) {

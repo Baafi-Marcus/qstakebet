@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -22,60 +22,10 @@ function RegisterForm() {
         almaMater: "",
         referredBy: refCode || ""
     })
-    const [otp, setOtp] = useState("")
-    const [otpSent, setOtpSent] = useState(false)
-    const [sendingOtp, setSendingOtp] = useState(false)
     const [error, setError] = useState("")
     const [agreedToTerms, setAgreedToTerms] = useState(false)
     const [loading, setLoading] = useState(false)
     const [createdUser, setCreatedUser] = useState<{ id: string, referralCode: string } | null>(null)
-    const [timer, setTimer] = useState(0)
-
-    // Countdown effect
-    useEffect(() => {
-        let interval: NodeJS.Timeout | undefined
-        if (timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1)
-            }, 1000)
-        }
-        return () => {
-            if (interval) clearInterval(interval)
-        }
-    }, [timer])
-
-    const formatTimer = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-    }
-
-    // Send OTP Handler
-    const handleSendOtp = async () => {
-        if (!formData.phone || formData.phone.length < 10) {
-            setError("Please enter a valid phone number first")
-            return
-        }
-
-        setSendingOtp(true)
-        setError("")
-
-        try {
-            const { generateAndSendOTP } = await import("@/lib/verification-actions")
-            const result = await generateAndSendOTP(formData.phone)
-
-            if (result.success) {
-                setOtpSent(true)
-                setTimer(600) // 10 minutes
-            } else {
-                setError(result.error || "Failed to send SMS")
-            }
-        } catch (e) {
-            setError("Error sending OTP")
-        } finally {
-            setSendingOtp(false)
-        }
-    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -102,11 +52,6 @@ function RegisterForm() {
             return
         }
 
-        if (!otp) {
-            setError("Please verify your phone number with the OTP code")
-            return
-        }
-
         setLoading(true)
 
         try {
@@ -116,8 +61,7 @@ function RegisterForm() {
                 name: formData.name,
                 phone: formData.phone,
                 almaMater: formData.almaMater || undefined,
-                referredBy: formData.referredBy || undefined,
-                otp // Pass OTP for server-side verification
+                referredBy: formData.referredBy || undefined
             })
 
             if (result.success) {
@@ -151,7 +95,7 @@ function RegisterForm() {
                             QSTAKE<span className="text-purple-400">bet</span>
                         </h1>
                     </div>
-                    <p className="text-muted-foreground">Create your account and start betting</p>
+                    <p className="text-muted-foreground">Create your account and play NSMQ Fantasy</p>
                 </div>
 
                 {/* Register Card */}
@@ -231,55 +175,22 @@ function RegisterForm() {
                             </div>
                         </div>
 
-                        {/* Phone Field (Required) & OTP */}
+                        {/* Phone Field */}
                         <div>
                             <label className="block text-sm font-medium text-foreground/80 mb-2">
                                 Phone Number
                             </label>
-                            <div className="relative flex gap-2">
-                                <div className="relative w-full">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                    <input
-                                        type="tel"
-                                        required
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSendOtp}
-                                    disabled={sendingOtp || (otpSent && timer > 0) || !formData.phone}
-                                    className="px-4 py-2 bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/40 text-purple-400 text-sm font-semibold rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
-                                >
-                                    {sendingOtp ? "Sending..." : (otpSent && timer > 0) ? formatTimer(timer) : "Send Code"}
-                                </button>
+                            <div className="relative">
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                />
                             </div>
                         </div>
-
-                        {/* OTP Field (Visible after sending) */}
-                        {otpSent && (
-                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                <label className="block text-sm font-medium text-foreground/80 mb-2">
-                                    Enter Verification Code
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-muted-foreground font-bold text-xs border border-muted-foreground rounded">#</div>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value)}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all tracking-widest text-lg verified-inputs"
-                                        maxLength={6}
-                                    />
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    Enter the 6-digit code sent to your phone.
-                                </p>
-                            </div>
-                        )}
 
                         {/* Password Field */}
                         <div>
