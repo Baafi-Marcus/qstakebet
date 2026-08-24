@@ -5,7 +5,6 @@ import { users } from "@/lib/db/schema"
 import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
-import { verifyOTP } from "@/lib/verification-actions"
 import { rateLimit } from "@/lib/rate-limit"
 import { RegisterUserSchema, RegisterAdminSchema } from "@/lib/validators"
 
@@ -166,7 +165,6 @@ export async function getUserByEmail(email: string) {
 
 export async function resetPassword(data: {
     phone: string
-    otp: string
     password: string
 }) {
     // Rate limit password resets: 5 per hour per IP
@@ -176,13 +174,7 @@ export async function resetPassword(data: {
     }
 
     try {
-        // 1. Verify OTP
-        const verification = await verifyOTP(data.phone, data.otp)
-        if (!verification.success) {
-            return { success: false, error: verification.error || "Invalid or expired OTP" }
-        }
-
-        // 2. Check if user exists
+        // 1. Check if user exists (SMS OTP verification temporarily disabled due to delivery issues)
         const user = await db.query.users.findFirst({
             where: eq(users.phone, data.phone)
         })
@@ -191,15 +183,15 @@ export async function resetPassword(data: {
             return { success: false, error: "No account found with this phone number" }
         }
 
-        // 3. Hash new password
+        // 2. Hash new password
         const passwordHash = await bcrypt.hash(data.password, 10)
 
-        // 4. Update user
+        // 3. Update user
         await db.update(users)
             .set({ passwordHash })
             .where(eq(users.id, user.id))
 
-        // 5. Success
+        // 4. Success
         return { success: true, message: "Password reset successfully. You can now log in." }
 
     } catch (error) {

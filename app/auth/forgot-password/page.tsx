@@ -1,91 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { KeyIcon as KeyRound, PhoneIcon as Phone, LockClosedIcon as Lock, ExclamationCircleIcon as AlertCircle, ArrowLeftIcon as ArrowLeft, CheckCircleIcon as CheckCircle2 } from "@heroicons/react/24/solid";
 import { resetPassword } from "@/lib/auth-actions"
 
 export default function ForgotPasswordPage() {
-    const router = useRouter()
-    const [step, setStep] = useState<"phone" | "otp" | "reset" | "success">("phone")
+    const [done, setDone] = useState(false)
     const [formData, setFormData] = useState({
         phone: "",
-        otp: "",
         password: "",
         confirmPassword: ""
     })
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
-    const [sendingOtp, setSendingOtp] = useState(false)
-    const [timer, setTimer] = useState(0)
-
-    // Countdown effect
-    useEffect(() => {
-        let interval: NodeJS.Timeout | undefined
-        if (timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1)
-            }, 1000)
-        }
-        return () => {
-            if (interval) {
-                clearInterval(interval)
-            }
-        }
-    }, [timer])
-
-    const handleSendOtp = async () => {
-        if (!formData.phone || formData.phone.length < 10) {
-            setError("Please enter a valid phone number")
-            return
-        }
-
-        setSendingOtp(true)
-        setError("")
-
-        try {
-            const { generateAndSendOTP } = await import("@/lib/verification-actions")
-            // Pass true for isExistingUser because this is a password reset
-            const result = await generateAndSendOTP(formData.phone, true)
-
-            if (result.success) {
-                setStep("otp")
-                setTimer(600) // 10 minutes
-            } else {
-                setError(result.error || "Failed to send SMS. Make sure the number is registered.")
-                // If it's a wait error, we could parse it but for now just showing it is fine
-                if (result.error?.includes("wait")) {
-                    // Optionally set timer based on error message if we parsed it properly
-                }
-            }
-        } catch (e) {
-            setError("Error sending OTP")
-        } finally {
-            setSendingOtp(false)
-        }
-    }
-
-    const formatTimer = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-    }
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!formData.otp || formData.otp.length !== 6) {
-            setError("Please enter a valid 6-digit code")
-            return
-        }
-        setStep("reset")
-        setError("")
-    }
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
+
+        if (!formData.phone || formData.phone.length < 10) {
+            setError("Please enter a valid phone number")
+            return
+        }
 
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match")
@@ -102,12 +40,11 @@ export default function ForgotPasswordPage() {
         try {
             const result = await resetPassword({
                 phone: formData.phone,
-                otp: formData.otp,
                 password: formData.password
             })
 
             if (result.success) {
-                setStep("success")
+                setDone(true)
             } else {
                 setError(result.error || "Reset failed")
                 setLoading(false)
@@ -129,9 +66,9 @@ export default function ForgotPasswordPage() {
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-2">
-                        <Image src="/logo.svg" alt="QSTAKEbet Logo" width={48} height={48} className="animate-bounce-slow" />
+                        <Image src="/logo.svg" alt="QSTAKEfantasy Logo" width={48} height={48} className="animate-bounce-slow" />
                         <h1 className="text-4xl font-black text-foreground italic tracking-tighter">
-                            QSTAKE<span className="text-purple-400">bet</span>
+                            QSTAKE<span className="text-purple-400">fantasy</span>
                         </h1>
                     </div>
                     <p className="text-muted-foreground">Security & Account Recovery</p>
@@ -146,18 +83,17 @@ export default function ForgotPasswordPage() {
                         <h2 className="text-2xl font-bold text-foreground">Reset Password</h2>
                     </div>
 
-                    {error && (step !== "success") && (
+                    {error && !done && (
                         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
                             <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
                             <p className="text-sm text-red-400">{error}</p>
                         </div>
                     )}
 
-                    {/* Step 1: Input Phone */}
-                    {step === "phone" && (
-                        <div className="space-y-6">
+                    {!done ? (
+                        <form onSubmit={handleResetPassword} className="space-y-6">
                             <p className="text-muted-foreground text-sm leading-relaxed">
-                                Enter your registered phone number. We&apos;ll send you a 6-digit code to verify your identity.
+                                Enter your registered phone number and choose a new password.
                             </p>
                             <div className="space-y-4">
                                 <div className="relative">
@@ -171,101 +107,38 @@ export default function ForgotPasswordPage() {
                                         placeholder="024XXXXXXX"
                                     />
                                 </div>
-                                <button
-                                    onClick={handleSendOtp}
-                                    disabled={sendingOtp || !formData.phone || timer > 0}
-                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {sendingOtp ? "Sending code..." : timer > 0 ? `Resend in ${formatTimer(timer)}` : "Send Verification Code"}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 2: Verify OTP */}
-                    {step === "otp" && (
-                        <form onSubmit={handleVerifyOtp} className="space-y-6">
-                            <p className="text-muted-foreground text-sm">
-                                Enter the 6-digit code sent to <span className="text-foreground font-bold">{formData.phone}</span>
-                            </p>
-                            <div className="space-y-4">
                                 <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-muted-foreground font-bold text-xs border border-muted-foreground rounded">#</div>
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                     <input
-                                        type="text"
+                                        type="password"
                                         required
-                                        autoFocus
-                                        value={formData.otp}
-                                        onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all tracking-widest text-lg font-mono"
-                                        placeholder="123456"
-                                        maxLength={6}
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                        placeholder="New password (min. 6 characters)"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <input
+                                        type="password"
+                                        required
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                        placeholder="Confirm new password"
                                     />
                                 </div>
                                 <button
                                     type="submit"
-                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all"
-                                >
-                                    Verify Code
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSendOtp}
-                                    disabled={sendingOtp || timer > 0}
-                                    className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground/80 mt-2 hover:underline underline-offset-4 disabled:opacity-50 disabled:no-underline"
-                                >
-                                    {timer > 0 ? `Resend code in ${formatTimer(timer)}` : "Didn't receive it? Send again"}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* Step 3: Reset Password */}
-                    {step === "reset" && (
-                        <form onSubmit={handleResetPassword} className="space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground/80 mb-2">New Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <input
-                                            type="password"
-                                            required
-                                            autoFocus
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground/80 mb-2">Confirm New Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <input
-                                            type="password"
-                                            required
-                                            value={formData.confirmPassword}
-                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                            className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
-                                </div>
-                                <button
-                                    type="submit"
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/25"
+                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? "Updating password..." : "Reset Password"}
                                 </button>
                             </div>
                         </form>
-                    )}
-
-                    {/* Step 4: Success */}
-                    {step === "success" && (
+                    ) : (
                         <div className="text-center space-y-6">
                             <div className="flex justify-center">
                                 <div className="p-4 bg-emerald-500/10 rounded-full">
@@ -286,7 +159,7 @@ export default function ForgotPasswordPage() {
                     )}
 
                     {/* Back to Login */}
-                    {step !== "success" && (
+                    {!done && (
                         <div className="mt-8 pt-8 border-t border-border/50">
                             <Link
                                 href="/auth/login"
