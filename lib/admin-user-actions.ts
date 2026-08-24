@@ -73,6 +73,39 @@ export async function updateUserStatus(userId: string, status: "active" | "suspe
 }
 
 export async function broadcastSMS(message: string) {
-    return { success: true, count: 0 }
+    try {
+        const recipients = await db.select({ phone: users.phone })
+            .from(users)
+            .where(eq(users.status, "active"))
+
+        if (recipients.length === 0) {
+            return { success: false, error: "No active users found" }
+        }
+
+        const { vynfy } = await import("@/lib/vynfy-client")
+        const { formatToInternational } = await import("@/lib/phone-utils")
+
+        // Vynfy accepts a recipient list per send; chunk to stay within payload limits
+        const phones = Array.from(new Set(recipients.map(r => formatToInternational(r.phone))))
+        const CHUNK_SIZE = 100
+        let sent = 0
+        for (let i = 0; i < phones.length; i += CHUNK_SIZE) {
+            const chunk = phones.slice(i, i + CHUNK_SIZE)
+            const res = await vynfy.sendSMS(chunk, message)
+            if (res.success) {
+                sent += chunk.length
+            } else {
+                console.error("Broadcast chunk failed:", res.error)
+            }
+        }
+
+        if (sent === 0) {
+            return { success: false, error: "SMS provider rejected the broadcast" }
+        }
+        return { success: true, count: sent, total: phones.length }
+    } catch (error) {
+        console.error("Broadcast SMS error:", error)
+        return { success: false, error: "Failed to send broadcast" }
+    }
 }
 
