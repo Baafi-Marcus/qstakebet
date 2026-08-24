@@ -4,7 +4,7 @@ import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { UserPlusIcon as UserPlus, EnvelopeIcon as Mail, LockClosedIcon as Lock, UserIcon as User, PhoneIcon as Phone, ExclamationCircleIcon as AlertCircle, GiftIcon as Gift, AcademicCapIcon as GraduationCap } from "@heroicons/react/24/solid";
+import { UserPlusIcon as UserPlus, EnvelopeIcon as Mail, LockClosedIcon as Lock, UserIcon as User, PhoneIcon as Phone, ExclamationCircleIcon as AlertCircle, GiftIcon as Gift, AcademicCapIcon as GraduationCap, AtSymbolIcon as AtSymbol } from "@heroicons/react/24/solid";
 import { registerUser } from "@/lib/auth-actions"
 import { ReferralSharePopup } from "@/components/ui/ReferralSharePopup"
 
@@ -18,6 +18,7 @@ function RegisterForm() {
         password: "",
         confirmPassword: "",
         name: "",
+        username: "",
         phone: "",
         almaMater: "",
         referredBy: refCode || ""
@@ -59,6 +60,7 @@ function RegisterForm() {
                 email: formData.email,
                 password: formData.password,
                 name: formData.name,
+                username: formData.username || undefined,
                 phone: formData.phone,
                 almaMater: formData.almaMater || undefined,
                 referredBy: formData.referredBy || undefined
@@ -136,6 +138,27 @@ function RegisterForm() {
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Username Field */}
+                        <div>
+                            <label className="block text-sm font-medium text-foreground/80 mb-2">
+                                Username <span className="text-muted-foreground text-xs ml-1">(shown on leaderboards & chat)</span>
+                            </label>
+                            <div className="relative">
+                                <AtSymbol className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <input
+                                    type="text"
+                                    placeholder="e.g. nsmq_king"
+                                    minLength={3}
+                                    maxLength={20}
+                                    pattern="[A-Za-z0-9_]+"
+                                    title="3-20 characters: letters, numbers and underscores only"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
                                 />
                             </div>

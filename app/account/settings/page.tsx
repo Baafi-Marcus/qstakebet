@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { PhoneIcon as Phone, ShieldCheckIcon as Shield, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathIcon as Loader2, PencilSquareIcon as Edit2, ArrowLeftIcon as ArrowLeft } from "@heroicons/react/24/solid";
+import { PhoneIcon as Phone, ShieldCheckIcon as Shield, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathIcon as Loader2, PencilSquareIcon as Edit2, ArrowLeftIcon as ArrowLeft, AtSymbolIcon as AtSymbol } from "@heroicons/react/24/solid";
 import Link from "next/link"
 import { requestPhoneUpdate, confirmPhoneUpdate } from "@/lib/phone-update-actions"
 import { getProviderName, detectPaymentMethod } from "@/lib/phone-utils"
+import { updateUsername, getUserProfileSummary } from "@/lib/user-actions"
 
 export default function SettingsPage() {
     const { data: session, update } = useSession()
@@ -16,6 +17,19 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState("")
+
+    const [currentUsername, setCurrentUsername] = useState<string | null>(null)
+    const [usernameInput, setUsernameInput] = useState("")
+    const [usernameEditing, setUsernameEditing] = useState(false)
+    const [usernameLoading, setUsernameLoading] = useState(false)
+
+    useEffect(() => {
+        getUserProfileSummary().then((res) => {
+            if (res.success && res.user) {
+                setCurrentUsername((res.user as any).username ?? null)
+            }
+        })
+    }, [])
 
     const currentProvider = session?.user?.phone
         ? getProviderName(detectPaymentMethod(session.user.phone) || "")
@@ -76,6 +90,32 @@ export default function SettingsPage() {
         }
     }
 
+    const handleSaveUsername = async () => {
+        if (!usernameInput.trim()) {
+            setError("Please enter a username")
+            return
+        }
+
+        setUsernameLoading(true)
+        setError("")
+
+        try {
+            const result = await updateUsername(usernameInput)
+
+            if (result.success) {
+                setCurrentUsername(result.username ?? null)
+                setUsernameEditing(false)
+                setSuccess("Username updated!")
+            } else {
+                setError(result.error || "Failed to update username")
+            }
+        } catch {
+            setError("An error occurred")
+        } finally {
+            setUsernameLoading(false)
+        }
+    }
+
     return (
         <div className="space-y-10 pb-20">
             {/* Header */}
@@ -103,6 +143,77 @@ export default function SettingsPage() {
                     {success}
                 </div>
             )}
+
+            {/* Username */}
+            <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-purple-500/10 rounded-xl">
+                            <AtSymbol className="h-6 w-6 text-purple-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-foreground">Username</h3>
+                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Shown on leaderboards & chat</p>
+                        </div>
+                    </div>
+                    {!usernameEditing && (
+                        <button
+                            onClick={() => {
+                                setUsernameInput(currentUsername || "")
+                                setUsernameEditing(true)
+                            }}
+                            className="p-2 hover:bg-accent rounded-xl text-purple-400 transition-all"
+                        >
+                            <Edit2 className="h-5 w-5" />
+                        </button>
+                    )}
+                </div>
+
+                {!usernameEditing ? (
+                    <div className="bg-muted border border-border/50 rounded-2xl p-4">
+                        {currentUsername ? (
+                            <span className="text-foreground font-black text-lg">@{currentUsername}</span>
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                No username yet. Pick one so friends can find you on leaderboards and chat.
+                            </p>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <input
+                            type="text"
+                            value={usernameInput}
+                            onChange={(e) => setUsernameInput(e.target.value)}
+                            placeholder="e.g. nsmq_king"
+                            minLength={3}
+                            maxLength={20}
+                            className="w-full bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSaveUsername}
+                                disabled={usernameLoading}
+                                className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all flex items-center gap-2"
+                            >
+                                {usernameLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5" /> Save</>}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setUsernameEditing(false)
+                                    setUsernameInput("")
+                                }}
+                                className="px-6 py-3 border border-border text-muted-foreground hover:text-foreground hover:bg-accent font-bold rounded-xl transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                            3-20 characters: letters, numbers and underscores only
+                        </p>
+                    </div>
+                )}
+            </div>
 
             {/* Current Phone Number */}
             <div className="bg-card border border-border rounded-3xl p-6 space-y-4">

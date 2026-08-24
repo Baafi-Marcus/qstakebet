@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { chatMessages, users, chatRooms, chatRoomMembers, fantasyLineups } from "@/lib/db/schema"
-import { eq, desc, and, inArray } from "drizzle-orm"
+import { eq, desc, and, inArray, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -14,7 +14,7 @@ export async function getChannelMessages(channel: string, limit: number = 50) {
             message: chatMessages.content,
             createdAt: chatMessages.createdAt,
             userId: chatMessages.userId,
-            username: users.name,
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
             almaMater: users.almaMater,
         })
             .from(chatMessages)
@@ -55,7 +55,10 @@ export async function postMessage(channel: string, message: string) {
         const userId = session.user.id
         const messageId = `msg-${Math.random().toString(36).substr(2, 9)}`
 
-        const userRec = await db.select({ almaMater: users.almaMater })
+        const userRec = await db.select({
+            almaMater: users.almaMater,
+            displayName: sql<string>`COALESCE(${users.username}, ${users.name})`,
+        })
             .from(users)
             .where(eq(users.id, userId))
             .limit(1)
@@ -73,7 +76,7 @@ export async function postMessage(channel: string, message: string) {
             message: trimmed,
             createdAt: new Date(),
             userId,
-            username: session.user.name || "Anonymous",
+            username: userRec[0]?.displayName || "Anonymous",
             almaMater: almaMaterVal
         }
 
@@ -223,7 +226,7 @@ export async function getRoomMessages(roomId: string, limit: number = 50) {
             message: chatMessages.content,
             createdAt: chatMessages.createdAt,
             userId: chatMessages.userId,
-            username: users.name,
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
             almaMater: users.almaMater
         })
             .from(chatMessages)
@@ -279,7 +282,10 @@ export async function postRoomMessage(roomId: string, message: string) {
         const userId = session.user.id
         const messageId = `msg-${Math.random().toString(36).substr(2, 9)}`
 
-        const userRec = await db.select({ almaMater: users.almaMater })
+        const userRec = await db.select({
+            almaMater: users.almaMater,
+            displayName: sql<string>`COALESCE(${users.username}, ${users.name})`,
+        })
             .from(users)
             .where(eq(users.id, userId))
             .limit(1)
@@ -298,7 +304,7 @@ export async function postRoomMessage(roomId: string, message: string) {
             message: trimmed,
             createdAt: new Date(),
             userId,
-            username: session.user.name || "Anonymous",
+            username: userRec[0]?.displayName || "Anonymous",
             almaMater: almaMaterVal
         }
 
@@ -333,7 +339,7 @@ export async function getRoomLeaderboard(roomId: string, gameWeek: string) {
         // Get members lists
         const membersList = await db.select({
             userId: chatRoomMembers.userId,
-            name: users.name,
+            name: sql<string>`COALESCE(${users.username}, ${users.name})`,
             almaMater: users.almaMater,
             lifetimePoints: users.lifetimePoints
         })

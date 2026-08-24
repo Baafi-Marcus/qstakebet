@@ -11,12 +11,21 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
  */
 export const RegisterUserSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
+    username: z.string()
+        .regex(/^[a-zA-Z0-9_]{3,20}$/, "Username must be 3-20 characters (letters, numbers, underscores only)")
+        .optional(),
     email: z.string().email("Invalid email address"),
     phone: z.string().regex(phoneRegex, "Invalid Ghana phone number (e.g., 024xxxxxxx)"),
     password: passwordSchema,
     referredBy: z.string().optional(),
     almaMater: z.string().optional()
 });
+
+/**
+ * Username validation rule (shared by register + settings)
+ */
+export const UsernameSchema = z.string()
+    .regex(/^[a-zA-Z0-9_]{3,20}$/, "Username must be 3-20 characters (letters, numbers, underscores only)");
 
 /**
  * Admin Registration Schema

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
-import { eq, or } from "drizzle-orm"
+import { eq, or, sql } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
@@ -14,6 +14,7 @@ export async function registerUser(data: {
     email: string
     password: string
     name: string
+    username?: string
     phone: string
     referredBy?: string
     almaMater?: string
@@ -42,6 +43,16 @@ export async function registerUser(data: {
             return { success: false, error: "Email or Phone already registered" }
         }
 
+        // Check username availability (case-insensitive)
+        if (data.username) {
+            const taken = await db.select({ id: users.id }).from(users)
+                .where(sql`lower(${users.username}) = ${data.username.toLowerCase()}`)
+                .limit(1)
+            if (taken.length > 0) {
+                return { success: false, error: "That username is already taken" }
+            }
+        }
+
         // Hash password
         const passwordHash = await bcrypt.hash(data.password, 10)
 
@@ -55,6 +66,7 @@ export async function registerUser(data: {
             email: data.email,
             passwordHash,
             name: data.name,
+            username: data.username || null,
             phone: data.phone,
             phoneVerified: new Date(),
             referralCode,

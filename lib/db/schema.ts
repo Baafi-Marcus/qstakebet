@@ -76,6 +76,7 @@ export const users = pgTable("users", {
     emailVerified: timestamp("email_verified"),
     passwordHash: text("password_hash").notNull(),
     name: text("name"),
+    username: text("username").unique(), // Public display name (falls back to name)
     phone: text("phone").notNull().unique(),
     phoneVerified: timestamp("phone_verified"),
     role: text("role").default("user").notNull(), // "user", "admin"

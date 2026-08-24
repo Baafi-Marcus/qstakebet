@@ -311,7 +311,7 @@ export async function getLeaderboard(gameWeek?: string) {    try {
         if (gameWeek) {
             // Retrieve points for specific game week
             const results = await db.select({
-                username: users.name,
+                username: sql<string>`COALESCE(${users.username}, ${users.name})`,
                 almaMater: users.almaMater,
                 points: fantasyLineups.pointsEarned,
             })
@@ -325,7 +325,7 @@ export async function getLeaderboard(gameWeek?: string) {    try {
         } else {
             // Retrieve lifetime rankings
             const results = await db.select({
-                username: users.name,
+                username: sql<string>`COALESCE(${users.username}, ${users.name})`,
                 almaMater: users.almaMater,
                 points: users.totalFantasyPoints,
             })

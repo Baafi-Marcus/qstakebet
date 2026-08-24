@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users, schools } from "@/lib/db/schema"
-import { eq, asc } from "drizzle-orm"
+import { eq, asc, sql, ne, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
 /**
@@ -24,8 +24,41 @@ export async function getSchoolsForPicker() {
 /**
  * Sets the logged-in user's alma mater (must exist in the global schools table).
  */
-export async function updateAlmaMater(schoolId: string) {
+/**
+ * Sets or updates the public username (display name). Case-insensitively unique.
+ */
+export async function updateUsername(username: string) {
     const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    const trimmed = username.trim()
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+        return { success: false, error: "Username must be 3-20 characters (letters, numbers, underscores only)" }
+    }
+
+    try {
+        const taken = await db.select({ id: users.id }).from(users)
+            .where(and(
+                sql`lower(${users.username}) = ${trimmed.toLowerCase()}`,
+                ne(users.id, session.user.id)
+            ))
+            .limit(1)
+        if (taken.length > 0) {
+            return { success: false, error: "That username is already taken" }
+        }
+
+        await db.update(users)
+            .set({ username: trimmed, updatedAt: new Date() })
+            .where(eq(users.id, session.user.id))
+
+        return { success: true, username: trimmed }
+    } catch (e) {
+        console.error("updateUsername error:", e)
+        return { success: false, error: "Internal Error" }
+    }
+}
+
+export async function updateAlmaMater(schoolId: string) {    const session = await auth()
     if (!session?.user?.id) return { success: false, error: "Unauthorized" }
     if (!schoolId) return { success: false, error: "School is required" }
 
@@ -55,7 +88,7 @@ export async function getUserProfileSummary() {
         const userId = session.user.id
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
-            columns: { name: true, phone: true, createdAt: true, email: true, phoneVerified: true }
+            columns: { name: true, username: true, phone: true, createdAt: true, email: true, phoneVerified: true }
         })
 
         return {
