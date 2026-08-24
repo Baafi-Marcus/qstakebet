@@ -539,7 +539,7 @@ export async function getParticipatingSchoolsForStage(gameWeek: string) {
         
         const stageMatches = await db.select({ participants: matches.participants })
             .from(matches)
-            .where(sql`DATE(${matches.scheduledAt}) = ${dateStr}::date`);
+            .where(sql`DATE(${matches.scheduledAt}) = ${dateStr}::date AND ${matches.status} NOT IN ('finished', 'settled', 'cancelled')`);
             
         const participatingSchoolIds = new Set<string>();
         
