@@ -29,15 +29,22 @@ export default function LoginPage() {
             })
 
             if (result?.error) {
-                setError("Invalid phone number or password")
+                setError(
+                    result.error === "CredentialsSignin"
+                        ? "Invalid phone number or password"
+                        : `Sign-in failed (${result.error}). Please refresh the page and try again.`
+                )
                 setLoading(false)
                 return
             }
 
             // Redirect to home page with a full refresh to ensure session is recognized
             window.location.href = "/"
-        } catch {
-            setError("An error occurred. Please try again.")
+        } catch (err) {
+            console.error("Sign-in exception:", err)
+            setError(
+                "Connection hiccup while signing in. Refresh the page (Ctrl+Shift+R) and try again."
+            )
             setLoading(false)
         }
     }
