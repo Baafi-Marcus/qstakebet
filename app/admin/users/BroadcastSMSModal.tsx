@@ -9,6 +9,22 @@ interface BroadcastSMSModalProps {
     onClose: () => void
 }
 
+const MAX_SMS_CHARS = 480
+
+// Characters outside the GSM 03.38 alphabet force UCS-2 encoding (70 chars/segment)
+const GSM7_PATTERN = new RegExp(
+    "^[A-Za-z0-9 \\r\\n@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!\"#¤%&'()*+,\\-./:;<=>?¡ÄÖÑÜ§¿äöñüà^{}\\\\\\[~\\]|€]*$"
+)
+
+function countSmsSegments(message: string): number {
+    if (!message) return 0
+    const isGsm7 = GSM7_PATTERN.test(message)
+    if (isGsm7) {
+        return message.length <= 160 ? 1 : Math.ceil(message.length / 153)
+    }
+    return message.length <= 70 ? 1 : Math.ceil(message.length / 67)
+}
+
 export function BroadcastSMSModal({ onClose }: BroadcastSMSModalProps) {
     const [message, setMessage] = useState("")
     const [sending, setSending] = useState(false)
@@ -88,12 +104,14 @@ export function BroadcastSMSModal({ onClose }: BroadcastSMSModalProps) {
                                 placeholder="Type your message here..."
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:outline-none focus:border-primary transition-all min-h-[120px] resize-none"
                                 required
-                                maxLength={160}
+                                maxLength={MAX_SMS_CHARS}
                             />
                             <div className="flex justify-between px-1">
-                                <p className="text-[10px] text-slate-500 italic">Max 160 characters for a single SMS.</p>
-                                <p className={cn("text-[10px] font-bold", message.length > 140 ? "text-orange-400" : "text-slate-500")}>
-                                    {message.length}/160
+                                <p className="text-[10px] text-slate-500 italic">
+                                    Long messages are sent as multi-part SMS — billed per segment.
+                                </p>
+                                <p className={`text-[10px] font-bold ${countSmsSegments(message) > 1 ? "text-orange-400" : "text-slate-500"}`}>
+                                    {message.length}/{MAX_SMS_CHARS} chars · {countSmsSegments(message)} SMS segment{countSmsSegments(message) === 1 ? "" : "s"}
                                 </p>
                             </div>
                         </div>
@@ -121,8 +139,4 @@ export function BroadcastSMSModal({ onClose }: BroadcastSMSModalProps) {
             </div>
         </div>
     )
-}
-
-function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(' ')
 }
