@@ -581,3 +581,39 @@ export async function getActiveFantasyStage() {
     return { gameWeek: "Off-Season", deadline: null, isOffSeason: true };
 }
 
+export async function getFantasyGameWeeks() {
+    try {
+        const rows = await db.select({
+            scheduledAt: matches.scheduledAt,
+            status: matches.status
+        })
+            .from(matches)
+            .orderBy(asc(matches.scheduledAt));
+
+        const matchdays = new Map<string, { dateStr: string, deadline: Date, hasOngoing: boolean }>();
+
+        for (const m of rows) {
+            if (!m.scheduledAt) continue;
+            const dateStr = m.scheduledAt.toISOString().split('T')[0];
+            const existing = matchdays.get(dateStr);
+            if (!existing) {
+                matchdays.set(dateStr, { dateStr, deadline: m.scheduledAt, hasOngoing: m.status === 'in_progress' });
+            } else if (m.status === 'in_progress') {
+                existing.hasOngoing = true;
+            }
+        }
+
+        return Array.from(matchdays.values())
+            .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
+            .map(md => ({
+                gameWeek: `Matchday ${md.dateStr}`,
+                deadline: md.deadline,
+                hasOngoing: md.hasOngoing,
+                isPast: md.deadline.getTime() < Date.now() && !md.hasOngoing
+            }));
+    } catch (error) {
+        console.error("Error getting fantasy game weeks:", error);
+        return [];
+    }
+}
+

@@ -10,10 +10,17 @@ type LeaderboardRow = {
     points: number
 }
 
+type GameWeekInfo = {
+    gameWeek: string
+    hasOngoing: boolean
+    isPast: boolean
+}
+
 type LeaderboardClientProps = {
     initialWeekly: LeaderboardRow[]
     initialLifetime: LeaderboardRow[]
     gameWeek: string
+    allGameWeeks?: GameWeekInfo[]
     viewerAlmaMater?: string | null
 }
 
@@ -35,7 +42,14 @@ function getSchoolAcronym(name: string | null) {
     return parts.map(p => p[0]).join("").toUpperCase().substring(0, 6)
 }
 
-export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, viewerAlmaMater }: LeaderboardClientProps) {
+function formatGameWeekLabel(gameWeek: string) {
+    const dateStr = gameWeek.replace("Matchday ", "")
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return gameWeek
+    const d = new Date(dateStr + "T00:00:00Z")
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
+}
+
+export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, allGameWeeks, viewerAlmaMater }: LeaderboardClientProps) {
     const [activeTab, setActiveTab] = useState<"weekly" | "lifetime">("weekly")
 
     const data = activeTab === "weekly" ? initialWeekly : initialLifetime
@@ -98,7 +112,7 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, vi
                             : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
-                    <Star className="h-4 w-4 shrink-0" /> Stage Standings ({gameWeek})
+                    <Star className="h-4 w-4 shrink-0" /> Matchday Standings
                 </button>
                 <button
                     onClick={() => setActiveTab("lifetime")}
@@ -111,6 +125,36 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, vi
                     <Award className="h-4 w-4 shrink-0" /> Overall Standings
                 </button>
             </div>
+
+            {/* Matchday switcher */}
+            {activeTab === "weekly" && allGameWeeks && allGameWeeks.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
+                    {allGameWeeks.map((gw) => {
+                        const isActive = gw.gameWeek === gameWeek
+                        return (
+                            <Link
+                                key={gw.gameWeek}
+                                href={`/leaderboard?gw=${encodeURIComponent(gw.gameWeek)}`}
+                                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                    isActive
+                                        ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-600/20"
+                                        : gw.hasOngoing
+                                            ? "bg-card text-purple-400 border-purple-500/40 hover:bg-purple-600/10"
+                                            : "bg-card text-muted-foreground border-border/50 hover:text-foreground hover:bg-accent"
+                                }`}
+                            >
+                                {gw.hasOngoing && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                                    </span>
+                                )}
+                                {formatGameWeekLabel(gw.gameWeek)}
+                            </Link>
+                        )
+                    })}
+                </div>
+            )}
 
             {/* Leaderboard Table Card */}
             <div className="bg-card border border-border/50 rounded-3xl overflow-hidden shadow-2xl">

@@ -2,16 +2,21 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
-import { getLeaderboard, getActiveFantasyStage } from "@/lib/fantasy-actions"
+import { getLeaderboard, getActiveFantasyStage, getFantasyGameWeeks } from "@/lib/fantasy-actions"
 import { LeaderboardClient } from "./LeaderboardClient"
 
 export const dynamic = 'force-dynamic'
 
-export default async function LeaderboardPage() {
-    const activeStage = await getActiveFantasyStage()
+export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ gw?: string }> }) {
+    const params = await searchParams
+    const [activeStage, gameWeeks] = await Promise.all([getActiveFantasyStage(), getFantasyGameWeeks()])
 
-    // Load both weekly and lifetime leaderboards
-    const weeklyStandings = await getLeaderboard(activeStage.gameWeek)
+    const requested = params?.gw
+    const validGw = gameWeeks.some(gw => gw.gameWeek === requested) ? requested : null
+    const selectedGameWeek = validGw || activeStage.gameWeek
+
+    // Load standings for the selected matchday plus lifetime totals
+    const weeklyStandings = await getLeaderboard(selectedGameWeek)
     const lifetimeStandings = await getLeaderboard()
 
     let viewerAlmaMater: string | null = null
@@ -26,7 +31,8 @@ export default async function LeaderboardPage() {
             <LeaderboardClient
                 initialWeekly={weeklyStandings}
                 initialLifetime={lifetimeStandings}
-                gameWeek={activeStage.gameWeek}
+                gameWeek={selectedGameWeek}
+                allGameWeeks={gameWeeks}
                 viewerAlmaMater={viewerAlmaMater}
             />
         </div>
