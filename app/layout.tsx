@@ -6,6 +6,7 @@ import "./globals.css";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { InstallPrompt } from "@/components/ui/InstallPrompt";
 
 const THEME_INIT_SCRIPT = `
 (function () {
@@ -67,6 +68,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ClientLayout>{children}</ClientLayout>
+          <InstallPrompt />
         </ThemeProvider>
       </body>
     </html>

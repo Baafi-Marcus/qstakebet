@@ -9,19 +9,18 @@ export function AdminHeader() {
     const { data: session } = useSession()
 
     return (
-        <header className="h-[70px] bg-background border-b border-border/50 px-8 flex items-center justify-between sticky top-0 z-50">
-            <div className="flex items-center gap-4">
+        <header className="h-[70px] bg-background border-b border-border/50 px-4 md:px-8 flex items-center justify-between sticky top-0 z-50">
+            <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20">
                     <ShieldCheck className="h-5 w-5 text-primary" />
-                    <span className="text-xs font-black text-foreground uppercase tracking-widest mt-0.5">Admin Console</span>
+                    <span className="text-xs font-black text-foreground uppercase tracking-widest mt-0.5">Admin</span>
                 </div>
-                <div className="h-4 w-px bg-border mx-2" />
                 <Link href="/" className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-foreground transition-colors">
-                    Visit Main Site
+                    Main Site
                 </Link>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6">
                 <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
                     <Bell className="h-5 w-5" />
                     <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
@@ -29,8 +28,8 @@ export function AdminHeader() {
 
                 <div className="h-6 w-px bg-border" />
 
-                <div className="flex items-center gap-4">
-                    <div className="text-right">
+                <div className="flex items-center gap-2 md:gap-4">
+                    <div className="text-right hidden sm:block">
                         <div className="text-xs font-black text-foreground uppercase tracking-tight">{session?.user?.name || "Administrator"}</div>
                         <div className="text-[9px] font-bold text-primary uppercase tracking-widest">Master Access</div>
                     </div>

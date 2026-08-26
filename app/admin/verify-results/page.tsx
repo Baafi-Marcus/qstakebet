@@ -32,9 +32,9 @@ export default async function AdminVerifyResultsPage() {
     const pending = await db.select().from(pendingResults).where(eq(pendingResults.status, 'pending'))
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8 space-y-8">
+        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Social Media Sync Queue</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Social Media Sync Queue</h1>
                 <p className="text-gray-400 mb-6">Approve or reject automated result extractions from social media.</p>
                 <ApprovalQueue initialPending={pending} matches={mappedMatches} />
             </div>

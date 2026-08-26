@@ -140,7 +140,7 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                     <ShieldAlert className="h-4.5 w-4.5" /> Pending Verification
                 </h2>
 
-                <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3 max-h-[280px] md:max-h-[600px] overflow-y-auto pr-1">
                     {matchesList.length > 0 ? (
                         matchesList.map(m => {
                             const participants = (m.participants as any[]) || []
@@ -211,14 +211,14 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                             value={aiText}
                             onChange={(e) => setAiText(e.target.value)}
                             placeholder={`Paste the latest round here as it drops...\n\ne.g.\nEnd of Round 3: Prempeh 38, Mfantsipim 30\n\nYou can paste round by round — the AI keeps a running result and unlocks settlement once finals are in.`}
-                            className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all min-h-[140px] resize-y font-mono"
+                            className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-base md:text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all min-h-[140px] resize-y font-mono"
                         />
 
                         <div className="flex justify-end">
                             <button
                                 onClick={handleAddPaste}
                                 disabled={isExtracting || (!aiText.trim() && !transcript)}
-                                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                                className="w-full md:w-auto justify-center px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm md:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                             >
                                 <Sparkles className="h-4 w-4" />
                                 {isExtracting ? "Reading the contest..." : aiText.trim() ? (transcript ? "Add Round & Update Result" : "Extract with AI") : "Re-extract"}
@@ -330,17 +330,17 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                         )}
 
                         {/* Settle Action Button */}
-                        <div className="flex justify-end gap-3 mt-4">
+                        <div className="flex flex-col md:flex-row justify-end gap-3 mt-4">
                             <button
                                 onClick={() => { setSelectedMatch(null); setExtracted(null); setMessage(null) }}
-                                className="px-6 py-3 border border-white/5 text-xs font-bold text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
+                                className="w-full md:w-auto px-6 py-3 border border-white/5 text-xs font-bold text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSettle}
                                 disabled={isPending || !extracted || (!extracted.isFinal && !forceFinal)}
-                                className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                                className="w-full md:w-auto justify-center px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm md:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                             >
                                 <Trophy className="h-4 w-4" />
                                 {isPending ? "Settling..." : extracted && !extracted.isFinal && !forceFinal ? "Waiting for finals..." : "Verify & Distribute Points"}
