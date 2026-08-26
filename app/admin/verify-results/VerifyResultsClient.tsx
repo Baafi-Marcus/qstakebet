@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { extractMatchResultFromText, applyMatchResult, saveRunningResult } from "@/lib/admin-actions"
+import { extractMatchResultFromText, applyMatchResult, saveRunningResult, batchExtractResults, applyBatchResults } from "@/lib/admin-actions"
 import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight, SparklesIcon as Sparkles, ClipboardDocumentIcon as Clipboard, XMarkIcon as X } from "@heroicons/react/24/solid";
 
 type Match = {
@@ -41,6 +41,12 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
     const [isExtracting, startExtractTransition] = useTransition()
     const [isPending, startSettleTransition] = useTransition()
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+    const [mode, setMode] = useState<"single" | "batch">("single")
+    const [batchText, setBatchText] = useState("")
+    const [batchResults, setBatchResults] = useState<any[] | null>(null)
+    const [batchExtracting, startBatchExtract] = useTransition()
+    const [batchAppliedIds, setBatchAppliedIds] = useState<Set<string>>(new Set())
+    const [batchMessage, setBatchMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
     const handleSelectMatch = (match: Match) => {
         setSelectedMatch(match)
@@ -155,8 +161,193 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
         })
     }
 
+    const handleBatchExtract = () => {
+        if (!batchText.trim()) return
+        setBatchMessage(null)
+        setBatchResults(null)
+        setBatchAppliedIds(new Set())
+        startBatchExtract(async () => {
+            const res = await batchExtractResults(batchText)
+            if (res.success && res.results) {
+                setBatchResults(res.results)
+                setBatchMessage({ type: "success", text: `Detected ${res.results.length} contest${res.results.length === 1 ? "" : "s"} — review and apply.` })
+            } else {
+                setBatchMessage({ type: "error", text: res.error || "Failed to extract" })
+            }
+        })
+    }
+
+    const handleBatchApplyOne = (matchId: string) => {
+        if (!batchResults) return
+        const r = batchResults.find(x => x.matchId === matchId)
+        if (!r) return
+        startBatchExtract(async () => {
+            const res = await applyBatchResults([r])
+            if (res.success) {
+                setBatchAppliedIds(prev => new Set([...prev, matchId]))
+                setMatchesList(prev => prev.filter(m => m.id !== matchId))
+                setBatchMessage({ type: "success", text: `${r.stage} settled — ${r.participants[0]?.name ?? "contest"} scores distributed.` })
+            } else {
+                setBatchMessage({ type: "error", text: res.error || "Failed to apply" })
+            }
+        })
+    }
+
+    const handleBatchApplyAll = () => {
+        if (!batchResults) return
+        const unset = batchResults.filter(r => !batchAppliedIds.has(r.matchId))
+        if (unset.length === 0) return
+        startBatchExtract(async () => {
+            const res = await applyBatchResults(unset)
+            if (res.success) {
+                setBatchAppliedIds(prev => new Set([...prev, ...unset.map(r => r.matchId)]))
+                setMatchesList(prev => prev.filter(m => !unset.some(u => u.matchId === m.id)))
+                setBatchMessage({ type: "success", text: `${res.appliedCount} contest${(res.appliedCount ?? 0) === 1 ? "" : "s"} settled.` })
+            } else {
+                setBatchMessage({ type: "error", text: res.error || "Failed to apply" })
+            }
+        })
+    }
+
     return (
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+
+            {/* Mode Toggle */}
+            <div className="flex items-center gap-2 p-1 bg-slate-900 border border-white/5 rounded-2xl w-fit">
+                <button
+                    onClick={() => setMode("single")}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                        mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-slate-400 hover:text-white"
+                    }`}
+                >
+                    Single Match
+                </button>
+                <button
+                    onClick={() => setMode("batch")}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                        mode === "batch" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-slate-400 hover:text-white"
+                    }`}
+                >
+                    Batch Paste
+                </button>
+            </div>
+
+            {mode === "batch" ? (
+                /* ─── BATCH MODE ─── */
+                <div className="flex flex-col gap-6">
+                    <div className="bg-slate-900 border border-white/5 p-6 md:p-8 rounded-3xl">
+                        <h3 className="text-lg font-black text-white mb-1">Paste All Contest Coverage</h3>
+                        <p className="text-xs text-slate-500 mb-4">Paste coverage for multiple contests at once — the AI splits them by school names and matches to the right fixtures.</p>
+
+                        <textarea
+                            value={batchText}
+                            onChange={(e) => setBatchText(e.target.value)}
+                            placeholder={"Paste ALL contest coverage here...\n\nEnd of Round 5\nKeta SHTS: 38pts\nAnum Presby SHS: 28pts\n...\n\nEnd of Round 5\nPrempeh College: 66pts\nWASS: 30pts\n..."}
+                            className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-base md:text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all min-h-[200px] resize-y font-mono"
+                        />
+
+                        <div className="flex justify-end mt-3">
+                            <button
+                                onClick={handleBatchExtract}
+                                disabled={batchExtracting || !batchText.trim()}
+                                className="w-full md:w-auto justify-center px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm md:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                            >
+                                <Sparkles className="h-4 w-4" />
+                                {batchExtracting ? "Extracting all contests..." : "Extract All Contests"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {batchMessage && (
+                        <div className={`p-4 rounded-2xl text-xs flex items-center gap-3 border ${
+                            batchMessage.type === 'success'
+                                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                                : "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                        }`}>
+                            <CheckCircle className="h-5 w-5 shrink-0" />
+                            <span>{batchMessage.text}</span>
+                        </div>
+                    )}
+
+                    {batchResults && batchResults.length > 0 && (() => {
+                        const unset = batchResults.filter(r => !batchAppliedIds.has(r.matchId))
+                        return (
+                            <>
+                                {unset.length > 0 && (
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={handleBatchApplyAll}
+                                            disabled={batchExtracting}
+                                            className="w-full md:w-auto justify-center px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm md:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+                                        >
+                                            <Trophy className="h-4 w-4" />
+                                            Apply All ({unset.length})
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    {batchResults.map(r => {
+                                        const applied = batchAppliedIds.has(r.matchId)
+                                        return (
+                                            <div key={r.matchId} className={`bg-slate-900 border rounded-3xl p-5 transition-all ${applied ? "border-emerald-500/25 opacity-50" : "border-white/5"}`}>
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <div>
+                                                        <div className="text-[9px] font-black uppercase text-purple-400">{r.stage}</div>
+                                                        <div className="font-extrabold text-sm text-white mt-0.5">{r.participants.map((p: any) => p.name).join(" vs ")}</div>
+                                                        <div className="text-[9px] text-slate-500 font-bold uppercase mt-0.5">{r.tournamentName}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {r.isFinal && r.rounds.length >= 5 && (
+                                                            <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">Final</span>
+                                                        )}
+                                                        {r.isFinal && r.rounds.length < 5 && (
+                                                            <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25">Partial ({r.rounds.length} rounds)</span>
+                                                        )}
+                                                        {!r.isFinal && (
+                                                            <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25">Running · R{r.rounds.length || "?"}</span>
+                                                        )}
+                                                        {applied && (
+                                                            <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 flex items-center gap-1">
+                                                                <CheckCircle className="h-3 w-3" /> Applied
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-1.5 mb-3">
+                                                    {r.participants.map((p: any) => {
+                                                        const score = r.customScores[p.schoolId] ?? 0
+                                                        const isWinner = r.winnerSchoolId === p.schoolId && r.isFinal
+                                                        return (
+                                                            <div key={p.schoolId} className="flex items-center justify-between bg-slate-950/50 rounded-xl px-4 py-2">
+                                                                <span className={`text-xs font-bold ${isWinner ? "text-emerald-400" : "text-slate-300"}`}>{p.name}</span>
+                                                                <span className={`font-extrabold text-sm ${isWinner ? "text-emerald-400" : "text-white"}`}>{score}</span>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                {!applied && (
+                                                    <button
+                                                        onClick={() => handleBatchApplyOne(r.matchId)}
+                                                        disabled={batchExtracting}
+                                                        className="w-full py-2.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                                    >
+                                                        Apply This Contest
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </>
+                        )
+                    })()}
+                </div>
+            ) : (
+                /* ─── SINGLE MATCH MODE ─── */
+                <div className="flex flex-col md:flex-row gap-8">
 
             {/* Unsettled Matches List */}
             <div className="w-full md:w-96 bg-slate-900 border border-white/5 p-6 rounded-3xl shrink-0">
@@ -417,8 +608,9 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                         <p className="text-xs text-slate-500 mt-1 max-w-xs">Select an active match from the sidebar, paste its contest coverage, and let the AI do the rest.</p>
                     </div>
                 )}
-            </div>
-
+                </div>
         </div>
-    )
+        )}
+    </div>
+)
 }

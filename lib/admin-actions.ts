@@ -2,7 +2,7 @@
 
 import { db } from "./db"
 import { schools, tournaments, matches, realSchoolStats, users, pendingResults, fantasyLineups } from "./db/schema"
-import { eq, and, sql, inArray } from "drizzle-orm"
+import { eq, and, sql, inArray, ne } from "drizzle-orm"
 import { parseResultsWithAI, type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
@@ -1490,5 +1490,141 @@ export async function saveRunningResult(matchId: string, data: {
     } catch (error) {
         console.error("Error saving running result:", error);
         return { success: false, error: "Failed to save running result" };
+    }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Batch extract: paste multi-contest coverage once, split & extract per match
+// ──────────────────────────────────────────────────────────────────────────────
+
+type BatchResult = {
+    matchId: string
+    stage: string
+    tournamentName: string
+    participants: { schoolId: string; name: string; odd?: number }[]
+    customScores: Record<string, number>
+    winnerSchoolId: string | null
+    rounds: { label: string; scores: Record<string, number> }[]
+    isFinal: boolean
+}
+
+export async function batchExtractResults(text: string): Promise<{
+    success: boolean
+    results?: BatchResult[]
+    error?: string
+}> {
+    try {
+        if (!text.trim()) return { success: false, error: "No coverage text provided" };
+
+        // 1. Fetch all non-settled matches with participants
+        const allMatches = await db.select({
+            match: matches,
+            tournamentName: tournaments.name,
+        })
+            .from(matches)
+            .leftJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+            .where(ne(matches.status, "settled"));
+
+        if (allMatches.length === 0) return { success: false, error: "No pending matches found" };
+
+        // 2. Build per-match lookup by school names (lowercase, stripped)
+        type MatchInfo = { id: string; stage: string; tournamentName: string; schoolKeys: string[]; participants: any[] }
+        const matchInfos: MatchInfo[] = allMatches.map(r => {
+            const parts = (r.match.participants as any[]) || [];
+            return {
+                id: r.match.id,
+                stage: r.match.stage || "Unknown",
+                tournamentName: r.tournamentName || "Unknown",
+                schoolKeys: parts.map(p => normalizeSchoolName(p.name)),
+                participants: parts,
+            };
+        });
+
+        // 3. Split coverage into segments by common NSMQ separators
+        const segments = text
+            .split(/(?=End of (?:Round|contest|quiz)|MAIN AUDITORIUM|SMS Auditorium|CNC AUDITORIUM|Problem of the Day|Sponsored by)/i)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+
+        // 4. Route each segment to the best-matching contest (≥2 school name hits)
+        const contestChunks: Record<string, string[]> = {};
+        for (const seg of segments) {
+            const lowerSeg = seg.toLowerCase();
+            let bestMatch: MatchInfo | null = null;
+            let bestCount = 0;
+
+            for (const mi of matchInfos) {
+                const hits = mi.schoolKeys.filter(sk =>
+                    lowerSeg.includes(sk) ||
+                    lowerSeg.includes(sk.split(" ")[0]) ||
+                    // Also try first 5 chars for shortened names
+                    (sk.length > 5 && lowerSeg.includes(sk.slice(0, 5)))
+                ).length;
+                if (hits > bestCount) {
+                    bestCount = hits;
+                    bestMatch = mi;
+                }
+            }
+
+            if (bestMatch && bestCount >= 2) {
+                if (!contestChunks[bestMatch.id]) contestChunks[bestMatch.id] = [];
+                contestChunks[bestMatch.id].push(seg);
+            }
+        }
+
+        // 5. Extract per matched contest using existing extraction
+        const { callLLM } = await import("./ai-client");
+        const results: BatchResult[] = [];
+
+        for (const mi of matchInfos) {
+            const chunks = contestChunks[mi.id];
+            if (!chunks || chunks.length === 0) continue;
+
+            const contestText = chunks.join("\n\n");
+            const extracted = await extractMatchResultFromText(contestText, mi.id);
+            if (!extracted.success || !extracted.customScores) continue;
+
+            results.push({
+                matchId: mi.id,
+                stage: mi.stage,
+                tournamentName: mi.tournamentName,
+                participants: mi.participants,
+                customScores: extracted.customScores,
+                winnerSchoolId: (extracted as any).winnerSchoolId ?? null,
+                rounds: (extracted as any).rounds || [],
+                isFinal: (extracted as any).isFinal === true,
+            });
+        }
+
+        if (results.length === 0) {
+            return { success: false, error: "Could not match any coverage to pending contests. Check that school names in the coverage match the database." };
+        }
+
+        return { success: true, results };
+    } catch (error: any) {
+        console.error("Batch extraction error:", error);
+        return { success: false, error: error.message || "Batch extraction failed" };
+    }
+}
+
+export async function applyBatchResults(results: BatchResult[]): Promise<{
+    success: boolean
+    appliedCount?: number
+    error?: string
+}> {
+    try {
+        let count = 0;
+        for (const r of results) {
+            const res = await applyMatchResult(r.matchId, {
+                customScores: r.customScores,
+                winnerSchoolId: r.winnerSchoolId,
+                rounds: r.rounds,
+            });
+            if (res.success) count++;
+        }
+        return { success: true, appliedCount: count };
+    } catch (error: any) {
+        return { success: false, error: error.message || "Failed to apply batch results" };
     }
 }
