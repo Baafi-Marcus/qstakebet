@@ -1211,38 +1211,8 @@ function normalizeSchoolName(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]/g, "")
 }
 
-export async function extractMatchResultFromText(text: string, matchId: string) {
-    try {
-        // 1. Get Match from DB
-        const match = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
-        if (match.length === 0) return { success: false, error: "Match not found" };
-
-        const participants = (match[0].participants as any[]) || [];
-        if (participants.length === 0) return { success: false, error: "Match has no participants" };
-
-        // 2. Call AI via the platform's Gemini key pool (GitHub Models retired Aug 2026)
-        const { getActiveKey, reportKeyError } = await import("./ai-key-manager");
-
-        let parsed: AiContestResult | null = null;
-        let attempts = 0;
-        const maxAttempts = 3;
-
-        while (attempts < maxAttempts && !parsed) {
-            attempts++;
-            const token = await getActiveKey("gemini");
-            if (!token) return { success: false, error: "No AI API keys available" };
-
-            try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${token}`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        signal: AbortSignal.timeout(60000),
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: `You are an NSMQ (Ghana National Science & Maths Quiz) result extractor.
+function buildPrompt(text: string, participants: any[]) {
+    return `You are an NSMQ (Ghana National Science & Maths Quiz) result extractor.
 The user gives you raw social media coverage of ONE contest between listed schools.
 The text may be round-by-round updates posted during the contest, or a single end-of-contest summary.
 It may be PARTIAL coverage (only some rounds so far, contest still ongoing).
@@ -1263,35 +1233,32 @@ ${participants.map(p => `- ${p.name}`).join("\n")}
 
 Contest coverage:
 ${text}`
-                                }]
-                            }],
-                            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
-                        })
-                    }
-                );
+}
 
-                if (!response.ok) {
-                    if (response.status === 429 || response.status === 401 || response.status === 403) {
-                        console.warn(`AI Request failed with ${response.status}. Switching key...`);
-                        await reportKeyError(token);
-                        continue;
-                    }
-                    throw new Error(`AI request failed: ${response.status}`);
-                }
+export async function extractMatchResultFromText(text: string, matchId: string) {
+    try {
+        // 1. Get Match from DB
+        const match = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+        if (match.length === 0) return { success: false, error: "Match not found" };
 
-                const apiResult = await response.json() as {
-                    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-                };
-                let content = apiResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-                content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-                parsed = JSON.parse(content) as AiContestResult;
-            } catch (err) {
-                if (attempts >= maxAttempts) throw err;
-                console.warn("AI attempt failed, retrying:", err);
-            }
+        const participants = (match[0].participants as any[]) || [];
+        if (participants.length === 0) return { success: false, error: "Match has no participants" };
+
+        // 2. Call AI via unified rotating client (gemini -> github_models -> openai)
+        const { callLLM } = await import("./ai-client");
+
+        const llmResult = await callLLM({ prompt: buildPrompt(text, participants) });
+        if (!llmResult.ok) {
+            return { success: false, error: llmResult.error || "AI extraction failed" };
         }
 
-        if (!parsed) return { success: false, error: "AI extraction failed after multiple attempts" };
+        const cleaned = llmResult.content.replace(/```json/g, "").replace(/```/g, "").trim();
+        let parsed: AiContestResult;
+        try {
+            parsed = JSON.parse(cleaned) as AiContestResult;
+        } catch {
+            return { success: false, error: "AI returned unparseable output — try rephrasing the paste." };
+        }
 
         // Map extracted school names to participant ids
         const customScores: Record<string, number> = {};
@@ -1472,3 +1439,40 @@ export async function applyMatchResult(matchId: string, data: {
 }
 
 
+
+export async function saveRunningResult(matchId: string, data: {
+    customScores: Record<string, number>;
+    rounds?: ParsedRound[];
+}) {
+    try {
+        const matchRows = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+        if (matchRows.length === 0) return { success: false, error: "Match not found" };
+        const match = matchRows[0];
+
+        if (match.status === "settled") return { success: false, error: "Match already settled" };
+
+        // Reflect progress publicly: users watching see live scores round by round
+        await db.update(matches)
+            .set({
+                result: {
+                    scores: data.customScores,
+                    rounds: (data.rounds || []).map(r => ({ label: r.label, scores: r.scores }))
+                },
+                participants: ((match.participants as any[]) || []).map(p => ({
+                    ...p,
+                    result: String(data.customScores[p.schoolId] ?? p.result ?? "")
+                })),
+                status: "live",
+                isLive: true,
+                currentRound: (data.rounds || []).length
+            })
+            .where(eq(matches.id, matchId));
+
+        revalidatePath("/matches");
+        revalidatePath("/live");
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving running result:", error);
+        return { success: false, error: "Failed to save running result" };
+    }
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { extractMatchResultFromText, applyMatchResult } from "@/lib/admin-actions"
+import { extractMatchResultFromText, applyMatchResult, saveRunningResult } from "@/lib/admin-actions"
 import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight, SparklesIcon as Sparkles, ClipboardDocumentIcon as Clipboard, XMarkIcon as X } from "@heroicons/react/24/solid";
 
 type Match = {
@@ -56,13 +56,29 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
         startExtractTransition(async () => {
             const res = await extractMatchResultFromText(fullCoverage, selectedMatch.id)
             if (res.success && res.customScores) {
-                setExtracted({
+                const extractedData: Extracted = {
                     customScores: res.customScores,
                     winnerSchoolId: (res as any).winnerSchoolId ?? null,
                     rounds: (res as any).rounds || [],
                     isFinal: (res as any).isFinal === true
-                })
-                setMessage({ type: "success", text: "AI updated the running result from your coverage." })
+                }
+                setExtracted(extractedData)
+
+                // Partial coverage -> push running scores to the public match view
+                if (!extractedData.isFinal) {
+                    const saved = await saveRunningResult(selectedMatch.id, {
+                        customScores: extractedData.customScores,
+                        rounds: extractedData.rounds
+                    })
+                    setMessage({
+                        type: "success",
+                        text: saved.success
+                            ? "Running result published — viewers now see these live scores."
+                            : "Extraction ok, but couldn't publish live scores."
+                    })
+                } else {
+                    setMessage({ type: "success", text: "Final result detected. Review below, then verify to distribute points." })
+                }
             } else {
                 setMessage({ type: "error", text: res.error || "Failed to extract scores from text" })
             }
