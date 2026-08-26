@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { extractMatchResultFromText, applyMatchResult, saveRunningResult } from "@/lib/admin-actions"
 import { ShieldExclamationIcon as ShieldAlert, CheckCircleIcon as CheckCircle, InformationCircleIcon as Info, CalendarIcon as Calendar, TrophyIcon as Trophy, ChevronRightIcon as ChevronRight, SparklesIcon as Sparkles, ClipboardDocumentIcon as Clipboard, XMarkIcon as X } from "@heroicons/react/24/solid";
 
@@ -11,6 +11,7 @@ type Match = {
     status: string
     isLive: boolean
     isVirtual: boolean
+    currentRound?: number
     participants: any
     result: any
     tournamentName?: string
@@ -30,6 +31,7 @@ type VerifyResultsClientProps = {
 export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps) {
     const [matchesList, setMatchesList] = useState<Match[]>(initialMatches)
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+    const [search, setSearch] = useState("")
 
     const [aiText, setAiText] = useState("")
     const [transcript, setTranscript] = useState("")
@@ -49,6 +51,21 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
         setForceFinal(false)
         setMessage(null)
     }
+
+    const visibleMatches = useMemo(() => {
+        const rank = (m: Match) =>
+            m.status === "live" || m.isLive ? 0 : m.status === "in_progress" || m.status === "finished" ? 1 : 2
+        const q = search.trim().toLowerCase()
+        return matchesList
+            .filter(m => {
+                if (!q) return true
+                return (
+                    ((m.participants as any[]) || []).some(p => p.name?.toLowerCase().includes(q)) ||
+                    m.stage?.toLowerCase().includes(q)
+                )
+            })
+            .sort((a, b) => rank(a) - rank(b))
+    }, [matchesList, search])
 
     const runExtraction = (fullCoverage: string) => {
         if (!selectedMatch || !fullCoverage.trim()) return
@@ -70,6 +87,11 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                         customScores: extractedData.customScores,
                         rounds: extractedData.rounds
                     })
+                    setMatchesList(prev => prev.map(m =>
+                        m.id === selectedMatch.id
+                            ? { ...m, status: "live", isLive: true, result: { ...m.result, rounds: extractedData.rounds } }
+                            : m
+                    ))
                     setMessage({
                         type: "success",
                         text: saved.success
@@ -136,15 +158,24 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
 
             {/* Unsettled Matches List */}
             <div className="w-full md:w-96 bg-slate-900 border border-white/5 p-6 rounded-3xl shrink-0">
-                <h2 className="text-xs font-black tracking-widest text-purple-400 uppercase mb-4 flex items-center gap-2">
+                <h2 className="text-xs font-black tracking-widest text-purple-400 uppercase mb-3 flex items-center gap-2">
                     <ShieldAlert className="h-4.5 w-4.5" /> Pending Verification
                 </h2>
 
+                <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search school or stage..."
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 mb-3 text-base md:text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50 transition-all"
+                />
+
                 <div className="flex flex-col gap-3 max-h-[280px] md:max-h-[600px] overflow-y-auto pr-1">
-                    {matchesList.length > 0 ? (
-                        matchesList.map(m => {
+                    {visibleMatches.length > 0 ? (
+                        visibleMatches.map(m => {
                             const participants = (m.participants as any[]) || []
                             const isSelected = selectedMatch?.id === m.id
+                            const isRunning = m.status === "live" || m.isLive
+                            const roundCount = ((m.result as any)?.rounds as any[] | undefined)?.length ?? m.currentRound ?? 0
 
                             return (
                                 <button
@@ -156,7 +187,15 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                                             : "bg-slate-950/50 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950"
                                     }`}
                                 >
-                                    <div className="text-[9px] font-black uppercase text-purple-400">{m.stage}</div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="text-[9px] font-black uppercase text-purple-400">{m.stage}</div>
+                                        {isRunning && (
+                                            <span className="shrink-0 flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                Running{roundCount ? ` · R${roundCount}` : ""}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="font-extrabold text-xs text-white mt-1">
                                         {participants.map(p => p.name).join(" vs ")}
                                     </div>
@@ -169,7 +208,7 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                         })
                     ) : (
                         <div className="text-center py-10 text-slate-600 text-xs font-semibold border border-dashed border-white/5 rounded-2xl">
-                            No matches pending verification.
+                            No matches match your search.
                         </div>
                     )}
                 </div>
