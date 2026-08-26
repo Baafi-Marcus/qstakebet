@@ -1223,7 +1223,10 @@ Return ONLY valid JSON in this exact shape:
 
 Rules:
 - "scores" must contain exactly one entry per participating school with its LATEST KNOWN total score.
-- "isFinal" must be true ONLY if the coverage clearly includes end-of-contest results or an announced winner/qualification statement. If the contest appears ongoing or incomplete, set it to false.
+- NSMQ contests ALWAYS run 5 rounds (Round 1 through Round 5). A contest is NEVER final before Round 5.
+- "isFinal" must be true ONLY if BOTH hold: (a) the coverage explicitly marks the END of the contest — e.g. "End of Round 5", "End of quiz/contest", "final scores", "full-time", or a winner/qualification announcement at the conclusion; AND (b) the rounds detected are consistent with a completed contest.
+- If the coverage only shows Round 1, Round 2, Round 3 or Round 4 results, the contest IS ONGOING: "isFinal" MUST be false and "winnerName" MUST be null.
+- Never guess or assume the final result from partial rounds. Leading after Round 1 does NOT mean winning.
 - When multiple values exist for the same school across rounds, the latest one wins.
 - Include "rounds" entries for every distinct round mentioned in the coverage.
 - Use school names EXACTLY as given in the participant list where possible.
@@ -1301,9 +1304,22 @@ export async function extractMatchResultFromText(text: string, matchId: string) 
             )
         })).filter(r => Object.keys(r.scores).length > 0);
 
-        return { success: true, customScores, winnerSchoolId, rounds, isFinal: parsed.isFinal === true };
-    } catch (error: any) {
-        console.error("Error extracting text:", error);
+        // Backstop: NSMQ contests always run 5 rounds. Never trust an AI "final" verdict on
+        // short coverage unless the paste itself explicitly declares the end of the contest.
+        const endMarkerRe = /end of (round\s*5|quiz|contest|competition|the game)|final scores?|full[\s-]?time|wins? the (contest|quiz)|qualifies for the quarter/i;
+        const hasEndMarker = endMarkerRe.test(text);
+        let isFinal = parsed.isFinal === true;
+        if (isFinal && rounds.length < 5 && !hasEndMarker) {
+            console.warn(`[extract] downgraded isFinal=true -> false (${rounds.length} rounds, no end marker)`);
+            isFinal = false;
+        }
+        // An ongoing contest cannot have a winner yet — clear it so previews stay honest.
+        if (!isFinal) {
+            winnerSchoolId = null;
+        }
+
+        return { success: true, customScores, winnerSchoolId, rounds, isFinal };
+    } catch (error: any) {        console.error("Error extracting text:", error);
         return { success: false, error: error.message || "Failed to extract result" };
     }
 }

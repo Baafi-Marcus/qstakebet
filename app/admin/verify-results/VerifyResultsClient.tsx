@@ -133,7 +133,9 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
     }
 
     const handleSettle = () => {
-        if (!selectedMatch || !extracted || (!extracted.isFinal && !forceFinal)) return
+        if (!selectedMatch || !extracted) return
+        const complete = extracted.isFinal && extracted.rounds.length >= 5
+        if (!complete && !forceFinal) return
 
         startSettleTransition(async () => {
             const result = await applyMatchResult(selectedMatch.id, extracted)
@@ -347,6 +349,23 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                                         </label>
                                     )}
 
+                                    {extracted.isFinal && extracted.rounds.length < 5 && (
+                                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                                            <p className="text-[10px] text-amber-300 font-bold leading-relaxed">
+                                                AI flagged this as final, but only {extracted.rounds.length} round{extracted.rounds.length === 1 ? "" : "s"} were detected. NSMQ contests run 5 rounds — paste the remaining rounds, or tick the force-final box if this coverage is genuinely complete.
+                                            </p>
+                                            <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={forceFinal}
+                                                    onChange={(e) => setForceFinal(e.target.checked)}
+                                                    className="accent-purple-500 h-3.5 w-3.5"
+                                                />
+                                                <span className="text-[10px] text-amber-200 font-bold">Force final anyway</span>
+                                            </label>
+                                        </div>
+                                    )}
+
                                     {!winnerName && (
                                         <p className="text-[10px] text-amber-400/80 font-bold">
                                             No clear winner detected — win bonuses will only apply if one school finishes strictly ahead.
@@ -378,11 +397,15 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                             </button>
                             <button
                                 onClick={handleSettle}
-                                disabled={isPending || !extracted || (!extracted.isFinal && !forceFinal)}
+                                disabled={isPending || !extracted || !(extracted.isFinal && extracted.rounds.length >= 5) && !forceFinal}
                                 className="w-full md:w-auto justify-center px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm md:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                             >
                                 <Trophy className="h-4 w-4" />
-                                {isPending ? "Settling..." : extracted && !extracted.isFinal && !forceFinal ? "Waiting for finals..." : "Verify & Distribute Points"}
+                                {isPending
+                                    ? "Settling..."
+                                    : !extracted || (!(extracted.isFinal && extracted.rounds.length >= 5) && !forceFinal)
+                                        ? `Need all 5 rounds (${extracted?.rounds.length ?? 0}/5)`
+                                        : "Verify & Distribute Points"}
                             </button>
                         </div>
 
