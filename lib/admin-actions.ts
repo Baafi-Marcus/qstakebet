@@ -10,6 +10,10 @@ import { settleFantasyLineups } from "./settlement"
 import { auth } from "./auth"
 import { revalidateTag, revalidatePath } from "next/cache"
 
+function safeRevalidatePath(path: string) {
+    try { revalidatePath(path); } catch { /* ignore outside Next.js request context */ }
+}
+
 // import { School, Tournament } from "./types" 
 
 export async function smartUpsertSchools(schoolList: string[], region: string) {
@@ -1463,7 +1467,7 @@ export async function applyMatchResult(matchId: string, data: {
             updatedCount++;
         }
 
-        revalidatePath("/leaderboard");
+        safeRevalidatePath("/leaderboard");
         return { success: true, updatedLineupsCount: updatedCount, winnerId, margin };
     } catch (error) {
         console.error("Error applying match result:", error);
@@ -1501,8 +1505,8 @@ export async function saveRunningResult(matchId: string, data: {
             })
             .where(eq(matches.id, matchId));
 
-        revalidatePath("/matches");
-        revalidatePath("/live");
+        safeRevalidatePath("/matches");
+        safeRevalidatePath("/live");
         return { success: true };
     } catch (error) {
         console.error("Error saving running result:", error);
