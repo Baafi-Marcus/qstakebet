@@ -1,14 +1,14 @@
 "use server"
 
 import { db } from "./db"
-import { schools, tournaments, matches, realSchoolStats, users, pendingResults } from "./db/schema"
+import { schools, tournaments, matches, realSchoolStats, users, pendingResults, fantasyLineups } from "./db/schema"
 import { eq, and, sql, inArray } from "drizzle-orm"
 import { parseResultsWithAI, type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
 import { settleFantasyLineups } from "./settlement"
 import { auth } from "./auth"
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 
 // import { School, Tournament } from "./types" 
 
@@ -1199,7 +1199,16 @@ export async function rejectPendingResult(id: string) {
     }
 }
 
-import { GoogleGenerativeAI } from "@google/generative-ai"
+type ParsedRound = { label: string, scores: Record<string, number> }
+type AiContestResult = {
+    scores: { schoolName: string, score: number }[]
+    winnerName: string | null
+    rounds?: { label: string, scores: Record<string, string | number> }[]
+}
+
+function normalizeSchoolName(name: string) {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, "")
+}
 
 export async function extractMatchResultFromText(text: string, matchId: string) {
     try {
@@ -1210,37 +1219,87 @@ export async function extractMatchResultFromText(text: string, matchId: string) 
         const participants = (match[0].participants as any[]) || [];
         if (participants.length === 0) return { success: false, error: "Match has no participants" };
 
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) return { success: false, error: "GEMINI_API_KEY is not set" };
+        // 2. Call AI via the platform's Gemini key pool (GitHub Models retired Aug 2026)
+        const { getActiveKey, reportKeyError } = await import("./ai-key-manager");
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        let parsed: AiContestResult | null = null;
+        let attempts = 0;
+        const maxAttempts = 3;
 
-        const prompt = `You are a sports result extractor. Extract the final scores for the following schools from the text provided.
-Return ONLY a valid JSON array of objects, where each object has a "schoolName" and a "score" (number). Do not include markdown or conversational text.
-Schools to look for: ${participants.map(p => p.name).join(", ")}
+        while (attempts < maxAttempts && !parsed) {
+            attempts++;
+            const token = await getActiveKey("gemini");
+            if (!token) return { success: false, error: "No AI API keys available" };
 
-Text:
-${text}
-`;
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${token}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        signal: AbortSignal.timeout(60000),
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: `You are an NSMQ (Ghana National Science & Maths Quiz) result extractor.
+The user gives you raw social media coverage of ONE contest between listed schools.
+The text may be round-by-round updates posted during the contest, or a single end-of-contest summary.
+Extract the important facts and IGNORE everything else (replies, hashtags, commentary).
 
-        const result = await model.generateContent(prompt);
-        let rawText = result.response.text().trim();
-        if (rawText.startsWith("\`\`\`json")) {
-            rawText = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+Return ONLY valid JSON in this exact shape:
+{"scores": [{"schoolName": "<school name>", "score": <final total>}], "winnerName": "<winning school or null>", "rounds": [{"label": "<round label>", "scores": {"<school name>": <points that round>}}]}
+
+Rules:
+- "scores" must contain exactly one entry per participating school with its FINAL total score.
+- If the text only gives round-by-round running totals, each school's final total is the LAST value shown for it.
+- Include "rounds" only when round-level data is present; otherwise use [].
+- Use school names EXACTLY as given in the participant list where possible.
+
+Participating schools:
+${participants.map(p => `- ${p.name}`).join("\n")}
+
+Contest coverage:
+${text}`
+                                }]
+                            }],
+                            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    if (response.status === 429 || response.status === 401 || response.status === 403) {
+                        console.warn(`AI Request failed with ${response.status}. Switching key...`);
+                        await reportKeyError(token);
+                        continue;
+                    }
+                    throw new Error(`AI request failed: ${response.status}`);
+                }
+
+                const apiResult = await response.json() as {
+                    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+                };
+                let content = apiResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+                content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+                parsed = JSON.parse(content) as AiContestResult;
+            } catch (err) {
+                if (attempts >= maxAttempts) throw err;
+                console.warn("AI attempt failed, retrying:", err);
+            }
         }
 
-        const parsedScores = JSON.parse(rawText) as { schoolName: string, score: number }[];
+        if (!parsed) return { success: false, error: "AI extraction failed after multiple attempts" };
 
+        // Map extracted school names to participant ids
         const customScores: Record<string, number> = {};
-        for (const parsedScore of parsedScores) {
-            const participant = participants.find(p => 
-                p.name.toLowerCase().includes(parsedScore.schoolName.toLowerCase()) || 
-                parsedScore.schoolName.toLowerCase().includes(p.name.toLowerCase())
-            );
-            
+        for (const entry of parsed.scores || []) {
+            const norm = normalizeSchoolName(entry.schoolName);
+            const participant = participants.find(p => {
+                const pn = normalizeSchoolName(p.name);
+                return pn.includes(norm) || norm.includes(pn);
+            });
             if (participant) {
-                customScores[participant.schoolId] = parsedScore.score;
+                customScores[participant.schoolId] = Number(entry.score) || 0;
             }
         }
 
@@ -1248,10 +1307,165 @@ ${text}
             return { success: false, error: "Could not map extracted scores to the match participants." };
         }
 
-        return { success: true, customScores };
+        let winnerSchoolId: string | null = null;
+        if (parsed.winnerName) {
+            const wNorm = normalizeSchoolName(parsed.winnerName);
+            const winner = participants.find(p => {
+                const pn = normalizeSchoolName(p.name);
+                return pn.includes(wNorm) || wNorm.includes(pn);
+            });
+            winnerSchoolId = winner?.schoolId ?? null;
+        }
+
+        const rounds: ParsedRound[] = (parsed.rounds || []).map(r => ({
+            label: r.label,
+            scores: Object.fromEntries(
+                Object.entries(r.scores || {}).map(([name, val]) => {
+                    const n = normalizeSchoolName(name);
+                    const p = participants.find(pt => {
+                        const pn = normalizeSchoolName(pt.name);
+                        return pn.includes(n) || n.includes(pn);
+                    });
+                    return p ? [p.schoolId, Number(val) || 0] : null;
+                }).filter(Boolean) as [string, number][]
+            )
+        })).filter(r => Object.keys(r.scores).length > 0);
+
+        return { success: true, customScores, winnerSchoolId, rounds };
     } catch (error: any) {
         console.error("Error extracting text:", error);
         return { success: false, error: error.message || "Failed to extract result" };
     }
 }
+
+const WIN_BONUS = 2;
+const MARGIN_BONUS = 5;
+
+function sumBreakdown(breakdown: Record<string, any>): number {
+    let sum = 0;
+    for (const val of Object.values(breakdown)) {
+        if (typeof val === "number") {
+            sum += val;
+        } else if (val && typeof val === "object") {
+            for (const inner of Object.values(val as Record<string, any>)) {
+                if (typeof inner === "number") sum += inner;
+                else if (inner && typeof inner === "object") sum += Number((inner as any).total) || 0;
+            }
+        }
+    }
+    return sum;
+}
+
+export async function applyMatchResult(matchId: string, data: {
+    customScores: Record<string, number>;
+    winnerSchoolId?: string | null;
+    rounds?: ParsedRound[];
+}) {
+    try {
+        const matchRows = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+        if (matchRows.length === 0) return { success: false, error: "Match not found" };
+        const match = matchRows[0];
+
+        if (!data.customScores || Object.keys(data.customScores).length === 0) {
+            return { success: false, error: "No scores to apply" };
+        }
+
+        // Resolve winner: explicit override wins, else unique top scorer
+        let winnerId = data.winnerSchoolId ?? null;
+        if (!winnerId) {
+            const sorted = Object.entries(data.customScores).sort((a, b) => b[1] - a[1]);
+            if (sorted.length >= 2 && sorted[0][1] > sorted[1][1]) winnerId = sorted[0][0];
+            else if (sorted.length === 1) winnerId = sorted[0][0];
+        }
+
+        const margin = (() => {
+            const sorted = Object.values(data.customScores).sort((a, b) => b - a);
+            return sorted.length >= 2 ? sorted[0] - sorted[1] : 0;
+        })();
+
+        // Canonical fantasy rules: base = raw score, win bonus +2, margin bonus +5 (win by >=10)
+        const schoolTotals: Record<string, { base: number, bonus: number, total: number }> = {};
+        for (const [schoolId, base] of Object.entries(data.customScores)) {
+            let bonus = 0;
+            if (winnerId && schoolId === winnerId) {
+                bonus += WIN_BONUS;
+                if (margin >= 10) bonus += MARGIN_BONUS;
+            }
+            schoolTotals[schoolId] = { base, bonus, total: base + bonus };
+        }
+
+        // Persist full result onto the match
+        const participants = ((match.participants as any[]) || []).map(p => ({
+            ...p,
+            result: String(data.customScores[p.schoolId] ?? p.result ?? "")
+        }));
+
+        await db.update(matches)
+            .set({
+                participants,
+                result: {
+                    scores: data.customScores,
+                    ...(winnerId ? { winner: winnerId } : {}),
+                    rounds: (data.rounds || []).map(r => ({ label: r.label, scores: r.scores }))
+                },
+                status: "settled"
+            })
+            .where(eq(matches.id, matchId));
+
+        // Settle lineups for THIS matchday (gameWeek = Matchday YYYY-MM-DD)
+        if (!match.scheduledAt) return { success: true, updatedLineupsCount: 0, warning: "No scheduled date; lineups not settled" };
+        const gameWeek = `Matchday ${match.scheduledAt.toISOString().slice(0, 10)}`;
+
+        const lineups = await db.select()
+            .from(fantasyLineups)
+            .where(eq(fantasyLineups.gameWeek, gameWeek));
+
+        let updatedCount = 0;
+
+        for (const lineup of lineups) {
+            const squad = [lineup.school1Id, lineup.school2Id, lineup.school3Id].filter(Boolean) as string[];
+            const relevant = squad.filter(id => schoolTotals[id]);
+            if (relevant.length === 0) continue;
+
+            const breakdown = { ...((lineup.pointsBreakdown as Record<string, any>) || {}) };
+            const matchBreakdown: Record<string, any> = {};
+
+            for (const id of squad) {
+                if (schoolTotals[id]) {
+                    matchBreakdown[id] = { ...schoolTotals[id] };
+                } else if (breakdown[matchId]?.[id]) {
+                    matchBreakdown[id] = breakdown[matchId][id];
+                }
+            }
+
+            breakdown[matchId] = matchBreakdown;
+            const newTotal = sumBreakdown(breakdown);
+            const delta = newTotal - (lineup.pointsEarned || 0);
+
+            await db.update(fantasyLineups)
+                .set({
+                    pointsBreakdown: breakdown,
+                    pointsEarned: newTotal,
+                    status: "settled",
+                    updatedAt: new Date()
+                })
+                .where(eq(fantasyLineups.id, lineup.id));
+
+            if (delta !== 0) {
+                await db.update(users)
+                    .set({ totalFantasyPoints: sql`${users.totalFantasyPoints} + ${delta}` })
+                    .where(eq(users.id, lineup.userId));
+            }
+
+            updatedCount++;
+        }
+
+        revalidatePath("/leaderboard");
+        return { success: true, updatedLineupsCount: updatedCount, winnerId, margin };
+    } catch (error) {
+        console.error("Error applying match result:", error);
+        return { success: false, error: "Failed to apply match result" };
+    }
+}
+
 

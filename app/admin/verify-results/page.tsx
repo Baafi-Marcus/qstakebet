@@ -40,7 +40,7 @@ export default async function AdminVerifyResultsPage() {
             </div>
 
             <div className="pt-8 border-t border-gray-800">
-                <h2 className="text-2xl font-bold text-white mb-6">Manual Result Entry</h2>
+                <h2 className="text-2xl font-bold text-white mb-6">Paste & Auto-Settle Results</h2>
                 <VerifyResultsClient initialMatches={mappedMatches} />
             </div>
         </div>

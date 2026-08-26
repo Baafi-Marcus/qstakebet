@@ -1,15 +1,13 @@
 import "server-only"
 import { getActiveKey, reportKeyError } from "./ai-key-manager"
 
-const endpoint = "https://models.inference.ai.azure.com/chat/completions"
-
 export interface ParsedRosterEntity {
     schoolName: string
     groupName?: string
 }
 
 /**
- * Parse tournament roster and group assignments using AI
+ * Parse tournament roster and group assignments using AI (Gemini key pool).
  */
 export async function parseRosterWithAI(text: string): Promise<ParsedRosterEntity[]> {
     let attempts = 0;
@@ -17,7 +15,7 @@ export async function parseRosterWithAI(text: string): Promise<ParsedRosterEntit
 
     while (attempts < maxAttempts) {
         attempts++;
-        const token = await getActiveKey("github_models");
+        const token = await getActiveKey("gemini");
 
         if (!token) {
             console.error("No available API keys.");
@@ -25,18 +23,17 @@ export async function parseRosterWithAI(text: string): Promise<ParsedRosterEntit
         }
 
         try {
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a high-precision data extractor for a sports tournament management system.
-                            
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${token}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    signal: AbortSignal.timeout(60000),
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are a high-precision data extractor for a sports tournament management system.
+
 Your task is to extract a list of schools (or participating entities) and their assigned groups from the provided text.
 
 Rules:
@@ -51,29 +48,29 @@ Rules:
   { "schoolName": "Prempeh College", "groupName": "Group A" },
   { "schoolName": "Opoku Ware", "groupName": "Group B" }
 ]
-7. If no groups are mentioned, still return the schools with "groupName" as null.`
-                        },
-                        {
-                            role: "user",
-                            content: `Extract schools and groups from this text:\n\n${text}`
-                        }
-                    ],
-                    model: "gpt-4o",
-                    temperature: 0.1,
-                    max_tokens: 2000
-                })
-            })
+7. If no groups are mentioned, still return the schools with "groupName" as null.
+
+Text:
+${text}`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                    })
+                }
+            );
 
             if (!response.ok) {
-                if (response.status === 429 || response.status === 401) {
+                if (response.status === 429 || response.status === 401 || response.status === 403) {
                     await reportKeyError(token);
                     continue;
                 }
                 throw new Error(`AI request failed: ${response.status}`)
             }
 
-            const result = await response.json() as { choices: Array<{ message: { content: string } }> }
-            const content = result.choices[0]?.message?.content || "[]"
+            const result = await response.json() as {
+                candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+            }
+            const content = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]"
 
             // Extract JSON - handle both raw arrays and objects wrapping an array
             let parsed: ParsedRosterEntity[] = []

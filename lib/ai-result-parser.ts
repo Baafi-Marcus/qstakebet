@@ -1,8 +1,5 @@
 import "server-only"
 
-// Token logic moved to getActiveKey
-const endpoint = "https://models.inference.ai.azure.com/chat/completions"
-
 export interface ParsedResult {
     team1: string
     team2: string
@@ -31,7 +28,7 @@ export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> 
 
     while (attempts < maxAttempts) {
         attempts++;
-        const token = await getActiveKey("github_models");
+        const token = await getActiveKey("gemini");
 
         if (!token) {
             console.error("No available API keys.");
@@ -39,18 +36,17 @@ export async function parseResultsWithAI(text: string): Promise<ParsedResult[]> 
         }
 
         try {
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a high-precision sports result extractor. Your task is to extract match results from the provided text.
-                            
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${token}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    signal: AbortSignal.timeout(60000),
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are a high-precision sports result extractor. Your task is to extract match results from the provided text.
+
 Rules:
 1. Return ONLY a valid JSON array. No conversational text, no "Here is your JSON".
 2. If match results are ambiguous, make your best professional guess based on the phrasing.
@@ -75,24 +71,21 @@ Rules:
 ]
 5. If the score is missing but a winner is mentioned, include the winner and leave scores null.
 6. Extract Half-Time (HT) vs Full-Time (FT) scores if explicitly mentioned (e.g., "1-0 at HT, 3-1 FT").
-7. Extract period-specific winners or special event outcomes if mentioned (e.g., "Round 1 winner: X", "Q1: 12-10").`
-                        },
-                        {
-                            role: "user",
-                            content: `Extract match results from this text and return as JSON array:\n\n${text}`
-                        }
-                    ],
-                    model: "gpt-4o",
-                    temperature: 0.1,
-                    max_tokens: 2000,
-                    response_format: { type: "json_object" } // Try to force JSON if supported, though we wrap in array. Actually gpt-4o supports it.
-                })
-            })
+7. Extract period-specific winners or special event outcomes if mentioned (e.g., "Round 1 winner: X", "Q1: 12-10").
+
+Text:
+${text}`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                    })
+                }
+            )
 
 
             if (!response.ok) {
-                // If 429 (Too Many Requests) or 401 (Unauthorized), report error and retry
-                if (response.status === 429 || response.status === 401) {
+                // If 429 (Too Many Requests) or auth errors, report error and retry
+                if (response.status === 429 || response.status === 401 || response.status === 403) {
                     console.warn(`AI Request failed with ${response.status}. Switching key...`);
                     await reportKeyError(token);
                     continue; // Retry loop will get new key
@@ -100,8 +93,10 @@ Rules:
                 throw new Error(`AI request failed: ${response.status}`)
             }
 
-            const result = await response.json() as { choices: Array<{ message: { content: string } }> }
-            const content = result.choices[0]?.message?.content || "[]"
+            const result = await response.json() as {
+                candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+            }
+            const content = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]"
 
             // Extract JSON from response (handle markdown code blocks)
             const jsonMatch = content.match(/\[[\s\S]*\]/)
@@ -250,22 +245,21 @@ export async function getAIMarketSuggestions(
 
     while (attempts < maxAttempts) {
         attempts++;
-        const token = await getActiveKey("github_models");
+        const token = await getActiveKey("gemini");
         if (!token) return [];
 
         try {
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a professional sports bookmaker for a diverse campus tournament. Generate 3-5 creative, high-engagement betting markets for this match.
-                        
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${token}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    signal: AbortSignal.timeout(60000),
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are a professional sports bookmaker for a diverse campus tournament. Generate 3-5 creative, high-engagement betting markets for this match.
+
 Rules:
 1. **Sport Awareness**: The tournament includes Football, Basketball, Athletics, and Quiz competitions. Tailor your suggestions to the specific sport mentioned.
 2. **Standard Keys**: For common markets, use these EXACT keys in your JSON object:
@@ -280,29 +274,28 @@ Rules:
 6. **Format**: Return ONLY valid JSON array of objects.
    [{"marketName": "Total Corners", "selections": [{"label": "Over 10.5", "odds": 1.85}, {"label": "Under 10.5", "odds": 1.85}]}]
 7. **Realism**: Odds must be realistic for the specific schools and sports mentioned.
-8. **Tournament Awareness**: Use the provided 'Tournament Context' (recent results) to influence your markets. For example, if a team has been scoring high, suggest 'Over' markets or 'Next Goal' specials for them. If a team is on a losing streak, adjust their odds and suggest 'Double Chance' for their opponents.`
-                        },
-                        {
-                            role: "user",
-                            content: `Create markets for: ${matchDetails}`
-                        }
-                    ],
-                    model: "gpt-4o",
-                    temperature: 0.7, // Higher creativity
-                    max_tokens: 1500
-                })
-            })
+8. **Tournament Awareness**: Use the provided 'Tournament Context' (recent results) to influence your markets. For example, if a team has been scoring high, suggest 'Over' markets or 'Next Goal' specials for them. If a team is on a losing streak, adjust their odds and suggest 'Double Chance' for their opponents.
+
+Create markets for: ${matchDetails}`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.7, responseMimeType: "application/json" }
+                    })
+                }
+            )
 
             if (!response.ok) {
-                if (response.status === 429 || response.status === 401) {
+                if (response.status === 429 || response.status === 401 || response.status === 403) {
                     await reportKeyError(token);
                     continue;
                 }
                 throw new Error(`AI request failed: ${response.status}`)
             }
 
-            const result = await response.json() as { choices: Array<{ message: { content: string } }> }
-            const content = result.choices[0]?.message?.content || "[]"
+            const result = await response.json() as {
+                candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+            }
+            const content = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]"
 
             // Extract JSON
             const jsonMatch = content.match(/\[[\s\S]*\]/)
