@@ -1208,7 +1208,24 @@ type AiContestResult = {
 }
 
 function normalizeSchoolName(name: string) {
-    return name.toLowerCase().replace(/[^a-z0-9]/g, "")
+    return name.toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .replace(/shts$/, "shs")   // SHTS ↔ SHS
+        .replace(/ths$/, "shs")    // THS ↔ SHS
+        .replace(/technical$/, "") // drop "technical" suffix
+        .replace(/tech$/, "")      // drop "tech" suffix
+}
+
+function schoolMatchesSegment(schoolKey: string, segmentLower: string): boolean {
+    if (segmentLower.includes(schoolKey)) return true;
+    const firstWord = schoolKey.split(" ")[0];
+    if (firstWord.length >= 3 && segmentLower.includes(firstWord)) return true;
+    // Try first 5 chars for abbreviations
+    if (schoolKey.length > 5 && segmentLower.includes(schoolKey.slice(0, 5))) return true;
+    // Also check with SHTS/SHS variants
+    const shtsVariant = schoolKey.endsWith("shs") ? schoolKey + "t" : schoolKey;
+    const shsVariant = schoolKey.endsWith("shts") ? schoolKey.slice(0, -1) : schoolKey;
+    return segmentLower.includes(shtsVariant) || segmentLower.includes(shsVariant);
 }
 
 function buildPrompt(text: string, participants: any[]) {
@@ -1513,6 +1530,7 @@ export async function batchExtractResults(text: string): Promise<{
     success: boolean
     results?: BatchResult[]
     error?: string
+    warning?: string
 }> {
     try {
         if (!text.trim()) return { success: false, error: "No coverage text provided" };
@@ -1556,10 +1574,7 @@ export async function batchExtractResults(text: string): Promise<{
 
             for (const mi of matchInfos) {
                 const hits = mi.schoolKeys.filter(sk =>
-                    lowerSeg.includes(sk) ||
-                    lowerSeg.includes(sk.split(" ")[0]) ||
-                    // Also try first 5 chars for shortened names
-                    (sk.length > 5 && lowerSeg.includes(sk.slice(0, 5)))
+                    schoolMatchesSegment(sk, lowerSeg)
                 ).length;
                 if (hits > bestCount) {
                     bestCount = hits;
@@ -1576,6 +1591,7 @@ export async function batchExtractResults(text: string): Promise<{
         // 5. Extract per matched contest using existing extraction
         const { callLLM } = await import("./ai-client");
         const results: BatchResult[] = [];
+        const skipped: string[] = [];
 
         for (const mi of matchInfos) {
             const chunks = contestChunks[mi.id];
@@ -1583,7 +1599,11 @@ export async function batchExtractResults(text: string): Promise<{
 
             const contestText = chunks.join("\n\n");
             const extracted = await extractMatchResultFromText(contestText, mi.id);
-            if (!extracted.success || !extracted.customScores) continue;
+            if (!extracted.success || !extracted.customScores) {
+                skipped.push(mi.participants.map((p: any) => p.name).join(" vs "));
+                console.warn(`[batch] skipped ${mi.id}: ${extracted.error || "no scores"}`);
+                continue;
+            }
 
             results.push({
                 matchId: mi.id,
@@ -1601,7 +1621,11 @@ export async function batchExtractResults(text: string): Promise<{
             return { success: false, error: "Could not match any coverage to pending contests. Check that school names in the coverage match the database." };
         }
 
-        return { success: true, results };
+        const warning = skipped.length > 0
+            ? ` (${skipped.length} contest${skipped.length === 1 ? "" : "s"} failed extraction — retry by pasting again)`
+            : "";
+
+        return { success: true, results, warning: warning || undefined };
     } catch (error: any) {
         console.error("Batch extraction error:", error);
         return { success: false, error: error.message || "Batch extraction failed" };

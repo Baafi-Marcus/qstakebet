@@ -170,7 +170,8 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
             const res = await batchExtractResults(batchText)
             if (res.success && res.results) {
                 setBatchResults(res.results)
-                setBatchMessage({ type: "success", text: `Detected ${res.results.length} contest${res.results.length === 1 ? "" : "s"} — review and apply.` })
+                const warn = res.warning ? ` ${res.warning}` : ""
+                setBatchMessage({ type: "success", text: `Detected ${res.results.length} contest${res.results.length === 1 ? "" : "s"} — review and apply.${warn}` })
             } else {
                 setBatchMessage({ type: "error", text: res.error || "Failed to extract" })
             }
