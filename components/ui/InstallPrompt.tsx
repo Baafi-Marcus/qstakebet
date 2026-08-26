@@ -23,6 +23,8 @@ export function InstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
 
     useEffect(() => {
+        if (pathname.startsWith("/admin")) return
+
         let dismissed = false
         try {
             dismissed = localStorage.getItem(DISMISS_KEY) === "1"
@@ -50,7 +52,7 @@ export function InstallPrompt() {
             clearTimeout(timer)
             window.removeEventListener("beforeinstallprompt", onBeforeInstall)
         }
-    }, [])
+    }, [pathname])
 
     useEffect(() => {
         if (!visible) return
