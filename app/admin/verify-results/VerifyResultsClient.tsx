@@ -20,6 +20,7 @@ type Extracted = {
     customScores: Record<string, number>
     winnerSchoolId: string | null
     rounds: { label: string, scores: Record<string, number> }[]
+    isFinal: boolean
 }
 
 type VerifyResultsClientProps = {
@@ -31,7 +32,10 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
     const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
 
     const [aiText, setAiText] = useState("")
+    const [transcript, setTranscript] = useState("")
+    const [pasteCount, setPasteCount] = useState(0)
     const [extracted, setExtracted] = useState<Extracted | null>(null)
+    const [forceFinal, setForceFinal] = useState(false)
     const [isExtracting, startExtractTransition] = useTransition()
     const [isPending, startSettleTransition] = useTransition()
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -39,31 +43,59 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
     const handleSelectMatch = (match: Match) => {
         setSelectedMatch(match)
         setAiText("")
+        setTranscript("")
+        setPasteCount(0)
         setExtracted(null)
+        setForceFinal(false)
         setMessage(null)
     }
 
-    const handleExtractScores = () => {
-        if (!selectedMatch || !aiText.trim()) return
+    const runExtraction = (fullCoverage: string) => {
+        if (!selectedMatch || !fullCoverage.trim()) return
 
         startExtractTransition(async () => {
-            const res = await extractMatchResultFromText(aiText, selectedMatch.id)
+            const res = await extractMatchResultFromText(fullCoverage, selectedMatch.id)
             if (res.success && res.customScores) {
                 setExtracted({
                     customScores: res.customScores,
                     winnerSchoolId: (res as any).winnerSchoolId ?? null,
-                    rounds: (res as any).rounds || []
+                    rounds: (res as any).rounds || [],
+                    isFinal: (res as any).isFinal === true
                 })
-                setMessage({ type: "success", text: "AI extracted the results. Review below, then verify to distribute points." })
+                setMessage({ type: "success", text: "AI updated the running result from your coverage." })
             } else {
-                setExtracted(null)
                 setMessage({ type: "error", text: res.error || "Failed to extract scores from text" })
             }
         })
     }
 
+    const handleAddPaste = () => {
+        if (!selectedMatch) return
+        const chunk = aiText.trim()
+        if (!chunk && transcript) {
+            // No new text — just re-extract from existing coverage
+            runExtraction(transcript)
+            return
+        }
+        if (!chunk) return
+
+        const next = transcript ? `${transcript}\n\n---\n\n${chunk}` : chunk
+        setTranscript(next)
+        setAiText("")
+        setPasteCount(c => c + 1)
+        runExtraction(next)
+    }
+
+    const handleClearCoverage = () => {
+        setTranscript("")
+        setPasteCount(0)
+        setExtracted(null)
+        setForceFinal(false)
+        setMessage(null)
+    }
+
     const handleSettle = () => {
-        if (!selectedMatch || !extracted) return
+        if (!selectedMatch || !extracted || (!extracted.isFinal && !forceFinal)) return
 
         startSettleTransition(async () => {
             const result = await applyMatchResult(selectedMatch.id, extracted)
@@ -142,22 +174,38 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                             <p className="text-xs text-slate-500 mt-1">Round-by-round updates or a final summary — the AI picks out what matters.</p>
                         </div>
 
+                        {/* Coverage status */}
+                        {transcript && (
+                            <div className="flex items-center justify-between bg-slate-950 border border-white/5 rounded-xl px-4 py-2.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Clipboard className="h-3.5 w-3.5 text-purple-400" />
+                                    Coverage built from {pasteCount} paste{pasteCount === 1 ? "" : "s"} · {transcript.length.toLocaleString()} chars
+                                </span>
+                                <button
+                                    onClick={handleClearCoverage}
+                                    className="text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                                >
+                                    Reset
+                                </button>
+                            </div>
+                        )}
+
                         {/* Paste Box */}
                         <textarea
                             value={aiText}
                             onChange={(e) => setAiText(e.target.value)}
-                            placeholder={`Paste the live tweets / contest summary here...\n\ne.g.\nEnd of Round 1: Prempeh 12, Mfantsipim 9\nRound 2: Prempeh 21, Mfantsipim 19\nFinal: Prempeh 46, Mfantsipim 41 — Prempeh wins!`}
-                            className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all min-h-[180px] resize-y font-mono"
+                            placeholder={`Paste the latest round here as it drops...\n\ne.g.\nEnd of Round 3: Prempeh 38, Mfantsipim 30\n\nYou can paste round by round — the AI keeps a running result and unlocks settlement once finals are in.`}
+                            className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all min-h-[140px] resize-y font-mono"
                         />
 
                         <div className="flex justify-end">
                             <button
-                                onClick={handleExtractScores}
-                                disabled={isExtracting || !aiText.trim()}
+                                onClick={handleAddPaste}
+                                disabled={isExtracting || (!aiText.trim() && !transcript)}
                                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                             >
                                 <Sparkles className="h-4 w-4" />
-                                {isExtracting ? "Reading the contest..." : "Extract with AI"}
+                                {isExtracting ? "Reading the contest..." : aiText.trim() ? (transcript ? "Add Round & Update Result" : "Extract with AI") : "Re-extract"}
                             </button>
                         </div>
 
@@ -174,13 +222,22 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                                         <span className="text-[10px] font-black uppercase tracking-widest text-purple-400 flex items-center gap-1.5">
                                             <Clipboard className="h-3.5 w-3.5" /> Extracted Result
                                         </span>
-                                        <button
-                                            onClick={() => setExtracted(null)}
-                                            className="p-1 rounded-lg hover:bg-white/5 text-slate-500 hover:text-slate-300 cursor-pointer"
-                                            title="Discard extraction"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[8px] font-black uppercase px-2 py-1 rounded border ${
+                                                extracted.isFinal
+                                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                                                    : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                                            }`}>
+                                                {extracted.isFinal ? "Final result" : `Running · R${extracted.rounds.length || "?"}`}
+                                            </span>
+                                            <button
+                                                onClick={() => setExtracted(null)}
+                                                className="p-1 rounded-lg hover:bg-white/5 text-slate-500 hover:text-slate-300 cursor-pointer"
+                                                title="Discard extraction"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2">
@@ -221,6 +278,20 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                                         </div>
                                     )}
 
+                                    {!extracted.isFinal && (
+                                        <label className="flex items-center gap-2 pt-2 border-t border-white/5 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={forceFinal}
+                                                onChange={(e) => setForceFinal(e.target.checked)}
+                                                className="accent-purple-500 h-3.5 w-3.5"
+                                            />
+                                            <span className="text-[10px] text-slate-400 font-bold">
+                                                Coverage looks partial — keep pasting rounds as they drop, or tick to treat this as final anyway.
+                                            </span>
+                                        </label>
+                                    )}
+
                                     {!winnerName && (
                                         <p className="text-[10px] text-amber-400/80 font-bold">
                                             No clear winner detected — win bonuses will only apply if one school finishes strictly ahead.
@@ -252,11 +323,11 @@ export function VerifyResultsClient({ initialMatches }: VerifyResultsClientProps
                             </button>
                             <button
                                 onClick={handleSettle}
-                                disabled={isPending || !extracted}
+                                disabled={isPending || !extracted || (!extracted.isFinal && !forceFinal)}
                                 className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                             >
                                 <Trophy className="h-4 w-4" />
-                                {isPending ? "Settling..." : "Verify & Distribute Points"}
+                                {isPending ? "Settling..." : extracted && !extracted.isFinal && !forceFinal ? "Waiting for finals..." : "Verify & Distribute Points"}
                             </button>
                         </div>
 

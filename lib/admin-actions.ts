@@ -1203,6 +1203,7 @@ type ParsedRound = { label: string, scores: Record<string, number> }
 type AiContestResult = {
     scores: { schoolName: string, score: number }[]
     winnerName: string | null
+    isFinal?: boolean
     rounds?: { label: string, scores: Record<string, string | number> }[]
 }
 
@@ -1244,15 +1245,17 @@ export async function extractMatchResultFromText(text: string, matchId: string) 
                                     text: `You are an NSMQ (Ghana National Science & Maths Quiz) result extractor.
 The user gives you raw social media coverage of ONE contest between listed schools.
 The text may be round-by-round updates posted during the contest, or a single end-of-contest summary.
+It may be PARTIAL coverage (only some rounds so far, contest still ongoing).
 Extract the important facts and IGNORE everything else (replies, hashtags, commentary).
 
 Return ONLY valid JSON in this exact shape:
-{"scores": [{"schoolName": "<school name>", "score": <final total>}], "winnerName": "<winning school or null>", "rounds": [{"label": "<round label>", "scores": {"<school name>": <points that round>}}]}
+{"scores": [{"schoolName": "<school name>", "score": <latest known total>}], "winnerName": "<winning school or null>", "isFinal": <true|false>, "rounds": [{"label": "<round label>", "scores": {"<school name>": <points that round>}}]}
 
 Rules:
-- "scores" must contain exactly one entry per participating school with its FINAL total score.
-- If the text only gives round-by-round running totals, each school's final total is the LAST value shown for it.
-- Include "rounds" only when round-level data is present; otherwise use [].
+- "scores" must contain exactly one entry per participating school with its LATEST KNOWN total score.
+- "isFinal" must be true ONLY if the coverage clearly includes end-of-contest results or an announced winner/qualification statement. If the contest appears ongoing or incomplete, set it to false.
+- When multiple values exist for the same school across rounds, the latest one wins.
+- Include "rounds" entries for every distinct round mentioned in the coverage.
 - Use school names EXACTLY as given in the participant list where possible.
 
 Participating schools:
@@ -1331,7 +1334,7 @@ ${text}`
             )
         })).filter(r => Object.keys(r.scores).length > 0);
 
-        return { success: true, customScores, winnerSchoolId, rounds };
+        return { success: true, customScores, winnerSchoolId, rounds, isFinal: parsed.isFinal === true };
     } catch (error: any) {
         console.error("Error extracting text:", error);
         return { success: false, error: error.message || "Failed to extract result" };
