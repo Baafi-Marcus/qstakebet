@@ -2,12 +2,12 @@ import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
-// Shift One-Eighth Stage fixtures (m50-m76) forward one day:
-//   Aug 26 -> Aug 27, Aug 27 -> Aug 28, Aug 28 -> Aug 29
+// Shift One-Eighth Stage fixtures (m50-m76) back one day:
+//   Aug 27 -> Aug 26, Aug 28 -> Aug 27, Aug 29 -> Aug 28
 // Keeps 9 contests per day and preserves kickoff times + venue rotation.
 // Also remaps any drafted fantasy_lineups to the new gameWeek labels.
 
-const SHIFT_DAYS = 1;
+const SHIFT_DAYS = -1;
 
 async function run() {
     if (!process.env.DATABASE_URL) throw new Error('No DATABASE_URL');
@@ -50,9 +50,9 @@ async function run() {
     `;
 
     // Remap lineups newest-first to avoid label collisions
-    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-29' WHERE game_week = 'Matchday 2026-08-28'`;
-    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-28' WHERE game_week = 'Matchday 2026-08-27'`;
-    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-27' WHERE game_week = 'Matchday 2026-08-26'`;
+    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-28' WHERE game_week = 'Matchday 2026-08-29'`;
+    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-27' WHERE game_week = 'Matchday 2026-08-28'`;
+    await sql`UPDATE fantasy_lineups SET game_week = 'Matchday 2026-08-26' WHERE game_week = 'Matchday 2026-08-27'`;
 
     const after = await sql`
         SELECT DATE(scheduled_at) AS d, COUNT(*)::int AS cnt
