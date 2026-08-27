@@ -17,6 +17,9 @@ export const navItems = [
     { name: "Live Dashboard", href: "/admin/live", icon: Radio },
     { name: "Live Odds", href: "/admin/matches", icon: Activity },
     { name: "Match Log", href: "/admin/matches/log", icon: Swords },
+    { name: "Quarter-Finals", href: "/admin/quarter-finals", icon: Trophy },
+    { name: "Semi-Finals", href: "/admin/semi-final", icon: Trophy },
+    { name: "Grand Final", href: "/admin/grand-final", icon: Trophy },
 ]
 
 export function AdminSidebar() {

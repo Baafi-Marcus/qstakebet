@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { users, schools, fantasyLineups, matches } from "@/lib/db/schema"
+import { users, schools, fantasyLineups, matches, quarterFinalPredictions, semiFinalPredictions, grandFinalPredictions } from "@/lib/db/schema"
 import { eq, and, or, desc, sql, inArray, asc } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
@@ -617,3 +617,327 @@ export async function getFantasyGameWeeks() {
     }
 }
 
+// ============================================
+// QUARTER-FINAL PREDICTOR
+// ============================================
+
+export async function getQuarterFinalPrediction(userId: string) {
+    try {
+        const result = await db.select()
+            .from(quarterFinalPredictions)
+            .where(eq(quarterFinalPredictions.userId, userId))
+            .limit(1);
+            
+        return result.length > 0 ? result[0] : null;
+    } catch (error) {
+        console.error("Error in getQuarterFinalPrediction:", error);
+        return null;
+    }
+}
+
+export async function saveQuarterFinalPrediction(
+    predictions: { matchId: string; predictedWinnerId: string }[],
+    wildcardMatchId: string | null,
+    masterPickSchoolId: string | null
+) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: "Please log in to save predictions" };
+        }
+        const userId = session.user.id;
+
+        // Fetch existing to check if locked
+        const existing = await getQuarterFinalPrediction(userId);
+        if (existing?.isLocked) {
+            return { success: false, error: "Your predictions are already locked and cannot be changed." };
+        }
+
+        // Global deadline check
+        const qfMatches = await db.select()
+            .from(matches)
+            .where(eq(matches.stage, "Quarter Final"))
+            .orderBy(asc(matches.scheduledAt));
+
+        if (qfMatches.length > 0) {
+            const firstMatch = qfMatches[0];
+            const now = new Date();
+            if (firstMatch.scheduledAt && now >= firstMatch.scheduledAt) {
+                 return { success: false, error: "The global deadline for Quarter-Final predictions has passed." };
+            }
+        }
+
+        const id = existing?.id || `qfp-${Math.random().toString(36).substr(2, 9)}`;
+
+        if (existing) {
+            await db.update(quarterFinalPredictions)
+                .set({
+                    predictions,
+                    wildcardMatchId,
+                    masterPickSchoolId,
+                    updatedAt: new Date(),
+                })
+                .where(eq(quarterFinalPredictions.id, existing.id));
+        } else {
+            await db.insert(quarterFinalPredictions).values({
+                id,
+                userId,
+                predictions,
+                wildcardMatchId,
+                masterPickSchoolId,
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in saveQuarterFinalPrediction:", error);
+        return { success: false, error: error.message || "Failed to save predictions" };
+    }
+}
+
+export async function getQuarterFinalLeaderboard() {
+    try {
+        const results = await db.select({
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
+            almaMater: users.almaMater,
+            points: quarterFinalPredictions.pointsEarned,
+            predictions: quarterFinalPredictions.predictions,
+        })
+            .from(quarterFinalPredictions)
+            .innerJoin(users, eq(quarterFinalPredictions.userId, users.id))
+            .orderBy(desc(quarterFinalPredictions.pointsEarned))
+            .limit(100);
+
+        return results;
+    } catch (error) {
+        console.error("Error in getQuarterFinalLeaderboard:", error);
+        return [];
+    }
+}
+
+// ============================================
+// SEMI-FINAL PREDICTOR (CONFIDENCE CHALLENGE)
+// ============================================
+
+export async function getSemiFinalPrediction(userId: string) {
+    try {
+        const result = await db.select()
+            .from(semiFinalPredictions)
+            .where(eq(semiFinalPredictions.userId, userId))
+            .limit(1);
+            
+        return result.length > 0 ? result[0] : null;
+    } catch (error) {
+        console.error("Error in getSemiFinalPrediction:", error);
+        return null;
+    }
+}
+
+export async function saveSemiFinalPrediction(
+    predictions: { matchId: string; predictedWinnerId: string; confidence: number }[]
+) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: "Please log in to save predictions" };
+        }
+        const userId = session.user.id;
+
+        // Fetch existing to check if locked
+        const existing = await getSemiFinalPrediction(userId);
+        if (existing?.isLocked) {
+            return { success: false, error: "Your predictions are already locked and cannot be changed." };
+        }
+
+        // Global deadline check
+        const sfMatches = await db.select()
+            .from(matches)
+            .where(eq(matches.stage, "Semi Final"))
+            .orderBy(asc(matches.scheduledAt));
+
+        if (sfMatches.length > 0) {
+            const firstMatch = sfMatches[0];
+            const now = new Date();
+            if (firstMatch.scheduledAt && now >= firstMatch.scheduledAt) {
+                 return { success: false, error: "The global deadline for Semi-Final predictions has passed." };
+            }
+        }
+
+        // Validation: Confidence multipliers
+        if (predictions.length !== sfMatches.length && sfMatches.length > 0) {
+            return { success: false, error: `You must predict a winner for all ${sfMatches.length} Semi-Final contests.` };
+        }
+
+        const confidences = predictions.map(p => p.confidence).sort((a, b) => a - b);
+        const expectedConfidences = [1, 2, 3];
+        const isValidConfidences = confidences.length === expectedConfidences.length && 
+            confidences.every((val, index) => val === expectedConfidences[index]);
+
+        if (!isValidConfidences) {
+            return { success: false, error: "You must use each confidence multiplier (1x, 2x, 3x) exactly once." };
+        }
+
+        const id = existing?.id || `sfp-${Math.random().toString(36).substr(2, 9)}`;
+
+        if (existing) {
+            await db.update(semiFinalPredictions)
+                .set({
+                    predictions,
+                    updatedAt: new Date(),
+                })
+                .where(eq(semiFinalPredictions.id, existing.id));
+        } else {
+            await db.insert(semiFinalPredictions).values({
+                id,
+                userId,
+                predictions,
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in saveSemiFinalPrediction:", error);
+        return { success: false, error: error.message || "Failed to save predictions" };
+    }
+}
+
+export async function getSemiFinalLeaderboard() {
+    try {
+        const results = await db.select({
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
+            almaMater: users.almaMater,
+            points: semiFinalPredictions.pointsEarned,
+            predictions: semiFinalPredictions.predictions,
+        })
+            .from(semiFinalPredictions)
+            .innerJoin(users, eq(semiFinalPredictions.userId, users.id))
+            .orderBy(desc(semiFinalPredictions.pointsEarned))
+            .limit(100);
+
+        return results;
+    } catch (error) {
+        console.error("Error in getSemiFinalLeaderboard:", error);
+        return [];
+    }
+}
+
+// ============================================
+// GRAND FINAL PREDICTOR (ULTIMATE PREDICTOR)
+// ============================================
+
+export async function getGrandFinalPrediction(userId: string) {
+    try {
+        const result = await db.select()
+            .from(grandFinalPredictions)
+            .where(eq(grandFinalPredictions.userId, userId))
+            .limit(1);
+            
+        return result.length > 0 ? result[0] : null;
+    } catch (error) {
+        console.error("Error in getGrandFinalPrediction:", error);
+        return null;
+    }
+}
+
+export async function saveGrandFinalPrediction(
+    championSchoolId: string,
+    runnerUpSchoolId: string,
+    marginRange: string,
+    finalBoost: string
+) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: "Please log in to save predictions" };
+        }
+        const userId = session.user.id;
+
+        // Fetch existing to check if locked
+        const existing = await getGrandFinalPrediction(userId);
+        if (existing?.isLocked) {
+            return { success: false, error: "Your final predictions are already locked and cannot be changed." };
+        }
+
+        // Global deadline check
+        const gfMatches = await db.select()
+            .from(matches)
+            .where(eq(matches.stage, "Final"))
+            .limit(1);
+
+        if (gfMatches.length > 0) {
+            const firstMatch = gfMatches[0];
+            const now = new Date();
+            if (firstMatch.scheduledAt && now >= firstMatch.scheduledAt) {
+                 return { success: false, error: "The global deadline for Grand Final predictions has passed." };
+            }
+        }
+
+        // Validation
+        if (!championSchoolId || !runnerUpSchoolId || !marginRange || !finalBoost) {
+            return { success: false, error: "Please make selections for Champion, Runner-Up, Margin, and Final Boost." };
+        }
+
+        if (championSchoolId === runnerUpSchoolId) {
+            return { success: false, error: "The selected Runner-Up cannot be the same school selected as Champion." };
+        }
+
+        const validMargins = ['1-5', '6-10', '11-20', '21-30', '31+'];
+        if (!validMargins.includes(marginRange)) {
+            return { success: false, error: "Invalid margin range selected." };
+        }
+
+        const validBoosts = ['champion', 'runner_up', 'margin'];
+        if (!validBoosts.includes(finalBoost)) {
+            return { success: false, error: "Invalid final boost target." };
+        }
+
+        const id = existing?.id || `gfp-${Math.random().toString(36).substr(2, 9)}`;
+
+        if (existing) {
+            await db.update(grandFinalPredictions)
+                .set({
+                    championSchoolId,
+                    runnerUpSchoolId,
+                    marginRange,
+                    finalBoost,
+                    updatedAt: new Date(),
+                })
+                .where(eq(grandFinalPredictions.id, existing.id));
+        } else {
+            await db.insert(grandFinalPredictions).values({
+                id,
+                userId,
+                championSchoolId,
+                runnerUpSchoolId,
+                marginRange,
+                finalBoost,
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in saveGrandFinalPrediction:", error);
+        return { success: false, error: error.message || "Failed to save predictions" };
+    }
+}
+
+export async function getGrandFinalLeaderboard() {
+    try {
+        const results = await db.select({
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
+            almaMater: users.almaMater,
+            points: grandFinalPredictions.pointsEarned,
+            championSchoolId: grandFinalPredictions.championSchoolId,
+            runnerUpSchoolId: grandFinalPredictions.runnerUpSchoolId,
+        })
+            .from(grandFinalPredictions)
+            .innerJoin(users, eq(grandFinalPredictions.userId, users.id))
+            .orderBy(desc(grandFinalPredictions.pointsEarned))
+            .limit(100);
+
+        return results;
+    } catch (error) {
+        console.error("Error in getGrandFinalLeaderboard:", error);
+        return [];
+    }
+}

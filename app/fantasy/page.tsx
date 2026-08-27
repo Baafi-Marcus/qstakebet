@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { schools } from "@/lib/db/schema"
+import { schools, matches } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import { getUserLineup, getUserLineupHistory, getFantasyStages, getParticipatingSchoolsForStage } from "@/lib/fantasy-actions"
 import { FantasyClient } from "./FantasyClient"
 
@@ -32,6 +33,12 @@ export default async function FantasyPage() {
         nextLineup = await getUserLineup(session.user.id, stages.nextStage.gameWeek)
     }
 
+    const [qfMatches, sfMatches, gfMatches] = await Promise.all([
+        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Quarter Final")).limit(1),
+        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Semi Final")).limit(1),
+        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Final")).limit(1)
+    ])
+
     return (
         <div className="min-h-screen bg-background text-foreground">
             <FantasyClient
@@ -41,6 +48,9 @@ export default async function FantasyPage() {
                 nextSchools={nextSchools}
                 nextLineup={nextLineup}
                 lineupHistory={lineupHistory}
+                hasQF={qfMatches.length > 0}
+                hasSF={sfMatches.length > 0}
+                hasGF={gfMatches.length > 0}
             />
         </div>
     )

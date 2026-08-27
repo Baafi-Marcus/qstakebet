@@ -1,0 +1,362 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { saveSemiFinalPrediction } from "@/lib/fantasy-actions"
+import { Trophy, Star, Flame, Clock, Lock, CheckCircle2 } from "lucide-react"
+
+type School = {
+    id: string
+    name: string
+    actualScore?: number | null
+}
+
+type Contest = {
+    id: string
+    scheduledAt: Date | null
+    status: string
+    actualWinnerId: string | null
+    schools: School[]
+}
+
+type Prediction = {
+    matchId: string
+    predictedWinnerId: string
+    confidence: number | null
+}
+
+export default function SemiFinalClient({
+    contests,
+    initialPrediction,
+    isLocked,
+    deadline
+}: {
+    contests: Contest[]
+    initialPrediction: any
+    isLocked: boolean
+    deadline: string | null
+}) {
+    // Standardize initial predictions structure
+    const initialPreds: Prediction[] = contests.map(c => {
+        const existing = (initialPrediction?.predictions || []).find((p: any) => p.matchId === c.id);
+        return {
+            matchId: c.id,
+            predictedWinnerId: existing?.predictedWinnerId || "",
+            confidence: existing?.confidence || null
+        };
+    });
+
+    const [predictions, setPredictions] = useState<Prediction[]>(initialPreds)
+    const [isSaving, setIsSaving] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState(false)
+    const [timeLeft, setTimeLeft] = useState("")
+
+    useEffect(() => {
+        if (!deadline || isLocked) return;
+        const target = new Date(deadline).getTime();
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                setTimeLeft("Locked");
+                return;
+            }
+
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setTimeLeft(`Predictions close in ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [deadline, isLocked]);
+
+    const handleSelectWinner = (matchId: string, schoolId: string) => {
+        if (isLocked) return
+
+        setPredictions(prev => prev.map(p => {
+            if (p.matchId === matchId) {
+                return { ...p, predictedWinnerId: schoolId };
+            }
+            return p;
+        }));
+        setError(null);
+    }
+
+    const handleSelectConfidence = (matchId: string, confidence: number) => {
+        if (isLocked) return
+
+        setPredictions(prev => prev.map(p => {
+            if (p.matchId === matchId) {
+                return { ...p, confidence };
+            }
+            // If another match already had this confidence level, clear it (shift strategy)
+            if (p.confidence === confidence) {
+                return { ...p, confidence: null };
+            }
+            return p;
+        }));
+        setError(null);
+    }
+
+    const getUsedConfidences = () => {
+        return predictions.map(p => p.confidence).filter((c): c is number => c !== null);
+    }
+
+    const usedConfidences = getUsedConfidences();
+    const remainingConfidences = [1, 2, 3].filter(c => !usedConfidences.includes(c));
+
+    const handleSave = async () => {
+        if (isLocked) return
+        
+        // Validation
+        const complete = predictions.every(p => p.predictedWinnerId && p.confidence !== null);
+        if (!complete) {
+            setError("Please select a winner and confidence level for all 3 Semi-Final contests.");
+            return;
+        }
+
+        setIsSaving(true)
+        setError(null)
+        setSuccess(false)
+
+        const formatted = predictions.map(p => ({
+            matchId: p.matchId,
+            predictedWinnerId: p.predictedWinnerId,
+            confidence: p.confidence as number
+        }));
+
+        const res = await saveSemiFinalPrediction(formatted)
+        setIsSaving(false)
+
+        if (res.success) {
+            setSuccess(true)
+            setTimeout(() => setSuccess(false), 3000)
+            window.location.reload(); // Refresh the page to reflect locked status or fresh state
+        } else {
+            setError(res.error || "Failed to save predictions.");
+        }
+    }
+
+    const getConfidenceLabel = (level: number | null) => {
+        if (level === 1) return "⚡ 1×";
+        if (level === 2) return "⭐ 2×";
+        if (level === 3) return "🔥 3×";
+        return "";
+    }
+
+    return (
+        <div className="space-y-6 text-white">
+            {isLocked ? (
+                <div className="bg-slate-900/80 border border-slate-700 p-4 rounded-xl flex items-start gap-3">
+                    <Lock className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-bold text-slate-200">Predictions Locked</h3>
+                        <p className="text-sm text-slate-400">The Semi-Final matches have started and your predictions are locked.</p>
+                    </div>
+                </div>
+            ) : (
+                deadline && (
+                    <div className="bg-purple-950/40 border border-purple-500/30 p-4 rounded-2xl flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-purple-400 animate-pulse" />
+                        <span className="text-sm font-extrabold tracking-wide uppercase text-purple-300">
+                            {timeLeft || "Loading deadline..."}
+                        </span>
+                    </div>
+                )
+            )}
+
+            {/* Error & Success Messages */}
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 text-sm font-semibold">
+                    {error}
+                </div>
+            )}
+
+            {/* Confidence remaining panel */}
+            {!isLocked && (
+                <div className="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <span className="text-xs font-black tracking-widest text-slate-400 uppercase">Multipliers Remaining:</span>
+                    <div className="flex gap-2">
+                        {[1, 2, 3].map(c => {
+                            const isUsed = usedConfidences.includes(c);
+                            return (
+                                <span 
+                                    key={c} 
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-black border transition-all ${
+                                        isUsed 
+                                            ? "bg-slate-800/40 text-slate-600 border-slate-900 line-through" 
+                                            : c === 1 ? "bg-blue-600/10 border-blue-500/30 text-blue-400"
+                                            : c === 2 ? "bg-amber-600/10 border-amber-500/30 text-amber-400"
+                                            : "bg-red-600/10 border-red-500/30 text-red-400 animate-pulse"
+                                    }`}
+                                >
+                                    {getConfidenceLabel(c)}
+                                </span>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Contests Grid */}
+            <div className="space-y-8">
+                {contests.map((contest, idx) => {
+                    const prediction = predictions.find(p => p.matchId === contest.id);
+                    const selectedWinnerId = prediction?.predictedWinnerId;
+                    const selectedConfidence = prediction?.confidence;
+                    const isFinished = contest.status === "finished";
+
+                    return (
+                        <div key={contest.id} className="bg-slate-900/30 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
+                            
+                            {/* Header info */}
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-xs font-black uppercase text-purple-400 tracking-wider">
+                                    Semi-Final {idx + 1}
+                                </span>
+                                {selectedConfidence && (
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase border ${
+                                        selectedConfidence === 1 ? "bg-blue-500/10 border-blue-500/25 text-blue-400"
+                                        : selectedConfidence === 2 ? "bg-amber-500/10 border-amber-500/25 text-amber-400"
+                                        : "bg-red-500/10 border-red-500/25 text-red-400"
+                                    }`}>
+                                        Confidence: {getConfidenceLabel(selectedConfidence)}
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="text-slate-300 text-sm font-bold mb-4">Who will win?</p>
+
+                            {/* Schools Selection */}
+                            <div className="flex flex-col gap-2.5">
+                                {contest.schools.map((school) => {
+                                    const isSelected = selectedWinnerId === school.id;
+                                    const isActualWinner = isFinished && contest.actualWinnerId === school.id;
+
+                                    return (
+                                        <button
+                                            key={school.id}
+                                            disabled={isLocked}
+                                            onClick={() => handleSelectWinner(contest.id, school.id)}
+                                            className={`w-full text-left p-4 rounded-xl flex items-center justify-between border transition-all ${
+                                                isSelected 
+                                                    ? 'bg-purple-600/10 border-purple-500 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)] font-black' 
+                                                    : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-purple-500' : 'border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                                </div>
+                                                <span>{school.name}</span>
+                                            </div>
+
+                                            {isFinished && isActualWinner && (
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                                                    Winner
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Confidence Selectors */}
+                            {selectedWinnerId && (
+                                <div className="mt-5 pt-5 border-t border-slate-800/80">
+                                    <p className="text-slate-300 text-xs font-bold mb-3">How confident are you?</p>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3].map(c => {
+                                            const isCurrent = selectedConfidence === c;
+                                            const isUsedElsewhere = usedConfidences.includes(c) && !isCurrent;
+                                            const disabled = isLocked || isUsedElsewhere;
+
+                                            return (
+                                                <button
+                                                    key={c}
+                                                    disabled={disabled}
+                                                    onClick={() => handleSelectConfidence(contest.id, c)}
+                                                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                        isCurrent
+                                                            ? c === 1 ? 'bg-blue-600 border-blue-500 text-white'
+                                                              : c === 2 ? 'bg-amber-500 border-amber-400 text-slate-950'
+                                                              : 'bg-red-500 border-red-400 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                                            : isUsedElsewhere
+                                                                ? 'bg-slate-800/20 border-slate-900 text-slate-600 cursor-not-allowed opacity-30'
+                                                                : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    {getConfidenceLabel(c)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Review Panel */}
+            {predictions.some(p => p.predictedWinnerId) && (
+                <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+                    <h3 className="text-lg font-black uppercase text-purple-400 tracking-wider mb-4 font-russo">
+                        Review Your Semi-Final Predictions
+                    </h3>
+                    <div className="divide-y divide-slate-800/80 mb-6">
+                        {contests.map((contest, idx) => {
+                            const pred = predictions.find(p => p.matchId === contest.id);
+                            const winner = contest.schools.find(s => s.id === pred?.predictedWinnerId);
+                            const conf = pred?.confidence;
+
+                            return (
+                                <div key={contest.id} className="py-3 flex items-center justify-between text-sm">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SF {idx + 1}</span>
+                                        <span className="font-bold text-slate-200">{winner ? winner.name : "Not selected"}</span>
+                                    </div>
+                                    <span className="text-slate-300 font-extrabold">
+                                        {conf ? getConfidenceLabel(conf) : <span className="text-slate-500 font-normal italic">No confidence selected</span>}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs text-slate-400 uppercase tracking-widest font-black mb-6">
+                        <span>Max possible score:</span>
+                        <span className="text-emerald-400 font-extrabold text-sm">120 points</span>
+                    </div>
+
+                    {!isLocked && (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !predictions.every(p => p.predictedWinnerId && p.confidence !== null)}
+                            className={`w-full py-4.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
+                                predictions.every(p => p.predictedWinnerId && p.confidence !== null)
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-600/30'
+                                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-900'
+                            }`}
+                        >
+                            {isSaving ? (
+                                'Locking predictions...'
+                            ) : success ? (
+                                <><CheckCircle2 className="w-5 h-5" /> Saved!</>
+                            ) : (
+                                <><Lock className="w-4 h-4" /> LOCK MY PREDICTIONS</>
+                            )}
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}

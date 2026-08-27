@@ -119,13 +119,23 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             {/* Quick Action Navigation */}
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border border-y border-border">
 
-                <Link href="/fantasy" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-accent/40 transition-colors">
-                    <BoltIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
-                    <div>
-                        <h3 className="font-extrabold text-base text-foreground">Draft Lineup</h3>
-                        <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Spend 100 virtual credits to draft exactly 3 schools. Adjust your team strategy weekly based on active matchups.</p>
-                    </div>
-                </Link>
+                {initialMatches.some(m => m.stage === "Quarter Final") ? (
+                    <Link href="/fantasy/quarter-final" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-amber-500/10 transition-colors">
+                        <TrophyIcon className="h-7 w-7 text-amber-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                        <div>
+                            <h3 className="font-extrabold text-base text-amber-500">Quarter-Final Predictor</h3>
+                            <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Predict the 9 winners, use your Wildcard and Master Pick to earn bonus points in the Quarter-Finals.</p>
+                        </div>
+                    </Link>
+                ) : (
+                    <Link href="/fantasy" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-accent/40 transition-colors">
+                        <BoltIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                        <div>
+                            <h3 className="font-extrabold text-base text-foreground">Draft Lineup</h3>
+                            <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Spend 100 virtual credits to draft exactly 3 schools. Adjust your team strategy weekly based on active matchups.</p>
+                        </div>
+                    </Link>
+                )}
 
                 <Link href="/chat" className="group flex items-start gap-4 py-6 sm:px-6 hover:bg-accent/40 transition-colors">
                     <ChatBubbleLeftRightIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />

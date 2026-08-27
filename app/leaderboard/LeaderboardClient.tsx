@@ -19,9 +19,15 @@ type GameWeekInfo = {
 type LeaderboardClientProps = {
     initialWeekly: LeaderboardRow[]
     initialLifetime: LeaderboardRow[]
+    initialQuarterFinal?: LeaderboardRow[]
+    initialSemiFinal?: LeaderboardRow[]
+    initialGrandFinal?: LeaderboardRow[]
     gameWeek: string
     allGameWeeks?: GameWeekInfo[]
     viewerAlmaMater?: string | null
+    isQFActive?: boolean
+    isSFActive?: boolean
+    isGFActive?: boolean
 }
 
 function getSchoolAcronym(name: string | null) {
@@ -49,10 +55,31 @@ function formatGameWeekLabel(gameWeek: string) {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 }
 
-export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, allGameWeeks, viewerAlmaMater }: LeaderboardClientProps) {
-    const [activeTab, setActiveTab] = useState<"weekly" | "lifetime">("weekly")
+export function LeaderboardClient({
+    initialWeekly,
+    initialLifetime,
+    initialQuarterFinal = [],
+    initialSemiFinal = [],
+    initialGrandFinal = [],
+    gameWeek,
+    allGameWeeks,
+    viewerAlmaMater,
+    isQFActive = false,
+    isSFActive = false,
+    isGFActive = false
+}: LeaderboardClientProps) {
+    const defaultTab = isGFActive ? "grand_final" 
+                     : isSFActive ? "semi_final" 
+                     : isQFActive ? "quarter_final" 
+                     : "weekly";
 
-    const data = activeTab === "weekly" ? initialWeekly : initialLifetime
+    const [activeTab, setActiveTab] = useState<"weekly" | "lifetime" | "quarter_final" | "semi_final" | "grand_final">(defaultTab)
+
+    const data = activeTab === "weekly" ? initialWeekly 
+               : activeTab === "quarter_final" ? initialQuarterFinal 
+               : activeTab === "semi_final" ? initialSemiFinal
+               : activeTab === "grand_final" ? initialGrandFinal
+               : initialLifetime
 
     const getRankIcon = (rank: number) => {
         switch (rank) {
@@ -103,17 +130,55 @@ export function LeaderboardClient({ initialWeekly, initialLifetime, gameWeek, al
             )}
 
             {/* Tab toggles */}
-            <div className="flex bg-card border border-border/50 p-1.5 rounded-2xl mb-6">
-                <button
-                    onClick={() => setActiveTab("weekly")}
-                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                        activeTab === "weekly"
-                            ? "bg-purple-600 text-white"
-                            : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                    <Star className="h-4 w-4 shrink-0" /> Matchday Standings
-                </button>
+            <div className="flex bg-card border border-border/50 p-1.5 rounded-2xl mb-6 flex-wrap md:flex-nowrap gap-1 md:gap-0">
+                {!isQFActive && !isSFActive && !isGFActive && (
+                    <button
+                        onClick={() => setActiveTab("weekly")}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeTab === "weekly"
+                                ? "bg-purple-600 text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Star className="h-4 w-4 shrink-0" /> Matchday Standings
+                    </button>
+                )}
+                {isQFActive && !isSFActive && !isGFActive && (
+                    <button
+                        onClick={() => setActiveTab("quarter_final")}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeTab === "quarter_final"
+                                ? "bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Trophy className="h-4 w-4 shrink-0" /> Quarter-Final
+                    </button>
+                )}
+                {isSFActive && !isGFActive && (
+                    <button
+                        onClick={() => setActiveTab("semi_final")}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeTab === "semi_final"
+                                ? "bg-pink-600 text-white font-black shadow-[0_0_15px_rgba(219,39,119,0.2)]"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Trophy className="h-4 w-4 shrink-0" /> Semi-Final
+                    </button>
+                )}
+                {isGFActive && (
+                    <button
+                        onClick={() => setActiveTab("grand_final")}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeTab === "grand_final"
+                                ? "bg-yellow-500 text-slate-950 font-black shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Trophy className="h-4 w-4 shrink-0" /> Grand Final
+                    </button>
+                )}
                 <button
                     onClick={() => setActiveTab("lifetime")}
                     className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${

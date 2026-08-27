@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { submitLineup, getLineupPointsExplanation } from "@/lib/fantasy-actions"
-import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive, ChartBarIcon as Chart, ArrowPathIcon as Loader2 } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive, ChartBarIcon as Chart, ArrowPathIcon as Loader2, FireIcon as Flame } from "@heroicons/react/24/solid";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type School = {
@@ -44,6 +44,9 @@ type FantasyClientProps = {
     nextSchools: School[];
     nextLineup: any | null;
     lineupHistory: SquadHistoryEntry[];
+    hasQF?: boolean;
+    hasSF?: boolean;
+    hasGF?: boolean;
 }
 
 const REGIONS = [
@@ -76,7 +79,7 @@ function formatStageLabel(gw: string): string {
     return gw
 }
 
-export function FantasyClient({ stages, currentSchools, currentLineup, nextSchools, nextLineup, lineupHistory }: FantasyClientProps) {
+export function FantasyClient({ stages, currentSchools, currentLineup, nextSchools, nextLineup, lineupHistory, hasQF = false, hasSF = false, hasGF = false }: FantasyClientProps) {
     const router = useRouter()
     
     // Determine which stage we are viewing
@@ -329,6 +332,78 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                     </div>
                 </div>
             </div>
+
+            {/* Grand Final Predictor Banner */}
+            {hasGF && (
+                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-yellow-500/20 to-amber-600/20 border border-yellow-500/30">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-400/20 via-transparent to-transparent z-0" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                                <Trophy className="h-6 w-6 text-yellow-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold font-russo uppercase text-yellow-500">Ultimate NSMQ Predictor is Live!</h2>
+                                <p className="text-sm text-slate-300">Predict the Champion, Runner-Up, Winning Margin, and activate your Final Boost.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => router.push('/fantasy/grand-final')}
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(234,179,8,0.4)] whitespace-nowrap cursor-pointer"
+                        >
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Semi-Final Predictor Banner */}
+            {hasSF && (
+                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-pink-500/20 to-purple-600/20 border border-pink-500/30">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-400/20 via-transparent to-transparent z-0" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0">
+                                <Flame className="h-6 w-6 text-pink-500 animate-pulse" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold font-russo uppercase text-pink-500">Semi-Final Confidence Challenge is Live!</h2>
+                                <p className="text-sm text-slate-300">Predict the winners of all 3 matches and assign your confidence multipliers.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => router.push('/fantasy/semi-final')}
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-pink-500 hover:bg-pink-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(236,72,153,0.4)] whitespace-nowrap cursor-pointer"
+                        >
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Quarter-Final Predictor Banner */}
+            {hasQF && (
+                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent z-0" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                                <Trophy className="h-6 w-6 text-amber-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold font-russo uppercase text-amber-500">Quarter-Final Predictor is Live!</h2>
+                                <p className="text-sm text-slate-300">Predict the 9 winners, pick your Wildcard and Master Pick.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => router.push('/fantasy/quarter-final')}
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] whitespace-nowrap cursor-pointer"
+                        >
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Stage Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

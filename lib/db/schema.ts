@@ -255,12 +255,53 @@ export const fantasyLineups = pgTable("fantasy_lineups", {
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const quarterFinalPredictions = pgTable("quarter_final_predictions", {
+    id: text("id").primaryKey(), // qfp-xxxxx
+    userId: text("user_id").notNull().references(() => users.id),
+    predictions: jsonb("predictions").notNull().$type<{ matchId: string; predictedWinnerId: string }[]>(),
+    wildcardMatchId: text("wildcard_match_id"),
+    masterPickSchoolId: text("master_pick_school_id"),
+    pointsEarned: integer("points_earned").default(0).notNull(),
+    isLocked: boolean("is_locked").default(false).notNull(),
+    lockedAt: timestamp("locked_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const semiFinalPredictions = pgTable("semi_final_predictions", {
+    id: text("id").primaryKey(), // sfp-xxxxx
+    userId: text("user_id").notNull().references(() => users.id),
+    predictions: jsonb("predictions").notNull().$type<{ matchId: string; predictedWinnerId: string; confidence: number }[]>(),
+    pointsEarned: integer("points_earned").default(0).notNull(),
+    isLocked: boolean("is_locked").default(false).notNull(),
+    lockedAt: timestamp("locked_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const grandFinalPredictions = pgTable("grand_final_predictions", {
+    id: text("id").primaryKey(), // gfp-xxxxx
+    userId: text("user_id").notNull().references(() => users.id),
+    championSchoolId: text("champion_school_id").references(() => schools.id),
+    runnerUpSchoolId: text("runner_up_school_id").references(() => schools.id),
+    marginRange: text("margin_range"), // '1-5', '6-10', '11-20', '21-30', '31+'
+    finalBoost: text("final_boost"), // 'champion', 'runner_up', 'margin'
+    pointsEarned: integer("points_earned").default(0).notNull(),
+    isLocked: boolean("is_locked").default(false).notNull(),
+    lockedAt: timestamp("locked_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type School = typeof schools.$inferSelect;
 export type NewSchool = typeof schools.$inferInsert;
 export type Tournament = typeof tournaments.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type QuarterFinalPrediction = typeof quarterFinalPredictions.$inferSelect;
+export type SemiFinalPrediction = typeof semiFinalPredictions.$inferSelect;
+export type GrandFinalPrediction = typeof grandFinalPredictions.$inferSelect;
 export type MatchHistory = typeof matchHistory.$inferSelect;
 export type NewMatchHistory = typeof matchHistory.$inferInsert;
 export type FantasyLineup = typeof fantasyLineups.$inferSelect;

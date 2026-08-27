@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "./db"
-import { schools, tournaments, matches, realSchoolStats, users, pendingResults, fantasyLineups } from "./db/schema"
-import { eq, and, sql, inArray, ne } from "drizzle-orm"
+import { schools, tournaments, matches, realSchoolStats, users, pendingResults, fantasyLineups, quarterFinalPredictions, semiFinalPredictions, grandFinalPredictions } from "./db/schema"
+import { eq, and, sql, inArray, ne, asc } from "drizzle-orm"
 import { parseResultsWithAI, type ParsedResult } from "./ai-result-parser"
 import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
@@ -1654,5 +1654,317 @@ export async function applyBatchResults(results: BatchResult[]): Promise<{
         return { success: true, appliedCount: count };
     } catch (error: any) {
         return { success: false, error: error.message || "Failed to apply batch results" };
+    }
+}
+
+// ============================================
+// QUARTER-FINAL ADMIN ACTIONS
+// ============================================
+
+export async function lockQuarterFinalPredictions() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        await db.update(quarterFinalPredictions)
+            .set({ isLocked: true, lockedAt: new Date() })
+            .where(eq(quarterFinalPredictions.isLocked, false));
+
+        return { success: true, message: "All Quarter-Final predictions have been locked." };
+    } catch (error: any) {
+        console.error("Error in lockQuarterFinalPredictions:", error);
+        return { success: false, error: error.message || "Failed to lock predictions." };
+    }
+}
+
+export async function calculateQuarterFinalScores() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // Fetch all QF matches that are finished
+        const qfMatches = await db.select()
+            .from(matches)
+            .where(and(
+                eq(matches.stage, "Quarter Final"),
+                eq(matches.status, "finished")
+            ));
+
+        const matchResults = new Map<string, string>(); // matchId -> winnerSchoolId
+        for (const match of qfMatches) {
+            const res = match.result as any;
+            if (res && res.winner) {
+                matchResults.set(match.id, res.winner);
+            }
+        }
+
+        // Fetch all QF predictions
+        const allPredictions = await db.select().from(quarterFinalPredictions);
+
+        let count = 0;
+
+        for (const userPred of allPredictions) {
+            let totalPoints = 0;
+            const preds = userPred.predictions as { matchId: string, predictedWinnerId: string }[];
+
+            for (const p of preds) {
+                const actualWinner = matchResults.get(p.matchId);
+                if (actualWinner && actualWinner === p.predictedWinnerId) {
+                    // Correct Pick
+                    let points = 10;
+                    
+                    // Wildcard Bonus
+                    if (userPred.wildcardMatchId === p.matchId) {
+                        points += 10; // Total 20
+                    }
+
+                    // Master Pick Bonus
+                    if (userPred.masterPickSchoolId === p.predictedWinnerId) {
+                        points += 30; // Total 40 (or 50 if wildcard + master pick)
+                    }
+
+                    totalPoints += points;
+                }
+            }
+
+            // Update user prediction record
+            await db.update(quarterFinalPredictions)
+                .set({ pointsEarned: totalPoints })
+                .where(eq(quarterFinalPredictions.id, userPred.id));
+                
+            await recalculateUserTotalFantasyPoints(userPred.userId);
+            count++;
+        }
+
+        return { success: true, message: `Successfully recalculated scores for ${count} users.` };
+    } catch (error: any) {
+        console.error("Error in calculateQuarterFinalScores:", error);
+        return { success: false, error: error.message || "Failed to calculate scores." };
+    }
+}
+
+export async function lockSemiFinalPredictions() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        await db.update(semiFinalPredictions)
+            .set({ isLocked: true, lockedAt: new Date() })
+            .where(eq(semiFinalPredictions.isLocked, false));
+
+        return { success: true, message: "All Semi-Final predictions have been locked." };
+    } catch (error: any) {
+        console.error("Error in lockSemiFinalPredictions:", error);
+        return { success: false, error: error.message || "Failed to lock predictions." };
+    }
+}
+
+export async function calculateSemiFinalScores() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // Fetch all Semi-Final matches that are finished
+        const sfMatches = await db.select()
+            .from(matches)
+            .where(and(
+                eq(matches.stage, "Semi Final"),
+                eq(matches.status, "finished")
+            ));
+
+        const matchResults = new Map<string, string>(); // matchId -> winnerSchoolId
+        for (const match of sfMatches) {
+            const res = match.result as any;
+            if (res && res.winner) {
+                matchResults.set(match.id, res.winner);
+            }
+        }
+
+        const allPredictions = await db.select().from(semiFinalPredictions);
+        let count = 0;
+
+        for (const userPred of allPredictions) {
+            let totalPoints = 0;
+            const preds = userPred.predictions as { matchId: string; predictedWinnerId: string; confidence: number }[];
+
+            for (const p of preds) {
+                const actualWinner = matchResults.get(p.matchId);
+                if (actualWinner && actualWinner === p.predictedWinnerId) {
+                    totalPoints += 20 * p.confidence;
+                }
+            }
+
+            await db.update(semiFinalPredictions)
+                .set({ pointsEarned: totalPoints })
+                .where(eq(semiFinalPredictions.id, userPred.id));
+
+            await recalculateUserTotalFantasyPoints(userPred.userId);
+            count++;
+        }
+
+        return { success: true, message: `Successfully calculated Semi-Final scores for ${count} users.` };
+    } catch (error: any) {
+        console.error("Error in calculateSemiFinalScores:", error);
+        return { success: false, error: error.message || "Failed to calculate Semi-Final scores." };
+    }
+}
+
+export async function lockGrandFinalPredictions() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        await db.update(grandFinalPredictions)
+            .set({ isLocked: true, lockedAt: new Date() })
+            .where(eq(grandFinalPredictions.isLocked, false));
+
+        return { success: true, message: "Grand Final predictions locked." };
+    } catch (error: any) {
+        console.error("Error in lockGrandFinalPredictions:", error);
+        return { success: false, error: error.message || "Failed to lock Grand Final predictions." };
+    }
+}
+
+export async function calculateGrandFinalScores() {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const gfMatches = await db.select()
+            .from(matches)
+            .where(and(
+                eq(matches.stage, "Final"),
+                eq(matches.status, "finished")
+            ))
+            .limit(1);
+
+        if (gfMatches.length === 0) {
+            return { success: false, error: "No finished Grand Final match found." };
+        }
+
+        const match = gfMatches[0];
+        const res = match.result as any;
+        const actualWinner = res?.winner;
+        const actualRunnerUp = res?.runnerUp;
+        const scores = res?.scores || {};
+
+        if (!actualWinner || !actualRunnerUp) {
+            return { success: false, error: "Grand Final results are incomplete (missing champion or runner-up in match result)." };
+        }
+
+        const winnerScore = Number(scores[actualWinner] || 0);
+        const runnerUpScore = Number(scores[actualRunnerUp] || 0);
+        const margin = Math.abs(winnerScore - runnerUpScore);
+
+        // Determine margin range
+        let actualMarginRange = "";
+        if (margin >= 1 && margin <= 5) actualMarginRange = "1-5";
+        else if (margin >= 6 && margin <= 10) actualMarginRange = "6-10";
+        else if (margin >= 11 && margin <= 20) actualMarginRange = "11-20";
+        else if (margin >= 21 && margin <= 30) actualMarginRange = "21-30";
+        else if (margin >= 31) actualMarginRange = "31+";
+
+        const allPredictions = await db.select().from(grandFinalPredictions);
+        let count = 0;
+
+        for (const userPred of allPredictions) {
+            const championCorrect = userPred.championSchoolId === actualWinner;
+            const runnerUpCorrect = userPred.runnerUpSchoolId === actualRunnerUp;
+            const marginCorrect = userPred.marginRange === actualMarginRange;
+
+            let champPoints = championCorrect ? 100 : 0;
+            let runnerPoints = runnerUpCorrect ? 50 : 0;
+            let marginPoints = marginCorrect ? 40 : 0;
+
+            // Apply Final Boost (2x points)
+            if (userPred.finalBoost === "champion") {
+                champPoints *= 2;
+            } else if (userPred.finalBoost === "runner_up") {
+                runnerPoints *= 2;
+            } else if (userPred.finalBoost === "margin") {
+                marginPoints *= 2;
+            }
+
+            let totalPoints = champPoints + runnerPoints + marginPoints;
+
+            // Perfect Prediction Bonus (+100)
+            if (championCorrect && runnerUpCorrect && marginCorrect) {
+                totalPoints += 100;
+            }
+
+            await db.update(grandFinalPredictions)
+                .set({ pointsEarned: totalPoints })
+                .where(eq(grandFinalPredictions.id, userPred.id));
+
+            await recalculateUserTotalFantasyPoints(userPred.userId);
+            count++;
+        }
+
+        return { success: true, message: `Successfully calculated Grand Final scores for ${count} users.` };
+    } catch (error: any) {
+        console.error("Error in calculateGrandFinalScores:", error);
+        return { success: false, error: error.message || "Failed to calculate Grand Final scores." };
+    }
+}
+
+export async function recalculateUserTotalFantasyPoints(userId: string) {
+    try {
+        // 1. Sum Matchday points from fantasyLineups
+        const matchdayResult = await db.select({
+            total: sql<number>`COALESCE(SUM(${fantasyLineups.pointsEarned}), 0)`
+        })
+        .from(fantasyLineups)
+        .where(eq(fantasyLineups.userId, userId));
+        const matchdayPoints = Number(matchdayResult[0]?.total || 0);
+
+        // 2. Get QF points
+        const qfResult = await db.select({
+            points: quarterFinalPredictions.pointsEarned
+        })
+        .from(quarterFinalPredictions)
+        .where(eq(quarterFinalPredictions.userId, userId))
+        .limit(1);
+        const qfPoints = qfResult[0]?.points || 0;
+
+        // 3. Get SF points
+        const sfResult = await db.select({
+            points: semiFinalPredictions.pointsEarned
+        })
+        .from(semiFinalPredictions)
+        .where(eq(semiFinalPredictions.userId, userId))
+        .limit(1);
+        const sfPoints = sfResult[0]?.points || 0;
+
+        // 4. Get GF points
+        const gfResult = await db.select({
+            points: grandFinalPredictions.pointsEarned
+        })
+        .from(grandFinalPredictions)
+        .where(eq(grandFinalPredictions.userId, userId))
+        .limit(1);
+        const gfPoints = gfResult[0]?.points || 0;
+
+        const grandTotal = matchdayPoints + qfPoints + sfPoints + gfPoints;
+
+        await db.update(users)
+            .set({ totalFantasyPoints: grandTotal })
+            .where(eq(users.id, userId));
+            
+        return { success: true, total: grandTotal };
+    } catch (error: any) {
+        console.error(`Error recalculating points for user ${userId}:`, error);
+        return { success: false, error: error.message };
     }
 }
