@@ -78,13 +78,10 @@ export default async function QuarterFinalPage() {
             <div className="max-w-3xl mx-auto px-4 py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                        <span className="text-3xl">🏆</span> 
-                        <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent">
-                            Quarter-Final Predictor
-                        </span>
+                        Quarter-Final Predictor
                     </h1>
-                    <p className="text-slate-400 mt-2">
-                        Predict the winner of each contest. Use your ⭐ Wildcard for double points and choose one 🔥 Master Pick for +30 bonus points!
+                    <p className="text-slate-400 mt-2 text-sm">
+                        Predict the winner of each contest. Use your Wildcard for double points and choose one Master Pick for a +30 point bonus.
                     </p>
                 </div>
 

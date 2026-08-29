@@ -120,7 +120,7 @@ export default function SettingsPage() {
         <div className="space-y-10 pb-20">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href="/account/profile" className="p-2 hover:bg-accent hover:text-foreground rounded-full text-muted-foreground transition-all">
+                <Link href="/account/profile" className="p-2 hover:bg-accent hover:text-foreground rounded-full text-muted-foreground transition-standard">
                     <ArrowLeft className="h-6 w-6" />
                 </Link>
                 <div>
@@ -131,14 +131,14 @@ export default function SettingsPage() {
 
             {/* Messages */}
             {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400 text-sm font-bold animate-in fade-in slide-in-from-top-2">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400 text-sm font-bold ">
                     <AlertCircle className="h-5 w-5 shrink-0" />
                     {error}
                 </div>
             )}
 
             {success && (
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3 text-green-400 text-sm font-bold animate-in fade-in slide-in-from-top-2">
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3 text-green-400 text-sm font-bold ">
                     <CheckCircle2 className="h-5 w-5 shrink-0" />
                     {success}
                 </div>
@@ -148,8 +148,8 @@ export default function SettingsPage() {
             <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-500/10 rounded-xl">
-                            <AtSymbol className="h-6 w-6 text-purple-400" />
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <AtSymbol className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <h3 className="text-lg font-black text-foreground">Username</h3>
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                                 setUsernameInput(currentUsername || "")
                                 setUsernameEditing(true)
                             }}
-                            className="p-2 hover:bg-accent rounded-xl text-purple-400 transition-all"
+                            className="p-2 hover:bg-accent rounded-xl text-primary transition-standard"
                         >
                             <Edit2 className="h-5 w-5" />
                         </button>
@@ -180,7 +180,7 @@ export default function SettingsPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-3 ">
                         <input
                             type="text"
                             value={usernameInput}
@@ -188,13 +188,13 @@ export default function SettingsPage() {
                             placeholder="e.g. nsmq_king"
                             minLength={3}
                             maxLength={20}
-                            className="w-full bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none"
+                            className="w-full bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none"
                         />
                         <div className="flex gap-2">
                             <button
                                 onClick={handleSaveUsername}
                                 disabled={usernameLoading}
-                                className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all flex items-center gap-2"
+                                className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-bold rounded-xl transition-standard flex items-center gap-2"
                             >
                                 {usernameLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5" /> Save</>}
                             </button>
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                                     setUsernameEditing(false)
                                     setUsernameInput("")
                                 }}
-                                className="px-6 py-3 border border-border text-muted-foreground hover:text-foreground hover:bg-accent font-bold rounded-xl transition-all"
+                                className="px-6 py-3 border border-border text-muted-foreground hover:text-foreground hover:bg-accent font-bold rounded-xl transition-standard"
                             >
                                 Cancel
                             </button>
@@ -219,8 +219,8 @@ export default function SettingsPage() {
             <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-500/10 rounded-xl">
-                            <Phone className="h-6 w-6 text-purple-400" />
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <Phone className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <h3 className="text-lg font-black text-foreground">Phone Number</h3>
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                     {!showPhoneUpdate && (
                         <button
                             onClick={() => setShowPhoneUpdate(true)}
-                            className="p-2 hover:bg-accent rounded-xl text-purple-400 transition-all"
+                            className="p-2 hover:bg-accent rounded-xl text-primary transition-standard"
                         >
                             <Edit2 className="h-5 w-5" />
                         </button>
@@ -253,7 +253,7 @@ export default function SettingsPage() {
 
             {/* Phone Update Form */}
             {showPhoneUpdate && (
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-3xl p-6 space-y-6 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-primary/10 border border-primary/20 rounded-3xl p-6 space-y-6 ">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-black text-foreground">Update Phone Number</h3>
                         <button
@@ -273,7 +273,7 @@ export default function SettingsPage() {
 
                     {/* New Phone Input */}
                     <div className="space-y-3">
-                        <label className="text-sm font-black uppercase tracking-widest text-purple-300">New Phone Number</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-primary">New Phone Number</label>
                         <div className="flex gap-2">
                             <input
                                 type="tel"
@@ -281,13 +281,13 @@ export default function SettingsPage() {
                                 onChange={(e) => setNewPhone(e.target.value)}
                                 placeholder="024XXXXXXX"
                                 disabled={otpSent}
-                                className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none disabled:opacity-50"
+                                className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none disabled:opacity-50"
                             />
                             {!otpSent && (
                                 <button
                                     onClick={handleSendOtp}
                                     disabled={loading || !newPhone}
-                                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold rounded-xl transition-all whitespace-nowrap"
+                                    className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold rounded-xl transition-standard whitespace-nowrap"
                                 >
                                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Code"}
                                 </button>
@@ -297,8 +297,8 @@ export default function SettingsPage() {
 
                     {/* OTP Input */}
                     {otpSent && (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-purple-300">Verification Code</label>
+                        <div className="space-y-3 ">
+                            <label className="text-sm font-black uppercase tracking-widest text-primary">Verification Code</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -306,17 +306,17 @@ export default function SettingsPage() {
                                     onChange={(e) => setOtp(e.target.value)}
                                     placeholder="123456"
                                     maxLength={6}
-                                    className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground text-lg tracking-widest placeholder-muted-foreground focus:border-purple-500 focus:outline-none"
+                                    className="flex-1 bg-card border border-input rounded-xl px-4 py-3 text-foreground text-lg tracking-widest placeholder-muted-foreground focus:border-primary/50 focus:outline-none"
                                 />
                                 <button
                                     onClick={handleConfirmUpdate}
                                     disabled={loading || !otp}
-                                    className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-2"
+                                    className="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold rounded-xl transition-standard whitespace-nowrap flex items-center gap-2"
                                 >
                                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5" /> Confirm</>}
                                 </button>
                             </div>
-                            <p className="text-xs text-purple-400/80 font-bold">
+                            <p className="text-xs text-primary/80 font-bold">
                                 Enter the 6-digit code sent to {newPhone}
                             </p>
                         </div>

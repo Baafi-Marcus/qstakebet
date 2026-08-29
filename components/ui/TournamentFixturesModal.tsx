@@ -34,7 +34,7 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-400 hover:text-purple-300 transition-colors px-3 py-1.5 rounded-xl bg-purple-500/5 border border-purple-500/10 hover:bg-purple-500/10 active:scale-95"
+                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary transition-standard px-3 py-1.5 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10"
             >
                 <CalendarDays className="h-3.5 w-3.5" />
                 Fixtures
@@ -48,11 +48,11 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                         {/* Header */}
                         <div className="p-6 border-b border-border/50 bg-card/40 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-                                    <Trophy className="h-4 w-4 text-purple-400" />
+                                <div className="p-2.5 rounded-2xl bg-primary/10 border border-primary/20">
+                                    <Trophy className="h-4 w-4 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">Match Center</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Match Center</p>
                                     <h2 className="text-base font-black text-foreground uppercase tracking-tight">{tournamentName}</h2>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTab(t.id as any)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'text-purple-400 border-b-2 border-purple-500 bg-purple-500/5' : 'text-muted-foreground hover:text-foreground'}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
                                     <t.icon className="h-3.5 w-3.5" />
                                     {t.label}
@@ -104,11 +104,11 @@ export function TournamentFixturesModal({ tournamentName, matches }: Props) {
                                                         <div className="flex items-center justify-between gap-4">
                                                             <div className="flex-1 flex items-center justify-between bg-muted rounded-xl px-4 py-3 border border-border/50">
                                                                 <span className="text-sm font-bold text-foreground uppercase">{m.participants[0].name}</span>
-                                                                <span className="text-lg font-black text-purple-400">{m.participants[0].result ?? '-'}</span>
+                                                                <span className="text-lg font-black text-primary">{m.participants[0].result ?? '-'}</span>
                                                             </div>
                                                             <span className="text-[10px] font-black text-muted-foreground/50 italic">VS</span>
                                                             <div className="flex-1 flex items-center justify-between bg-muted rounded-xl px-4 py-3 border border-border/50">
-                                                                <span className="text-sm font-black text-purple-400">{m.participants[1].result ?? '-'}</span>
+                                                                <span className="text-sm font-black text-primary">{m.participants[1].result ?? '-'}</span>
                                                                 <span className="text-sm font-bold text-foreground uppercase">{m.participants[1].name}</span>
                                                             </div>
                                                         </div>

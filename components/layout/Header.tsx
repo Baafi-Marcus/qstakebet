@@ -114,7 +114,7 @@ export function Header() {
                             <>
                                 <Link
                                     href="/fantasy"
-                                    className="bg-primary hover:bg-primary/90 text-white font-black px-3 py-2 md:px-4 rounded-lg text-[10px] md:text-xs transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
+                                    className="bg-primary hover:bg-primary/90 text-white font-black px-3 py-2 md:px-4 rounded-lg text-[10px] md:text-xs transition-standard shadow-lg shadow-primary/20 flex items-center gap-2"
                                 >
                                     <BoltIcon className="h-3 w-3" />
                                     <span className="hidden sm:inline">MY SQUAD</span>
@@ -144,7 +144,7 @@ export function Header() {
                                                 </div>
 
                                                 {/* Balance Display */}
-                                                <div className="px-4 py-4 border-b border-border bg-gradient-to-br from-purple-600/10 to-indigo-600/10">
+                                                <div className="px-4 py-4 border-b border-border bg-primary/10">
                                                     <div className="space-y-3">
                                                         <div>
                                                             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Lifetime Points</p>
@@ -154,7 +154,7 @@ export function Header() {
                                                             <Link
                                                                 href="/fantasy"
                                                                 onClick={() => setIsProfileOpen(false)}
-                                                                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                                                className="flex-1 py-2.5 bg-primary hover:bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-standard shadow-lg shadow-primary/20 flex items-center justify-center gap-1.5"
                                                             >
                                                                 <BoltIcon className="h-3 w-3" />
                                                                 Draft Lineup
@@ -168,9 +168,9 @@ export function Header() {
                                                         <Link
                                                             href="/admin"
                                                             onClick={() => setIsProfileOpen(false)}
-                                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all border border-purple-500/20 shadow-sm"
+                                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-standard border border-primary/20 shadow-sm"
                                                         >
-                                                            <ShieldExclamationIcon className="h-4 w-4 text-purple-400" /> Admin Dashboard
+                                                            <ShieldExclamationIcon className="h-4 w-4 text-primary" /> Admin Dashboard
                                                         </Link>
                                                     )}
                                                     <Link
@@ -384,7 +384,7 @@ export function Header() {
                             <div className="w-full flex flex-col gap-3">
                                 <button
                                     onClick={confirmLogout}
-                                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-500/20"
+                                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl transition-standard hover:-translate-y-0.5 shadow-lg shadow-red-500/20"
                                 >
                                     YES, LOGOUT
                                 </button>

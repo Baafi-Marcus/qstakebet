@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { saveQuarterFinalPrediction } from "@/lib/fantasy-actions"
-import { Trophy, Star, Flame, Clock, Lock, CheckCircle2 } from "lucide-react"
+import { Star, Flame, Lock, CheckCircle2 } from "lucide-react"
 
 type School = {
     id: string
@@ -172,9 +172,9 @@ export default function QuarterFinalClient({
                                             onClick={() => handleSelectWinner(contest.id, school.id)}
                                             disabled={isLocked}
                                             className={`
-                                                w-full text-left p-4 rounded-xl flex items-center justify-between transition-all relative overflow-hidden
+                                                w-full text-left p-4 rounded-xl flex items-center justify-between transition-standard hover:-translate-y-0.5 relative overflow-hidden
                                                 ${isSelected 
-                                                    ? 'bg-blue-600 border border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
+                                                    ? 'bg-blue-600 border border-blue-500' 
                                                     : 'bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800'}
                                                 ${isLocked && !isSelected ? 'opacity-50 grayscale' : ''}
                                             `}
@@ -197,7 +197,7 @@ export default function QuarterFinalClient({
                                             {isSelected && (
                                                 <div className="flex gap-2">
                                                     {isMasterPick && (
-                                                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
                                                             <Flame className="w-3 h-3 fill-white" /> Master Pick
                                                         </span>
                                                     )}
@@ -213,7 +213,7 @@ export default function QuarterFinalClient({
                                 <div className="mt-4 pt-4 border-t border-slate-800 flex gap-2">
                                     <button
                                         onClick={() => handleSelectWildcard(contest.id)}
-                                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${
+                                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-standard hover:-translate-y-0.5 ${
                                             isWildcard 
                                                 ? 'bg-amber-500 text-slate-950' 
                                                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-amber-400'
@@ -225,9 +225,9 @@ export default function QuarterFinalClient({
 
                                     <button
                                         onClick={() => handleSelectMasterPick(predictedId)}
-                                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${
+                                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-standard hover:-translate-y-0.5 ${
                                             masterPickSchoolId === predictedId 
-                                                ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                                                ? 'bg-red-500 text-white' 
                                                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-red-400'
                                         }`}
                                     >
@@ -257,17 +257,17 @@ export default function QuarterFinalClient({
                             </div>
                             <div className="text-xs text-slate-300 mt-1 flex justify-between">
                                 <span>{predictions.length} / {contests.length || 9} Winners</span>
-                                {wildcardMatchId && <span>⭐</span>}
-                                {masterPickSchoolId && <span>🔥</span>}
+                                {wildcardMatchId && <span className="font-bold uppercase text-[10px] text-amber-400">Wildcard set</span>}
+                                {masterPickSchoolId && <span className="font-bold uppercase text-[10px] text-red-400">Master set</span>}
                             </div>
                         </div>
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !isAllPredicted || !wildcardMatchId || !masterPickSchoolId}
                             className={`
-                                py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all
+                                py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-standard hover:-translate-y-0.5
                                 ${isAllPredicted && wildcardMatchId && masterPickSchoolId
-                                    ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.4)]'
+                                    ? 'bg-blue-600 text-white hover:bg-blue-500'
                                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'}
                             `}
                         >

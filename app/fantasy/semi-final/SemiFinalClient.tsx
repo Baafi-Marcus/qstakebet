@@ -144,9 +144,9 @@ export default function SemiFinalClient({
     }
 
     const getConfidenceLabel = (level: number | null) => {
-        if (level === 1) return "⚡ 1×";
-        if (level === 2) return "⭐ 2×";
-        if (level === 3) return "🔥 3×";
+        if (level === 1) return "1x";
+        if (level === 2) return "2x";
+        if (level === 3) return "3x";
         return "";
     }
 
@@ -162,9 +162,9 @@ export default function SemiFinalClient({
                 </div>
             ) : (
                 deadline && (
-                    <div className="bg-purple-950/40 border border-purple-500/30 p-4 rounded-2xl flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-purple-400 animate-pulse" />
-                        <span className="text-sm font-extrabold tracking-wide uppercase text-purple-300">
+                    <div className="bg-slate-900/60 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-amber-400" />
+                        <span className="text-sm font-extrabold tracking-wide uppercase text-amber-300">
                             {timeLeft || "Loading deadline..."}
                         </span>
                     </div>
@@ -193,7 +193,7 @@ export default function SemiFinalClient({
                                             ? "bg-slate-800/40 text-slate-600 border-slate-900 line-through" 
                                             : c === 1 ? "bg-blue-600/10 border-blue-500/30 text-blue-400"
                                             : c === 2 ? "bg-amber-600/10 border-amber-500/30 text-amber-400"
-                                            : "bg-red-600/10 border-red-500/30 text-red-400 animate-pulse"
+                                            : "bg-red-600/10 border-red-500/30 text-red-400"
                                     }`}
                                 >
                                     {getConfidenceLabel(c)}
@@ -217,7 +217,7 @@ export default function SemiFinalClient({
                             
                             {/* Header info */}
                             <div className="flex justify-between items-center mb-4">
-                                <span className="text-xs font-black uppercase text-purple-400 tracking-wider">
+                                <span className="text-xs font-black uppercase text-amber-400 tracking-wider">
                                     Semi-Final {idx + 1}
                                 </span>
                                 {selectedConfidence && (
@@ -244,15 +244,15 @@ export default function SemiFinalClient({
                                             key={school.id}
                                             disabled={isLocked}
                                             onClick={() => handleSelectWinner(contest.id, school.id)}
-                                            className={`w-full text-left p-4 rounded-xl flex items-center justify-between border transition-all ${
+                                            className={`w-full text-left p-4 rounded-xl flex items-center justify-between border transition-standard hover:-translate-y-0.5 ${
                                                 isSelected 
-                                                    ? 'bg-purple-600/10 border-purple-500 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)] font-black' 
+                                                    ? 'bg-amber-500/10 border-amber-500 text-amber-300 font-black' 
                                                     : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                                             }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-purple-500' : 'border-slate-600'}`}>
-                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-amber-400' : 'border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-amber-400" />}
                                                 </div>
                                                 <span>{school.name}</span>
                                             </div>
@@ -286,7 +286,7 @@ export default function SemiFinalClient({
                                                         isCurrent
                                                             ? c === 1 ? 'bg-blue-600 border-blue-500 text-white'
                                                               : c === 2 ? 'bg-amber-500 border-amber-400 text-slate-950'
-                                                              : 'bg-red-500 border-red-400 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                                              : 'bg-red-500 border-red-400 text-white'
                                                             : isUsedElsewhere
                                                                 ? 'bg-slate-800/20 border-slate-900 text-slate-600 cursor-not-allowed opacity-30'
                                                                 : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:bg-slate-700'
@@ -307,8 +307,8 @@ export default function SemiFinalClient({
 
             {/* Review Panel */}
             {predictions.some(p => p.predictedWinnerId) && (
-                <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-                    <h3 className="text-lg font-black uppercase text-purple-400 tracking-wider mb-4 font-russo">
+                <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-lg">
+                    <h3 className="text-lg font-black uppercase text-amber-400 tracking-wider mb-4 font-russo">
                         Review Your Semi-Final Predictions
                     </h3>
                     <div className="divide-y divide-slate-800/80 mb-6">
@@ -340,9 +340,9 @@ export default function SemiFinalClient({
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !predictions.every(p => p.predictedWinnerId && p.confidence !== null)}
-                            className={`w-full py-4.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
+                            className={`w-full py-4.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-standard hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
                                 predictions.every(p => p.predictedWinnerId && p.confidence !== null)
-                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-600/30'
+                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-600/20 hover:bg-amber-400'
                                     : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-900'
                             }`}
                         >

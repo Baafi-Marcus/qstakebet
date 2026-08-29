@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
     TrophyIcon,
     CalendarIcon,
-    SparklesIcon,
     ChatBubbleLeftRightIcon,
     BoltIcon,
     ListBulletIcon,
@@ -97,17 +96,15 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
         <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-10">
             
             {/* Hero Banner Section */}
-            <div className="relative rounded-[2.5rem] p-8 md:p-12 overflow-hidden bg-card border border-border/50 shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-900/60 via-indigo-950/20 to-transparent z-0 animate-in fade-in duration-1000" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+            <div className="relative rounded-[2rem] p-8 md:p-12 overflow-hidden bg-card border border-border/50 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent z-0" />
                 
                 <div className="relative z-10 max-w-2xl flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <SparklesIcon className="h-5 w-5 text-yellow-400 animate-spin" style={{ animationDuration: '3s' }} />
-                        <span className="text-xs font-black tracking-widest text-purple-400 uppercase">Free To Play Quiz Fantasy</span>
+                        <span className="text-xs font-black tracking-widest text-primary uppercase">Free To Play Quiz Fantasy</span>
                     </div>
                     
-                    <h1 className="text-4xl md:text-6xl font-black font-russo bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent leading-[1.1] tracking-tight">
+                    <h1 className="text-4xl md:text-5xl font-black font-russo tracking-tight leading-[1.1]">
                         NSMQ Fantasy & Fan Ecosystem
                     </h1>
 
@@ -121,16 +118,16 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border border-y border-border">
 
                 {initialMatches.some(m => isPlayoffStage(m.stage, "quarterFinal")) ? (
-                    <Link href="/fantasy/quarter-final" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-amber-500/10 transition-colors">
-                        <TrophyIcon className="h-7 w-7 text-amber-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                    <Link href="/fantasy/quarter-final" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-amber-500/10 transition-standard">
+                        <TrophyIcon className="h-6 w-6 text-amber-500 shrink-0 mt-0.5 transition-transform group-hover:-translate-y-0.5" />
                         <div>
                             <h3 className="font-extrabold text-base text-amber-500">Quarter-Final Predictor</h3>
                             <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Predict the 9 winners, use your Wildcard and Master Pick to earn bonus points in the Quarter-Finals.</p>
                         </div>
                     </Link>
                 ) : (
-                    <Link href="/fantasy" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-accent/40 transition-colors">
-                        <BoltIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                    <Link href="/fantasy" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-accent/40 transition-standard">
+                        <BoltIcon className="h-6 w-6 text-primary shrink-0 mt-0.5 transition-transform group-hover:-translate-y-0.5" />
                         <div>
                             <h3 className="font-extrabold text-base text-foreground">Draft Lineup</h3>
                             <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Spend 100 virtual credits to draft exactly 3 schools. Adjust your team strategy weekly based on active matchups.</p>
@@ -138,16 +135,16 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                     </Link>
                 )}
 
-                <Link href="/chat" className="group flex items-start gap-4 py-6 sm:px-6 hover:bg-accent/40 transition-colors">
-                    <ChatBubbleLeftRightIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                <Link href="/chat" className="group flex items-start gap-4 py-6 sm:px-6 hover:bg-accent/40 transition-standard">
+                    <ChatBubbleLeftRightIcon className="h-6 w-6 text-primary shrink-0 mt-0.5 transition-transform group-hover:-translate-y-0.5" />
                     <div>
                         <h3 className="font-extrabold text-base text-foreground">Banter Chat Rooms</h3>
                         <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Claim your permanent school badge and discuss real-time scores, updates, and historic rivalries.</p>
                     </div>
                 </Link>
 
-                <Link href="/leaderboard" className="group flex items-start gap-4 py-6 sm:px-6 last:sm:pr-0 hover:bg-accent/40 transition-colors">
-                    <TrophyIcon className="h-7 w-7 text-purple-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+                <Link href="/leaderboard" className="group flex items-start gap-4 py-6 sm:px-6 last:sm:pr-0 hover:bg-accent/40 transition-standard">
+                    <TrophyIcon className="h-6 w-6 text-primary shrink-0 mt-0.5 transition-transform group-hover:-translate-y-0.5" />
                     <div>
                         <h3 className="font-extrabold text-base text-foreground">National Rankings</h3>
                         <p className="text-muted-foreground text-xs mt-1 leading-relaxed">Track weekly standings and cumulative lifetime points to see where you rank as a Quiz Manager in Ghana.</p>
@@ -160,7 +157,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-foreground flex items-center gap-2">
-                        <ListBulletIcon className="h-5 w-5 text-purple-500" /> Match Schedules & Results
+                        <ListBulletIcon className="h-5 w-5 text-primary" /> Match Schedules & Results
                     </h2>
 
                     {/* Simple search */}
@@ -171,7 +168,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                             placeholder="Filter fixtures..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-input text-xs placeholder-muted-foreground focus:outline-none focus:border-purple-500/50"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-input text-xs placeholder-muted-foreground focus:outline-none focus:border-primary/50"
                         />
                     </div>
                 </div>
@@ -181,7 +178,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                         groupedMatches.map(group => (
                             <div key={group.label} className="space-y-4">
                                 <div className="flex items-center gap-2.5 px-2">
-                                    <CalendarIcon className="h-4.5 w-4.5 text-purple-500" />
+                                    <CalendarIcon className="h-4.5 w-4.5 text-primary" />
                                     <h3 className="text-sm font-black uppercase tracking-wider text-foreground/80">{group.label}</h3>
                                     <div className="flex-1 h-px bg-border/50" />
                                     <span className="text-[10px] text-muted-foreground font-bold">{group.matches.length} Contests</span>
@@ -200,7 +197,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
                                             >
                                                 {/* Stage & Details */}
                                                 <div>
-                                                    <span className="text-[10px] font-black uppercase text-purple-400 bg-purple-500/5 px-2.5 py-1 rounded-full border border-purple-500/10">
+                                                    <span className="text-[10px] font-black uppercase text-primary bg-primary/5 px-2.5 py-1 rounded-full border border-primary/10">
                                                         {match.stage}
                                                     </span>
                                                     <div className="text-xs text-muted-foreground mt-2 font-semibold">

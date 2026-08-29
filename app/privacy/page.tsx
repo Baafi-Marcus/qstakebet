@@ -60,7 +60,7 @@ export default function PrivacyPolicy() {
                                 <ul className="list-disc pl-6 space-y-2">
                                     <li>Create and manage your account and authenticate you.</li>
                                     <li>Operate the fantasy game: record squads, calculate points, and maintain leaderboards.</li>
-                                    <li>Send essential service messages — for example, a one-time SMS welcoming you after sign-up.</li>
+                                    <li>Send essential service messages, for example, a one-time SMS welcoming you after sign-up.</li>
                                     <li>Prevent fraud, abuse, and unauthorized access.</li>
                                     <li>Meet legal obligations required by Ghanaian law.</li>
                                 </ul>

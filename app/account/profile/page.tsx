@@ -10,6 +10,12 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState<any>(null)
     const [points, setPoints] = useState<number | null>(null)
+    const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+    const handleLogout = () => {
+        setIsLoggingOut(true)
+        import("next-auth/react").then(m => m.signOut({ callbackUrl: "/" }))
+    }
 
     useEffect(() => {
         getUserProfileSummary().then((res: any) => {
@@ -23,7 +29,7 @@ export default function ProfilePage() {
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
         </div>
     )
 
@@ -42,7 +48,7 @@ export default function ProfilePage() {
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
                             ) : (
-                                <div className="h-full w-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-xl font-bold">
+                                <div className="h-full w-full bg-primary flex items-center justify-center text-xl font-bold text-primary-foreground">
                                     {user.name?.[0]?.toUpperCase()}
                                 </div>
                             )}
@@ -72,7 +78,7 @@ export default function ProfilePage() {
                     <div className="flex gap-3">
                         <Link
                             href="/fantasy"
-                            className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 active:scale-95"
+                            className="flex-1 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest rounded-2xl transition-standard hover:-translate-y-0.5 flex items-center justify-center gap-2"
                         >
                             <Zap className="h-4 w-4" />
                             Draft Lineup
@@ -123,11 +129,16 @@ export default function ProfilePage() {
                 {/* Logout Button */}
                 <div className="px-6 mt-2">
                     <button
-                        onClick={() => import("next-auth/react").then(m => m.signOut({ callbackUrl: "/" }))}
-                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-4 rounded-2xl transition-all border border-red-500/10 font-black text-xs uppercase tracking-widest group"
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-4 rounded-2xl transition-standard border border-red-500/10 font-black text-xs uppercase tracking-widest group disabled:opacity-60"
                     >
-                        <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                        Log Out
+                        {isLoggingOut ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                        )}
+                        {isLoggingOut ? "Logging Out..." : "Log Out"}
                     </button>
                 </div>
             </div>

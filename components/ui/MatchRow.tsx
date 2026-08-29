@@ -163,7 +163,7 @@ export function MatchRow({
                         </span>
                     )}
                     {match.isVirtual && !internalIsLive && (
-                        <Zap className="h-2 w-2 text-purple-400" />
+                        <Zap className="h-2 w-2 text-primary" />
                     )}
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -175,11 +175,11 @@ export function MatchRow({
                                     <div className="flex items-center gap-1 shrink-0">
                                         <div className="w-8 h-1 bg-muted rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-all duration-1000"
+                                                className="h-full bg-primary  transition-all duration-1000"
                                                 style={{ width: `${winProbabilities[idx]}%` }}
                                             />
                                         </div>
-                                        <span className="text-[7px] font-black text-purple-400 opacity-80">{winProbabilities[idx]}%</span>
+                                        <span className="text-[7px] font-black text-primary opacity-80">{winProbabilities[idx]}%</span>
                                     </div>
                                 )}
                             </div>
@@ -218,7 +218,7 @@ export function MatchRow({
                 {(internalIsLive || internalIsFinished || internalIsPending) ? (
                     <div className={cn(
                         "flex items-center px-4 gap-6 animate-in fade-in duration-500",
-                        internalIsLive ? "bg-purple-600/5" : internalIsPending ? "bg-amber-500/5" : "bg-card/50"
+                        internalIsLive ? "bg-primary/5" : internalIsPending ? "bg-amber-500/5" : "bg-card/50"
                     )}>
                         {internalIsPending ? (
                             <div className="flex flex-col items-center justify-center py-2">
@@ -238,7 +238,7 @@ export function MatchRow({
                                         </span>
                                         <span className={cn(
                                             "text-sm font-black font-mono tabular-nums leading-none",
-                                            internalIsLive ? "text-purple-500" : "text-foreground/80"
+                                            internalIsLive ? "text-primary" : "text-foreground/80"
                                         )}>
                                             {internalScores ? internalScores[idx] : 0}
                                         </span>
@@ -591,7 +591,7 @@ export function MatchRow({
                     }}
                     className="w-10 sm:w-12 flex flex-col items-center justify-center border-l border-border/50 hover:bg-accent transition-colors cursor-pointer self-stretch group/more"
                 >
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover/more:text-purple-400 group-hover/more:translate-x-0.5 transition-all" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover/more:text-primary group-hover/more:translate-x-0.5 transition-all" />
                     <span className="text-[7px] text-muted-foreground font-black group-hover/more:text-foreground transition-colors mt-0.5">MORE</span>
                 </button>
             </div>

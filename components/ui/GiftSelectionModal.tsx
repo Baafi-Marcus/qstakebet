@@ -50,8 +50,8 @@ export function GiftSelectionModal({
             <div className="relative bg-popover w-full max-w-[340px] rounded-t-[2.5rem] sm:rounded-[2rem] border border-border/50 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-300">
                 <div className="p-4 pt-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2.5 bg-purple-600/20 rounded-xl">
-                            <Gift className="h-6 w-6 text-purple-400" />
+                        <div className="p-2.5 bg-primary/20 rounded-xl">
+                            <Gift className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Select Gift</h3>
@@ -78,7 +78,7 @@ export function GiftSelectionModal({
                                         key={gift.id}
                                         className={cn(
                                             "p-4 rounded-2xl border transition-all cursor-pointer group",
-                                            selectedGiftId === gift.id ? "bg-purple-600 border-purple-500 shadow-lg shadow-purple-500/20" : "bg-card border-border/50 hover:border-purple-500/50",
+                                            selectedGiftId === gift.id ? "bg-primary border-primary shadow-lg shadow-primary/20" : "bg-card border-border/50 hover:border-primary/50",
                                             isIneligible && "opacity-50 grayscale"
                                         )}
                                         onClick={() => {
@@ -89,7 +89,7 @@ export function GiftSelectionModal({
                                     >
                                         <div className="flex justify-between items-center">
                                             <div>
-                                                <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", selectedGiftId === gift.id ? "text-purple-200" : "text-muted-foreground")}>
+                                                <span className={cn("block text-[10px] font-black uppercase tracking-tighter mb-0.5", selectedGiftId === gift.id ? "text-primary-foreground/90" : "text-muted-foreground")}>
                                                     {gift.type}
                                                     {isOddsIneligible && " • Min Odds " + gift.minOdds.toFixed(2)}
                                                     {isSelectionIneligible && " • Min " + gift.minSelections + " Selections"}
@@ -98,7 +98,7 @@ export function GiftSelectionModal({
                                             </div>
                                             {selectedGiftId === gift.id && (
                                                 <div className="h-5 w-5 bg-white rounded-full flex items-center justify-center">
-                                                    <div className="h-2.5 w-2.5 bg-purple-600 rounded-full" />
+                                                    <div className="h-2.5 w-2.5 bg-primary rounded-full" />
                                                 </div>
                                             )}
                                         </div>
@@ -170,7 +170,7 @@ export function GiftSelectionModal({
                                 onApply(selectedGiftId, selectedAmount)
                                 onClose()
                             }}
-                            className="py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase rounded-2xl transition-all shadow-lg shadow-purple-500/20"
+                            className="py-4 bg-primary hover:bg-primary text-white font-black text-[10px] uppercase rounded-2xl transition-all shadow-lg shadow-primary/20"
                         >
                             Confirm
                         </button>

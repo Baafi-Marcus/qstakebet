@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { submitLineup, getLineupPointsExplanation } from "@/lib/fantasy-actions"
-import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, SparklesIcon as Sparkles, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive, ChartBarIcon as Chart, ArrowPathIcon as Loader2, FireIcon as Flame } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon as Search, TrophyIcon as Trophy, ShieldCheckIcon as ShieldCheck, XMarkIcon as X, BanknotesIcon as Coins, ArrowRightIcon as ArrowRight, CheckCircleIcon as CheckCircle2, ExclamationCircleIcon as AlertCircle, ArrowPathRoundedSquareIcon as RefreshCw, ClockIcon as Clock, PencilIcon as Pencil, ArchiveBoxIcon as Archive, ChartBarIcon as Chart, ArrowPathIcon as Loader2, FireIcon as Flame } from "@heroicons/react/24/solid";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type School = {
@@ -258,7 +258,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
             const result = await submitLineup(activeStage.gameWeek, schoolIds)
 
             if (result.success) {
-                setMessage({ type: "success", text: "Lineup locked in successfully! Ready for the matches." })
+                setMessage({ type: "success", text: "Lineup locked in. Ready for the matches." })
                 setSelectedHistoryGw(null)
                 setIsEditing(false)
                 router.refresh()
@@ -278,32 +278,31 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
         const t = Number(tier)
         switch (t) {
             case 1:
-                return { name: "Tier 1: Giant", color: "from-amber-400 to-amber-600 text-amber-950 shadow-amber-500/20" }
+                return { name: "Tier 1: Giant", color: "bg-amber-500/15 text-amber-300 border border-amber-500/30" }
             case 2:
-                return { name: "Tier 2: Contender", color: "from-purple-400 to-purple-600 text-purple-950 shadow-purple-500/20" }
+                return { name: "Tier 2: Contender", color: "bg-blue-500/15 text-blue-300 border border-blue-500/30" }
             case 3:
-                return { name: "Tier 3: Challenger", color: "from-cyan-400 to-cyan-600 text-cyan-950 shadow-cyan-500/20" }
+                return { name: "Tier 3: Challenger", color: "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" }
             default:
-                return { name: "Tier 4: Underdog", color: "from-slate-400 to-slate-600 text-slate-950 shadow-slate-500/20" }
+                return { name: "Tier 4: Underdog", color: "bg-slate-500/15 text-slate-300 border border-slate-500/30" }
         }
     }
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 pb-32 md:pb-8">
             {/* Page Header */}
-            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border/50 shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 via-transparent to-transparent z-0" />
+            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border/50 shadow-xl">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <Trophy className="h-6 w-6 text-amber-400 animate-pulse" />
-                            <span className="text-xs font-black tracking-widest text-purple-400 uppercase">NSMQ Fantasy League</span>
+                            <Trophy className="h-6 w-6 text-amber-400" />
+                            <span className="text-xs font-black tracking-widest text-slate-400 uppercase">NSMQ Fantasy League</span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-extrabold font-russo bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
+                        <h1 className="text-3xl md:text-4xl font-extrabold font-russo text-foreground">
                             Quiz Manager Dashboard
                         </h1>
                         <p className="text-muted-foreground text-sm mt-1">
-                            Build your ultimate 3-school squad and track your live points!
+                            Build your ultimate 3-school squad and track your live points.
                         </p>
                     </div>
                     
@@ -312,8 +311,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         {stages.currentStage && (
                             <button 
                                 onClick={() => changeViewMode('current')}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                                    viewMode === 'current' ? 'bg-purple-600 text-white shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-standard hover:-translate-y-0 ${
+                                    viewMode === 'current' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 Current Matchday
@@ -322,8 +321,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         {stages.nextStage && (
                             <button 
                                 onClick={() => changeViewMode('next')}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                                    viewMode === 'next' ? 'bg-purple-600 text-white shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-standard hover:-translate-y-0 ${
+                                    viewMode === 'next' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 Next Matchday
@@ -335,9 +334,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
             {/* Grand Final Predictor Banner */}
             {hasGF && (
-                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-yellow-500/20 to-amber-600/20 border border-yellow-500/30">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-400/20 via-transparent to-transparent z-0" />
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="mb-8 rounded-3xl p-6 bg-card border border-yellow-500/30">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center shrink-0">
                                 <Trophy className="h-6 w-6 text-yellow-500" />
@@ -349,7 +347,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                         <button 
                             onClick={() => router.push('/fantasy/grand-final')}
-                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(234,179,8,0.4)] whitespace-nowrap cursor-pointer"
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-standard hover:-translate-y-0.5 whitespace-nowrap cursor-pointer"
                         >
                             Play Now
                         </button>
@@ -359,12 +357,11 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
             {/* Semi-Final Predictor Banner */}
             {hasSF && (
-                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-pink-500/20 to-purple-600/20 border border-pink-500/30">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-400/20 via-transparent to-transparent z-0" />
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="mb-8 rounded-3xl p-6 bg-card border border-pink-500/30">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center shrink-0">
-                                <Flame className="h-6 w-6 text-pink-500 animate-pulse" />
+                                <Flame className="h-6 w-6 text-pink-500" />
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold font-russo uppercase text-pink-500">Semi-Final Confidence Challenge is Live!</h2>
@@ -373,7 +370,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                         <button 
                             onClick={() => router.push('/fantasy/semi-final')}
-                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-pink-500 hover:bg-pink-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(236,72,153,0.4)] whitespace-nowrap cursor-pointer"
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-pink-500 hover:bg-pink-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-standard hover:-translate-y-0.5 whitespace-nowrap cursor-pointer"
                         >
                             Play Now
                         </button>
@@ -383,9 +380,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
             {/* Quarter-Final Predictor Banner */}
             {hasQF && (
-                <div className="mb-8 rounded-3xl p-6 overflow-hidden relative bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent z-0" />
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="mb-8 rounded-3xl p-6 bg-card border border-amber-500/30">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0">
                                 <Trophy className="h-6 w-6 text-amber-500" />
@@ -397,7 +393,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         </div>
                         <button 
                             onClick={() => router.push('/fantasy/quarter-final')}
-                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] whitespace-nowrap cursor-pointer"
+                            className="w-full md:w-auto px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-standard hover:-translate-y-0.5 whitespace-nowrap cursor-pointer"
                         >
                             Play Now
                         </button>
@@ -408,14 +404,14 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
             {/* Stage Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div className="flex items-center gap-4 bg-popover/80 border border-border p-5 rounded-2xl">
-                    <Trophy className="h-8 w-8 text-purple-400" />
+                    <Trophy className="h-8 w-8 text-amber-400" />
                     <div>
                         <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Active Stage</div>
                         <div className="text-xl font-black text-foreground">{activeStage?.gameWeek || "Off-Season"}</div>
                     </div>
                 </div>
                 <div className="flex items-center gap-4 bg-popover/80 border border-border p-5 rounded-2xl">
-                    <Clock className={`h-8 w-8 ${isLockedLocal ? "text-rose-500" : "text-amber-400 animate-pulse"}`} />
+                    <Clock className={`h-8 w-8 ${isLockedLocal ? "text-rose-500" : "text-amber-400"}`} />
                     <div>
                         <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Deadline</div>
                         <div className={`text-xl font-black ${isLockedLocal ? "text-rose-500" : "text-foreground"}`}>{timeLeft}</div>
@@ -437,8 +433,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                 // --- MY SQUAD SECTION (SWITCHER + SQUAD / ARCHIVE / PICK PROMPT) ---
                 <div className="mb-10">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                            <Sparkles className="h-6 w-6" /> My Squad
+                        <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-foreground flex items-center gap-2">
+                            <ShieldCheck className="h-6 w-6" /> My Squad
                         </h2>
                         {!isViewingArchive && !isLockedLocal && !!activeSavedLineup && (
                             <button
@@ -460,15 +456,15 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                     <button
                                         key={entry.id}
                                         onClick={() => setSelectedHistoryGw(entry.gameWeek)}
-                                        className={`shrink-0 flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-2xl border text-left transition-all ${
+                                        className={`shrink-0 flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-2xl border text-left transition-standard ${
                                             isSelected
-                                                ? "bg-purple-600 border-purple-500 text-white shadow-[0_4px_20px_rgba(168,85,247,0.3)]"
+                                                ? "bg-foreground text-background border-foreground"
                                                 : "bg-card/60 border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
                                         }`}
                                     >
                                         <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                             {formatStageLabel(entry.gameWeek)}
-                                            {!isLiveStage && <Archive className={`h-3 w-3 ${isSelected ? "text-purple-200" : "text-muted-foreground/50"}`} />}
+                                            {!isLiveStage && <Archive className={`h-3 w-3 ${isSelected ? "text-background/70" : "text-muted-foreground/50"}`} />}
                                         </span>
                                         <span className={`text-sm font-extrabold ${isSelected ? "text-white" : "text-foreground/70"}`}>
                                             {entry.pointsEarned} pts
@@ -488,12 +484,12 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                             )}
 
                     {displayedLineup.pointsEarned !== undefined && (
-                        <div className="bg-gradient-to-br from-purple-900/20 to-card border border-purple-500/20 rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between">
+                        <div className="bg-popover/80 border border-border rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between">
                             <div>
                                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                                     Points Earned - {formatStageLabel(displayedLineup.gameWeek)}
                                 </h3>
-                                <div className="text-4xl font-black text-foreground mt-1">{displayedLineup.pointsEarned} <span className="text-lg text-purple-400">PTS</span></div>
+                                <div className="text-4xl font-black text-foreground mt-1">{displayedLineup.pointsEarned} <span className="text-lg text-amber-400">PTS</span></div>
                             </div>
                             {isViewingArchive ? (
                                 <button
@@ -517,12 +513,12 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                 <button
                                     key={index}
                                     onClick={() => openBreakdown(school)}
-                                    className="group/card relative bg-card/90 border border-purple-500/30 rounded-3xl p-6 pt-8 flex flex-col items-center justify-center shadow-lg hover:shadow-[0_10px_30px_rgba(168,85,247,0.25)] hover:border-purple-500/60 transition-all cursor-pointer text-left"
+                                    className="group/card relative bg-card/90 border border-border/50 rounded-3xl p-6 pt-8 flex flex-col items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:border-border transition-standard cursor-pointer text-left"
                                 >
-                                    <span className="absolute top-3 right-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 group-hover/card:text-purple-400 transition-colors">
+                                    <span className="absolute top-3 right-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 group-hover/card:text-amber-400 transition-colors">
                                         <Chart className="h-3 w-3" /> Breakdown
                                     </span>
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center font-black text-xl text-purple-400 mb-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-foreground/10 flex items-center justify-center font-black text-xl text-foreground mb-4">
                                         {index + 1}
                                     </div>
                                     <h3 className="font-extrabold text-center text-xl leading-tight mb-2">{school.name}</h3>
@@ -532,7 +528,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                     )}
 
                                     <div className="flex gap-2 w-full justify-center mt-auto pt-3">
-                                        <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full bg-gradient-to-r ${getTierDetails(Number(school.tier)).color}`}>
+                                        <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full ${getTierDetails(Number(school.tier)).color}`}>
                                             Tier {school.tier}
                                         </span>
                                         <span className="text-xs bg-background px-3 py-1.5 rounded-full border border-border font-extrabold">
@@ -547,10 +543,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                     ) : (
                         // --- PICK PROMPT (NO SQUAD FOR THIS STAGE YET) ---
                         <div className="relative overflow-hidden bg-card/80 border border-border/50 rounded-3xl p-10 md:p-14 text-center">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent" />
-                            <div className="relative z-10 flex flex-col items-center">
-                                <div className="w-16 h-16 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5">
-                                    <Sparkles className="h-8 w-8 text-purple-400" />
+                            <div className="relative flex flex-col items-center">
+                                <div className="w-16 h-16 rounded-3xl bg-foreground/10 border border-border/50 flex items-center justify-center mb-5">
+                                    <ShieldCheck className="h-8 w-8 text-muted-foreground" />
                                 </div>
                                 <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">No Squad Locked In</h2>
                                 <p className="text-muted-foreground text-sm mt-2 max-w-md">
@@ -568,7 +563,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                             setSelectedSchools((activeSavedLineup?.schools as School[]) || [])
                                             setIsEditing(true)
                                         }}
-                                        className="mt-6 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                                        className="mt-6 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider bg-foreground text-background hover:opacity-90 transition-standard hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
                                     >
                                         Select Your Team <ArrowRight className="h-4 w-4" />
                                     </button>
@@ -582,8 +577,8 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                 <>
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                                <Sparkles className="h-5 w-5" /> Draft Your Lineup
+                            <h2 className="text-lg font-bold font-russo uppercase tracking-wider text-foreground flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5" /> Draft Your Lineup
                             </h2>
                             <button 
                                 onClick={() => {
@@ -603,9 +598,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                 return (
                                     <div 
                                         key={index} 
-                                        className={`relative h-44 rounded-3xl border flex flex-col items-center justify-center p-4 transition-all duration-300 ${
+                                        className={`relative h-44 rounded-3xl border flex flex-col items-center justify-center p-4 transition-standard ${
                                             school
-                                                ? "bg-card/90 border-purple-500/30 shadow-[0_10px_30px_rgba(168,85,247,0.1)]"
+                                                ? "bg-card/90 border-border/50 shadow-lg"
                                                 : "bg-background border-border/50 border-dashed"
                                         }`}
                                     >
@@ -618,7 +613,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                                     <X className="h-4 w-4" />
                                                 </button>
 
-                                                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center font-bold text-purple-400 mb-2">
+                                                <div className="w-10 h-10 rounded-2xl bg-foreground/10 flex items-center justify-center font-bold text-foreground mb-2">
                                                     {index + 1}
                                                 </div>
 
@@ -626,7 +621,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                                 <p className="text-muted-foreground text-xs mt-1">{school.region} Region</p>
 
                                                 <div className="mt-4 flex items-center gap-2">
-                                                    <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full bg-gradient-to-r shadow-md ${getTierDetails(Number(school.tier)).color}`}>
+                                                    <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full ${getTierDetails(Number(school.tier)).color}`}>
                                                         Tier {school.tier}
                                                     </span>
                                                     <span className="text-xs bg-popover px-2.5 py-1 rounded-full border border-border/50 font-extrabold text-foreground/80">
@@ -658,7 +653,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                         <AlertCircle className="h-5 w-5 text-rose-400 shrink-0" />
                                     )
                                 ) : (
-                                    <Coins className="h-5 w-5 text-purple-400 shrink-0" />
+                                    <Coins className="h-5 w-5 text-yellow-400 shrink-0" />
                                 )}
                                 <p className={`text-sm ${
                                     message ? (message.type === 'success' ? "text-emerald-400" : "text-rose-400") : "text-muted-foreground"
@@ -674,11 +669,11 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                             <button
                                 onClick={handleLockIn}
                                 disabled={isPending || selectedSchools.length !== 3 || isLockedLocal}
-                                className={`w-full md:w-auto px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                                className={`w-full md:w-auto px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-standard hover:-translate-y-0.5 ${
                                     isLockedLocal
                                         ? "bg-background text-rose-500/50 cursor-not-allowed border border-rose-500/20"
                                         : selectedSchools.length === 3
-                                            ? "bg-purple-600 text-white hover:bg-purple-500 shadow-[0_4px_20px_rgba(168,85,247,0.3)] cursor-pointer"
+                                            ? "bg-foreground text-background cursor-pointer hover:opacity-90"
                                             : "bg-card text-muted-foreground cursor-not-allowed border border-border/50"
                                 }`}
                             >
@@ -704,7 +699,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                         placeholder="Search schools..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-input text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-purple-500/50"
+                                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-input text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-foreground/40"
                                     />
                                 </div>
                             </div>
@@ -716,9 +711,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                 <button
                                     key={region}
                                     onClick={() => setSelectedRegion(region)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-standard whitespace-nowrap ${
                                         selectedRegion === region
-                                            ? "bg-purple-600 text-white"
+                                            ? "bg-foreground text-background"
                                             : "bg-card/60 text-muted-foreground hover:text-foreground border border-border/50 hover:bg-card"
                                     }`}
                                 >
@@ -740,9 +735,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                     return (
                                         <div
                                             key={school.id}
-                                            className={`relative p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
+                                            className={`relative p-5 rounded-2xl border transition-standard flex items-center justify-between gap-4 ${
                                                 isSelected
-                                                    ? "bg-purple-950/20 border-purple-500/40 shadow-lg"
+                                                    ? "bg-foreground/10 border-foreground/40"
                                                     : "bg-card/40 border-border/50 hover:border-border"
                                             }`}
                                         >
@@ -751,7 +746,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                                 <p className="text-muted-foreground text-xs mt-0.5">{school.region} Region</p>
 
                                                 <div className="flex items-center gap-2 mt-2">
-                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded bg-gradient-to-r ${tierInfo.color}`}>
+                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${tierInfo.color}`}>
                                                         Tier {school.tier}
                                                     </span>
                                                     <span className="text-[10px] text-muted-foreground font-extrabold">
@@ -763,9 +758,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                             <button
                                                 onClick={() => handleSelect(school)}
                                                 disabled={disabled || isLockedLocal}
-                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-standard cursor-pointer ${
                                                     isSelected
-                                                        ? "bg-purple-600 text-white"
+                                                        ? "bg-foreground text-background"
                                                         : (disabled || isLockedLocal)
                                                             ? "bg-background text-muted-foreground/50 border border-border/50 cursor-not-allowed"
                                                             : "bg-card text-foreground/80 hover:bg-muted hover:text-foreground"
@@ -790,7 +785,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
             <Dialog open={!!breakdownSchool} onOpenChange={(open) => { if (!open) setBreakdownSchool(null) }}>
                 <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-border/60">
                     <DialogHeader>
-                        <DialogTitle className="font-russo uppercase tracking-wider text-purple-400 flex items-center gap-2 text-lg">
+                        <DialogTitle className="font-russo uppercase tracking-wider text-foreground flex items-center gap-2 text-lg">
                             <Chart className="h-5 w-5" /> {breakdownSchool?.name}
                         </DialogTitle>
                         <DialogDescription className="text-xs uppercase tracking-widest font-bold">
@@ -800,7 +795,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
                     {loadingExplanation ? (
                         <div className="py-10 flex flex-col items-center gap-3">
-                            <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+                            <Loader2 className="h-6 w-6 text-foreground animate-spin" />
                             <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Crunching scores...</p>
                         </div>
                     ) : !explanations || explanations.length === 0 ? (
@@ -821,7 +816,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
                                     {/* Your Final Score */}
                                     <div className="flex justify-between items-center mb-3 bg-background/60 rounded-xl p-3 border border-border/40">
-                                        <span className="text-xs font-black text-purple-300">{breakdownSchool?.name} ★</span>
+                                        <span className="text-xs font-black text-amber-300">{breakdownSchool?.name}</span>
                                         <span className="text-xs text-muted-foreground">{ex.base} pts</span>
                                     </div>
 
@@ -834,7 +829,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                                 </span>
                                             ))}
                                             <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                            <span className="text-purple-300 font-black">Final {ex.base}</span>
+                                            <span className="text-amber-300 font-black">Final {ex.base}</span>
                                         </div>
                                     )}
 
@@ -848,7 +843,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                             <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Won by 10+ +5</span>
                                         )}
                                         <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                        <span className="text-purple-300 font-black">= {ex.total} pts</span>
+                                        <span className="text-amber-300 font-black">= {ex.total} pts</span>
                                     </div>
                                 </div>
                             ))}

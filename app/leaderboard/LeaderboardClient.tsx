@@ -97,15 +97,14 @@ export function LeaderboardClient({
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
             {/* Header banner */}
-            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-900/40 via-transparent to-transparent z-0" />
+            <div className="relative mb-8 rounded-3xl p-6 md:p-8 overflow-hidden bg-card border border-border shadow-xl">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <Trophy className="h-6 w-6 text-yellow-400" />
-                            <span className="text-xs font-black tracking-widest text-purple-400 uppercase">Quiz Managers Rankings</span>
+                            <span className="text-xs font-black tracking-widest text-muted-foreground uppercase">Quiz Managers Rankings</span>
                         </div>
-                        <h1 className="text-3xl font-extrabold font-russo bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
+                        <h1 className="text-3xl font-extrabold font-russo text-foreground">
                             Leaderboard Standings
                         </h1>
                         <p className="text-muted-foreground text-sm mt-1">
@@ -119,9 +118,9 @@ export function LeaderboardClient({
             {viewerAlmaMater === null && (
                 <Link
                     href="/chat"
-                    className="mb-6 flex items-center gap-3 rounded-2xl border border-purple-500/25 bg-purple-600/10 px-5 py-4 transition-colors hover:bg-purple-600/20"
+                    className="mb-6 flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-5 py-4 transition-standard hover:bg-primary/20"
                 >
-                    <BadgeAlert className="h-5 w-5 shrink-0 text-purple-400" />
+                    <BadgeAlert className="h-5 w-5 shrink-0 text-primary" />
                     <div>
                         <p className="text-sm font-bold text-foreground">You have no school badge yet</p>
                         <p className="text-xs text-muted-foreground">Claim your alma mater in the Chat tab so it shows next to your name on the leaderboard.</p>
@@ -134,9 +133,9 @@ export function LeaderboardClient({
                 {!isQFActive && !isSFActive && !isGFActive && (
                     <button
                         onClick={() => setActiveTab("weekly")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
                             activeTab === "weekly"
-                                ? "bg-purple-600 text-white"
+                                ? "bg-primary text-white"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -146,9 +145,9 @@ export function LeaderboardClient({
                 {isQFActive && !isSFActive && !isGFActive && (
                     <button
                         onClick={() => setActiveTab("quarter_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
                             activeTab === "quarter_final"
-                                ? "bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                                ? "bg-amber-500 text-slate-950 font-black"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -158,9 +157,9 @@ export function LeaderboardClient({
                 {isSFActive && !isGFActive && (
                     <button
                         onClick={() => setActiveTab("semi_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
                             activeTab === "semi_final"
-                                ? "bg-pink-600 text-white font-black shadow-[0_0_15px_rgba(219,39,119,0.2)]"
+                                ? "bg-pink-600 text-white font-black"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -170,9 +169,9 @@ export function LeaderboardClient({
                 {isGFActive && (
                     <button
                         onClick={() => setActiveTab("grand_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
                             activeTab === "grand_final"
-                                ? "bg-yellow-500 text-slate-950 font-black shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                                ? "bg-yellow-500 text-slate-950 font-black"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -181,9 +180,9 @@ export function LeaderboardClient({
                 )}
                 <button
                     onClick={() => setActiveTab("lifetime")}
-                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
                         activeTab === "lifetime"
-                            ? "bg-purple-600 text-white"
+                            ? "bg-primary text-white"
                             : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
@@ -200,11 +199,11 @@ export function LeaderboardClient({
                             <Link
                                 key={gw.gameWeek}
                                 href={`/leaderboard?gw=${encodeURIComponent(gw.gameWeek)}`}
-                                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-standard cursor-pointer ${
                                     isActive
-                                        ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-600/20"
+                                        ? "bg-foreground text-background border-foreground"
                                         : gw.hasOngoing
-                                            ? "bg-card text-purple-400 border-purple-500/40 hover:bg-purple-600/10"
+                                            ? "bg-card text-primary border-primary/40 hover:bg-primary/10"
                                             : "bg-card text-muted-foreground border-border/50 hover:text-foreground hover:bg-accent"
                                 }`}
                             >
@@ -258,7 +257,7 @@ export function LeaderboardClient({
                                     </div>
                                     <div className="col-span-2">
                                         {acronym ? (
-                                            <span className="text-[9px] font-black uppercase px-2.5 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/25 shadow-sm">
+                                            <span className="text-[9px] font-black uppercase px-2.5 py-1 rounded bg-primary/10 text-primary border border-primary/25">
                                                 {acronym}
                                             </span>
                                         ) : (
@@ -266,7 +265,7 @@ export function LeaderboardClient({
                                         )}
                                     </div>
                                     <div className="col-span-2 text-right">
-                                        <span className="font-black text-sm text-purple-400 bg-purple-500/5 border border-purple-500/10 px-3 py-1 rounded-xl">
+                                        <span className="font-black text-sm text-primary bg-primary/5 border border-primary/10 px-3 py-1 rounded-xl">
                                             {row.points} pts
                                         </span>
                                     </div>

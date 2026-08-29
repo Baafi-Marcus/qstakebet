@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { XMarkIcon as X, DocumentDuplicateIcon as Copy, CheckIcon as Check, SparklesIcon as Sparkles, UsersIcon as Users, GiftIcon as Gift, ArrowUpOnSquareIcon as Share2, ViewfinderCircleIcon as Target } from "@heroicons/react/24/solid";
+import { XMarkIcon as X, DocumentDuplicateIcon as Copy, CheckIcon as Check, UsersIcon as Users, GiftIcon as Gift, ArrowUpOnSquareIcon as Share2, ViewfinderCircleIcon as Target } from "@heroicons/react/24/solid";
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
 
@@ -37,15 +37,15 @@ export function ReferralSharePopup({ referralCode, isOpen, onClose }: ReferralSh
                 {/* Content */}
                 <div className="relative p-8 pt-12 overflow-hidden">
                     {/* Background Decorative Elements */}
-                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-600/20 blur-[80px] rounded-full" />
+                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 blur-[80px] rounded-full" />
                     <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-600/20 blur-[80px] rounded-full" />
 
                     <div className="relative z-10 space-y-8 text-center">
                         <div className="space-y-3">
-                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-600 shadow-xl shadow-purple-600/20 mb-2">
+                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary shadow-xl shadow-primary/20 mb-2">
                                 <Share2 className="h-10 w-10 text-white" />
                             </div>
-                            <h2 className="text-3xl font-black text-foreground uppercase tracking-tight">Account created — now share & earn</h2>
+                            <h2 className="text-3xl font-black text-foreground uppercase tracking-tight">Account created, now share and earn</h2>
                             <p className="text-muted-foreground text-sm font-medium px-4">
                                 Your account is ready! Share your unique link below to start earning rewards immediately.
                             </p>
@@ -82,7 +82,7 @@ export function ReferralSharePopup({ referralCode, isOpen, onClose }: ReferralSh
                                     onClick={handleCopy}
                                     className={cn(
                                         "h-[52px] px-6 rounded-2xl font-black uppercase tracking-widest text-xs transition-all",
-                                        copied ? "bg-green-600 hover:bg-green-500" : "bg-purple-600 hover:bg-purple-500"
+                                        copied ? "bg-green-600 hover:bg-green-500" : "bg-primary hover:bg-primary"
                                     )}
                                 >
                                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

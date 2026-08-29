@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { QuestionMarkCircleIcon as HelpCircle, BookOpenIcon as BookOpen, CheckBadgeIcon as Award, ChatBubbleLeftRightIcon as MessageSquare, BoltIcon as Zap, ShieldCheckIcon as Shield } from "@heroicons/react/24/solid";
-import { Twitter, Facebook, Instagram } from "lucide-react";
 
 export function Footer() {
     return (
@@ -18,19 +17,8 @@ export function Footer() {
                             </span>
                         </Link>
                         <p className="text-muted-foreground text-sm font-medium leading-relaxed max-w-xs">
-                            Step into the future of academic pride. Ghana&apos;s premier fantasy draft and alumni fan community for the National Science & Maths Quiz (NSMQ).
+                            Ghana&apos;s fantasy draft and alumni fan community for the National Science & Maths Quiz (NSMQ).
                         </p>
-                        <div className="flex items-center gap-3">
-                            <button className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all text-muted-foreground">
-                                <Twitter className="h-4 w-4" />
-                            </button>
-                            <button className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all text-muted-foreground">
-                                <Facebook className="h-4 w-4" />
-                            </button>
-                            <button className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all text-muted-foreground">
-                                <Instagram className="h-4 w-4" />
-                            </button>
-                        </div>
                     </div>
 
                     {/* Platforms */}

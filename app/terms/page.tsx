@@ -10,11 +10,11 @@ export default function TermsOfService() {
             <div className="max-w-4xl mx-auto">
                 {/* Header Section */}
                 <div className="text-center mb-16">
-                    <div className="inline-flex items-center justify-center p-3 bg-purple-500/10 rounded-2xl mb-6">
-                        <Cap className="h-10 w-10 text-purple-400" />
+                    <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-6">
+                        <Cap className="h-10 w-10 text-primary" />
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black text-foreground uppercase tracking-tighter mb-4">
-                        Terms & <span className="text-purple-500">Conditions</span>
+                        Terms & <span className="text-primary">Conditions</span>
                     </h1>
                     <p className="text-muted-foreground text-sm font-bold uppercase tracking-[0.2em]">
                         Last Updated: August 23, 2026
@@ -31,8 +31,8 @@ export default function TermsOfService() {
                         {/* 1. ABOUT THE PLATFORM */}
                         <section>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-purple-500/10 rounded-lg">
-                                    <Cap className="h-5 w-5 text-purple-400" />
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Cap className="h-5 w-5 text-primary" />
                                 </div>
                                 <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">1. About the Platform</h2>
                             </div>
@@ -64,7 +64,7 @@ export default function TermsOfService() {
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
                                 <p>3.1 Only <strong className="text-foreground">one account per individual</strong> is permitted.</p>
                                 <p>3.2 You agree to provide accurate registration information (name, email, phone number) and to keep your login credentials confidential.</p>
-                                <p>3.3 By registering, you consent to receive service messages from us — for example, a one-time SMS welcome message confirming account creation. We do not send marketing SMS without your separate consent.</p>
+                                <p>3.3 By registering, you consent to receive service messages from us, for example, a one-time SMS welcome message confirming account creation. We do not send marketing SMS without your separate consent.</p>
                                 <p>3.4 QSTAKEbet may suspend or permanently close accounts that provide false information, engage in fraudulent behavior, or violate these Terms.</p>
                             </div>
                         </section>
@@ -148,10 +148,10 @@ export default function TermsOfService() {
 
                     {/* Footer Nav */}
                     <div className="mt-16 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-border/50 pt-8">
-                        <Link href="/privacy" className="text-purple-400 hover:text-foreground font-bold transition-all uppercase tracking-widest text-xs">
+                        <Link href="/privacy" className="text-primary hover:text-foreground font-bold transition-standard uppercase tracking-widest text-xs">
                             Read Privacy Policy
                         </Link>
-                        <Link href="/" className="px-8 py-3 bg-accent/5 hover:bg-accent/10 border border-border rounded-xl text-foreground font-bold transition-all text-xs uppercase tracking-widest">
+                        <Link href="/" className="px-8 py-3 bg-accent/5 hover:bg-accent/10 border border-border rounded-xl text-foreground font-bold transition-standard text-xs uppercase tracking-widest">
                             Back to Home
                         </Link>
                     </div>

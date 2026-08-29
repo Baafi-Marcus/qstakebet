@@ -11,10 +11,10 @@ type School = {
 }
 
 const MARGIN_RANGES = [
-    { value: "1-5", label: "1–5 points" },
-    { value: "6-10", label: "6–10 points" },
-    { value: "11-20", label: "11–20 points" },
-    { value: "21-30", label: "21–30 points" },
+    { value: "1-5", label: "1 to 5 points" },
+    { value: "6-10", label: "6 to 10 points" },
+    { value: "11-20", label: "11 to 20 points" },
+    { value: "21-30", label: "21 to 30 points" },
     { value: "31+", label: "31+ points" }
 ];
 
@@ -120,7 +120,7 @@ export default function GrandFinalClient({
             ) : (
                 deadline && (
                     <div className="bg-amber-950/40 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
+                        <Clock className="w-5 h-5 text-amber-500" />
                         <span className="text-sm font-extrabold tracking-wide uppercase text-amber-400">
                             {timeLeft || "Loading deadline..."}
                         </span>
@@ -148,9 +148,9 @@ export default function GrandFinalClient({
                                 key={s.id}
                                 disabled={isLocked}
                                 onClick={() => handleSelectChampion(s.id)}
-                                className={`p-6 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                                className={`p-6 rounded-2xl border text-center transition-standard flex flex-col items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected 
-                                        ? "bg-amber-500/15 border-amber-500 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.2)] font-black" 
+                                        ? "bg-amber-500/15 border-amber-500 text-amber-300 font-black" 
                                         : "bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                                 }`}
                             >
@@ -176,15 +176,15 @@ export default function GrandFinalClient({
                                 key={s.id}
                                 disabled={isLocked || isChamp}
                                 onClick={() => handleSelectRunnerUp(s.id)}
-                                className={`p-6 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 ${
+                                className={`p-6 rounded-2xl border text-center transition-standard flex flex-col items-center justify-center gap-2 hover:-translate-y-0.5 ${
                                     isChamp 
                                         ? "bg-slate-900/10 border-slate-950 text-slate-700 opacity-20 cursor-not-allowed" 
                                         : isSelected
-                                            ? "bg-purple-600/15 border-purple-500 text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)] font-black cursor-pointer"
+                                            ? "bg-slate-500/15 border-slate-300 text-slate-100 font-black cursor-pointer"
                                             : "bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer"
                                 }`}
                             >
-                                <Award className={`w-8 h-8 ${isSelected ? 'text-purple-500 fill-purple-500' : 'text-slate-700'}`} />
+                                <Award className={`w-8 h-8 ${isSelected ? 'text-slate-200 fill-slate-200' : 'text-slate-700'}`} />
                                 <span className="text-sm font-bold leading-tight">{s.name}</span>
                             </button>
                         );
@@ -205,9 +205,9 @@ export default function GrandFinalClient({
                                 key={range.value}
                                 disabled={isLocked}
                                 onClick={() => setMarginRange(range.value)}
-                                className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                                className={`p-4 rounded-xl border text-center transition-standard flex flex-col items-center justify-center gap-1 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected
-                                        ? "bg-blue-600/15 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(37,99,235,0.2)] font-black"
+                                        ? "bg-blue-600/15 border-blue-500 text-blue-300 font-black"
                                         : "bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                                 }`}
                             >
@@ -221,14 +221,14 @@ export default function GrandFinalClient({
             {/* Step 4 — Activate Your Final Boost */}
             <div className="space-y-4">
                 <h2 className="text-lg font-black uppercase text-amber-400 tracking-wider flex items-center gap-2 font-russo">
-                    <Flame className="w-5 h-5 text-amber-400 animate-pulse" /> Step 4: Activate Your Final Boost (2× points)
+                    <Flame className="w-5 h-5 text-amber-400" /> Step 4: Activate Your Final Boost (2x points)
                 </h2>
-                <p className="text-xs text-slate-400">Which prediction are you most confident about? Boost its score to 2×!</p>
+                <p className="text-xs text-slate-400">Which prediction are you most confident about? Boost its score to 2x!</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { value: "champion", label: "🏆 Champion Prediction", desc: "100 pts → 200 pts" },
-                        { value: "runner_up", label: "🥈 Runner-Up Prediction", desc: "50 pts → 100 pts" },
-                        { value: "margin", label: "🎯 Margin Prediction", desc: "40 pts → 80 pts" }
+                        { value: "champion", label: "Champion Prediction", desc: "100 pts x2" },
+                        { value: "runner_up", label: "Runner-Up Prediction", desc: "50 pts x2" },
+                        { value: "margin", label: "Margin Prediction", desc: "40 pts x2" }
                     ].map(boost => {
                         const isSelected = finalBoost === boost.value;
                         return (
@@ -236,9 +236,9 @@ export default function GrandFinalClient({
                                 key={boost.value}
                                 disabled={isLocked}
                                 onClick={() => setFinalBoost(boost.value)}
-                                className={`p-5 rounded-2xl border text-left transition-all flex flex-col justify-center gap-1.5 cursor-pointer ${
+                                className={`p-5 rounded-2xl border text-left transition-standard flex flex-col justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected
-                                        ? "bg-red-500/15 border-red-500 text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.2)] font-black"
+                                        ? "bg-red-500/15 border-red-500 text-red-300 font-black"
                                         : "bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                                 }`}
                             >
@@ -255,7 +255,7 @@ export default function GrandFinalClient({
 
             {/* Review Panel */}
             {isAllPredicted && (
-                <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6">
+                <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-lg space-y-6">
                     <h3 className="text-lg font-black uppercase text-amber-400 tracking-wider font-russo flex items-center gap-2">
                         <Star className="w-5 h-5 text-amber-400" /> Review Your Final Predictions
                     </h3>
@@ -264,22 +264,22 @@ export default function GrandFinalClient({
                         <div className="py-3.5 flex justify-between items-center text-sm">
                             <span className="text-slate-400 font-medium">Champion:</span>
                             <span className="font-extrabold text-slate-200 flex items-center gap-1.5">
-                                {schools.find(s => s.id === championId)?.name} 🏆
-                                {finalBoost === "champion" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED ⭐</span>}
+                                {schools.find(s => s.id === championId)?.name}
+                                {finalBoost === "champion" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED</span>}
                             </span>
                         </div>
                         <div className="py-3.5 flex justify-between items-center text-sm">
                             <span className="text-slate-400 font-medium">Runner-Up:</span>
                             <span className="font-extrabold text-slate-200 flex items-center gap-1.5">
-                                {schools.find(s => s.id === runnerUpId)?.name} 🥈
-                                {finalBoost === "runner_up" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED ⭐</span>}
+                                {schools.find(s => s.id === runnerUpId)?.name}
+                                {finalBoost === "runner_up" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED</span>}
                             </span>
                         </div>
                         <div className="py-3.5 flex justify-between items-center text-sm">
                             <span className="text-slate-400 font-medium">Margin:</span>
                             <span className="font-extrabold text-slate-200 flex items-center gap-1.5">
-                                {MARGIN_RANGES.find(m => m.value === marginRange)?.label} 🎯
-                                {finalBoost === "margin" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED ⭐</span>}
+                                {MARGIN_RANGES.find(m => m.value === marginRange)?.label}
+                                {finalBoost === "margin" && <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded">BOOSTED</span>}
                             </span>
                         </div>
                     </div>
@@ -293,7 +293,7 @@ export default function GrandFinalClient({
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="w-full py-4.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 shadow-xl shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                            className="w-full py-4.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg transition-standard hover:-translate-y-0.5 cursor-pointer"
                         >
                             {isSaving ? (
                                 'Saving final predictions...'

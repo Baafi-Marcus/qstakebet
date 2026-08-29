@@ -12,7 +12,7 @@ import {
     getRoomLeaderboard 
 } from "@/lib/chat-actions"
 import { getSchoolsForPicker, updateAlmaMater } from "@/lib/user-actions"
-import { Send, Shield, Hash, MessageSquare, RefreshCw, Sparkles, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X, ArrowLeft } from "lucide-react"
+import { Send, Shield, Hash, MessageSquare, RefreshCw, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type ChatMessage = {
@@ -319,7 +319,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                     <button
                         onClick={() => setSidebarTab("global")}
                         className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                            sidebarTab === "global" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
+                            sidebarTab === "global" ? "bg-primary text-white shadow" : "text-slate-400 hover:text-white"
                         }`}
                     >
                         Global Channels
@@ -327,7 +327,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                     <button
                         onClick={() => setSidebarTab("custom")}
                         className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                            sidebarTab === "custom" ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white"
+                            sidebarTab === "custom" ? "bg-primary text-white shadow" : "text-slate-400 hover:text-white"
                         }`}
                     >
                         My Groups
@@ -349,12 +349,12 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         }}
                                         className={`w-full text-left p-4 rounded-2xl border transition-all ${
                                             activeId === ch.id
-                                                ? "bg-purple-950/20 border-purple-500/30 text-white"
+                                                ? "bg-primary/10 border-primary/30 text-white"
                                                 : "bg-slate-950/50 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950"
                                         }`}
                                     >
                                         <div className="font-extrabold text-sm flex items-center gap-1.5">
-                                            <Hash className="h-4 w-4 text-purple-400 shrink-0" />
+                                            <Hash className="h-4 w-4 text-primary/80 shrink-0" />
                                             {ch.name}
                                         </div>
                                         <div className="text-[10px] text-slate-500 mt-1 font-semibold leading-normal">
@@ -376,13 +376,13 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                             }}
                                             className={`w-full text-left p-4 rounded-2xl border transition-all ${
                                                 activeId === room.id
-                                                    ? "bg-purple-950/20 border-purple-500/30 text-white"
+                                                    ? "bg-primary/10 border-primary/30 text-white"
                                                     : "bg-slate-950/50 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-950"
                                             }`}
                                         >
                                             <div className="font-extrabold text-sm flex items-center justify-between gap-1.5">
                                                 <span className="truncate flex items-center gap-1.5">
-                                                    <Users className="h-4 w-4 text-purple-400 shrink-0" />
+                                                    <Users className="h-4 w-4 text-primary/80 shrink-0" />
                                                     {room.name}
                                                 </span>
                                                 {room.isPublic ? (
@@ -416,7 +416,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                             </button>
                             <button
                                 onClick={() => setIsCreatingModal(true)}
-                                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-2xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                className="flex-1 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-wider rounded-2xl transition-standard hover:-translate-y-0.5 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                                 <Plus className="h-3.5 w-3.5" /> Create
                             </button>
@@ -432,7 +432,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                             {almaMater ? almaMater : (
                                 <button
                                     onClick={openBadgeModal}
-                                    className="text-purple-400 hover:text-purple-300 underline underline-offset-2 decoration-dotted cursor-pointer transition-colors"
+                                    className="text-primary/80 hover:text-primary underline underline-offset-2 decoration-dotted cursor-pointer transition-standard"
                                 >
                                     Set your school
                                 </button>
@@ -440,7 +440,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                         </div>
                     </div>
                     {almaMater && (
-                        <span className="text-[10px] font-black uppercase bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20 shadow-sm">
+                        <span className="text-[10px] font-black uppercase bg-primary/10 text-primary/80 px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
                             {getSchoolAcronym(almaMater)}
                         </span>
                     )}
@@ -465,12 +465,12 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                             <h3 className="font-extrabold text-md text-white flex items-center gap-1.5 truncate">
                                 {isCustomRoomActive ? (
                                     <>
-                                        <Users className="h-5 w-5 text-purple-400 shrink-0" />
+                                        <Users className="h-5 w-5 text-primary/80 shrink-0" />
                                         {activeRoomDetails?.name}
                                     </>
                                 ) : (
                                     <>
-                                        <Hash className="h-5 w-5 text-purple-400 shrink-0" />
+                                        <Hash className="h-5 w-5 text-primary/80 shrink-0" />
                                         {GLOBAL_CHANNELS.find(c => c.id === activeId)?.name}
                                     </>
                                 )}
@@ -499,9 +499,9 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                 {/* Toggle rankings button */}
                                 <button
                                     onClick={() => setShowRankings(!showRankings)}
-                                    className={`p-2 border rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    className={`p-2 border rounded-xl text-xs flex items-center gap-1.5 transition-standard hover:-translate-y-0.5 cursor-pointer ${
                                         showRankings
-                                            ? "bg-purple-600 border-purple-500 text-white shadow-md"
+                                            ? "bg-primary border-primary text-white shadow-md"
                                             : "border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
                                     }`}
                                 >
@@ -511,7 +511,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                             </>
                         )}
                         <div className="hidden xs:flex items-center gap-1.5 text-slate-500 text-[10px] uppercase font-black shrink-0 pl-2">
-                            <RefreshCw className="h-3 w-3 animate-spin text-purple-400" />
+                            <RefreshCw className="h-3 w-3 animate-spin text-primary/80" />
                             <span>Live</span>
                         </div>
                     </div>
@@ -532,14 +532,14 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                     <div className="flex items-center gap-2 mb-1 text-[10px] font-bold text-slate-400">
                                         <span>{msg.username || "Anonymous"}</span>
                                         {acronym && (
-                                            <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded text-[8px] font-black tracking-wide">
+                                            <span className="bg-primary/10 text-primary/80 border border-primary/20 px-1.5 py-0.5 rounded text-[8px] font-black tracking-wide">
                                                 {acronym}
                                             </span>
                                         )}
                                     </div>
                                     <div className={`p-4 rounded-3xl text-sm leading-relaxed ${
                                         isMe 
-                                            ? "bg-purple-600 text-white rounded-tr-none shadow-[0_4px_15px_rgba(168,85,247,0.15)]" 
+                                            ? "bg-primary text-white rounded-tr-none" 
                                             : "bg-slate-950 text-slate-200 rounded-tl-none border border-white/5"
                                     }`}>
                                         {msg.message}
@@ -549,7 +549,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                         })
                     ) : (
                         <div className="my-auto text-center py-8">
-                            <Sparkles className="h-8 w-8 text-purple-500/30 mx-auto mb-2 animate-bounce" />
+                            <MessageSquare className="h-8 w-8 text-primary/30 mx-auto mb-2" />
                             <p className="text-slate-500 text-xs font-semibold">Tavern is quiet... Drop a banter post first!</p>
                         </div>
                     )}
@@ -565,12 +565,12 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
                             disabled={isPending}
-                            className="flex-1 bg-slate-900 border border-white/5 px-4 py-3 rounded-2xl text-sm placeholder-slate-500 focus:outline-none focus:border-purple-500/50 text-white"
+                            className="flex-1 bg-slate-900 border border-white/5 px-4 py-3 rounded-2xl text-sm placeholder-slate-500 focus:outline-none focus:border-primary/50 text-white"
                         />
                         <button
                             type="submit"
                             disabled={isPending || !inputMessage.trim()}
-                            className="bg-purple-600 text-white h-11 w-11 rounded-2xl flex items-center justify-center hover:bg-purple-500 active:scale-95 transition-all disabled:bg-slate-900 disabled:text-slate-700 disabled:border-white/5 border border-transparent shadow-[0_4px_15px_rgba(168,85,247,0.2)] shrink-0 cursor-pointer"
+                            className="bg-primary text-white h-11 w-11 rounded-2xl flex items-center justify-center hover:bg-primary/90 transition-standard disabled:bg-slate-900 disabled:text-slate-700 disabled:border-white/5 border border-transparent shrink-0 cursor-pointer"
                         >
                             <Send className="h-4 w-4" />
                         </button>
@@ -581,7 +581,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
 
             {/* Sliding Group Leaderboard Panel */}
             {showRankings && isCustomRoomActive && (
-                <div className="absolute top-0 right-4 bottom-0 w-80 bg-slate-900 border-l border-white/5 rounded-r-3xl z-40 p-5 flex flex-col gap-6 animate-in slide-in-from-right duration-300">
+                <div className="absolute top-0 right-4 bottom-0 w-80 bg-slate-900 border-l border-white/5 rounded-r-3xl z-40 p-5 flex flex-col gap-6">
                     <div className="flex items-center justify-between border-b border-white/5 pb-4">
                         <h4 className="font-extrabold text-md text-white flex items-center gap-2">
                             <Trophy className="h-4.5 w-4.5 text-yellow-400" /> Member Rankings
@@ -599,7 +599,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                         <button
                             onClick={() => setRankingsTab("weekly")}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                                rankingsTab === "weekly" ? "bg-purple-600 text-white" : "text-slate-500 hover:text-slate-300"
+                                rankingsTab === "weekly" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-300"
                             }`}
                         >
                             GW Points
@@ -607,7 +607,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                         <button
                             onClick={() => setRankingsTab("overall")}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                                rankingsTab === "overall" ? "bg-purple-600 text-white" : "text-slate-500 hover:text-slate-300"
+                                rankingsTab === "overall" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-300"
                             }`}
                         >
                             Overall
@@ -653,7 +653,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                             <div className="min-w-0">
                                                 <div className="font-extrabold text-xs text-white truncate">{rank.name}</div>
                                                 {acronym && (
-                                                    <div className="text-[9px] font-black uppercase text-purple-400 tracking-wider mt-0.5">
+                                                    <div className="text-[9px] font-black uppercase text-primary/80 tracking-wider mt-0.5">
                                                         {acronym}
                                                     </div>
                                                 )}
@@ -678,7 +678,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
             {isCreatingModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreatingModal(false)} />
-                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl ">
                         <div className="flex flex-col gap-5">
                             <div>
                                 <h3 className="font-russo uppercase tracking-wider text-white text-md">Create Group</h3>
@@ -693,7 +693,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         value={newRoomName}
                                         onChange={(e) => setNewRoomName(e.target.value)}
                                         placeholder="e.g. Accra Aca Boys"
-                                        className="w-full mt-1 px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+                                        className="w-full mt-1 px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-primary/50"
                                     />
                                 </div>
                                 <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-white/5">
@@ -705,7 +705,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         type="checkbox" 
                                         checked={newRoomIsPublic}
                                         onChange={(e) => setNewRoomIsPublic(e.target.checked)}
-                                        className="h-4 w-4 accent-purple-600 rounded cursor-pointer"
+                                        className="h-4 w-4 accent-primary rounded cursor-pointer"
                                     />
                                 </div>
                                 <div className="flex gap-2 pt-2">
@@ -719,7 +719,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                     <button 
                                         type="submit" 
                                         disabled={isPending}
-                                        className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                        className="flex-1 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-standard hover:-translate-y-0.5 cursor-pointer"
                                     >
                                         {isPending ? "Creating..." : "Create Room"}
                                     </button>
@@ -734,7 +734,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
             {isJoiningModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsJoiningModal(false)} />
-                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl ">
                         <div className="flex flex-col gap-5">
                             <div>
                                 <h3 className="font-russo uppercase tracking-wider text-white text-md">Join Group</h3>
@@ -750,7 +750,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         onChange={(e) => setJoinCodeInput(e.target.value)}
                                         placeholder="e.g. A3B8C9"
                                         maxLength={6}
-                                        className="w-full mt-1 px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-center font-mono font-black uppercase text-purple-400 placeholder-slate-700 tracking-widest focus:outline-none focus:border-purple-500/50 text-white"
+                                        className="w-full mt-1 px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-center font-mono font-black uppercase text-primary/80 placeholder-slate-700 tracking-widest focus:outline-none focus:border-primary/50 text-white"
                                     />
                                 </div>
                                 <div className="flex gap-2 pt-2">
@@ -764,7 +764,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                     <button 
                                         type="submit" 
                                         disabled={isPending}
-                                        className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                        className="flex-1 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-standard hover:-translate-y-0.5 cursor-pointer"
                                     >
                                         {isPending ? "Joining..." : "Join"}
                                     </button>
@@ -779,7 +779,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
             {isBadgeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsBadgeModal(false)} />
-                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="relative bg-slate-900 border border-white/10 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl ">
                         <div className="flex flex-col gap-4">
                             <div>
                                 <h3 className="font-russo uppercase tracking-wider text-white text-md">Choose Your School</h3>
@@ -793,7 +793,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                 value={schoolSearch}
                                 onChange={(e) => setSchoolSearch(e.target.value)}
                                 placeholder="Search school or region..."
-                                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+                                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-white/5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-primary/50"
                             />
 
                             {badgeError && (
@@ -813,7 +813,7 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                             disabled={savingSchool}
                                             className={`w-full px-4 py-3 flex items-center justify-between gap-2 text-left transition-colors cursor-pointer ${
                                                 almaMater === s.name
-                                                    ? "bg-purple-600/20"
+                                                    ? "bg-primary/20"
                                                     : "hover:bg-white/5"
                                             } disabled:opacity-50`}
                                         >

@@ -41,8 +41,8 @@ export function GroupStandingsModal({
                 <DialogHeader className="p-6 pb-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                                <BarChart2 className="h-5 w-5 text-purple-400" />
+                            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                                <BarChart2 className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                                 <DialogTitle className="text-xl font-black text-foreground uppercase tracking-tight">Final Group Standings</DialogTitle>
@@ -102,7 +102,7 @@ export function GroupStandingsModal({
                                                     {[s.p, s.w, s.d, s.l].map((v, i) => (
                                                         <td key={i} className="text-center px-2 py-3 text-muted-foreground font-bold">{v}</td>
                                                     ))}
-                                                    <td className="text-center px-2 py-3 font-black text-purple-400">{s.pts}</td>
+                                                    <td className="text-center px-2 py-3 font-black text-primary">{s.pts}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

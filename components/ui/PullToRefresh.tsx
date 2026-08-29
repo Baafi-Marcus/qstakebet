@@ -88,11 +88,11 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
             >
                 <div className={cn(
                     "bg-popover border border-border rounded-full p-2 shadow-2xl flex items-center justify-center transition-transform",
-                    pullDistance > threshold ? "scale-110 bg-purple-600/20 border-purple-500/50" : "scale-100"
+                    pullDistance > threshold ? "scale-110 bg-primary/20 border-primary/50" : "scale-100"
                 )}>
                     <Loader2
                         className={cn(
-                            "h-5 w-5 text-purple-500",
+                            "h-5 w-5 text-primary",
                             isRefreshing ? "animate-spin" : ""
                         )}
                         style={{

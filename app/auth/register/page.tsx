@@ -81,11 +81,10 @@ function RegisterForm() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-background flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
             </div>
 
             <div className="relative w-full max-w-md">
@@ -94,26 +93,26 @@ function RegisterForm() {
                     <div className="flex items-center justify-center gap-3 mb-2">
                         <Image src="/logo.svg" alt="QSTAKEbet Logo" width={48} height={48} className="animate-bounce-slow" />
                         <h1 className="text-4xl font-black text-foreground italic tracking-tighter">
-                            QSTAKE<span className="text-purple-400">bet</span>
+                            QSTAKE<span className="text-foreground">bet</span>
                         </h1>
                     </div>
                     <p className="text-muted-foreground">Create your account and play NSMQ Fantasy</p>
                 </div>
 
                 {/* Register Card */}
-                <div className="bg-card/40 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.35)]">
+                <div className="bg-card/40 backdrop-blur-xl rounded-3xl p-8 shadow-xl">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-purple-500/10 rounded-xl">
-                            <UserPlus className="h-6 w-6 text-purple-400" />
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <UserPlus className="h-6 w-6 text-primary" />
                         </div>
                         <h2 className="text-2xl font-bold text-foreground">Create Account</h2>
                     </div>
 
                     {/* Fantasy Banner */}
-                    <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl flex items-start gap-3">
-                        <Gift className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-start gap-3">
+                        <Gift className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-semibold text-purple-300">Play NSMQ Fantasy!</p>
+                            <p className="text-sm font-semibold text-primary">Play NSMQ Fantasy!</p>
                             <p className="text-xs text-muted-foreground mt-1">Draft your school squad, earn points every matchday and climb the leaderboard.</p>
                         </div>
                     </div>
@@ -138,7 +137,7 @@ function RegisterForm() {
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -159,7 +158,7 @@ function RegisterForm() {
                                     title="3-20 characters: letters, numbers and underscores only"
                                     value={formData.username}
                                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -176,7 +175,7 @@ function RegisterForm() {
                                     required
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -193,7 +192,7 @@ function RegisterForm() {
                                     placeholder="e.g. Prempeh College"
                                     value={formData.almaMater}
                                     onChange={(e) => setFormData({ ...formData, almaMater: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -210,7 +209,7 @@ function RegisterForm() {
                                     required
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -227,7 +226,7 @@ function RegisterForm() {
                                     required
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -244,7 +243,7 @@ function RegisterForm() {
                                     required
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard verified-inputs"
                                 />
                             </div>
                         </div>
@@ -260,7 +259,7 @@ function RegisterForm() {
                                     type="text"
                                     value={formData.referredBy}
                                     onChange={(e) => setFormData({ ...formData, referredBy: e.target.value.toUpperCase() })}
-                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all uppercase verified-inputs"
+                                    className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard uppercase verified-inputs"
                                 />
                             </div>
                         </div>
@@ -273,10 +272,10 @@ function RegisterForm() {
                                 required
                                 checked={agreedToTerms}
                                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                className="mt-1 h-4 w-4 rounded border-input bg-background/40 text-purple-600 focus:ring-purple-500/20 focus:ring-offset-0 transition-all cursor-pointer"
+                                className="mt-1 h-4 w-4 rounded border-input bg-background/40 text-primary focus:ring-primary/20 focus:ring-offset-0 transition-standard cursor-pointer"
                             />
                             <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight cursor-pointer select-none">
-                                I agree to the <Link href="/terms" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Terms & Conditions</Link> and <Link href="/privacy" className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4">Privacy Policy</Link>
+                                I agree to the <Link href="/terms" className="text-primary hover:opacity-80 font-bold underline underline-offset-4">Terms & Conditions</Link> and <Link href="/privacy" className="text-primary hover:opacity-80 font-bold underline underline-offset-4">Privacy Policy</Link>
                             </label>
                         </div>
 
@@ -284,7 +283,7 @@ function RegisterForm() {
                         <button
                             type="submit"
                             disabled={loading || !agreedToTerms}
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 mt-4"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-6 rounded-xl transition-standard hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 mt-4"
                         >
                             {loading ? "Creating account..." : "Create Account"}
                         </button>

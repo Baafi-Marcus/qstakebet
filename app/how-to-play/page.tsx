@@ -10,7 +10,7 @@ export default function HowToPlayPage() {
                         <BookOpen className="h-8 w-8 text-primary" />
                     </div>
                     <h1 className="text-4xl font-black text-foreground uppercase tracking-tight mb-3">How to Play</h1>
-                    <p className="text-muted-foreground text-lg font-medium">Your complete guide to QSTAKEfantasy — NSMQ Fantasy</p>
+                    <p className="text-muted-foreground text-lg font-medium">Your complete guide to QSTAKEbet, the NSMQ Fantasy platform</p>
                 </div>
 
                 {/* Steps */}

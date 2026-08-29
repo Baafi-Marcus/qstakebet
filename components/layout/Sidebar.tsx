@@ -30,7 +30,7 @@ export function Sidebar() {
                                     className={cn(
                                         "flex items-center rounded-xl px-4 py-2.5 text-sm font-bold transition-all",
                                         isActive
-                                            ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
+                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
                                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     )}
                                 >
@@ -45,7 +45,7 @@ export function Sidebar() {
                 <div className="px-7 pt-4">
                     <Link
                         href="/admin"
-                        className="text-[10px] font-black text-muted-foreground/70 hover:text-purple-400 transition-colors uppercase tracking-[0.2em] border-t border-border pt-4 block"
+                        className="text-[10px] font-black text-muted-foreground/70 hover:text-primary transition-colors uppercase tracking-[0.2em] border-t border-border pt-4 block"
                     >
                         Admin Dashboard
                     </Link>

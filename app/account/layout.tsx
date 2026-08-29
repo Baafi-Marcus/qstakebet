@@ -42,13 +42,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                             key={item.href}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center gap-4 px-5 py-4 rounded-3xl transition-all duration-200 group text-lg font-bold mb-1",
+                                                "flex items-center gap-4 px-5 py-4 rounded-3xl transition-standard duration-200 group text-lg font-bold mb-1",
                                                 isActive
-                                                    ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                                                    ? "bg-foreground text-background"
                                                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                             )}
                                         >
-                                            <Icon className={cn("h-6 w-6", isActive ? "text-white" : "text-purple-400 group-hover:scale-110 transition-transform")} />
+                                            <Icon className={cn("h-6 w-6", isActive ? "text-background" : "text-muted-foreground group-hover:text-foreground")} />
                                             <span>{item.label}</span>
                                             <ChevronRight className={cn("ml-auto h-5 w-5 opacity-0 group-hover:opacity-100 transition-all", isActive && "opacity-100")} />
                                         </Link>

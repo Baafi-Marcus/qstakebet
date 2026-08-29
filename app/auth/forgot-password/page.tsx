@@ -56,29 +56,29 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-background flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
             </div>
 
             <div className="relative w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-2">
-                        <Image src="/logo.svg" alt="QSTAKEfantasy Logo" width={48} height={48} className="animate-bounce-slow" />
+                        <Image src="/logo.svg" alt="QSTAKEbet Logo" width={48} height={48} className="animate-bounce-slow" />
                         <h1 className="text-4xl font-black text-foreground italic tracking-tighter">
-                            QSTAKE<span className="text-purple-400">fantasy</span>
+                            QSTAKE<span className="text-foreground">bet</span>
                         </h1>
                     </div>
                     <p className="text-muted-foreground">Security & Account Recovery</p>
                 </div>
 
                 {/* Reset Card */}
-                <div className="bg-card/40 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.35)]">
+                <div className="bg-card/40 backdrop-blur-xl rounded-3xl p-8 shadow-xl">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-purple-500/10 rounded-xl">
-                            <KeyRound className="h-6 w-6 text-purple-400" />
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <KeyRound className="h-6 w-6 text-primary" />
                         </div>
                         <h2 className="text-2xl font-bold text-foreground">Reset Password</h2>
                     </div>
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                                         required
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono"
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard font-mono"
                                         placeholder="024XXXXXXX"
                                     />
                                 </div>
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
                                         required
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard"
                                         placeholder="New password (min. 6 characters)"
                                     />
                                 </div>
@@ -125,14 +125,14 @@ export default function ForgotPasswordPage() {
                                         required
                                         value={formData.confirmPassword}
                                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                        className="w-full bg-background/40 border border-input rounded-xl pl-12 pr-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-standard"
                                         placeholder="Confirm new password"
                                     />
                                 </div>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-6 rounded-xl transition-standard hover:-translate-y-0.5 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? "Updating password..." : "Reset Password"}
                                 </button>
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
                             </div>
                             <Link
                                 href="/auth/login"
-                                className="block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all"
+                                className="block w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-standard hover:-translate-y-0.5"
                             >
                                 Sign In Now
                             </Link>

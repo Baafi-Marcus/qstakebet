@@ -76,13 +76,10 @@ export default async function SemiFinalPage() {
             <div className="max-w-3xl mx-auto px-4 py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                        <span className="text-3xl">🔥</span> 
-                        <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-                            Semi-Final Confidence Challenge
-                        </span>
+                        Semi-Final Confidence Challenge
                     </h1>
                     <p className="text-slate-400 mt-2 text-sm">
-                        Predict the winner of each Semi-Final contest. Assign your confidence multipliers ⚡ 1×, ⭐ 2×, and 🔥 3× exactly once!
+                        Predict the winner of each Semi-Final contest and assign your confidence multipliers 1x, 2x, and 3x exactly once.
                     </p>
                 </div>
 

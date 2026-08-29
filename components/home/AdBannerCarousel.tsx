@@ -12,8 +12,8 @@ interface AdBannerCarouselProps {
 }
 
 const AD_THEMES: Record<string, string> = {
-    default: "bg-gradient-to-r from-purple-900/40 via-blue-900/40 to-purple-900/40",
-    neon: "bg-black border-y border-purple-500/30 bg-[radial-gradient(circle_at_50%_50%,rgba(168,85,247,0.15),transparent_70%)]",
+    default: "bg-gradient-to-r from-slate-900/90 via-blue-900/40 to-slate-900/90",
+    neon: "bg-black border-y border-primary/30 bg-[radial-gradient(circle_at_50%_50%,rgba(168,85,247,0.15),transparent_70%)]",
     gold: "bg-gradient-to-br from-[#1a1600] via-[#4d3d00] to-[#1a1600] border-y border-yellow-500/20",
     cyber: "bg-[#050505] bg-[linear-gradient(90deg,rgba(56,189,248,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(56,189,248,0.05)_1px,transparent_1px)] bg-[size:20px_20px]",
     minimal: "bg-[#0f1115] border-y border-white/5",
@@ -22,7 +22,7 @@ const AD_THEMES: Record<string, string> = {
 
 const THEME_TEXT: Record<string, string> = {
     default: "text-white italic",
-    neon: "text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,0.5)] uppercase font-black",
+    neon: "text-primary drop- uppercase font-black",
     gold: "text-[#ffd700] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] font-serif italic",
     cyber: "text-cyan-400 font-mono uppercase tracking-[0.2em]",
     minimal: "text-slate-200 font-medium tracking-tight",

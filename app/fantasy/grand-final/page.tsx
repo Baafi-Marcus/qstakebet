@@ -76,10 +76,7 @@ export default async function GrandFinalPage() {
             <div className="max-w-3xl mx-auto px-4 py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                        <span className="text-3xl">🏆</span> 
-                        <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-600 bg-clip-text text-transparent">
-                            Ultimate NSMQ Predictor
-                        </span>
+                        Ultimate NSMQ Predictor
                     </h1>
                     <p className="text-slate-400 mt-2 text-sm">
                         Welcome to the Grand Final! Predict the Champion, Runner-Up, and Winning Margin. Boost one selection for double points!

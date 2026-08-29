@@ -42,10 +42,10 @@ export function LiveScoreToast({ matchLabel, newScore, teamName }: LiveScoreToas
         >
             <div className="bg-popover/90 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-2xl flex items-center gap-4 overflow-hidden relative">
                 {/* Glow Effect */}
-                <div className="absolute inset-y-0 left-0 w-1 bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+                <div className="absolute inset-y-0 left-0 w-1 bg-primary " />
 
-                <div className="h-10 w-10 bg-purple-600/20 rounded-xl flex items-center justify-center shrink-0">
-                    <Zap className="h-5 w-5 text-purple-400 fill-purple-400/20 animate-pulse" />
+                <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center shrink-0">
+                    <Zap className="h-5 w-5 text-primary fill-primary/20 animate-pulse" />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -54,7 +54,7 @@ export function LiveScoreToast({ matchLabel, newScore, teamName }: LiveScoreToas
                         Live Goal: {matchLabel}
                     </p>
                     <p className="text-sm font-bold text-foreground truncate">
-                        <span className="text-purple-400">{teamName}</span> scores!
+                        <span className="text-primary">{teamName}</span> scores!
                     </p>
                 </div>
 

@@ -90,7 +90,7 @@ export function InstallPrompt() {
                 ? [
                     { title: "Open the browser menu", body: "The ⋮ three-dot menu at the top-right of Chrome", icon: <Menu className="h-4 w-4" /> },
                     { title: 'Tap "Add to Home screen"', body: 'Or "Install app" depending on your browser', icon: <Plus className="h-4 w-4" /> },
-                    { title: "Confirm Install", body: "QSTAKEbet appears in your apps — one tap away", icon: <Download className="h-4 w-4" /> },
+                    { title: "Confirm Install", body: "QSTAKEbet appears in your apps, one tap away", icon: <Download className="h-4 w-4" /> },
                 ]
                 : [
                     { title: "Look at the address bar", body: "Click the install icon on the right side of it", icon: <Download className="h-4 w-4" /> },
@@ -117,20 +117,20 @@ export function InstallPrompt() {
                     <img src="/icon.png" alt="QSTAKEbet" className="w-12 h-12 rounded-2xl border border-white/10" />
                     <div>
                         <h2 className="font-extrabold text-white text-lg leading-tight">Add QSTAKEbet to your Home Screen</h2>
-                        <p className="text-xs text-slate-400 mt-0.5">One tap away — no app store needed</p>
+                        <p className="text-xs text-slate-400 mt-0.5">One tap away, no app store needed</p>
                     </div>
                 </div>
 
                 <div className="space-y-3 mb-6">
                     {steps.map((step, i) => (
                         <div key={step.title} className="flex items-start gap-3 bg-slate-900 border border-white/5 rounded-2xl px-4 py-3">
-                            <div className="shrink-0 h-7 w-7 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-black text-xs">
+                            <div className="shrink-0 h-7 w-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs">
                                 {i + 1}
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-extrabold text-white flex items-center gap-1.5">
                                     {step.title}
-                                    <span className="text-purple-400">{step.icon}</span>
+                                    <span className="text-primary">{step.icon}</span>
                                 </div>
                                 <p className="text-xs text-slate-400 mt-0.5">{step.body}</p>
                             </div>
@@ -141,7 +141,7 @@ export function InstallPrompt() {
                 {deferredPrompt && (
                     <button
                         onClick={installNative}
-                        className="w-full py-3.5 mb-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-black uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-purple-600/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-3.5 mb-3 bg-primary hover:bg-primary/90 text-white text-sm font-black uppercase tracking-wider rounded-2xl transition-standard hover:-translate-y-0.5 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <Download className="h-5 w-5" />
                         Install Now

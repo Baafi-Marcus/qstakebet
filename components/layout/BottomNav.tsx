@@ -57,7 +57,7 @@ export function BottomNav() {
             {/* Sliding Active Indicator */}
             <div
                 ref={indicatorRef}
-                className="absolute top-1 h-1 w-8 bg-purple-500 rounded-full blur-[2px] opacity-0"
+                className="absolute top-1 h-1 w-8 bg-primary rounded-full blur-[2px] opacity-0"
                 style={{ pointerEvents: 'none' }}
             />
 
@@ -72,10 +72,10 @@ export function BottomNav() {
                             onClick={handleNavClick}
                             className={cn(
                                 "flex flex-col items-center justify-center gap-1 transition-all active:scale-90 flex-1",
-                                isActive ? "text-purple-400" : "text-muted-foreground hover:text-foreground/80"
+                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground/80"
                             )}
                         >
-                            <item.icon className={cn("h-5 w-5", isActive && "fill-purple-400/20")} />
+                            <item.icon className={cn("h-5 w-5", isActive && "fill-primary/20")} />
                             <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
                         </Link>
                     )
