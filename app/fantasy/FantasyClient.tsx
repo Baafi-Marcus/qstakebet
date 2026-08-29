@@ -84,9 +84,6 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
 
     // Once playoff fixtures are scheduled, the regular matchday draft is paused
     const playoffsScheduled = hasQF || hasSF || hasGF
-    const playoffTarget = hasGF ? "/fantasy/grand-final" : hasSF ? "/fantasy/semi-final" : hasQF ? "/fantasy/quarter-final" : null
-    const playoffLabel = hasGF ? "Grand Final Predictor" : hasSF ? "Semi-Final Predictor" : hasQF ? "Quarter-Final Predictor" : ""
-    const goToPlayoff = () => { if (playoffTarget) router.push(playoffTarget) }
     
     // Determine which stage we are viewing
     const [viewMode, setViewMode] = useState<'current' | 'next'>(stages.currentStage ? 'current' : 'next')
@@ -562,19 +559,9 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                             : "You haven't selected your squad yet."}
                                 </p>
                                 {playoffsScheduled ? (
-                                    <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
-                                        <span className="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
-                                            <Clock className="h-4 w-4" /> Selection closed during playoffs
-                                        </span>
-                                        {playoffTarget && (
-                                            <button
-                                                onClick={goToPlayoff}
-                                                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-foreground text-background hover:opacity-90 transition-standard hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
-                                            >
-                                                {playoffLabel} <ArrowRight className="h-4 w-4" />
-                                            </button>
-                                        )}
-                                    </div>
+                                    <p className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        <Clock className="h-4 w-4" /> Lineup draft paused during the playoffs
+                                    </p>
                                 ) : !activeStage || isLockedLocal || stages.isOffSeason ? (
                                     <div className="mt-6 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
                                         <Clock className="h-4 w-4" /> Selection closed for this stage
