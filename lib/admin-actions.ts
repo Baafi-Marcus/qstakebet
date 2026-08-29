@@ -8,6 +8,7 @@ import { parseRosterWithAI } from "./ai-roster-parser"
 import { settleFantasyPoints } from "./fantasy-actions"
 import { settleFantasyLineups } from "./settlement"
 import { auth } from "./auth"
+import { isPlayoffStage } from "./playoff-stages"
 import { revalidateTag, revalidatePath } from "next/cache"
 
 function safeRevalidatePath(path: string) {
@@ -1687,12 +1688,11 @@ export async function calculateQuarterFinalScores() {
         }
 
         // Fetch all QF matches that are finished
-        const qfMatches = await db.select()
+        const allFinished = await db.select()
             .from(matches)
-            .where(and(
-                eq(matches.stage, "Quarter Final"),
-                eq(matches.status, "finished")
-            ));
+            .where(eq(matches.status, "finished"));
+
+        const qfMatches = allFinished.filter((m) => isPlayoffStage(m.stage, "quarterFinal"));
 
         const matchResults = new Map<string, string>(); // matchId -> winnerSchoolId
         for (const match of qfMatches) {
@@ -1773,12 +1773,11 @@ export async function calculateSemiFinalScores() {
         }
 
         // Fetch all Semi-Final matches that are finished
-        const sfMatches = await db.select()
+        const allFinished = await db.select()
             .from(matches)
-            .where(and(
-                eq(matches.stage, "Semi Final"),
-                eq(matches.status, "finished")
-            ));
+            .where(eq(matches.status, "finished"));
+
+        const sfMatches = allFinished.filter((m) => isPlayoffStage(m.stage, "semiFinal"));
 
         const matchResults = new Map<string, string>(); // matchId -> winnerSchoolId
         for (const match of sfMatches) {
@@ -1842,13 +1841,13 @@ export async function calculateGrandFinalScores() {
             return { success: false, error: "Unauthorized" };
         }
 
-        const gfMatches = await db.select()
+        const allFinishedMatches = await db.select()
             .from(matches)
             .where(and(
-                eq(matches.stage, "Final"),
                 eq(matches.status, "finished")
-            ))
-            .limit(1);
+            ));
+
+        const gfMatches = allFinishedMatches.filter((m) => isPlayoffStage(m.stage, "grandFinal"));
 
         if (gfMatches.length === 0) {
             return { success: false, error: "No finished Grand Final match found." };

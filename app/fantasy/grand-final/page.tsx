@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { matches } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getGrandFinalPrediction } from "@/lib/fantasy-actions"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 import GrandFinalClient from "./GrandFinalClient"
 import { redirect } from "next/navigation"
 
@@ -20,16 +21,19 @@ export default async function GrandFinalPage() {
     }
 
     // 1. Fetch Grand Final Match
-    const gfMatches = await db.select({
+    const gfAll = await db.select({
         id: matches.id,
+        stage: matches.stage,
         scheduledAt: matches.scheduledAt,
         status: matches.status,
         participants: matches.participants,
         result: matches.result
     })
     .from(matches)
-    .where(eq(matches.stage, "Final"))
-    .limit(1)
+
+    const gfMatches = gfAll
+        .filter((m) => isPlayoffStage(m.stage, "grandFinal"))
+        .slice(0, 1)
 
     if (gfMatches.length === 0) {
         return (

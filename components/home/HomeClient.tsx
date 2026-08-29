@@ -12,6 +12,7 @@ import {
     MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid"
 import { Match } from "@/lib/types"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 
 interface HomeClientProps {
     initialMatches: Match[]
@@ -119,7 +120,7 @@ export function HomeClient({ initialMatches }: HomeClientProps) {
             {/* Quick Action Navigation */}
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border border-y border-border">
 
-                {initialMatches.some(m => m.stage === "Quarter Final") ? (
+                {initialMatches.some(m => isPlayoffStage(m.stage, "quarterFinal")) ? (
                     <Link href="/fantasy/quarter-final" className="group flex items-start gap-4 py-6 sm:px-6 first:sm:pl-0 hover:bg-amber-500/10 transition-colors">
                         <TrophyIcon className="h-7 w-7 text-amber-500 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
                         <div>

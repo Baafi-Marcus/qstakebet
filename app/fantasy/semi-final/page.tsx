@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { matches } from "@/lib/db/schema"
 import { eq, asc } from "drizzle-orm"
 import { getSemiFinalPrediction } from "@/lib/fantasy-actions"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 import SemiFinalClient from "./SemiFinalClient"
 import { redirect } from "next/navigation"
 
@@ -20,16 +21,18 @@ export default async function SemiFinalPage() {
     }
 
     // 1. Fetch Semi-Final Contests
-    const sfMatches = await db.select({
+    const sfAll = await db.select({
         id: matches.id,
+        stage: matches.stage,
         scheduledAt: matches.scheduledAt,
         status: matches.status,
         participants: matches.participants,
         result: matches.result
     })
     .from(matches)
-    .where(eq(matches.stage, "Semi Final"))
     .orderBy(asc(matches.scheduledAt))
+
+    const sfMatches = sfAll.filter((m) => isPlayoffStage(m.stage, "semiFinal"))
 
     // Determine if the global deadline has passed
     let isDeadlinePassed = false;

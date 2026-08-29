@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { users, schools, fantasyLineups, matches, quarterFinalPredictions, semiFinalPredictions, grandFinalPredictions } from "@/lib/db/schema"
 import { eq, and, or, desc, sql, inArray, asc } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 
 export async function submitLineup(gameWeek: string, schoolIds: string[]) {
     try {
@@ -654,10 +655,11 @@ export async function saveQuarterFinalPrediction(
         }
 
         // Global deadline check
-        const qfMatches = await db.select()
+        const qfAll = await db.select()
             .from(matches)
-            .where(eq(matches.stage, "Quarter Final"))
             .orderBy(asc(matches.scheduledAt));
+
+        const qfMatches = qfAll.filter((m) => isPlayoffStage(m.stage, "quarterFinal"));
 
         if (qfMatches.length > 0) {
             const firstMatch = qfMatches[0];
@@ -750,10 +752,11 @@ export async function saveSemiFinalPrediction(
         }
 
         // Global deadline check
-        const sfMatches = await db.select()
+        const sfAll = await db.select()
             .from(matches)
-            .where(eq(matches.stage, "Semi Final"))
             .orderBy(asc(matches.scheduledAt));
+
+        const sfMatches = sfAll.filter((m) => isPlayoffStage(m.stage, "semiFinal"));
 
         if (sfMatches.length > 0) {
             const firstMatch = sfMatches[0];
@@ -859,10 +862,10 @@ export async function saveGrandFinalPrediction(
         }
 
         // Global deadline check
-        const gfMatches = await db.select()
-            .from(matches)
-            .where(eq(matches.stage, "Final"))
-            .limit(1);
+        const gfAll = await db.select()
+            .from(matches);
+
+        const gfMatches = gfAll.filter((m) => isPlayoffStage(m.stage, "grandFinal"));
 
         if (gfMatches.length > 0) {
             const firstMatch = gfMatches[0];

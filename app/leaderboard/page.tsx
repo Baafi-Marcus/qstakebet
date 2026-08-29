@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { users, matches } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getLeaderboard, getActiveFantasyStage, getFantasyGameWeeks, getQuarterFinalLeaderboard, getSemiFinalLeaderboard, getGrandFinalLeaderboard } from "@/lib/fantasy-actions"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 import { LeaderboardClient } from "./LeaderboardClient"
 
 export const dynamic = 'force-dynamic'
@@ -22,14 +23,10 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
     const sfStandings = await getSemiFinalLeaderboard()
     const gfStandings = await getGrandFinalLeaderboard()
 
-    const [qfMatches, sfMatches, gfMatches] = await Promise.all([
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Quarter Final")).limit(1),
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Semi Final")).limit(1),
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Final")).limit(1)
-    ])
-    const isQFActive = qfMatches.length > 0
-    const isSFActive = sfMatches.length > 0
-    const isGFActive = gfMatches.length > 0
+    const allPlayoffMatches = await db.select({ id: matches.id, stage: matches.stage }).from(matches)
+    const isQFActive = allPlayoffMatches.some(m => isPlayoffStage(m.stage, "quarterFinal"))
+    const isSFActive = allPlayoffMatches.some(m => isPlayoffStage(m.stage, "semiFinal"))
+    const isGFActive = allPlayoffMatches.some(m => isPlayoffStage(m.stage, "grandFinal"))
 
     let viewerAlmaMater: string | null = null
     const session = await auth()

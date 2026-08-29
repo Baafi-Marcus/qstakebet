@@ -19,6 +19,22 @@ async function main() {
         console.log("Connected to DB. Creating tables...");
 
         await client.query(`
+            CREATE TABLE IF NOT EXISTS quarter_final_predictions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id),
+                predictions JSONB NOT NULL,
+                wildcard_match_id TEXT,
+                master_pick_school_id TEXT,
+                points_earned INTEGER DEFAULT 0 NOT NULL,
+                is_locked BOOLEAN DEFAULT false NOT NULL,
+                locked_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT now(),
+                updated_at TIMESTAMP DEFAULT now()
+            );
+        `);
+        console.log("quarter_final_predictions table created or verified.");
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS semi_final_predictions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL REFERENCES users(id),

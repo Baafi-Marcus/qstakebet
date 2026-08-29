@@ -8,6 +8,7 @@ import { Tournament, School, Match } from "@/lib/types"
 import { MatchResultModal } from "../../matches/MatchResultModal"
 import { useRouter } from "next/navigation"
 import { calculateGroupStandings } from "@/lib/match-utils"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 
 export function TournamentDetailClient({
     tournament,
@@ -33,8 +34,8 @@ export function TournamentDetailClient({
     // Differentiate matches
     const knockoutMatches = matches.filter(m =>
         m.group === 'Knockout' ||
-        ['Quarter Final', 'Semi Final', 'Final'].includes(m.matchday || "") ||
-        ['Quarter Final', 'Semi Final', 'Final'].includes(m.stage || "")
+        isPlayoffStage(m.matchday || "", "quarterFinal") || isPlayoffStage(m.matchday || "", "semiFinal") || isPlayoffStage(m.matchday || "", "grandFinal") ||
+        isPlayoffStage(m.stage || "", "quarterFinal") || isPlayoffStage(m.stage || "", "semiFinal") || isPlayoffStage(m.stage || "", "grandFinal")
     )
 
     const groupMatches = matches.filter(m => !knockoutMatches.includes(m))
@@ -183,12 +184,16 @@ export function TournamentDetailClient({
                                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Knockout Stage</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {['Quarter Final', 'Semi Final', 'Final'].map(stage => {
-                                        const stageMatches = knockoutMatches.filter(m => m.matchday === stage || m.stage === stage)
+                                    {[
+                                        { label: 'Quarter Final', check: (s: string) => isPlayoffStage(s, "quarterFinal") },
+                                        { label: 'Semi Final', check: (s: string) => isPlayoffStage(s, "semiFinal") },
+                                        { label: 'Grand Final', check: (s: string) => isPlayoffStage(s, "grandFinal") },
+                                    ].map(round => {
+                                        const stageMatches = knockoutMatches.filter(m => round.check(m.matchday || "") || round.check(m.stage || ""))
                                         if (stageMatches.length === 0) return null
                                         return (
-                                            <div key={stage} className="bg-slate-900/40 border border-white/5 rounded-3xl p-6 space-y-4">
-                                                <div className="text-[10px] font-black text-purple-500 uppercase tracking-widest border-b border-white/5 pb-2 mb-4">{stage}s</div>
+                                            <div key={round.label} className="bg-slate-900/40 border border-white/5 rounded-3xl p-6 space-y-4">
+                                                <div className="text-[10px] font-black text-purple-500 uppercase tracking-widest border-b border-white/5 pb-2 mb-4">{round.label}s</div>
                                                 <div className="space-y-3">
                                                     {stageMatches.map(m => (
                                                         <div key={m.id} className="p-3 bg-white/5 rounded-xl border border-white/5 text-xs">

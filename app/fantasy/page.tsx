@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { schools, matches } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getUserLineup, getUserLineupHistory, getFantasyStages, getParticipatingSchoolsForStage } from "@/lib/fantasy-actions"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 import { FantasyClient } from "./FantasyClient"
 
 export const dynamic = 'force-dynamic'
@@ -33,11 +34,11 @@ export default async function FantasyPage() {
         nextLineup = await getUserLineup(session.user.id, stages.nextStage.gameWeek)
     }
 
-    const [qfMatches, sfMatches, gfMatches] = await Promise.all([
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Quarter Final")).limit(1),
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Semi Final")).limit(1),
-        db.select({ id: matches.id }).from(matches).where(eq(matches.stage, "Final")).limit(1)
-    ])
+    // Check which playoff stages currently have any scheduled matches
+    const allMatches = await db.select({ id: matches.id, stage: matches.stage }).from(matches)
+    const hasQF = allMatches.some(m => isPlayoffStage(m.stage, "quarterFinal"))
+    const hasSF = allMatches.some(m => isPlayoffStage(m.stage, "semiFinal"))
+    const hasGF = allMatches.some(m => isPlayoffStage(m.stage, "grandFinal"))
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -48,9 +49,9 @@ export default async function FantasyPage() {
                 nextSchools={nextSchools}
                 nextLineup={nextLineup}
                 lineupHistory={lineupHistory}
-                hasQF={qfMatches.length > 0}
-                hasSF={sfMatches.length > 0}
-                hasGF={gfMatches.length > 0}
+                hasQF={hasQF}
+                hasSF={hasSF}
+                hasGF={hasGF}
             />
         </div>
     )

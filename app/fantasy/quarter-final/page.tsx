@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { matches, schools } from "@/lib/db/schema"
 import { eq, asc } from "drizzle-orm"
 import { getQuarterFinalPrediction } from "@/lib/fantasy-actions"
+import { isPlayoffStage } from "@/lib/playoff-stages"
 import QuarterFinalClient from "./QuarterFinalClient"
 import { redirect } from "next/navigation"
 
@@ -20,16 +21,18 @@ export default async function QuarterFinalPage() {
     }
 
     // 1. Fetch Quarter-Final Contests
-    const qfMatches = await db.select({
+    const allMatches = await db.select({
         id: matches.id,
+        stage: matches.stage,
         scheduledAt: matches.scheduledAt,
         status: matches.status,
         participants: matches.participants,
         result: matches.result
     })
     .from(matches)
-    .where(eq(matches.stage, "Quarter Final"))
     .orderBy(asc(matches.scheduledAt))
+
+    const qfMatches = allMatches.filter((m) => isPlayoffStage(m.stage, "quarterFinal"))
 
     // Determine if the global deadline has passed
     // Global deadline = scheduled time of the first QF match
