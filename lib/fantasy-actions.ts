@@ -677,6 +677,8 @@ export async function saveQuarterFinalPrediction(
                     predictions,
                     wildcardMatchId,
                     masterPickSchoolId,
+                    isLocked: true,
+                    lockedAt: new Date(),
                     updatedAt: new Date(),
                 })
                 .where(eq(quarterFinalPredictions.id, existing.id));
@@ -687,6 +689,8 @@ export async function saveQuarterFinalPrediction(
                 predictions,
                 wildcardMatchId,
                 masterPickSchoolId,
+                isLocked: true,
+                lockedAt: new Date(),
             });
         }
 
@@ -786,6 +790,8 @@ export async function saveSemiFinalPrediction(
             await db.update(semiFinalPredictions)
                 .set({
                     predictions,
+                    isLocked: true,
+                    lockedAt: new Date(),
                     updatedAt: new Date(),
                 })
                 .where(eq(semiFinalPredictions.id, existing.id));
@@ -794,6 +800,8 @@ export async function saveSemiFinalPrediction(
                 id,
                 userId,
                 predictions,
+                isLocked: true,
+                lockedAt: new Date(),
             });
         }
 
@@ -903,6 +911,8 @@ export async function saveGrandFinalPrediction(
                     runnerUpSchoolId,
                     marginRange,
                     finalBoost,
+                    isLocked: true,
+                    lockedAt: new Date(),
                     updatedAt: new Date(),
                 })
                 .where(eq(grandFinalPredictions.id, existing.id));
@@ -914,6 +924,8 @@ export async function saveGrandFinalPrediction(
                 runnerUpSchoolId,
                 marginRange,
                 finalBoost,
+                isLocked: true,
+                lockedAt: new Date(),
             });
         }
 

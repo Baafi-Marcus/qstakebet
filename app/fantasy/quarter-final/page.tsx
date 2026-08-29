@@ -81,7 +81,7 @@ export default async function QuarterFinalPage() {
                         Quarter-Final Predictor
                     </h1>
                     <p className="text-slate-400 mt-2 text-sm">
-                        Predict the winner of each contest. Use your Wildcard for double points and choose one Master Pick for a +30 point bonus.
+                        Predict the winner of each contest. Use your Wildcard on one contest for a +30 bonus and choose one Master Pick school for another +30.
                     </p>
                 </div>
 

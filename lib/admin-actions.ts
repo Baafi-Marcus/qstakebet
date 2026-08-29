@@ -1719,7 +1719,7 @@ export async function calculateQuarterFinalScores() {
                     
                     // Wildcard Bonus
                     if (userPred.wildcardMatchId === p.matchId) {
-                        points += 10; // Total 20
+                        points += 30; // Total 40
                     }
 
                     // Master Pick Bonus

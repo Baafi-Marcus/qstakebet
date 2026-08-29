@@ -111,6 +111,7 @@ export default function QuarterFinalClient({
         if (res.success) {
             setSuccess(true)
             setTimeout(() => setSuccess(false), 3000)
+            window.location.reload(); // Reflect the now-locked state
         } else {
             setError(res.error || "Failed to save predictions.")
         }
