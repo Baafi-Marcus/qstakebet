@@ -81,6 +81,12 @@ function formatStageLabel(gw: string): string {
 
 export function FantasyClient({ stages, currentSchools, currentLineup, nextSchools, nextLineup, lineupHistory, hasQF = false, hasSF = false, hasGF = false }: FantasyClientProps) {
     const router = useRouter()
+
+    // Once playoff fixtures are scheduled, the regular matchday draft is paused
+    const playoffsScheduled = hasQF || hasSF || hasGF
+    const playoffTarget = hasGF ? "/fantasy/grand-final" : hasSF ? "/fantasy/semi-final" : hasQF ? "/fantasy/quarter-final" : null
+    const playoffLabel = hasGF ? "Grand Final Predictor" : hasSF ? "Semi-Final Predictor" : hasQF ? "Quarter-Final Predictor" : ""
+    const goToPlayoff = () => { if (playoffTarget) router.push(playoffTarget) }
     
     // Determine which stage we are viewing
     const [viewMode, setViewMode] = useState<'current' | 'next'>(stages.currentStage ? 'current' : 'next')
@@ -436,7 +442,7 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                         <h2 className="text-xl font-bold font-russo uppercase tracking-wider text-foreground flex items-center gap-2">
                             <ShieldCheck className="h-6 w-6" /> My Squad
                         </h2>
-                        {!isViewingArchive && !isLockedLocal && !!activeSavedLineup && (
+                        {!isViewingArchive && !isLockedLocal && !!activeSavedLineup && !playoffsScheduled && (
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-card border border-border hover:bg-accent hover:text-accent-foreground text-sm font-bold rounded-xl transition-colors"
@@ -547,13 +553,29 @@ export function FantasyClient({ stages, currentSchools, currentLineup, nextSchoo
                                 <div className="w-16 h-16 rounded-3xl bg-foreground/10 border border-border/50 flex items-center justify-center mb-5">
                                     <ShieldCheck className="h-8 w-8 text-muted-foreground" />
                                 </div>
-                                <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">No Squad Locked In</h2>
+                                <h2 className="text-2xl font-extrabold font-russo uppercase tracking-wider text-foreground">{playoffsScheduled ? "Draft Closed During Playoffs" : "No Squad Locked In"}</h2>
                                 <p className="text-muted-foreground text-sm mt-2 max-w-md">
-                                    {activeStage
-                                        ? `You haven't selected your 3-school squad for ${formatStageLabel(activeStage.gameWeek)} yet. Browse a past matchday above, or pick your team now.`
-                                        : "You haven't selected your squad yet."}
+                                    {playoffsScheduled
+                                        ? "The 3-school lineup draft is paused while the playoffs are underway. Use the predictor above to make your picks instead."
+                                        : activeStage
+                                            ? `You haven't selected your 3-school squad for ${formatStageLabel(activeStage.gameWeek)} yet. Browse a past matchday above, or pick your team now.`
+                                            : "You haven't selected your squad yet."}
                                 </p>
-                                {!activeStage || isLockedLocal || stages.isOffSeason ? (
+                                {playoffsScheduled ? (
+                                    <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
+                                        <span className="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
+                                            <Clock className="h-4 w-4" /> Selection closed during playoffs
+                                        </span>
+                                        {playoffTarget && (
+                                            <button
+                                                onClick={goToPlayoff}
+                                                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-foreground text-background hover:opacity-90 transition-standard hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
+                                            >
+                                                {playoffLabel} <ArrowRight className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : !activeStage || isLockedLocal || stages.isOffSeason ? (
                                     <div className="mt-6 px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-sm font-bold flex items-center gap-2">
                                         <Clock className="h-4 w-4" /> Selection closed for this stage
                                     </div>
