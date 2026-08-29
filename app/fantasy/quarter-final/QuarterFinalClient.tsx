@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { saveQuarterFinalPrediction } from "@/lib/fantasy-actions"
-import { Star, Flame, Lock, CheckCircle2 } from "lucide-react"
+import { Star, Flame, Lock, CheckCircle2, Info } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type School = {
     id: string
@@ -46,6 +47,10 @@ export default function QuarterFinalClient({
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
+    const [showHowTo, setShowHowTo] = useState(() => {
+        if (typeof window === "undefined") return false
+        return !sessionStorage.getItem("qf-howto-seen")
+    })
 
     const handleSelectWinner = (matchId: string, schoolId: string) => {
         if (isLocked) return
@@ -125,6 +130,15 @@ export default function QuarterFinalClient({
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-end">
+                <button
+                    onClick={() => setShowHowTo(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-sm font-bold hover:bg-slate-700 hover:text-white transition-standard cursor-pointer"
+                >
+                    <Info className="w-4 h-4" /> How to Play
+                </button>
+            </div>
+
             {isLocked && (
                 <div className="bg-slate-900/80 border border-slate-700 p-4 rounded-xl flex items-start gap-3">
                     <Lock className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
@@ -283,6 +297,59 @@ export default function QuarterFinalClient({
                     </div>
                 </div>
             )}
+        {/* How to Play Modal */}
+            <Dialog
+                open={showHowTo}
+                onOpenChange={(open) => {
+                    setShowHowTo(open)
+                    if (!open) {
+                        try { sessionStorage.setItem("qf-howto-seen", "1") } catch {}
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md rounded-2xl border-slate-700">
+                    <DialogHeader>
+                        <DialogTitle className="font-russo uppercase tracking-wider text-amber-400 text-base">
+                            How to Play
+                        </DialogTitle>
+                        <DialogDescription className="text-xs uppercase tracking-widest font-bold text-slate-500">
+                            Quarter-Final Predictor
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 text-sm text-slate-300">
+                        <div>
+                            <span className="font-bold text-white">Predict all 9 winners.</span>{" "}
+                            Each correct pick scores <span className="font-bold text-emerald-400">+10 pts</span>.
+                        </div>
+                        <div>
+                            <span className="font-bold text-white flex items-center gap-1"><Star className="w-3.5 h-3.5 text-amber-400" /> Wildcard</span>
+                            Mark one contest as your Wildcard. If your pick there is right, that contest pays{" "}
+                            <span className="font-bold text-emerald-400">+30 extra</span> (40 total).
+                        </div>
+                        <div>
+                            <span className="font-bold text-white flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-red-400" /> Master Pick</span>
+                            Choose one school as your Master Pick. If it wins, add{" "}
+                            <span className="font-bold text-emerald-400">+30 pts</span>.
+                        </div>
+                        <div className="pt-2 border-t border-slate-800">
+                            Maximum score: <span className="font-bold text-amber-400">150 points</span>.
+                        </div>
+                        <div>
+                            Deadline is <span className="font-bold text-white">Sunday, Aug 30, 11:00 UTC</span>{" "}
+                            (before the first contest). Your picks lock the moment you press{" "}
+                            <span className="font-bold text-white">Lock Predictions</span> — no changes after.
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setShowHowTo(false)}
+                        className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-standard hover:-translate-y-0.5 cursor-pointer"
+                    >
+                        Got it
+                    </button>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
