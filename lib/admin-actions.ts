@@ -1680,6 +1680,62 @@ export async function lockQuarterFinalPredictions() {
     }
 }
 
+export async function setQuarterFinalMatchesTime(data: { startTime: string }) {
+    try {
+        const session = await auth();
+        if (session?.user?.role !== "admin") {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const date = new Date(data.startTime);
+        if (!data.startTime || isNaN(date.getTime())) {
+            return { success: false, error: "Invalid date/time selected." };
+        }
+
+        const now = new Date();
+        const upcoming = date.getTime() > now.getTime();
+        const displayTime = date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+
+        const all = await db.select({
+            id: matches.id,
+            stage: matches.stage,
+            status: matches.status,
+        }).from(matches);
+
+        const qfIds = all
+            .filter((m) => isPlayoffStage(m.stage, "quarterFinal") && m.status !== "finished" && m.status !== "cancelled")
+            .map((m) => m.id);
+
+        if (qfIds.length === 0) {
+            return { success: false, error: "No Quarter-Final contests found to reschedule." };
+        }
+
+        await db.update(matches)
+            .set({
+                scheduledAt: date,
+                startTime: displayTime,
+                status: upcoming ? "upcoming" : "live",
+                isLive: !upcoming,
+            })
+            .where(inArray(matches.id, qfIds));
+
+        revalidatePath("/fantasy/quarter-final");
+        revalidatePath("/fantasy");
+        revalidatePath("/leaderboard");
+        revalidateTag("matches");
+
+        return { success: true, message: `Rescheduled ${qfIds.length} Quarter-Final contests to ${displayTime}.` };
+    } catch (error: any) {
+        console.error("Error in setQuarterFinalMatchesTime:", error);
+        return { success: false, error: error.message || "Failed to update contest times." };
+    }
+}
+
 export async function calculateQuarterFinalScores() {
     try {
         const session = await auth();

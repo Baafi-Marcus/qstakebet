@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { XMarkIcon as X } from "@heroicons/react/24/solid";
 
@@ -60,10 +61,16 @@ export function DialogContent({ children, className }: { children: React.ReactNo
     const context = React.useContext(DialogContext)
     if (!context) throw new Error("DialogContent must be used within Dialog")
 
-    if (!context.open) return null
+    const [mounted, setMounted] = React.useState(false)
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!context.open || !mounted) return null
+
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/80 backdrop-blur-sm"
@@ -85,7 +92,8 @@ export function DialogContent({ children, className }: { children: React.ReactNo
                     <span className="sr-only">Close</span>
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }
 
