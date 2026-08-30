@@ -24,6 +24,22 @@ type Prediction = {
     predictedWinnerId: string
 }
 
+function formatDeadline(deadline: string | null) {
+    if (!deadline) return null
+    const d = new Date(deadline)
+    if (isNaN(d.getTime())) return null
+    const dateStr = new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+    }).format(d)
+    return `${dateStr} UTC`
+}
+
 export default function QuarterFinalClient({
     contests,
     initialPrediction,
@@ -55,6 +71,7 @@ export default function QuarterFinalClient({
     const isSaved = Boolean(initialPrediction?.id)
     const [isEditing, setIsEditing] = useState(() => !isSaved)
     const isEditable = !isLocked && isEditing
+    const deadlineFormatted = formatDeadline(deadline)
 
     const handleSelectWinner = (matchId: string, schoolId: string) => {
         if (!isEditable) return
@@ -358,8 +375,17 @@ export default function QuarterFinalClient({
                             Maximum score: <span className="font-bold text-amber-400">150 points</span>.
                         </div>
                         <div>
-                            Deadline is <span className="font-bold text-white">Sunday, Aug 30, 11:00 UTC</span>{" "}
-                            (before the first contest). You can edit your picks anytime until the deadline — they lock automatically at kickoff.
+                            {deadlineFormatted ? (
+                                <>
+                                    Deadline is <span className="font-bold text-white">{deadlineFormatted}</span>{" "}
+                                    (before the first contest).
+                                </>
+                            ) : (
+                                <>
+                                    Deadline is <span className="font-bold text-white">before the first contest</span>.
+                                </>
+                            )}{" "}
+                            You can edit your picks anytime until the deadline — they lock automatically at kickoff.
                         </div>
                     </div>
 
