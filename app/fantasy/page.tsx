@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm"
 import { getUserLineup, getUserLineupHistory, getFantasyStages, getParticipatingSchoolsForStage } from "@/lib/fantasy-actions"
 import { isPlayoffStage } from "@/lib/playoff-stages"
 import { FantasyClient } from "./FantasyClient"
+import PlayoffPredictionsPanel from "./PlayoffPredictionsPanel"
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,7 @@ export default async function FantasyPage() {
                 hasSF={hasSF}
                 hasGF={hasGF}
             />
+            <PlayoffPredictionsPanel />
         </div>
     )
 }

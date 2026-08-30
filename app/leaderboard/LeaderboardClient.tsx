@@ -68,17 +68,19 @@ export function LeaderboardClient({
     isSFActive = false,
     isGFActive = false
 }: LeaderboardClientProps) {
-    const defaultTab = isGFActive ? "grand_final" 
-                     : isSFActive ? "semi_final" 
-                     : isQFActive ? "quarter_final" 
-                     : "weekly";
+    const activePlayoff = isGFActive ? "grand_final" 
+                       : isSFActive ? "semi_final" 
+                       : isQFActive ? "quarter_final" 
+                       : null;
 
-    const [activeTab, setActiveTab] = useState<"weekly" | "lifetime" | "quarter_final" | "semi_final" | "grand_final">(defaultTab)
+    const [activeTab, setActiveTab] = useState<"weekly" | "playoff" | "lifetime">(activePlayoff ? "playoff" : "weekly")
+    const [playoffStage, setPlayoffStage] = useState<"quarter_final" | "semi_final" | "grand_final">(activePlayoff ?? "quarter_final")
 
     const data = activeTab === "weekly" ? initialWeekly 
-               : activeTab === "quarter_final" ? initialQuarterFinal 
-               : activeTab === "semi_final" ? initialSemiFinal
-               : activeTab === "grand_final" ? initialGrandFinal
+               : activeTab === "playoff" 
+                 ? playoffStage === "quarter_final" ? initialQuarterFinal 
+                   : playoffStage === "semi_final" ? initialSemiFinal
+                   : initialGrandFinal
                : initialLifetime
 
     const getRankIcon = (rank: number) => {
@@ -142,42 +144,19 @@ export function LeaderboardClient({
                         <Star className="h-4 w-4 shrink-0" /> Matchday Standings
                     </button>
                 )}
-                {isQFActive && !isSFActive && !isGFActive && (
-                    <button
-                        onClick={() => setActiveTab("quarter_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
-                            activeTab === "quarter_final"
-                                ? "bg-amber-500 text-slate-950 font-black"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <Trophy className="h-4 w-4 shrink-0" /> Quarter-Final
-                    </button>
-                )}
-                {isSFActive && !isGFActive && (
-                    <button
-                        onClick={() => setActiveTab("semi_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
-                            activeTab === "semi_final"
-                                ? "bg-pink-600 text-white font-black"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <Trophy className="h-4 w-4 shrink-0" /> Semi-Final
-                    </button>
-                )}
-                {isGFActive && (
-                    <button
-                        onClick={() => setActiveTab("grand_final")}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
-                            activeTab === "grand_final"
-                                ? "bg-yellow-500 text-slate-950 font-black"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <Trophy className="h-4 w-4 shrink-0" /> Grand Final
-                    </button>
-                )}
+                <button
+                    onClick={() => {
+                        setActiveTab("playoff")
+                        if (activePlayoff) setPlayoffStage(activePlayoff)
+                    }}
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
+                        activeTab === "playoff"
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                    <Trophy className="h-4 w-4 shrink-0" /> Play off
+                </button>
                 <button
                     onClick={() => setActiveTab("lifetime")}
                     className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
@@ -189,6 +168,42 @@ export function LeaderboardClient({
                     <Award className="h-4 w-4 shrink-0" /> Overall Standings
                 </button>
             </div>
+
+            {/* Playoff stage sub-tabs */}
+            {activeTab === "playoff" && (
+                <div className="flex bg-card border border-border/50 p-1.5 rounded-2xl mb-6 gap-1">
+                    <button
+                        onClick={() => setPlayoffStage("quarter_final")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
+                            playoffStage === "quarter_final"
+                                ? "bg-amber-500 text-slate-950"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        Quarter-Final
+                    </button>
+                    <button
+                        onClick={() => setPlayoffStage("semi_final")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
+                            playoffStage === "semi_final"
+                                ? "bg-pink-600 text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        Semi-Final
+                    </button>
+                    <button
+                        onClick={() => setPlayoffStage("grand_final")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-standard flex items-center justify-center gap-2 cursor-pointer ${
+                            playoffStage === "grand_final"
+                                ? "bg-yellow-500 text-slate-950"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        Grand Final
+                    </button>
+                </div>
+            )}
 
             {/* Matchday switcher */}
             {activeTab === "weekly" && allGameWeeks && allGameWeeks.length > 0 && (

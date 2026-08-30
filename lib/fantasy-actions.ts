@@ -956,3 +956,238 @@ export async function getGrandFinalLeaderboard() {
         return [];
     }
 }
+
+// ============================================
+// MY PLAYOFF PREDICTIONS TRACKER
+// ============================================
+
+type PlayoffRow = {
+    matchId: string
+    label: string
+    predictedSchoolId: string | null
+    predictedName: string | null
+    actualWinnerId: string | null
+    actualWinnerName: string | null
+    finished: boolean
+    correct: boolean | null
+    points: number
+    confidence?: number | null
+    bonus?: string[]
+}
+
+export async function getMyPlayoffPredictions() {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: "Not authenticated" };
+        }
+        const userId = session.user.id;
+
+        const all = await db.select({
+            id: matches.id,
+            stage: matches.stage,
+            status: matches.status,
+            scheduledAt: matches.scheduledAt,
+            participants: matches.participants,
+            result: matches.result,
+            metadata: matches.metadata,
+        }).from(matches);
+
+        const byStage = (stage: "quarterFinal" | "semiFinal" | "grandFinal") =>
+            all
+                .filter((m) => isPlayoffStage(m.stage, stage))
+                .sort((a, b) => (a.scheduledAt?.getTime() ?? 0) - (b.scheduledAt?.getTime() ?? 0));
+
+        const qfMatches = byStage("quarterFinal");
+        const sfMatches = byStage("semiFinal");
+        const gfMatches = byStage("grandFinal");
+
+        const [qfPred, sfPred, gfPred] = await Promise.all([
+            getQuarterFinalPrediction(userId),
+            getSemiFinalPrediction(userId),
+            getGrandFinalPrediction(userId),
+        ]);
+
+        type AnyMatch = (typeof all)[number];
+        const playerName = (m: AnyMatch, schoolId: string | null) => {
+            if (!schoolId) return null;
+            const players = (m.participants as any[]) || [];
+            return players.find(p => p.schoolId === schoolId)?.name ?? null;
+        };
+        const qfLabel = (m: AnyMatch, idx: number) => {
+            const n = (m.metadata as any)?.qfLabel;
+            return n != null ? `QF${n}` : `QF${idx + 1}`;
+        };
+
+        // ---- Quarter-Final breakdown ----
+        const qfBreakdown: PlayoffRow[] = qfMatches.map((m, idx) => {
+            const resObj = (m.result as any) || {};
+            const winnerId = resObj.winner ?? null;
+            const finished = m.status === "finished";
+            const preds = (qfPred?.predictions ?? []) as { matchId: string; predictedWinnerId: string }[];
+            const pred = preds.find(p => p.matchId === m.id);
+            const predictedId = pred?.predictedWinnerId ?? null;
+            const correct = finished && winnerId !== null ? winnerId === predictedId : null;
+            let points = 0;
+            const bonus: string[] = [];
+            if (correct) {
+                points = 10;
+                if (qfPred?.wildcardMatchId === m.id) { points += 30; bonus.push("Wildcard +30"); }
+                if (qfPred?.masterPickSchoolId && qfPred.masterPickSchoolId === predictedId) { points += 30; bonus.push("Master Pick +30"); }
+            }
+            return {
+                matchId: m.id,
+                label: qfLabel(m, idx),
+                predictedSchoolId: predictedId,
+                predictedName: playerName(m, predictedId),
+                actualWinnerId: winnerId,
+                actualWinnerName: playerName(m, winnerId),
+                finished,
+                correct,
+                points,
+                bonus,
+            };
+        });
+        const qfTotal = qfBreakdown.reduce((s, r) => s + r.points, 0);
+
+        let wildcard: PlayoffRow | null = null;
+        if (qfPred?.wildcardMatchId) {
+            const wi = qfMatches.findIndex(m => m.id === qfPred.wildcardMatchId);
+            wildcard = wi >= 0 ? qfBreakdown[wi] : null;
+        }
+
+        const masterPickSchoolId = qfPred?.masterPickSchoolId ?? null;
+        const masterRow = masterPickSchoolId ? qfBreakdown.find(r => r.predictedSchoolId === masterPickSchoolId) : null;
+        let masterSchoolName: string | null = null;
+        if (masterPickSchoolId) {
+            for (const m of qfMatches) {
+                const n = playerName(m, masterPickSchoolId);
+                if (n) { masterSchoolName = n; break; }
+            }
+        }
+
+        // ---- Semi-Final breakdown ----
+        const sfBreakdown: PlayoffRow[] = sfMatches.map((m, idx) => {
+            const resObj = (m.result as any) || {};
+            const winnerId = resObj.winner ?? null;
+            const finished = m.status === "finished";
+            const preds = (sfPred?.predictions ?? []) as { matchId: string; predictedWinnerId: string; confidence: number }[];
+            const pred = preds.find(p => p.matchId === m.id);
+            const predictedId = pred?.predictedWinnerId ?? null;
+            const confidence = pred?.confidence ?? null;
+            const correct = finished && winnerId !== null ? winnerId === predictedId : null;
+            let points = 0;
+            if (correct && confidence) points = 20 * confidence;
+            return {
+                matchId: m.id,
+                label: `SF${idx + 1}`,
+                predictedSchoolId: predictedId,
+                predictedName: playerName(m, predictedId),
+                actualWinnerId: winnerId,
+                actualWinnerName: playerName(m, winnerId),
+                finished,
+                correct,
+                points,
+                confidence,
+            };
+        });
+        const sfTotal = sfBreakdown.reduce((s, r) => s + r.points, 0);
+
+        // ---- Grand Final breakdown ----
+        const gfMatch = gfMatches[0] ?? null;
+        let champion: { schoolName: string | null; correct: boolean | null; points: number } | null = null;
+        let runnerUp: { schoolName: string | null; correct: boolean | null; points: number } | null = null;
+        let margin: { pick: string | null; actual: string | null; correct: boolean | null; points: number } | null = null;
+        let gfTotal = 0;
+        let gfFinished = false;
+
+        if (gfPred && gfMatch) {
+            const resObj = (gfMatch.result as any) || {};
+            const winnerId = resObj.winner ?? null;
+            const runnerUpId = resObj.runnerUp ?? null;
+            const scores = resObj.scores || {};
+            gfFinished = gfMatch.status === "finished";
+
+            let actualMargin: string | null = null;
+            if (winnerId && runnerUpId && scores[winnerId] != null && scores[runnerUpId] != null) {
+                const diff = Math.abs(Number(scores[winnerId]) - Number(scores[runnerUpId]));
+                if (diff >= 1 && diff <= 5) actualMargin = "1-5";
+                else if (diff >= 6 && diff <= 10) actualMargin = "6-10";
+                else if (diff >= 11 && diff <= 20) actualMargin = "11-20";
+                else if (diff >= 21 && diff <= 30) actualMargin = "21-30";
+                else if (diff >= 31) actualMargin = "31+";
+            }
+
+            const champCorrect = gfFinished && winnerId !== null ? gfPred.championSchoolId === winnerId : null;
+            const runnerCorrect = gfFinished && runnerUpId !== null ? gfPred.runnerUpSchoolId === runnerUpId : null;
+            const marginCorrect = gfFinished ? gfPred.marginRange === actualMargin : null;
+
+            let champPoints = champCorrect ? 100 : 0;
+            let runnerPoints = runnerCorrect ? 50 : 0;
+            let marginPoints = marginCorrect ? 40 : 0;
+            if (gfPred.finalBoost === "champion") champPoints *= 2;
+            else if (gfPred.finalBoost === "runner_up") runnerPoints *= 2;
+            else if (gfPred.finalBoost === "margin") marginPoints *= 2;
+
+            gfTotal = champPoints + runnerPoints + marginPoints;
+            if (champCorrect && runnerCorrect && marginCorrect) gfTotal += 100;
+
+            champion = { schoolName: playerName(gfMatch, gfPred.championSchoolId), correct: champCorrect, points: champPoints };
+            runnerUp = { schoolName: playerName(gfMatch, gfPred.runnerUpSchoolId), correct: runnerCorrect, points: runnerPoints };
+            margin = { pick: gfPred.marginRange, actual: actualMargin, correct: marginCorrect, points: marginPoints };
+        }
+
+        return {
+            success: true,
+            data: {
+                quarterFinal: {
+                    exists: !!qfPred,
+                    hasFixtures: qfMatches.length > 0,
+                    isLocked: qfPred?.isLocked ?? false,
+                    lockedAt: qfPred?.lockedAt?.toISOString() ?? null,
+                    allFinished: qfBreakdown.length > 0 && qfBreakdown.every(r => r.finished),
+                    url: "/fantasy/quarter-final",
+                    total: qfTotal,
+                    max: 150,
+                    breakdown: qfBreakdown,
+                    wildcard,
+                    masterPick: masterPickSchoolId && masterRow ? {
+                        label: masterRow.label,
+                        schoolName: masterSchoolName,
+                        correct: masterRow.correct,
+                        finished: masterRow.finished,
+                    } : null,
+                },
+                semiFinal: {
+                    exists: !!sfPred,
+                    hasFixtures: sfMatches.length > 0,
+                    isLocked: sfPred?.isLocked ?? false,
+                    lockedAt: sfPred?.lockedAt?.toISOString() ?? null,
+                    allFinished: sfBreakdown.length > 0 && sfBreakdown.every(r => r.finished),
+                    url: "/fantasy/semi-final",
+                    total: sfTotal,
+                    max: 120,
+                    breakdown: sfBreakdown,
+                },
+                grandFinal: {
+                    exists: !!gfPred && !!gfMatch,
+                    hasFixtures: gfMatches.length > 0,
+                    isLocked: gfPred?.isLocked ?? false,
+                    lockedAt: gfPred?.lockedAt?.toISOString() ?? null,
+                    allFinished: gfFinished,
+                    url: "/fantasy/grand-final",
+                    total: gfTotal,
+                    max: null,
+                    breakdown: [],
+                    champion,
+                    runnerUp,
+                    margin,
+                    boost: gfPred?.finalBoost ?? null,
+                },
+            },
+        };
+    } catch (error: any) {
+        console.error("Error in getMyPlayoffPredictions:", error);
+        return { success: false, error: error.message || "Failed to load your predictions" };
+    }
+}
