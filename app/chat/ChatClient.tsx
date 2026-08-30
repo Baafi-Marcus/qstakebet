@@ -9,7 +9,8 @@ import {
     getUserChatRooms, 
     getRoomMessages, 
     postRoomMessage, 
-    getRoomLeaderboard 
+    getRoomLeaderboard,
+    getUnreadSummary
 } from "@/lib/chat-actions"
 import { getSchoolsForPicker, updateAlmaMater } from "@/lib/user-actions"
 import { Send, Shield, Hash, MessageSquare, RefreshCw, Plus, Copy, Check, Users, Trophy, Award, Lock, Globe, X, ArrowLeft } from "lucide-react"
@@ -91,6 +92,16 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const lastMessageIdRef = useRef<string | null>(null)
     const activeIdRef = useRef<string | null>(null)
+
+    // Unread message tracking (per channel/room, last 24h)
+    const [unreadData, setUnreadData] = useState<{ target: string; count: number; latestAt: string }[]>([])
+    const [lastRead, setLastRead] = useState<Record<string, string>>(() => {
+        if (typeof window === "undefined") return {}
+        try {
+            const raw = localStorage.getItem("chat-last-read")
+            return raw ? JSON.parse(raw) : {}
+        } catch { return {} }
+    })
 
     // Create & Join custom rooms state
     const [newRoomName, setNewRoomName] = useState("")
@@ -214,6 +225,39 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
         const interval = setInterval(fetchMessages, 4000)
         return () => clearInterval(interval)
     }, [activeId, isCustomRoomActive])
+
+    // Poll unread counts every 4 seconds and mark the active target as read
+    useEffect(() => {
+        const fetchSummary = async () => {
+            const roomIds = customRooms.map(r => r.id)
+            const data = await getUnreadSummary(roomIds)
+            setUnreadData(data)
+
+            if (activeId) {
+                const nowIso = new Date().toISOString()
+                setLastRead(prev => {
+                    if (prev[activeId] === nowIso) return prev
+                    const next = { ...prev, [activeId]: nowIso }
+                    try { localStorage.setItem("chat-last-read", JSON.stringify(next)) } catch {}
+                    return next
+                })
+            }
+        }
+
+        fetchSummary()
+        const interval = setInterval(fetchSummary, 4000)
+        return () => clearInterval(interval)
+    }, [activeId, customRooms])
+
+    const getUnreadCount = (target: string) => {
+        if (target === activeId) return 0
+        const d = unreadData.find(x => x.target === target)
+        if (!d || !d.count) return 0
+        const readTs = lastRead[target] ? new Date(lastRead[target]).getTime() : 0
+        const latestTs = d.latestAt ? new Date(d.latestAt).getTime() : 0
+        if (readTs && latestTs && latestTs <= readTs) return 0
+        return d.count
+    }
 
     // Load custom room rankings if panel is open
     useEffect(() => {
@@ -356,6 +400,11 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                         <div className="font-extrabold text-sm flex items-center gap-1.5">
                                             <Hash className="h-4 w-4 text-primary/80 shrink-0" />
                                             {ch.name}
+                                            {getUnreadCount(ch.id) > 0 && (
+                                                <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center shrink-0">
+                                                    {getUnreadCount(ch.id) > 99 ? "99+" : getUnreadCount(ch.id)}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="text-[10px] text-slate-500 mt-1 font-semibold leading-normal">
                                             {ch.desc}
@@ -384,6 +433,11 @@ export function ChatClient({ initialMessages, currentUser, activeGameWeek }: Cha
                                                 <span className="truncate flex items-center gap-1.5">
                                                     <Users className="h-4 w-4 text-primary/80 shrink-0" />
                                                     {room.name}
+                                                    {getUnreadCount(room.id) > 0 && (
+                                                        <span className="bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center shrink-0">
+                                                            {getUnreadCount(room.id) > 99 ? "99+" : getUnreadCount(room.id)}
+                                                        </span>
+                                                    )}
                                                 </span>
                                                 {room.isPublic ? (
                                                     <Globe className="h-3 w-3 text-emerald-400 shrink-0" />

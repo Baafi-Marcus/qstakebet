@@ -300,7 +300,7 @@ export default function GrandFinalClient({
                             ) : success ? (
                                 <><CheckCircle2 className="w-5 h-5" /> Saved!</>
                             ) : (
-                                <><Lock className="w-4 h-4" /> LOCK MY FINAL PREDICTIONS</>
+                                <><CheckCircle2 className="w-4 h-4" /> SAVE MY FINAL PREDICTIONS</>
                             )}
                         </button>
                     )}

@@ -347,11 +347,11 @@ export default function SemiFinalClient({
                             }`}
                         >
                             {isSaving ? (
-                                'Locking predictions...'
+                                'Saving predictions...'
                             ) : success ? (
                                 <><CheckCircle2 className="w-5 h-5" /> Saved!</>
                             ) : (
-                                <><Lock className="w-4 h-4" /> LOCK MY PREDICTIONS</>
+                                <><CheckCircle2 className="w-4 h-4" /> SAVE MY PREDICTIONS</>
                             )}
                         </button>
                     )}

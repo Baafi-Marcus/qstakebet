@@ -2,9 +2,16 @@
 
 import { db } from "@/lib/db"
 import { chatMessages, users, chatRooms, chatRoomMembers, fantasyLineups } from "@/lib/db/schema"
-import { eq, desc, and, inArray, sql } from "drizzle-orm"
+import { eq, desc, and, inArray, sql, gt, lt, isNull, ne } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { rateLimit } from "@/lib/rate-limit"
+
+const MESSAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const GLOBAL_CHANNEL_IDS = ["fantasy-tavern", "kumasi-derby", "central-wave"];
+
+function ttlCutoff() {
+    return new Date(Date.now() - MESSAGE_TTL_MS);
+}
 
 // 1. Fetch messages in a channel (global)
 export async function getChannelMessages(channel: string, limit: number = 50) {
@@ -19,7 +26,12 @@ export async function getChannelMessages(channel: string, limit: number = 50) {
         })
             .from(chatMessages)
             .innerJoin(users, eq(chatMessages.userId, users.id))
-            .where(eq(chatMessages.channel, channel))
+            .where(
+                and(
+                    eq(chatMessages.channel, channel),
+                    gt(chatMessages.createdAt, ttlCutoff())
+                )
+            )
             .orderBy(desc(chatMessages.createdAt))
             .limit(limit)
 
@@ -70,6 +82,12 @@ export async function postMessage(channel: string, message: string) {
             channel,
             content: trimmed,
         })
+
+        try {
+            await db.delete(chatMessages).where(lt(chatMessages.createdAt, ttlCutoff()))
+        } catch (e) {
+            console.error("Error pruning expired chat messages:", e)
+        }
 
         const fullMessage = {
             id: messageId,
@@ -231,7 +249,12 @@ export async function getRoomMessages(roomId: string, limit: number = 50) {
         })
             .from(chatMessages)
             .innerJoin(users, eq(chatMessages.userId, users.id))
-            .where(eq(chatMessages.roomId, roomId))
+            .where(
+                and(
+                    eq(chatMessages.roomId, roomId),
+                    gt(chatMessages.createdAt, ttlCutoff())
+                )
+            )
             .orderBy(desc(chatMessages.createdAt))
             .limit(limit)
 
@@ -298,6 +321,12 @@ export async function postRoomMessage(roomId: string, message: string) {
             roomId,
             content: trimmed,
         })
+
+        try {
+            await db.delete(chatMessages).where(lt(chatMessages.createdAt, ttlCutoff()))
+        } catch (e) {
+            console.error("Error pruning expired chat messages:", e)
+        }
 
         const fullMessage = {
             id: messageId,
@@ -378,5 +407,66 @@ export async function getRoomLeaderboard(roomId: string, gameWeek: string) {
         return { success: true, data: leaderboard }
     } catch (error: any) {
         return { success: false, error: error.message }
+    }
+}
+
+// 9. Unread message counts per target (global channels + joined rooms) within the last 24h
+export async function getUnreadSummary(roomIds: string[] = []) {
+    try {
+        const session = await auth()
+        const userId = session?.user?.id
+        if (!userId) return []
+
+        const cutoff = ttlCutoff()
+        const summary: { target: string; count: number; latestAt: string }[] = []
+
+        const channelStats = await db.select({
+            target: chatMessages.channel,
+            count: sql<number>`cast(count(*) as integer)`,
+            latestAt: sql<string>`max(${chatMessages.createdAt})`,
+        })
+            .from(chatMessages)
+            .where(and(
+                inArray(chatMessages.channel, GLOBAL_CHANNEL_IDS),
+                isNull(chatMessages.roomId),
+                ne(chatMessages.userId, userId),
+                gt(chatMessages.createdAt, cutoff)
+            ))
+            .groupBy(chatMessages.channel)
+
+        channelStats.forEach(r => {
+            summary.push({ target: r.target, count: r.count ?? 0, latestAt: r.latestAt as string })
+        })
+
+        if (roomIds.length > 0) {
+            const roomStats = await db.select({
+                target: chatMessages.roomId,
+                count: sql<number>`cast(count(*) as integer)`,
+                latestAt: sql<string>`max(${chatMessages.createdAt})`,
+            })
+                .from(chatMessages)
+                .where(and(
+                    inArray(chatMessages.roomId, roomIds),
+                    ne(chatMessages.userId, userId),
+                    gt(chatMessages.createdAt, cutoff)
+                ))
+                .groupBy(chatMessages.roomId)
+
+            roomStats.forEach(r => {
+                if (r.target) summary.push({ target: r.target, count: r.count ?? 0, latestAt: r.latestAt as string })
+            })
+        }
+
+        GLOBAL_CHANNEL_IDS.forEach(id => {
+            if (!summary.some(s => s.target === id)) summary.push({ target: id, count: 0, latestAt: "" })
+        })
+        roomIds.forEach(id => {
+            if (!summary.some(s => s.target === id)) summary.push({ target: id, count: 0, latestAt: "" })
+        })
+
+        return summary
+    } catch (error) {
+        console.error("Error in getUnreadSummary:", error)
+        return []
     }
 }

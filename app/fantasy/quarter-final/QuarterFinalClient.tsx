@@ -116,7 +116,7 @@ export default function QuarterFinalClient({
         if (res.success) {
             setSuccess(true)
             setTimeout(() => setSuccess(false), 3000)
-            window.location.reload(); // Reflect the now-locked state
+            window.location.reload(); // Reflect the saved state
         } else {
             setError(res.error || "Failed to save predictions.")
         }
@@ -291,7 +291,7 @@ export default function QuarterFinalClient({
                             ) : success ? (
                                 <><CheckCircle2 className="w-5 h-5" /> Saved!</>
                             ) : (
-                                'Lock Predictions'
+                                'Save Predictions'
                             )}
                         </button>
                     </div>
@@ -337,8 +337,7 @@ export default function QuarterFinalClient({
                         </div>
                         <div>
                             Deadline is <span className="font-bold text-white">Sunday, Aug 30, 11:00 UTC</span>{" "}
-                            (before the first contest). Your picks lock the moment you press{" "}
-                            <span className="font-bold text-white">Lock Predictions</span> — no changes after.
+                            (before the first contest). You can edit your picks anytime until the deadline — they lock automatically at kickoff.
                         </div>
                     </div>
 
