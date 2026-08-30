@@ -4,5 +4,5 @@ import { authConfig } from "@/lib/auth.config"
 export default NextAuth(authConfig).auth
 
 export const config = {
-    matcher: ["/account/:path*", "/admin/:path*", "/auth/:path*"]
+    matcher: ["/account/:path*", "/admin/:path*", "/auth/:path*", "/fantasy/:path*"]
 }

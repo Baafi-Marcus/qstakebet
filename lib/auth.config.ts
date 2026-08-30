@@ -26,6 +26,7 @@ export const authConfig = {
             const isAuthPage = nextUrl.nextUrl.pathname.startsWith("/auth")
             const isAccountPage = nextUrl.nextUrl.pathname.startsWith("/account")
             const isAdminPage = nextUrl.nextUrl.pathname.startsWith("/admin")
+            const isFantasyPage = nextUrl.nextUrl.pathname.startsWith("/fantasy")
 
             // Redirect logged-in users away from auth pages
             if (isAuthPage && isLoggedIn) {
@@ -34,6 +35,11 @@ export const authConfig = {
 
             // Protect account pages
             if (isAccountPage && !isLoggedIn) {
+                return false // Redirect to login
+            }
+
+            // Protect fantasy pages (require auth)
+            if (isFantasyPage && !isLoggedIn) {
                 return false // Redirect to login
             }
 

@@ -72,7 +72,7 @@ export function DialogContent({ children, className }: { children: React.ReactNo
             {/* Content */}
             <div
                 className={cn(
-                    "relative z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg",
+                    "relative z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg max-h-[85vh] overflow-y-auto",
                     className
                 )}
             >
