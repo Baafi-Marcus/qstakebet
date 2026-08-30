@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { saveSemiFinalPrediction } from "@/lib/fantasy-actions"
-import { Trophy, Star, Flame, Clock, Lock, CheckCircle2 } from "lucide-react"
+import { Trophy, Star, Flame, Clock, Lock, CheckCircle2, Pencil } from "lucide-react"
 
 type School = {
     id: string
@@ -51,6 +51,10 @@ export default function SemiFinalClient({
     const [success, setSuccess] = useState(false)
     const [timeLeft, setTimeLeft] = useState("")
 
+    const isSaved = Boolean(initialPrediction?.id)
+    const [isEditing, setIsEditing] = useState(() => !isSaved)
+    const isEditable = !isLocked && isEditing
+
     useEffect(() => {
         if (!deadline || isLocked) return;
         const target = new Date(deadline).getTime();
@@ -77,7 +81,7 @@ export default function SemiFinalClient({
     }, [deadline, isLocked]);
 
     const handleSelectWinner = (matchId: string, schoolId: string) => {
-        if (isLocked) return
+        if (!isEditable) return
 
         setPredictions(prev => prev.map(p => {
             if (p.matchId === matchId) {
@@ -89,7 +93,7 @@ export default function SemiFinalClient({
     }
 
     const handleSelectConfidence = (matchId: string, confidence: number) => {
-        if (isLocked) return
+        if (!isEditable) return
 
         setPredictions(prev => prev.map(p => {
             if (p.matchId === matchId) {
@@ -178,8 +182,26 @@ export default function SemiFinalClient({
                 </div>
             )}
 
+            {isSaved && !isLocked && !isEditing && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                        <div>
+                            <h3 className="font-bold text-emerald-400">Predictions Saved</h3>
+                            <p className="text-sm text-slate-400">You can edit your picks until the deadline — they lock automatically at kickoff.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-standard hover:-translate-y-0.5 shrink-0 cursor-pointer"
+                    >
+                        <Pencil className="w-3.5 h-3.5" /> Edit Prediction
+                    </button>
+                </div>
+            )}
+
             {/* Confidence remaining panel */}
-            {!isLocked && (
+            {isEditable && (
                 <div className="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
                     <span className="text-xs font-black tracking-widest text-slate-400 uppercase">Multipliers Remaining:</span>
                     <div className="flex gap-2">
@@ -242,7 +264,7 @@ export default function SemiFinalClient({
                                     return (
                                         <button
                                             key={school.id}
-                                            disabled={isLocked}
+                                            disabled={!isEditable}
                                             onClick={() => handleSelectWinner(contest.id, school.id)}
                                             className={`w-full text-left p-4 rounded-xl flex items-center justify-between border transition-standard hover:-translate-y-0.5 ${
                                                 isSelected 
@@ -275,7 +297,7 @@ export default function SemiFinalClient({
                                         {[1, 2, 3].map(c => {
                                             const isCurrent = selectedConfidence === c;
                                             const isUsedElsewhere = usedConfidences.includes(c) && !isCurrent;
-                                            const disabled = isLocked || isUsedElsewhere;
+                                            const disabled = !isEditable || isUsedElsewhere;
 
                                             return (
                                                 <button
@@ -336,7 +358,7 @@ export default function SemiFinalClient({
                         <span className="text-emerald-400 font-extrabold text-sm">120 points</span>
                     </div>
 
-                    {!isLocked && (
+                    {isEditable && (
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !predictions.every(p => p.predictedWinnerId && p.confidence !== null)}

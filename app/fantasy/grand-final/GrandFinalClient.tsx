@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { saveGrandFinalPrediction } from "@/lib/fantasy-actions"
-import { Trophy, Award, Target, Star, Flame, Clock, Lock, CheckCircle2, ChevronRight, RefreshCw } from "lucide-react"
+import { Trophy, Award, Target, Star, Flame, Clock, Lock, CheckCircle2, ChevronRight, RefreshCw, Pencil } from "lucide-react"
 
 type School = {
     id: string
@@ -41,6 +41,10 @@ export default function GrandFinalClient({
     const [success, setSuccess] = useState(false)
     const [timeLeft, setTimeLeft] = useState("")
 
+    const isSaved = Boolean(initialPrediction?.id)
+    const [isEditing, setIsEditing] = useState(() => !isSaved)
+    const isEditable = !isLocked && isEditing
+
     useEffect(() => {
         if (!deadline || isLocked) return;
         const target = new Date(deadline).getTime();
@@ -67,21 +71,21 @@ export default function GrandFinalClient({
     }, [deadline, isLocked]);
 
     const handleSelectChampion = (id: string) => {
-        if (isLocked) return;
+        if (!isEditable) return;
         setChampionId(id);
         if (runnerUpId === id) setRunnerUpId("");
         setError(null);
     }
 
     const handleSelectRunnerUp = (id: string) => {
-        if (isLocked) return;
+        if (!isEditable) return;
         if (id === championId) return;
         setRunnerUpId(id);
         setError(null);
     }
 
     const handleSave = async () => {
-        if (isLocked) return;
+        if (!isEditable) return;
 
         if (!championId || !runnerUpId || !marginRange || !finalBoost) {
             setError("Please fill out all predictions and select a Final Boost.");
@@ -135,6 +139,24 @@ export default function GrandFinalClient({
                 </div>
             )}
 
+            {isSaved && !isLocked && !isEditing && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                        <div>
+                            <h3 className="font-bold text-emerald-400">Predictions Saved</h3>
+                            <p className="text-sm text-slate-400">You can edit your picks until the deadline — they lock automatically at kickoff.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-standard hover:-translate-y-0.5 shrink-0 cursor-pointer"
+                    >
+                        <Pencil className="w-3.5 h-3.5" /> Edit Prediction
+                    </button>
+                </div>
+            )}
+
             {/* Step 1 — Choose Your Champion */}
             <div className="space-y-4">
                 <h2 className="text-lg font-black uppercase text-amber-400 tracking-wider flex items-center gap-2 font-russo">
@@ -146,7 +168,7 @@ export default function GrandFinalClient({
                         return (
                             <button
                                 key={s.id}
-                                disabled={isLocked}
+                                disabled={!isEditable}
                                 onClick={() => handleSelectChampion(s.id)}
                                 className={`p-6 rounded-2xl border text-center transition-standard flex flex-col items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected 
@@ -174,7 +196,7 @@ export default function GrandFinalClient({
                         return (
                             <button
                                 key={s.id}
-                                disabled={isLocked || isChamp}
+                                disabled={!isEditable || isChamp}
                                 onClick={() => handleSelectRunnerUp(s.id)}
                                 className={`p-6 rounded-2xl border text-center transition-standard flex flex-col items-center justify-center gap-2 hover:-translate-y-0.5 ${
                                     isChamp 
@@ -203,7 +225,7 @@ export default function GrandFinalClient({
                         return (
                             <button
                                 key={range.value}
-                                disabled={isLocked}
+                                disabled={!isEditable}
                                 onClick={() => setMarginRange(range.value)}
                                 className={`p-4 rounded-xl border text-center transition-standard flex flex-col items-center justify-center gap-1 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected
@@ -234,7 +256,7 @@ export default function GrandFinalClient({
                         return (
                             <button
                                 key={boost.value}
-                                disabled={isLocked}
+                                disabled={!isEditable}
                                 onClick={() => setFinalBoost(boost.value)}
                                 className={`p-5 rounded-2xl border text-left transition-standard flex flex-col justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 ${
                                     isSelected
@@ -289,7 +311,7 @@ export default function GrandFinalClient({
                         <span className="text-emerald-400 font-black text-base">390 points</span>
                     </div>
 
-                    {!isLocked && (
+                    {isEditable && (
                         <button
                             onClick={handleSave}
                             disabled={isSaving}

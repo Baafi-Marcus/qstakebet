@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { saveQuarterFinalPrediction } from "@/lib/fantasy-actions"
-import { Star, Flame, Lock, CheckCircle2, Info } from "lucide-react"
+import { Star, Flame, Lock, CheckCircle2, Info, Pencil } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type School = {
@@ -52,8 +52,12 @@ export default function QuarterFinalClient({
         return !sessionStorage.getItem("qf-howto-seen")
     })
 
+    const isSaved = Boolean(initialPrediction?.id)
+    const [isEditing, setIsEditing] = useState(() => !isSaved)
+    const isEditable = !isLocked && isEditing
+
     const handleSelectWinner = (matchId: string, schoolId: string) => {
-        if (isLocked) return
+        if (!isEditable) return
 
         setPredictions(prev => {
             const existing = prev.findIndex(p => p.matchId === matchId)
@@ -75,12 +79,12 @@ export default function QuarterFinalClient({
     }
 
     const handleSelectWildcard = (matchId: string) => {
-        if (isLocked) return
+        if (!isEditable) return
         setWildcardMatchId(matchId === wildcardMatchId ? null : matchId)
     }
 
     const handleSelectMasterPick = (schoolId: string) => {
-        if (isLocked) return
+        if (!isEditable) return
         setMasterPickSchoolId(schoolId === masterPickSchoolId ? null : schoolId)
     }
 
@@ -149,6 +153,24 @@ export default function QuarterFinalClient({
                 </div>
             )}
 
+            {isSaved && !isLocked && !isEditing && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                        <div>
+                            <h3 className="font-bold text-emerald-400">Predictions Saved</h3>
+                            <p className="text-sm text-slate-400">You can edit your picks until the deadline — they lock automatically at kickoff.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-standard hover:-translate-y-0.5 shrink-0 cursor-pointer"
+                    >
+                        <Pencil className="w-3.5 h-3.5" /> Edit Prediction
+                    </button>
+                </div>
+            )}
+
             {/* Error & Success Messages */}
             {error && (
                 <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 text-sm">
@@ -185,13 +207,13 @@ export default function QuarterFinalClient({
                                         <button
                                             key={school.id}
                                             onClick={() => handleSelectWinner(contest.id, school.id)}
-                                            disabled={isLocked}
+                                            disabled={!isEditable}
                                             className={`
                                                 w-full text-left p-4 rounded-xl flex items-center justify-between transition-standard hover:-translate-y-0.5 relative overflow-hidden
                                                 ${isSelected 
                                                     ? 'bg-blue-600 border border-blue-500' 
                                                     : 'bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800'}
-                                                ${isLocked && !isSelected ? 'opacity-50 grayscale' : ''}
+                                                ${isLocked && !isSelected ? 'opacity-50 grayscale' : !isEditable && !isSelected ? 'opacity-40' : ''}
                                             `}
                                         >
                                             <div className="flex items-center gap-3 relative z-10">
@@ -224,7 +246,7 @@ export default function QuarterFinalClient({
                             </div>
 
                             {/* Options below the match (Wildcard & Master Pick) */}
-                            {predictedId && !isLocked && !isFinished && (
+                            {predictedId && isEditable && !isFinished && (
                                 <div className="mt-4 pt-4 border-t border-slate-800 flex gap-2">
                                     <button
                                         onClick={() => handleSelectWildcard(contest.id)}
@@ -257,7 +279,7 @@ export default function QuarterFinalClient({
             </div>
 
             {/* Bottom Bar */}
-            {!isLocked && (
+            {isEditable && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/80 backdrop-blur-xl border-t border-slate-800 z-50">
                     <div className="max-w-3xl mx-auto flex items-center gap-4">
                         <div className="flex-1">
