@@ -6,7 +6,7 @@ export class VynfyClient {
 
     constructor() {
         this.apiKey = process.env.VYNFY_API_KEY || "";
-        this.senderId = process.env.VYNFY_SENDER_ID || "QSTAKEbet";
+        this.senderId = process.env.VYNFY_SENDER_ID || "FuseWeb";
     }
 
     /**
