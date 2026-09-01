@@ -19,7 +19,7 @@ async function main() {
             otp_type: "numeric",
             length: 6,
             expiry: 10,
-            sender_id: "QSTAKEbet",
+            sender_id: "FuseWeb",
             message: "Your QSTAKEbet verification code is %otp_code%. Valid for 10 minutes.",
         }),
     })
