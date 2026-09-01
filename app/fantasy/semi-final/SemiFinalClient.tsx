@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { saveSemiFinalPrediction } from "@/lib/fantasy-actions"
-import { Clock, Lock, CheckCircle2, Pencil, Info, Zap } from "lucide-react"
+import { Clock, Lock, CheckCircle2, Pencil, Info, Zap, Users } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 function formatDeadline(deadline: string | null) {
@@ -45,12 +45,16 @@ export default function SemiFinalClient({
     contests,
     initialPrediction,
     isLocked,
-    deadline
+    deadline,
+    sfStarted,
+    publicPicks
 }: {
     contests: Contest[]
     initialPrediction: any
     isLocked: boolean
     deadline: string | null
+    sfStarted: boolean
+    publicPicks: { username: string; picks: { matchId: string; predictedWinnerId: string }[] }[]
 }) {
     // Standardize initial predictions structure
     const initialPreds: Prediction[] = contests.map(c => {
@@ -410,6 +414,47 @@ export default function SemiFinalClient({
                     )}
                 </div>
             )}
+
+            {/* Community Picks */}
+            <div className="bg-slate-900/30 border border-slate-800 rounded-3xl p-6">
+                <div className="flex items-start gap-3 mb-4">
+                    <Users className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-black uppercase text-blue-400 tracking-wider text-sm">Community Picks</h3>
+                        <p className="text-xs text-slate-400 mt-1">Every fan&apos;s predicted winners across the Semi-Finals — confidence multipliers stay secret.</p>
+                    </div>
+                </div>
+
+                {sfStarted ? (
+                    publicPicks.length > 0 ? (
+                        <div className="space-y-2">
+                            {publicPicks.map((entry, ui) => (
+                                <div key={`${entry.username}-${ui}`} className="bg-slate-800/30 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <span className="text-sm font-black text-white w-full sm:w-36 truncate shrink-0">{entry.username}</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {contests.map((contest, ci) => {
+                                            const pick = entry.picks.find(p => p.matchId === contest.id);
+                                            const school = pick ? contest.schools.find(s => s.id === pick.predictedWinnerId) : null;
+                                            return (
+                                                <span key={contest.id} className="text-[10px] font-extrabold px-2.5 py-1 rounded-md border border-slate-700/60 bg-slate-800/60 text-slate-200">
+                                                    SF{ci + 1}: {school ? school.name : "—"}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-slate-500 italic">No picks submitted yet — make your predictions count.</p>
+                    )
+                ) : (
+                    <div className="bg-slate-800/20 border border-dashed border-slate-700/60 rounded-2xl p-4 flex items-center gap-3">
+                        <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+                        <p className="text-xs text-slate-400 font-bold">Picks are revealed when the Semi-Finals kick off. Confidence multipliers always stay hidden.</p>
+                    </div>
+                )}
+            </div>
 
             {/* How to Play Modal */}
             <Dialog

@@ -5,6 +5,7 @@ import { getFeaturedMatches } from "@/lib/data"
 import { getSemiFinalLeaderboard, getQuarterFinalLeaderboard } from "@/lib/fantasy-actions"
 import { isPlayoffStage } from "@/lib/playoff-stages"
 import { HomeClient } from "@/components/home/HomeClient"
+import { SemifinalHome } from "@/components/home/SemifinalHome"
 
 export const dynamic = 'force-dynamic'
 
@@ -59,17 +60,25 @@ export default async function Home() {
 
   const sfDeadline = sfMatches.find(m => m.scheduledAt)?.scheduledAt?.toISOString() ?? null
 
+  const sfActive = sfMatches.some(m => m.status !== 'finished' && m.status !== 'settled')
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 pb-20">
-        <HomeClient
-          initialMatches={featured}
-          sfContests={sfContests}
-          sfDeadline={sfDeadline}
-          qfRecap={qfRecap}
-          semiFinalTop={semiFinalTop}
-          quarterFinalTop={quarterFinalTop}
-        />
+        {sfActive ? (
+          <SemifinalHome
+            initialMatches={featured}
+            sfContests={sfContests}
+            sfDeadline={sfDeadline}
+            qfRecap={qfRecap}
+            semiFinalTop={semiFinalTop}
+            quarterFinalTop={quarterFinalTop}
+          />
+        ) : (
+          <HomeClient
+            initialMatches={featured}
+          />
+        )}
       </main>
     </div>
   )

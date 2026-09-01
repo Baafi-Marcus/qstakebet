@@ -824,6 +824,45 @@ export async function getSemiFinalLeaderboard() {
     }
 }
 
+interface SemiFinalPick {
+    matchId: string
+    predictedWinnerId: string
+}
+
+interface SemiFinalPublicUserPicks {
+    username: string
+    picks: SemiFinalPick[]
+}
+
+export async function getSemiFinalPublicPicks(): Promise<SemiFinalPublicUserPicks[]> {
+    try {
+        const results = await db.select({
+            username: sql<string>`COALESCE(${users.username}, ${users.name})`,
+            predictions: semiFinalPredictions.predictions,
+        })
+            .from(semiFinalPredictions)
+            .innerJoin(users, eq(semiFinalPredictions.userId, users.id));
+
+        return results
+            .map((row) => {
+                const raw = Array.isArray(row.predictions) ? (row.predictions as unknown[]) : []
+                const picks: SemiFinalPick[] = raw
+                    .filter((p): p is SemiFinalPick =>
+                        !!p && typeof p === "object" && "matchId" in p && "predictedWinnerId" in p)
+                    .map((p) => ({
+                        matchId: String((p as { matchId?: unknown }).matchId ?? ""),
+                        predictedWinnerId: String((p as { predictedWinnerId?: unknown }).predictedWinnerId ?? ""),
+                    }))
+                    .filter((p) => p.matchId && p.predictedWinnerId)
+                return { username: row.username, picks }
+            })
+            .filter((entry) => entry.picks.length > 0)
+    } catch (error) {
+        console.error("Error in getSemiFinalPublicPicks:", error);
+        return [];
+    }
+}
+
 // ============================================
 // GRAND FINAL PREDICTOR (ULTIMATE PREDICTOR)
 // ============================================

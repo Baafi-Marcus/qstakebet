@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { matches } from "@/lib/db/schema"
 import { eq, asc } from "drizzle-orm"
-import { getSemiFinalPrediction } from "@/lib/fantasy-actions"
+import { getSemiFinalPrediction, getSemiFinalPublicPicks } from "@/lib/fantasy-actions"
 import { isPlayoffStage } from "@/lib/playoff-stages"
 import SemiFinalClient from "./SemiFinalClient"
 import { redirect } from "next/navigation"
@@ -71,6 +71,10 @@ export default async function SemiFinalPage() {
 
     const isLocked = userPrediction?.isLocked || isDeadlinePassed;
 
+    // 4. Fetch public picks (winners only, no confidence) once the semis start
+    const sfStarted = isDeadlinePassed;
+    const publicPicks = await getSemiFinalPublicPicks();
+
     return (
         <div className="min-h-screen bg-slate-950 pb-24">
             <div className="max-w-3xl mx-auto px-4 py-8">
@@ -88,6 +92,8 @@ export default async function SemiFinalPage() {
                     initialPrediction={userPrediction}
                     isLocked={isLocked}
                     deadline={firstMatchDate ? firstMatchDate.toISOString() : null}
+                    sfStarted={sfStarted}
+                    publicPicks={publicPicks}
                 />
             </div>
         </div>
