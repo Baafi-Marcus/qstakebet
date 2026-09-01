@@ -2,7 +2,24 @@
 
 import { useState, useEffect } from "react"
 import { saveSemiFinalPrediction } from "@/lib/fantasy-actions"
-import { Trophy, Star, Flame, Clock, Lock, CheckCircle2, Pencil } from "lucide-react"
+import { Clock, Lock, CheckCircle2, Pencil, Info, Zap } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+
+function formatDeadline(deadline: string | null) {
+    if (!deadline) return null
+    const d = new Date(deadline)
+    if (isNaN(d.getTime())) return null
+    const dateStr = new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+    }).format(d)
+    return `${dateStr} UTC`
+}
 
 type School = {
     id: string
@@ -54,6 +71,11 @@ export default function SemiFinalClient({
     const isSaved = Boolean(initialPrediction?.id)
     const [isEditing, setIsEditing] = useState(() => !isSaved)
     const isEditable = !isLocked && isEditing
+    const [showHowTo, setShowHowTo] = useState(() => {
+        if (typeof window === "undefined") return false
+        return !sessionStorage.getItem("sf-howto-seen")
+    })
+    const deadlineFormatted = formatDeadline(deadline)
 
     useEffect(() => {
         if (!deadline || isLocked) return;
@@ -156,6 +178,15 @@ export default function SemiFinalClient({
 
     return (
         <div className="space-y-6 text-white">
+            <div className="flex justify-end">
+                <button
+                    onClick={() => setShowHowTo(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-sm font-bold hover:bg-slate-700 hover:text-white transition-standard cursor-pointer"
+                >
+                    <Info className="w-4 h-4" /> How to Play
+                </button>
+            </div>
+
             {isLocked ? (
                 <div className="bg-slate-900/80 border border-slate-700 p-4 rounded-xl flex items-start gap-3">
                     <Lock className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
@@ -379,6 +410,82 @@ export default function SemiFinalClient({
                     )}
                 </div>
             )}
+
+            {/* How to Play Modal */}
+            <Dialog
+                open={showHowTo}
+                onOpenChange={(open) => {
+                    setShowHowTo(open)
+                    if (!open) {
+                        try { sessionStorage.setItem("sf-howto-seen", "1") } catch {}
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md rounded-2xl border-slate-700">
+                    <DialogHeader>
+                        <DialogTitle className="font-russo uppercase tracking-wider text-amber-400 text-base">
+                            How to Play
+                        </DialogTitle>
+                        <DialogDescription className="text-xs uppercase tracking-widest font-bold text-slate-500">
+                            Semi-Final Confidence Challenge
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 text-sm text-slate-300">
+                        <div>
+                            <span className="font-bold text-white">Predict the winner of every Semi-Final contest.</span>{" "}
+                            There are <span className="font-bold text-white">3 contests</span>, pick one winner in each.
+                        </div>
+                        <div>
+                            <span className="font-bold text-white flex items-center gap-1"><Zap className="w-3.5 h-3.5 text-amber-400" /> Confidence Multipliers</span>
+                            Assign your <span className="font-bold text-white">1x, 2x, and 3x</span> multipliers
+                            exactly once across the 3 contests. A correct pick scores{" "}
+                            <span className="font-bold text-emerald-400">20 × multiplier</span>.
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-blue-500/10 border border-blue-500/25 rounded-lg py-2 text-xs">
+                                <span className="font-black text-blue-400">1x</span>
+                                <div className="text-slate-400 font-bold">+20 pts</div>
+                            </div>
+                            <div className="bg-amber-500/10 border border-amber-500/25 rounded-lg py-2 text-xs">
+                                <span className="font-black text-amber-400">2x</span>
+                                <div className="text-slate-400 font-bold">+40 pts</div>
+                            </div>
+                            <div className="bg-red-500/10 border border-red-500/25 rounded-lg py-2 text-xs">
+                                <span className="font-black text-red-400">3x</span>
+                                <div className="text-slate-400 font-bold">+60 pts</div>
+                            </div>
+                        </div>
+                        <div>
+                            Wrong picks score <span className="font-bold text-red-400">0 pts</span> — so put your{" "}
+                            <span className="font-bold text-white">highest multiplier on the contest you are most sure about</span>.
+                        </div>
+                        <div className="pt-2 border-t border-slate-800">
+                            Maximum score: <span className="font-bold text-amber-400">120 points</span>.
+                        </div>
+                        <div>
+                            {deadlineFormatted ? (
+                                <>
+                                    Deadline is <span className="font-bold text-white">{deadlineFormatted}</span>{" "}
+                                    (before the first contest).
+                                </>
+                            ) : (
+                                <>
+                                    Deadline is <span className="font-bold text-white">before the first contest</span>.
+                                </>
+                            )}{" "}
+                            You can edit your picks anytime until the deadline — they lock automatically at kickoff.
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setShowHowTo(false)}
+                        className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-wider text-sm transition-standard hover:-translate-y-0.5 cursor-pointer"
+                    >
+                        Got it
+                    </button>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
